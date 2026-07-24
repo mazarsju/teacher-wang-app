@@ -67,13 +67,25 @@ class GrammarCorrection:
 @dataclass(frozen=True)
 class ChallengeJudgeResult:
     completed_task_ids: list[str]
+    coherent: bool = True
+    incoherence_reason: str | None = None
+    token_usage: LlmTokenUsage = LlmTokenUsage()
+
+
+@dataclass(frozen=True)
+class ChallengeReplyResult:
+    content: str
+    unknown_characters: list[list[str]]
+    completed_task_ids: list[str]
+    judge_conversation: list[dict[str, str]]
     token_usage: LlmTokenUsage = LlmTokenUsage()
 
 
 CHALLENGE_JUDGE_SYSTEM_PROMPT = (
     "You are the Challenge Judge for a Mandarin learning app. "
     "You review a conversation between a learner and a role-play character. "
-    "Decide which challenge tasks the learner has clearly accomplished. "
+    "You have two jobs on every turn. "
+    "First, decide which challenge tasks the learner has clearly accomplished. "
     "A task is completed only when BOTH of these are true: "
     "(1) the learner clearly attempted the task in Chinese "
     "(do not accept attempts in any other language), and "
@@ -85,10 +97,25 @@ CHALLENGE_JUDGE_SYSTEM_PROMPT = (
     "do not mark a pay-the-bill task as completed. "
     "Stage-direction lines in [[double square brackets]] are narrative only; "
     "they do not by themselves complete a task. "
+    "Second, decide whether the character's LATEST reply is coherent given "
+    "the situation and conversation so far. "
+    "A reply is coherent when it stays in character, respects the scenario's "
+    "logical progression / rules, and is a sensible response to the learner's "
+    "latest message. "
+    "A reply is NOT coherent when it skips ahead, accepts an out-of-order "
+    "request, contradicts established situation state, invents actions that "
+    "should not have happened yet, or otherwise breaks the role-play logic. "
     "Reply with ONLY a JSON object and no other text, exactly in this form: "
-    '{"completed_task_ids": ["task-id-1", "task-id-2"]}. '
+    '{"completed_task_ids": ["task-id-1", "task-id-2"], '
+    '"coherent": true}. '
+    "When the latest character reply is not coherent, respond exactly: "
+    '{"completed_task_ids": ["task-id-1"], "coherent": false, '
+    '"incoherence_reason": "<brief explanation of why the reply is incoherent '
+    'and what the character should do instead>"}. '
     "Include every task that is completed based on the full conversation so far. "
-    "If none are completed, respond exactly: {\"completed_task_ids\": []}."
+    "If none are completed, use an empty completed_task_ids list. "
+    "incoherence_reason is required when coherent is false, and must be omitted "
+    "or null when coherent is true."
 )
 
 
@@ -175,6 +202,24 @@ def _rephrase_instruction(unknown_characters: list[str]) -> str:
     )
 
 
+def _coherence_revision_instruction(reason: str) -> str:
+    return (
+        "The Challenge Judge found your previous reply incoherent for this "
+        "situation. "
+        f"Reason: {reason.strip()} "
+        "Please revise your reply so it is coherent. Stay in character and "
+        "reply with only your new in-character message."
+    )
+
+
+def _judge_revision_request(reason: str) -> str:
+    return (
+        "Your reply is not coherent given the situation. "
+        f"{reason.strip()} "
+        "Please modify your answer."
+    )
+
+
 def _best_attempt(
     attempts: list[tuple[str, list[str]]],
 ) -> tuple[str, list[str]]:
@@ -250,13 +295,44 @@ def _format_challenge_transcript(messages: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
+def _parse_completed_task_ids(raw_ids, valid_task_ids: set[str]) -> list[str]:
+    if not isinstance(raw_ids, list):
+        raise ValueError("Challenge judge response must include completed_task_ids list")
+
+    completed_task_ids: list[str] = []
+    for task_id in raw_ids:
+        if not isinstance(task_id, str):
+            continue
+        normalized = task_id.strip()
+        if normalized in valid_task_ids and normalized not in completed_task_ids:
+            completed_task_ids.append(normalized)
+    return completed_task_ids
+
+
+def _parse_coherence(parsed: dict) -> tuple[bool, str | None]:
+    coherent = parsed.get("coherent")
+    if not isinstance(coherent, bool):
+        raise ValueError("Challenge judge response must include boolean 'coherent'")
+
+    if coherent:
+        return True, None
+
+    reason = parsed.get("incoherence_reason")
+    if not isinstance(reason, str) or reason.strip() == "":
+        raise ValueError(
+            "Challenge judge response must include non-empty "
+            "'incoherence_reason' when coherent is false"
+        )
+    return False, reason.strip()
+
+
 def judge_challenge_progress(
     messages: list[dict[str, str]],
     tasks: list[dict[str, str]],
 ) -> ChallengeJudgeResult:
-    """Ask the Challenge Judge which tasks the learner has completed."""
+    """Ask the Challenge Judge which tasks are done and if the reply is coherent."""
     if not messages:
-        return ChallengeJudgeResult(completed_task_ids=[])
+        return ChallengeJudgeResult(completed_task_ids=[], coherent=True)
 
     if not tasks:
         raise ValueError("At least one challenge task is required")
@@ -281,12 +357,15 @@ def judge_challenge_progress(
         if not isinstance(content, str) or content.strip() == "":
             raise ValueError("Message content must be a non-empty string")
 
+    if messages[-1].get("role") != "assistant":
+        raise ValueError("The last message must be from the assistant for judging")
+
     prompt = (
         "Challenge tasks:\n"
         f"{chr(10).join(task_lines)}\n\n"
         "Conversation so far:\n"
         f"{_format_challenge_transcript(messages)}\n\n"
-        "Return the JSON object with completed_task_ids."
+        "Return the JSON object with completed_task_ids and coherent."
     )
 
     raw, token_usage = _invoke_llm(
@@ -296,20 +375,16 @@ def judge_challenge_progress(
         ]
     )
     parsed = _extract_json_object(raw)
-    raw_ids = parsed.get("completed_task_ids")
-    if not isinstance(raw_ids, list):
-        raise ValueError("Challenge judge response must include completed_task_ids list")
-
-    completed_task_ids: list[str] = []
-    for task_id in raw_ids:
-        if not isinstance(task_id, str):
-            continue
-        normalized = task_id.strip()
-        if normalized in valid_task_ids and normalized not in completed_task_ids:
-            completed_task_ids.append(normalized)
+    completed_task_ids = _parse_completed_task_ids(
+        parsed.get("completed_task_ids"),
+        valid_task_ids,
+    )
+    coherent, incoherence_reason = _parse_coherence(parsed)
 
     return ChallengeJudgeResult(
         completed_task_ids=completed_task_ids,
+        coherent=coherent,
+        incoherence_reason=incoherence_reason,
         token_usage=token_usage,
     )
 
@@ -317,9 +392,17 @@ def judge_challenge_progress(
 def generate_chat_reply(
     character_id: str,
     messages: list[dict[str, str]],
+    *,
+    previous_assistant_reply: str | None = None,
+    revision_instruction: str | None = None,
 ) -> ChatReplyResult:
     if not messages:
         raise ValueError("At least one message is required")
+
+    if (previous_assistant_reply is None) != (revision_instruction is None):
+        raise ValueError(
+            "previous_assistant_reply and revision_instruction must be provided together"
+        )
 
     langchain_messages = [SystemMessage(content=get_system_prompt(character_id))]
 
@@ -340,6 +423,14 @@ def generate_chat_reply(
 
     if messages[-1]["role"] != "user":
         raise ValueError("The last message must be from the user")
+
+    if previous_assistant_reply is not None and revision_instruction is not None:
+        revised = previous_assistant_reply.strip()
+        instruction = revision_instruction.strip()
+        if revised == "" or instruction == "":
+            raise ValueError("Revision reply and instruction must be non-empty")
+        langchain_messages.append(AIMessage(content=revised))
+        langchain_messages.append(HumanMessage(content=instruction))
 
     character = get_character(character_id)
     reply, token_usage = _invoke_llm(langchain_messages)
@@ -377,5 +468,68 @@ def generate_chat_reply(
         unknown_characters=(
             [unknowns for _, unknowns in attempts] if best_unknowns else []
         ),
+        token_usage=token_usage,
+    )
+
+
+def generate_challenge_reply(
+    character_id: str,
+    messages: list[dict[str, str]],
+    tasks: list[dict[str, str]],
+) -> ChallengeReplyResult:
+    """Generate a challenge reply, allowing one coherence revision from the judge."""
+    reply = generate_chat_reply(character_id, messages)
+    token_usage = reply.token_usage
+    judge_conversation: list[dict[str, str]] = []
+
+    conversation_for_judge = [
+        *messages,
+        {"role": "assistant", "content": reply.content},
+    ]
+    judgment = judge_challenge_progress(conversation_for_judge, tasks)
+    token_usage = token_usage + judgment.token_usage
+
+    if not judgment.coherent:
+        assert judgment.incoherence_reason is not None
+        judge_message = _judge_revision_request(judgment.incoherence_reason)
+        judge_conversation.append({"role": "judge", "content": judge_message})
+
+        revised = generate_chat_reply(
+            character_id,
+            messages,
+            previous_assistant_reply=reply.content,
+            revision_instruction=_coherence_revision_instruction(
+                judgment.incoherence_reason
+            ),
+        )
+        token_usage = token_usage + revised.token_usage
+        reply = revised
+        judge_conversation.append({"role": "assistant", "content": reply.content})
+
+        conversation_for_judge = [
+            *messages,
+            {"role": "assistant", "content": reply.content},
+        ]
+        second_judgment = judge_challenge_progress(conversation_for_judge, tasks)
+        token_usage = token_usage + second_judgment.token_usage
+        judgment = second_judgment
+
+        # One opposition only: accept the revised reply even if still incoherent.
+        if not second_judgment.coherent and second_judgment.incoherence_reason:
+            judge_conversation.append(
+                {
+                    "role": "judge",
+                    "content": (
+                        "The revised reply is still not coherent, but it will "
+                        f"be sent anyway. {second_judgment.incoherence_reason}"
+                    ),
+                }
+            )
+
+    return ChallengeReplyResult(
+        content=reply.content,
+        unknown_characters=reply.unknown_characters,
+        completed_task_ids=judgment.completed_task_ids,
+        judge_conversation=judge_conversation,
         token_usage=token_usage,
     )

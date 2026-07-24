@@ -10,8 +10,8 @@ from backend.chat_service import (
     TEACHER_CHARACTER_ID,
     LlmTokenUsage,
     check_user_grammar,
+    generate_challenge_reply,
     generate_chat_reply,
-    judge_challenge_progress,
 )
 from backend.conversation_logs import (
     VALID_CHARACTER_IDS,
@@ -167,6 +167,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
     last_user_message = normalized_messages[-1]
     token_usage = LlmTokenUsage()
     completed_task_ids: list[str] | None = None
+    judge_conversation: list[dict[str, str]] | None = None
 
     try:
         correction = None
@@ -199,29 +200,33 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
                 correction_thread_id=correction_thread_id,
             )
 
-        reply = generate_chat_reply(character_id, normalized_messages)
-        token_usage = token_usage + reply.token_usage
-        append_message(character_id, "assistant", reply.content)
-
         if is_challenge_character(character_id):
             challenge = get_challenge(character_id)
             assert challenge is not None
-            conversation_for_judge = [
-                *normalized_messages,
-                {"role": "assistant", "content": reply.content},
-            ]
-            judgment = judge_challenge_progress(
-                conversation_for_judge,
+            challenge_reply = generate_challenge_reply(
+                character_id,
+                normalized_messages,
                 challenge["tasks"],
             )
-            token_usage = token_usage + judgment.token_usage
+            token_usage = token_usage + challenge_reply.token_usage
+            reply_content = challenge_reply.content
+            reply_unknown_characters = challenge_reply.unknown_characters
             previously_completed = load_completed_task_ids(character_id)
             completed_task_ids = list(
                 dict.fromkeys(
-                    [*previously_completed, *judgment.completed_task_ids]
+                    [*previously_completed, *challenge_reply.completed_task_ids]
                 )
             )
             save_completed_task_ids(character_id, completed_task_ids)
+            if challenge_reply.judge_conversation:
+                judge_conversation = challenge_reply.judge_conversation
+        else:
+            reply = generate_chat_reply(character_id, normalized_messages)
+            token_usage = token_usage + reply.token_usage
+            reply_content = reply.content
+            reply_unknown_characters = reply.unknown_characters
+
+        append_message(character_id, "assistant", reply_content)
 
         record_token_usage(
             input_tokens=token_usage.input_tokens,
@@ -235,16 +240,18 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
     response = {
         "message": {
             "role": "assistant",
-            "content": reply.content,
+            "content": reply_content,
         },
         "tokens": token_usage.to_dict(),
     }
-    if reply.unknown_characters:
-        response["unknown_characters"] = reply.unknown_characters
+    if reply_unknown_characters:
+        response["unknown_characters"] = reply_unknown_characters
     if correction is not None:
         response["correction"] = correction_payload or correction.to_dict()
     if completed_task_ids is not None:
         response["completed_task_ids"] = completed_task_ids
+    if judge_conversation:
+        response["judge_conversation"] = judge_conversation
 
     return response, 200
 

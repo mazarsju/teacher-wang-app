@@ -65,9 +65,11 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_record_tokens = self.record_tokens_patcher.start()
         self.addCleanup(self.record_tokens_patcher.stop)
 
-        self.judge_patcher = patch("backend.routes.chat.judge_challenge_progress")
-        self.mock_judge = self.judge_patcher.start()
-        self.addCleanup(self.judge_patcher.stop)
+        self.challenge_reply_patcher = patch(
+            "backend.routes.chat.generate_challenge_reply"
+        )
+        self.mock_challenge_reply = self.challenge_reply_patcher.start()
+        self.addCleanup(self.challenge_reply_patcher.stop)
 
         self.load_tasks_patcher = patch("backend.routes.chat.load_completed_task_ids")
         self.mock_load_tasks = self.load_tasks_patcher.start()
@@ -92,7 +94,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_clear.reset_mock()
         self.mock_grammar.reset_mock()
         self.mock_record_tokens.reset_mock()
-        self.mock_judge.reset_mock()
+        self.mock_challenge_reply.reset_mock()
         self.mock_load_tasks.reset_mock()
         self.mock_save_tasks.reset_mock()
         self.mock_clear_tasks.reset_mock()
@@ -100,8 +102,11 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_should_append_thread.return_value = True
         self.mock_thread_exists.return_value = True
         self.mock_load_tasks.return_value = []
-        self.mock_judge.return_value = MagicMock(
+        self.mock_challenge_reply.return_value = MagicMock(
+            content="您好",
+            unknown_characters=[],
             completed_task_ids=[],
+            judge_conversation=[],
             token_usage=MagicMock(input_tokens=0, output_tokens=0),
         )
         self.mock_grammar.return_value = MagicMock(
@@ -383,14 +388,12 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_load.assert_called_once_with("teacher-wang")
 
     def test_challenge_chat_returns_completed_task_ids(self):
-        self.mock_generate.return_value = MagicMock(
+        self.mock_challenge_reply.return_value = MagicMock(
             content="您好，请稍等。",
             unknown_characters=[],
-            token_usage=MagicMock(input_tokens=20, output_tokens=10),
-        )
-        self.mock_judge.return_value = MagicMock(
             completed_task_ids=["call-waiter"],
-            token_usage=MagicMock(input_tokens=15, output_tokens=5),
+            judge_conversation=[],
+            token_usage=MagicMock(input_tokens=35, output_tokens=15),
         )
         self.mock_load_tasks.return_value = []
 
@@ -405,7 +408,9 @@ class TestChatEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(payload["completed_task_ids"], ["call-waiter"])
-        self.mock_judge.assert_called_once()
+        self.assertNotIn("judge_conversation", payload)
+        self.mock_challenge_reply.assert_called_once()
+        self.mock_generate.assert_not_called()
         self.mock_save_tasks.assert_called_once_with(
             "challenge-restaurant",
             ["call-waiter"],
@@ -413,6 +418,56 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_record_tokens.assert_called_once_with(
             input_tokens=35,
             output_tokens=15,
+        )
+
+    def test_challenge_chat_returns_judge_conversation_when_revised(self):
+        self.mock_challenge_reply.return_value = MagicMock(
+            content="请先点菜。",
+            unknown_characters=[],
+            completed_task_ids=[],
+            judge_conversation=[
+                {
+                    "role": "judge",
+                    "content": (
+                        "Your reply is not coherent given the situation. "
+                        "Payment was accepted before ordering. "
+                        "Please modify your answer."
+                    ),
+                },
+                {"role": "assistant", "content": "请先点菜。"},
+            ],
+            token_usage=MagicMock(input_tokens=40, output_tokens=20),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "challenge-restaurant",
+                "messages": [{"role": "user", "content": "买单"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["message"]["content"], "请先点菜。")
+        self.assertEqual(
+            payload["judge_conversation"],
+            [
+                {
+                    "role": "judge",
+                    "content": (
+                        "Your reply is not coherent given the situation. "
+                        "Payment was accepted before ordering. "
+                        "Please modify your answer."
+                    ),
+                },
+                {"role": "assistant", "content": "请先点菜。"},
+            ],
+        )
+        self.mock_append.assert_any_call(
+            "challenge-restaurant",
+            "assistant",
+            "请先点菜。",
         )
 
     def test_challenge_chat_history_includes_completed_task_ids(self):

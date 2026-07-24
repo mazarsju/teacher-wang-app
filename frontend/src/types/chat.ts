@@ -26,12 +26,18 @@ export type ChatTokenUsage = {
   total: number;
 };
 
+export type JudgeConversationMessage = {
+  role: "judge" | "assistant";
+  content: string;
+};
+
 export type ChatResponse = {
   message: ChatMessage;
   unknown_characters?: string[][];
   correction?: GrammarCorrection;
   tokens?: ChatTokenUsage;
   completed_task_ids?: string[];
+  judge_conversation?: JudgeConversationMessage[];
 };
 
 export type ChatHistoryResponse = {

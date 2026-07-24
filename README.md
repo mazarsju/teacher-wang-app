@@ -242,7 +242,7 @@ A chatbot that speaks Chinese using only the characters you are supposed to know
 Several agents collaborating around focused learning scenarios.
 
 - [x] Add a grammar checker for each conversation, explaining the mistakes to the user in a separate thread
-- [ ] Conversation scenarios with a defined goal to achieve
+- [x] Conversation scenarios with a defined goal to achieve
 
 ### 4. Anki integration
 
