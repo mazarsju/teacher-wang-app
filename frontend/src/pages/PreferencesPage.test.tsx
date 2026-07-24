@@ -81,7 +81,16 @@ describe("PreferencesPage", () => {
       await screen.findByRole("heading", { name: "Token usage" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Total tokens used")).toBeInTheDocument();
-    expect(screen.getByText("1,250 (roughly 0.000435$)")).toBeInTheDocument();
+    expect(
+      screen.getByText((_, element) => {
+        const normalized =
+          element?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+        return (
+          normalized === "1,250 (roughly 0.000435$)" &&
+          element?.classList.contains("preferences-token-total-value") === true
+        );
+      }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Token usage for the last 7 days" }),
     ).toBeInTheDocument();
