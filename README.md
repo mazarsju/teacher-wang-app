@@ -184,6 +184,56 @@ The coverage report is written to `frontend/coverage/` (open `coverage/index.htm
 
 To enable the hosted report, go to **Settings → Pages** and set **Build and deployment → Source** to **Deploy from a branch**, then choose branch **`gh-pages`** and folder **`/ (root)`**. The workflow creates and updates that branch automatically.
 
+## AI logic
+
+Chat turns in this app are not a single LLM call. Several specialized agents collaborate on each message, especially in challenge scenarios.
+
+### Character agent
+
+Each chat persona (friend, waiter, etc.) is a role-play agent with its own system prompt: situation, speaking style, and progression rules. In a **challenge**, that prompt encodes a fixed order of events (for example: call the waiter → order → eat → pay). The agent must stay in character, speak Chinese, and refuse out-of-order requests.
+
+Wherever possible, the character also tries to use only Han characters from the learner’s **knowledge base**. After each reply, unknown characters are detected against that vocabulary. If any appear, the agent is asked to rephrase without them (up to **3** retries). If unknown characters remain, the app keeps the attempt that used the **fewest** unknown characters.
+
+### Teacher agent (grammar)
+
+For every non–Teacher Wang conversation, Teacher Wang silently reviews the learner’s latest Chinese message. If the grammar is wrong, a short correction is returned and opened in a side thread so the learner can ask follow-up questions without leaving the main chat.
+
+### Challenge judge
+
+After the character agent replies in a challenge, a **Challenge Judge** reviews the full turn and does two jobs:
+
+1. **Task progress** — marks challenge tasks complete only when the learner attempted them in Chinese *and* the character cooperated (a refusal does not count).
+2. **Coherence** — checks that the character’s reply fits the situation and scenario rules. If it does not, the judge explains why and asks the character to revise **once**. If the second answer is still incoherent, it is sent anyway; the judge cannot block a reply twice.
+
+The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`. Only the final character reply is stored in the learner-facing history.
+
+### Interaction overview
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Teacher as Teacher agent<br/>(grammar)
+    participant Character as Character agent<br/>(role-play)
+    participant Judge as Challenge judge
+
+    User->>Teacher: Chinese message
+    Teacher-->>User: Correction thread when grammar is wrong
+
+    User->>Character: Same message (main chat)
+    Note over Character: Prefer known vocabulary;<br/>rephrase up to 3 times if unknowns appear;<br/>keep attempt with fewest unknowns
+    Character->>Judge: Proposed reply
+
+    alt Reply coherent
+        Judge-->>Character: Tasks + OK
+        Character-->>User: Final reply + completed tasks
+    else Reply incoherent (1st attempt)
+        Judge->>Character: Explain why + ask to revise
+        Character->>Judge: Revised reply
+        Note over Judge: Second check for tasks;<br/>coherence cannot block again
+        Character-->>User: Final reply + completed tasks<br/>(+ judge_conversation)
+    end
+```
+
 ## Feature
 
 ### Track your progress
