@@ -478,7 +478,7 @@ describe("ChatModal", () => {
             json: async () => ({
               message: {
                 role: "assistant",
-                content: "[The waiter needs to be called to come]",
+                content: "[[The waiter needs to be called to come]]",
               },
             }),
           });
@@ -501,7 +501,69 @@ describe("ChatModal", () => {
     );
     expect(stage).toHaveClass("chat-message-stage");
     expect(
-      screen.queryByText("[The waiter needs to be called to come]"),
+      screen.queryByText("[[The waiter needs to be called to come]]"),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders stage directions found anywhere in an assistant message", async () => {
+    const user = userEvent.setup();
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/chat/history/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [], completed_task_ids: [] }),
+          });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: {
+                role: "assistant",
+                content:
+                  "[[The waiter leaves]][[The waiter comes back with the ordered meal]]您的菜来了。",
+              },
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(<ChatModal character={waiter} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "买单");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("The waiter leaves")).toHaveClass(
+      "chat-message-stage",
+    );
+    expect(
+      screen.getByText("The waiter comes back with the ordered meal"),
+    ).toHaveClass("chat-message-stage");
+    expect(screen.getByText("您的菜来了。")).toHaveClass(
+      "chat-message--assistant",
+    );
   });
 });

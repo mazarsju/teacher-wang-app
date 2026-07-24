@@ -660,10 +660,38 @@ body {
   margin-right: auto;
 }
 
+.chat-message-row--segmented {
+  max-width: 100%;
+  width: 100%;
+  align-self: stretch;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.chat-message-segments {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.chat-message-segments .chat-message-stage {
+  align-self: stretch;
+  width: 100%;
+  text-align: center;
+}
+
+.chat-message-segments .chat-message--assistant {
+  align-self: flex-start;
+  max-width: 85%;
+}
+
 .chat-message-row--stage {
   align-self: center;
   justify-content: center;
   max-width: 100%;
+  width: 100%;
   margin: 0.15rem 0;
 }
 
@@ -702,6 +730,13 @@ body {
   text-align: center;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.chat-message-stage-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
 }
 
 .chat-message-warning-button,

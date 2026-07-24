@@ -46,6 +46,8 @@ class TestChallengeJudge(unittest.TestCase):
         )
         system_prompt = mock_llm.invoke.call_args.args[0][0].content
         self.assertIn("Challenge Judge", system_prompt)
+        self.assertIn("accepted / cooperated", system_prompt)
+        self.assertIn("refuses", system_prompt)
 
     @patch("backend.chat_service.get_llm")
     def test_judge_ignores_unknown_task_ids(self, mock_get_llm):

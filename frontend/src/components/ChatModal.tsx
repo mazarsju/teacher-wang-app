@@ -11,7 +11,7 @@ import {
   fetchChatHistory,
   sendChatMessage,
 } from "../utils/chatApi";
-import { getStageDirectionText } from "../utils/stageDirection";
+import { parseMessageSegments } from "../utils/stageDirection";
 
 type CorrectionThreadState = {
   messageIndex: number;
@@ -356,20 +356,40 @@ export default function ChatModal({
             ) : (
               <ul className="chat-message-list">
                 {messages.map((chatMessage, index) => {
-                  const stageDirection =
-                    chatMessage.role === "assistant"
-                      ? getStageDirectionText(chatMessage.content)
-                      : null;
-
-                  if (stageDirection !== null) {
-                    return (
-                      <li
-                        key={`${chatMessage.role}-${index}-${chatMessage.content}`}
-                        className="chat-message-row chat-message-row--stage"
-                      >
-                        <p className="chat-message-stage">{stageDirection}</p>
-                      </li>
+                  if (chatMessage.role === "assistant") {
+                    const segments = parseMessageSegments(chatMessage.content);
+                    const hasStage = segments.some(
+                      (segment) => segment.type === "stage",
                     );
+
+                    if (hasStage) {
+                      return (
+                        <li
+                          key={`${chatMessage.role}-${index}-${chatMessage.content}`}
+                          className="chat-message-row chat-message-row--assistant chat-message-row--segmented"
+                        >
+                          <div className="chat-message-segments">
+                            {segments.map((segment, segmentIndex) =>
+                              segment.type === "stage" ? (
+                                <p
+                                  key={`${segmentIndex}-${segment.text}`}
+                                  className="chat-message-stage"
+                                >
+                                  {segment.text}
+                                </p>
+                              ) : (
+                                <div
+                                  key={`${segmentIndex}-${segment.text}`}
+                                  className="chat-message chat-message--assistant"
+                                >
+                                  {segment.text}
+                                </div>
+                              ),
+                            )}
+                          </div>
+                        </li>
+                      );
+                    }
                   }
 
                   return (
