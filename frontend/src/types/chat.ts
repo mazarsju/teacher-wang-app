@@ -31,10 +31,12 @@ export type ChatResponse = {
   unknown_characters?: string[][];
   correction?: GrammarCorrection;
   tokens?: ChatTokenUsage;
+  completed_task_ids?: string[];
 };
 
 export type ChatHistoryResponse = {
   messages: ChatMessage[];
+  completed_task_ids?: string[];
 };
 
 export type ChatThreadContext = {

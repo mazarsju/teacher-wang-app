@@ -6,9 +6,14 @@ import type {
   ChatThreadContext,
 } from "../types/chat";
 
+export type ChatHistoryResult = {
+  messages: ChatMessage[];
+  completedTaskIds: string[];
+};
+
 export async function fetchChatHistory(
   characterId: string,
-): Promise<ChatMessage[]> {
+): Promise<ChatHistoryResult> {
   const response = await fetch(
     `/chat/history/${encodeURIComponent(characterId)}`,
     { method: "GET" },
@@ -22,7 +27,10 @@ export async function fetchChatHistory(
   }
 
   const data = (await response.json()) as ChatHistoryResponse;
-  return data.messages;
+  return {
+    messages: data.messages,
+    completedTaskIds: data.completed_task_ids ?? [],
+  };
 }
 
 export async function sendChatMessage(

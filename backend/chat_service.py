@@ -64,6 +64,27 @@ class GrammarCorrection:
         return payload
 
 
+@dataclass(frozen=True)
+class ChallengeJudgeResult:
+    completed_task_ids: list[str]
+    token_usage: LlmTokenUsage = LlmTokenUsage()
+
+
+CHALLENGE_JUDGE_SYSTEM_PROMPT = (
+    "You are the Challenge Judge for a Mandarin learning app. "
+    "You review a conversation between a learner and a role-play character. "
+    "Decide which challenge tasks the learner has clearly accomplished through "
+    "their own messages, and the character's replies. "
+    "A task is completed only when the learner has clearly attempted it in Chinese "
+    "(the judge does not accept any other language than Chinese) "
+    "in a way that fulfills the task intent. "
+    "Reply with ONLY a JSON object and no other text, exactly in this form: "
+    '{"completed_task_ids": ["task-id-1", "task-id-2"]}. '
+    "Include every task that is completed based on the full conversation so far. "
+    "If none are completed, respond exactly: {\"completed_task_ids\": []}."
+)
+
+
 def _llm_response_text(response) -> str:
     content = response.content
 
@@ -209,6 +230,79 @@ def check_user_grammar(user_message: str) -> GrammarCorrection:
     return GrammarCorrection(
         correct=False,
         answer=answer.strip(),
+        token_usage=token_usage,
+    )
+
+
+def _format_challenge_transcript(messages: list[dict[str, str]]) -> str:
+    lines: list[str] = []
+    for message in messages:
+        role = message["role"]
+        speaker = "Learner" if role == "user" else "Character"
+        lines.append(f"{speaker}: {message['content'].strip()}")
+    return "\n".join(lines)
+
+
+def judge_challenge_progress(
+    messages: list[dict[str, str]],
+    tasks: list[dict[str, str]],
+) -> ChallengeJudgeResult:
+    """Ask the Challenge Judge which tasks the learner has completed."""
+    if not messages:
+        return ChallengeJudgeResult(completed_task_ids=[])
+
+    if not tasks:
+        raise ValueError("At least one challenge task is required")
+
+    valid_task_ids = set()
+    task_lines: list[str] = []
+    for task in tasks:
+        task_id = task.get("id")
+        label = task.get("label")
+        if not isinstance(task_id, str) or task_id.strip() == "":
+            raise ValueError("Each challenge task must include a non-empty id")
+        if not isinstance(label, str) or label.strip() == "":
+            raise ValueError("Each challenge task must include a non-empty label")
+        valid_task_ids.add(task_id)
+        task_lines.append(f"- {task_id}: {label.strip()}")
+
+    for message in messages:
+        role = message.get("role")
+        content = message.get("content", "")
+        if role not in VALID_ROLES:
+            raise ValueError(f"Invalid message role: {role}")
+        if not isinstance(content, str) or content.strip() == "":
+            raise ValueError("Message content must be a non-empty string")
+
+    prompt = (
+        "Challenge tasks:\n"
+        f"{chr(10).join(task_lines)}\n\n"
+        "Conversation so far:\n"
+        f"{_format_challenge_transcript(messages)}\n\n"
+        "Return the JSON object with completed_task_ids."
+    )
+
+    raw, token_usage = _invoke_llm(
+        [
+            SystemMessage(content=CHALLENGE_JUDGE_SYSTEM_PROMPT),
+            HumanMessage(content=prompt),
+        ]
+    )
+    parsed = _extract_json_object(raw)
+    raw_ids = parsed.get("completed_task_ids")
+    if not isinstance(raw_ids, list):
+        raise ValueError("Challenge judge response must include completed_task_ids list")
+
+    completed_task_ids: list[str] = []
+    for task_id in raw_ids:
+        if not isinstance(task_id, str):
+            continue
+        normalized = task_id.strip()
+        if normalized in valid_task_ids and normalized not in completed_task_ids:
+            completed_task_ids.append(normalized)
+
+    return ChallengeJudgeResult(
+        completed_task_ids=completed_task_ids,
         token_usage=token_usage,
     )
 

@@ -1,27 +1,22 @@
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
+import type { Challenge } from "../types/challenge";
 
-export type ChatCharacter = {
-  id: string;
-  name: string;
-  chineseName: string;
-  description: string;
-  avatarVariant: "teacher" | "friend" | "waiter";
+type ChallengeCardProps = {
+  challenge: Challenge;
+  onSelect: (challenge: Challenge) => void;
 };
 
-type ChatCharacterCardProps = {
-  character: ChatCharacter;
-  onSelect: (character: ChatCharacter) => void;
-};
-
-export default function ChatCharacterCard({
-  character,
+export default function ChallengeCard({
+  challenge,
   onSelect,
-}: ChatCharacterCardProps) {
+}: ChallengeCardProps) {
+  const { character } = challenge;
+
   return (
     <button
       type="button"
       className="chat-character-card"
-      onClick={() => onSelect(character)}
+      onClick={() => onSelect(challenge)}
     >
       <ChatCharacterAvatar variant={character.avatarVariant} />
       <div className="chat-character-card-content">
@@ -32,7 +27,7 @@ export default function ChatCharacterCard({
           </span>
         </span>
         <p className="chat-character-card-description">
-          {character.description}
+          {challenge.description}
         </p>
       </div>
     </button>

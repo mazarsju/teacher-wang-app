@@ -18,9 +18,30 @@ describe("chatApi", () => {
       ),
     );
 
-    await expect(fetchChatHistory("teacher-wang")).resolves.toEqual([
-      { role: "user", content: "Hello" },
-    ]);
+    await expect(fetchChatHistory("teacher-wang")).resolves.toEqual({
+      messages: [{ role: "user", content: "Hello" }],
+      completedTaskIds: [],
+    });
+  });
+
+  it("loads challenge chat history with completed tasks", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            messages: [{ role: "user", content: "服务员" }],
+            completed_task_ids: ["call-waiter"],
+          }),
+        }),
+      ),
+    );
+
+    await expect(fetchChatHistory("challenge-restaurant")).resolves.toEqual({
+      messages: [{ role: "user", content: "服务员" }],
+      completedTaskIds: ["call-waiter"],
+    });
   });
 
   it("sends a chat message", async () => {

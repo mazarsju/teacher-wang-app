@@ -65,6 +65,22 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_record_tokens = self.record_tokens_patcher.start()
         self.addCleanup(self.record_tokens_patcher.stop)
 
+        self.judge_patcher = patch("backend.routes.chat.judge_challenge_progress")
+        self.mock_judge = self.judge_patcher.start()
+        self.addCleanup(self.judge_patcher.stop)
+
+        self.load_tasks_patcher = patch("backend.routes.chat.load_completed_task_ids")
+        self.mock_load_tasks = self.load_tasks_patcher.start()
+        self.addCleanup(self.load_tasks_patcher.stop)
+
+        self.save_tasks_patcher = patch("backend.routes.chat.save_completed_task_ids")
+        self.mock_save_tasks = self.save_tasks_patcher.start()
+        self.addCleanup(self.save_tasks_patcher.stop)
+
+        self.clear_tasks_patcher = patch("backend.routes.chat.clear_completed_task_ids")
+        self.mock_clear_tasks = self.clear_tasks_patcher.start()
+        self.addCleanup(self.clear_tasks_patcher.stop)
+
         self.mock_generate.reset_mock()
         self.mock_append.reset_mock()
         self.mock_append_thread.reset_mock()
@@ -76,9 +92,18 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_clear.reset_mock()
         self.mock_grammar.reset_mock()
         self.mock_record_tokens.reset_mock()
+        self.mock_judge.reset_mock()
+        self.mock_load_tasks.reset_mock()
+        self.mock_save_tasks.reset_mock()
+        self.mock_clear_tasks.reset_mock()
         self.mock_should_append.return_value = True
         self.mock_should_append_thread.return_value = True
         self.mock_thread_exists.return_value = True
+        self.mock_load_tasks.return_value = []
+        self.mock_judge.return_value = MagicMock(
+            completed_task_ids=[],
+            token_usage=MagicMock(input_tokens=0, output_tokens=0),
+        )
         self.mock_grammar.return_value = MagicMock(
             correct=True,
             answer=None,
@@ -356,6 +381,63 @@ class TestChatEndpoint(unittest.TestCase):
             },
         )
         self.mock_load.assert_called_once_with("teacher-wang")
+
+    def test_challenge_chat_returns_completed_task_ids(self):
+        self.mock_generate.return_value = MagicMock(
+            content="您好，请稍等。",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=20, output_tokens=10),
+        )
+        self.mock_judge.return_value = MagicMock(
+            completed_task_ids=["call-waiter"],
+            token_usage=MagicMock(input_tokens=15, output_tokens=5),
+        )
+        self.mock_load_tasks.return_value = []
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "challenge-restaurant",
+                "messages": [{"role": "user", "content": "服务员！"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["completed_task_ids"], ["call-waiter"])
+        self.mock_judge.assert_called_once()
+        self.mock_save_tasks.assert_called_once_with(
+            "challenge-restaurant",
+            ["call-waiter"],
+        )
+        self.mock_record_tokens.assert_called_once_with(
+            input_tokens=35,
+            output_tokens=15,
+        )
+
+    def test_challenge_chat_history_includes_completed_task_ids(self):
+        self.mock_load.return_value = [
+            {"role": "user", "content": "服务员"},
+        ]
+        self.mock_load_tasks.return_value = ["call-waiter"]
+
+        response = self.client.get("/chat/history/challenge-restaurant")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {
+                "messages": [{"role": "user", "content": "服务员"}],
+                "completed_task_ids": ["call-waiter"],
+            },
+        )
+
+    def test_clear_challenge_history_also_clears_task_progress(self):
+        response = self.client.delete("/chat/history/challenge-restaurant")
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_clear.assert_called_once_with("challenge-restaurant")
+        self.mock_clear_tasks.assert_called_once_with("challenge-restaurant")
 
     def test_chat_history_rejects_invalid_character_id(self):
         response = self.client.get("/chat/history/unknown")

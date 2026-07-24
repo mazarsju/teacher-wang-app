@@ -373,4 +373,135 @@ describe("ChatModal", () => {
       screen.getByText("Say 我很好 instead of 我是很好."),
     ).toBeInTheDocument();
   });
+
+  it("ticks challenge tasks from the judge response", async () => {
+    const user = userEvent.setup();
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/chat/history/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              messages: [],
+              completed_task_ids: [],
+            }),
+          });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: {
+                role: "assistant",
+                content: "您好，请稍等。",
+              },
+              completed_task_ids: ["call-waiter"],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(
+      <ChatModal
+        character={waiter}
+        onClose={() => undefined}
+        tasks={[
+          { id: "call-waiter", label: "Call the waiter" },
+          { id: "ask-bill", label: "Ask for the bill" },
+        ]}
+        challengeTitle="Waiter"
+      />,
+    );
+
+    expect(await screen.findByLabelText("Call the waiter")).not.toBeChecked();
+    expect(screen.getByLabelText("Call the waiter")).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Message"), "服务员！");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("您好，请稍等。")).toBeInTheDocument();
+    expect(screen.getByLabelText("Call the waiter")).toBeChecked();
+    expect(screen.getByLabelText("Ask for the bill")).not.toBeChecked();
+  });
+
+  it("renders bracketed assistant messages as italic stage directions", async () => {
+    const user = userEvent.setup();
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/chat/history/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [], completed_task_ids: [] }),
+          });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: {
+                role: "assistant",
+                content: "[The waiter needs to be called to come]",
+              },
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(<ChatModal character={waiter} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "你好");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const stage = await screen.findByText(
+      "The waiter needs to be called to come",
+    );
+    expect(stage).toHaveClass("chat-message-stage");
+    expect(
+      screen.queryByText("[The waiter needs to be called to come]"),
+    ).not.toBeInTheDocument();
+  });
 });

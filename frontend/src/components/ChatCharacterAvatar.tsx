@@ -1,5 +1,5 @@
 type ChatCharacterAvatarProps = {
-  variant: "teacher" | "friend";
+  variant: "teacher" | "friend" | "waiter";
   className?: string;
 };
 
@@ -36,6 +36,36 @@ export default function ChatCharacterAvatar({
         />
         <rect x="30" y="33" width="36" height="10" rx="5" fill="none" stroke="#374151" strokeWidth="2" />
         <path d="M34 36h28" stroke="#374151" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (variant === "waiter") {
+    return (
+      <svg
+        className={avatarClassName}
+        viewBox="0 0 96 96"
+        role="img"
+        aria-hidden="true"
+      >
+        <rect width="96" height="96" rx="48" fill="#ffedd5" />
+        <circle cx="48" cy="40" r="18" fill="#fcd9b6" />
+        <path
+          d="M20 84c5-18 18-26 28-26s23 8 28 26"
+          fill="#1f2937"
+        />
+        <rect x="34" y="58" width="28" height="10" rx="2" fill="#f8fafc" />
+        <circle cx="41" cy="39" r="2.5" fill="#1f2937" />
+        <circle cx="55" cy="39" r="2.5" fill="#1f2937" />
+        <path
+          d="M41 48c3 2.5 11 2.5 14 0"
+          stroke="#9a3412"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <ellipse cx="48" cy="24" rx="16" ry="5" fill="#111827" />
+        <rect x="40" y="18" width="16" height="8" rx="2" fill="#111827" />
       </svg>
     );
   }

@@ -430,6 +430,29 @@ body {
   font-size: 0.95rem;
 }
 
+.chat-challenges-section {
+  margin-top: 2.5rem;
+}
+
+.chat-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+  color: #111827;
+}
+
+.chat-section-description {
+  margin: 0 0 1.25rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.challenge-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
 .chat-modal-dialog {
   display: flex;
   flex-direction: column;
@@ -543,6 +566,58 @@ body {
   flex-shrink: 0;
 }
 
+.chat-modal-tasks {
+  flex-shrink: 0;
+  padding: 0.85rem 1.1rem 0.95rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fffbeb;
+}
+
+.chat-modal-tasks-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: #92400e;
+}
+
+.chat-modal-task-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.45rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-modal-task-item {
+  margin: 0;
+}
+
+.chat-modal-task-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  cursor: default;
+}
+
+.chat-modal-task-label input {
+  margin-top: 0.15rem;
+  accent-color: #ea580c;
+  cursor: default;
+}
+
+.chat-modal-task-label input:disabled {
+  opacity: 1;
+}
+
+.chat-modal-task-text--done {
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
 .chat-modal-messages {
   flex: 1;
   overflow-y: auto;
@@ -585,6 +660,13 @@ body {
   margin-right: auto;
 }
 
+.chat-message-row--stage {
+  align-self: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: 0.15rem 0;
+}
+
 .chat-message-shell {
   position: relative;
   max-width: 100%;
@@ -608,6 +690,18 @@ body {
 .chat-message--assistant {
   background: #f3f4f6;
   color: #111827;
+}
+
+.chat-message-stage {
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .chat-message-warning-button,

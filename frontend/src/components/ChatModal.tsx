@@ -4,12 +4,14 @@ import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import ConfirmModal from "./ConfirmModal";
 import { CloseIcon, TrashIcon, WarningIcon } from "./icons";
 import { TEACHER_WANG } from "../data/chatCharacters";
+import type { ChallengeTask } from "../types/challenge";
 import type { ChatMessage, ChatThreadContext } from "../types/chat";
 import {
   clearChatHistory,
   fetchChatHistory,
   sendChatMessage,
 } from "../utils/chatApi";
+import { getStageDirectionText } from "../utils/stageDirection";
 
 type CorrectionThreadState = {
   messageIndex: number;
@@ -26,6 +28,8 @@ type ChatModalProps = {
   allowClearHistory?: boolean;
   thread?: ChatThreadContext;
   onThreadMessagesChange?: (messages: ChatMessage[]) => void;
+  tasks?: ChallengeTask[];
+  challengeTitle?: string;
 };
 
 function hasCorrectionThread(message: ChatMessage): boolean {
@@ -57,6 +61,8 @@ export default function ChatModal({
   allowClearHistory = true,
   thread,
   onThreadMessagesChange,
+  tasks,
+  challengeTitle,
 }: ChatModalProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -67,6 +73,9 @@ export default function ChatModal({
   const [error, setError] = useState<string | null>(null);
   const [activeCorrection, setActiveCorrection] =
     useState<CorrectionThreadState | null>(null);
+  const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useEffect(() => {
     if (character === null) {
@@ -81,6 +90,7 @@ export default function ChatModal({
     setIsClearing(false);
     setIsClearConfirmOpen(false);
     setActiveCorrection(null);
+    setCompletedTaskIds(new Set());
 
     if (!loadHistory) {
       setMessages(initialMessages ?? []);
@@ -94,7 +104,8 @@ export default function ChatModal({
     void fetchChatHistory(character.id)
       .then((history) => {
         if (isMounted) {
-          setMessages(history);
+          setMessages(history.messages);
+          setCompletedTaskIds(new Set(history.completedTaskIds));
         }
       })
       .catch((historyError) => {
@@ -176,6 +187,9 @@ export default function ChatModal({
 
       setMessages(updatedMessages);
       onThreadMessagesChange?.(updatedMessages);
+      if (response.completed_task_ids) {
+        setCompletedTaskIds(new Set(response.completed_task_ids));
+      }
     } catch (sendError) {
       setMessages(messages);
       setMessage(trimmedMessage);
@@ -202,6 +216,7 @@ export default function ChatModal({
       await clearChatHistory(character.id);
       setMessages([]);
       setMessage("");
+      setCompletedTaskIds(new Set());
     } catch (clearError) {
       setError(
         clearError instanceof Error
@@ -293,6 +308,44 @@ export default function ChatModal({
             </div>
           </header>
 
+          {tasks && tasks.length > 0 && (
+            <section
+              className="chat-modal-tasks"
+              aria-labelledby="chat-modal-tasks-title"
+            >
+              <h3 id="chat-modal-tasks-title" className="chat-modal-tasks-title">
+                {challengeTitle ? `${challengeTitle} — tasks` : "Tasks"}
+              </h3>
+              <ul className="chat-modal-task-list">
+                {tasks.map((task) => {
+                  const isCompleted = completedTaskIds.has(task.id);
+                  return (
+                    <li key={task.id} className="chat-modal-task-item">
+                      <label className="chat-modal-task-label">
+                        <input
+                          type="checkbox"
+                          checked={isCompleted}
+                          disabled
+                          readOnly
+                          aria-checked={isCompleted}
+                        />
+                        <span
+                          className={
+                            isCompleted
+                              ? "chat-modal-task-text chat-modal-task-text--done"
+                              : "chat-modal-task-text"
+                          }
+                        >
+                          {task.label}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
           <div className="chat-modal-messages" aria-live="polite">
             {isLoadingHistory ? (
               <p className="chat-modal-empty-state">Loading conversation...</p>
@@ -302,48 +355,66 @@ export default function ChatModal({
               </p>
             ) : (
               <ul className="chat-message-list">
-                {messages.map((chatMessage, index) => (
-                  <li
-                    key={`${chatMessage.role}-${index}-${chatMessage.content}`}
-                    className={
-                      chatMessage.role === "user"
-                        ? "chat-message-row chat-message-row--user"
-                        : "chat-message-row chat-message-row--assistant"
-                    }
-                  >
-                    <div
+                {messages.map((chatMessage, index) => {
+                  const stageDirection =
+                    chatMessage.role === "assistant"
+                      ? getStageDirectionText(chatMessage.content)
+                      : null;
+
+                  if (stageDirection !== null) {
+                    return (
+                      <li
+                        key={`${chatMessage.role}-${index}-${chatMessage.content}`}
+                        className="chat-message-row chat-message-row--stage"
+                      >
+                        <p className="chat-message-stage">{stageDirection}</p>
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li
+                      key={`${chatMessage.role}-${index}-${chatMessage.content}`}
                       className={
                         chatMessage.role === "user"
-                          ? "chat-message-shell chat-message-shell--user"
-                          : "chat-message-shell"
+                          ? "chat-message-row chat-message-row--user"
+                          : "chat-message-row chat-message-row--assistant"
                       }
                     >
-                      {chatMessage.role === "user" &&
-                        hasCorrectionThread(chatMessage) && (
-                          <button
-                            type="button"
-                            className="chat-message-warning-button"
-                            aria-label="Open grammar correction with Teacher Wang"
-                            title="Grammar issue — ask Teacher Wang"
-                            onClick={() =>
-                              openCorrectionThread(index, chatMessage)
-                            }
-                          >
-                            <WarningIcon className="chat-message-warning-icon" />
-                          </button>
-                        )}
                       <div
                         className={
                           chatMessage.role === "user"
-                            ? "chat-message chat-message--user"
-                            : "chat-message chat-message--assistant"
+                            ? "chat-message-shell chat-message-shell--user"
+                            : "chat-message-shell"
                         }
                       >
-                        {chatMessage.content}
+                        {chatMessage.role === "user" &&
+                          hasCorrectionThread(chatMessage) && (
+                            <button
+                              type="button"
+                              className="chat-message-warning-button"
+                              aria-label="Open grammar correction with Teacher Wang"
+                              title="Grammar issue — ask Teacher Wang"
+                              onClick={() =>
+                                openCorrectionThread(index, chatMessage)
+                              }
+                            >
+                              <WarningIcon className="chat-message-warning-icon" />
+                            </button>
+                          )}
+                        <div
+                          className={
+                            chatMessage.role === "user"
+                              ? "chat-message chat-message--user"
+                              : "chat-message chat-message--assistant"
+                          }
+                        >
+                          {chatMessage.content}
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {isSending && (

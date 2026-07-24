@@ -1,10 +1,17 @@
 from flask import Blueprint, request
 
+from backend.challenge_progress import (
+    clear_completed_task_ids,
+    load_completed_task_ids,
+    save_completed_task_ids,
+)
+from backend.challenges import get_challenge, is_challenge_character
 from backend.chat_service import (
     TEACHER_CHARACTER_ID,
     LlmTokenUsage,
     check_user_grammar,
     generate_chat_reply,
+    judge_challenge_progress,
 )
 from backend.conversation_logs import (
     VALID_CHARACTER_IDS,
@@ -159,6 +166,7 @@ def _handle_thread_chat(
 def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str]]):
     last_user_message = normalized_messages[-1]
     token_usage = LlmTokenUsage()
+    completed_task_ids: list[str] | None = None
 
     try:
         correction = None
@@ -194,6 +202,27 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         reply = generate_chat_reply(character_id, normalized_messages)
         token_usage = token_usage + reply.token_usage
         append_message(character_id, "assistant", reply.content)
+
+        if is_challenge_character(character_id):
+            challenge = get_challenge(character_id)
+            assert challenge is not None
+            conversation_for_judge = [
+                *normalized_messages,
+                {"role": "assistant", "content": reply.content},
+            ]
+            judgment = judge_challenge_progress(
+                conversation_for_judge,
+                challenge["tasks"],
+            )
+            token_usage = token_usage + judgment.token_usage
+            previously_completed = load_completed_task_ids(character_id)
+            completed_task_ids = list(
+                dict.fromkeys(
+                    [*previously_completed, *judgment.completed_task_ids]
+                )
+            )
+            save_completed_task_ids(character_id, completed_task_ids)
+
         record_token_usage(
             input_tokens=token_usage.input_tokens,
             output_tokens=token_usage.output_tokens,
@@ -214,6 +243,8 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         response["unknown_characters"] = reply.unknown_characters
     if correction is not None:
         response["correction"] = correction_payload or correction.to_dict()
+    if completed_task_ids is not None:
+        response["completed_task_ids"] = completed_task_ids
 
     return response, 200
 
@@ -223,7 +254,10 @@ def chat_history(character_id: str):
     if character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
 
-    return {"messages": load_conversation(character_id)}, 200
+    response = {"messages": load_conversation(character_id)}
+    if is_challenge_character(character_id):
+        response["completed_task_ids"] = load_completed_task_ids(character_id)
+    return response, 200
 
 
 @bp.delete("/chat/history/<character_id>")
@@ -232,4 +266,6 @@ def delete_chat_history(character_id: str):
         return {"error": "Invalid character_id"}, 400
 
     clear_conversation(character_id)
+    if is_challenge_character(character_id):
+        clear_completed_task_ids(character_id)
     return {"message": "Chat history cleared"}, 200
