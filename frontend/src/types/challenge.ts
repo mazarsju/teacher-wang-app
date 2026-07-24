@@ -12,3 +12,12 @@ export type Challenge = {
   character: ChatCharacter;
   tasks: ChallengeTask[];
 };
+
+export type ChallengeProgressEntry = {
+  id: string;
+  completed: boolean;
+};
+
+export type ChallengeProgressSummary = {
+  challenges: ChallengeProgressEntry[];
+};

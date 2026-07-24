@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ChallengeCard from "../components/ChallengeCard";
 import ChatCharacterCard, {
   type ChatCharacter,
@@ -8,12 +8,35 @@ import Page from "../components/Page";
 import { CHALLENGES } from "../data/challenges";
 import { CHAT_CHARACTERS } from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
+import { fetchChallengesProgress } from "../utils/challengesApi";
 
 export default function ChatPage() {
   const [selectedCharacter, setSelectedCharacter] =
     useState<ChatCharacter | null>(null);
   const [selectedChallenge, setSelectedChallenge] =
     useState<Challenge | null>(null);
+  const [completedChallengeIds, setCompletedChallengeIds] = useState<
+    Set<string>
+  >(() => new Set());
+
+  const loadChallengeProgress = useCallback(async () => {
+    try {
+      const summary = await fetchChallengesProgress();
+      setCompletedChallengeIds(
+        new Set(
+          summary.challenges
+            .filter((entry) => entry.completed)
+            .map((entry) => entry.id),
+        ),
+      );
+    } catch {
+      // Keep the last known progress if the request fails.
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadChallengeProgress();
+  }, [loadChallengeProgress]);
 
   return (
     <Page title="Chat">
@@ -23,7 +46,10 @@ export default function ChatPage() {
       />
       <ChatModal
         character={selectedChallenge?.character ?? null}
-        onClose={() => setSelectedChallenge(null)}
+        onClose={() => {
+          setSelectedChallenge(null);
+          void loadChallengeProgress();
+        }}
         tasks={selectedChallenge?.tasks}
         challengeTitle={selectedChallenge?.title}
       />
@@ -51,6 +77,7 @@ export default function ChatPage() {
             <ChallengeCard
               key={challenge.id}
               challenge={challenge}
+              completed={completedChallengeIds.has(challenge.id)}
               onSelect={setSelectedChallenge}
             />
           ))}

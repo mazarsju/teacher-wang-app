@@ -566,4 +566,58 @@ describe("ChatModal", () => {
       "chat-message--assistant",
     );
   });
+
+  it("shows a challenge completed banner when all tasks are done", async () => {
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/chat/history/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              messages: [{ role: "user", content: "谢谢" }],
+              completed_task_ids: ["call-waiter", "ask-bill"],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(
+      <ChatModal
+        character={waiter}
+        onClose={() => undefined}
+        tasks={[
+          { id: "call-waiter", label: "Call the waiter" },
+          { id: "ask-bill", label: "Ask for the bill" },
+        ]}
+        challengeTitle="Waiter"
+      />,
+    );
+
+    expect(
+      await screen.findByText("Challenge completed!"),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send" })).not.toBeInTheDocument();
+  });
 });

@@ -453,6 +453,56 @@ body {
   gap: 1rem;
 }
 
+.challenge-card-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.challenge-card--completed {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 55%);
+  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.08);
+}
+
+.challenge-card--completed:hover {
+  border-color: #4ade80;
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.12);
+}
+
+.challenge-card-completed-badge {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(22, 101, 52, 0.25);
+}
+
+.challenge-card-completed-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.challenge-card-completed-label {
+  display: inline-flex;
+  align-self: center;
+  margin-top: 0.15rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
 .chat-modal-dialog {
   display: flex;
   flex-direction: column;
@@ -621,10 +671,45 @@ body {
 .chat-modal-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.25rem;
   background: #ffffff;
   display: flex;
   flex-direction: column;
+}
+
+.chat-modal-confetti {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+.chat-modal-confetti-piece {
+  position: absolute;
+  top: -16px;
+  border-radius: 2px;
+  opacity: 0.95;
+  will-change: transform, opacity;
+  animation-name: chat-modal-confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes chat-modal-confetti-fall {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--confetti-drift, 0), 110vh, 0)
+      rotate(var(--confetti-rotation, 180deg));
+    opacity: 0;
+  }
 }
 
 .chat-modal-empty-state {
@@ -840,6 +925,26 @@ body {
 
 .chat-modal-composer-row .page-add-button {
   flex-shrink: 0;
+}
+
+.chat-modal-challenge-complete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1.1rem 1.25rem;
+  border-top: 1px solid #86efac;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.chat-modal-challenge-complete-icon {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex-shrink: 0;
+  color: #15803d;
 }
 
 .pinyin-grid-bleed {

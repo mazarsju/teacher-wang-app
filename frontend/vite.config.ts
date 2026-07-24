@@ -30,6 +30,7 @@ export default defineConfig({
       "/llm-config": "http://127.0.0.1:5000",
       "/token-usage": "http://127.0.0.1:5000",
       "/chat": "http://127.0.0.1:5000",
+      "/challenges": "http://127.0.0.1:5000",
       "/hsk-characters": "http://127.0.0.1:5000",
       "/hsk-level": "http://127.0.0.1:5000",
     },

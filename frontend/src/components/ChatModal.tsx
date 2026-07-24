@@ -1,8 +1,9 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatCharacter } from "./ChatCharacterCard";
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
+import ChallengeConfetti from "./ChallengeConfetti";
 import ConfirmModal from "./ConfirmModal";
-import { CloseIcon, TrashIcon, WarningIcon } from "./icons";
+import { CloseIcon, TrashIcon, TrophyIcon, WarningIcon } from "./icons";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import type { ChallengeTask } from "../types/challenge";
 import type { ChatMessage, ChatThreadContext } from "../types/chat";
@@ -76,6 +77,30 @@ export default function ChatModal({
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [showConfetti, setShowConfetti] = useState(false);
+  const wasChallengeCompleteRef = useRef(false);
+
+  const isChallengeComplete = Boolean(
+    tasks &&
+      tasks.length > 0 &&
+      tasks.every((task) => completedTaskIds.has(task.id)),
+  );
+
+  useEffect(() => {
+    if (isChallengeComplete && !wasChallengeCompleteRef.current) {
+      wasChallengeCompleteRef.current = true;
+      setShowConfetti(true);
+      const timeoutId = window.setTimeout(() => {
+        setShowConfetti(false);
+      }, 2000);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    if (!isChallengeComplete) {
+      wasChallengeCompleteRef.current = false;
+      setShowConfetti(false);
+    }
+  }, [isChallengeComplete]);
 
   useEffect(() => {
     if (character === null) {
@@ -91,6 +116,8 @@ export default function ChatModal({
     setIsClearConfirmOpen(false);
     setActiveCorrection(null);
     setCompletedTaskIds(new Set());
+    setShowConfetti(false);
+    wasChallengeCompleteRef.current = false;
 
     if (!loadHistory) {
       setMessages(initialMessages ?? []);
@@ -137,7 +164,12 @@ export default function ChatModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedMessage = message.trim();
-    if (trimmedMessage === "" || isSending || isClearing) {
+    if (
+      trimmedMessage === "" ||
+      isSending ||
+      isClearing ||
+      isChallengeComplete
+    ) {
       return;
     }
 
@@ -250,6 +282,7 @@ export default function ChatModal({
 
   return (
     <>
+      <ChallengeConfetti active={showConfetti} />
       <div
         className={
           stacked ? "modal-overlay modal-overlay--stacked" : "modal-overlay"
@@ -446,34 +479,45 @@ export default function ChatModal({
 
           {error && <p className="chat-modal-error table-error">{error}</p>}
 
-          <form
-            className="chat-modal-composer"
-            onSubmit={(event) => void handleSubmit(event)}
-          >
-            <label
-              className="chat-modal-composer-label"
-              htmlFor={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
+          {isChallengeComplete ? (
+            <div
+              className="chat-modal-challenge-complete"
+              role="status"
+              aria-live="polite"
             >
-              Message
-            </label>
-            <div className="chat-modal-composer-row">
-              <input
-                id={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
-                type="text"
-                value={message}
-                placeholder="Type your message..."
-                disabled={isSending || isClearing}
-                onChange={(event) => setMessage(event.target.value)}
-              />
-              <button
-                type="submit"
-                className="page-add-button"
-                disabled={isSending || isClearing || message.trim() === ""}
-              >
-                {isSending ? "Sending..." : "Send"}
-              </button>
+              <TrophyIcon className="chat-modal-challenge-complete-icon" />
+              <span>Challenge completed!</span>
             </div>
-          </form>
+          ) : (
+            <form
+              className="chat-modal-composer"
+              onSubmit={(event) => void handleSubmit(event)}
+            >
+              <label
+                className="chat-modal-composer-label"
+                htmlFor={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
+              >
+                Message
+              </label>
+              <div className="chat-modal-composer-row">
+                <input
+                  id={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
+                  type="text"
+                  value={message}
+                  placeholder="Type your message..."
+                  disabled={isSending || isClearing}
+                  onChange={(event) => setMessage(event.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="page-add-button"
+                  disabled={isSending || isClearing || message.trim() === ""}
+                >
+                  {isSending ? "Sending..." : "Send"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
 

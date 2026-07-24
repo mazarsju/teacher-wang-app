@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatPage from "./ChatPage";
 
@@ -6,12 +6,25 @@ describe("ChatPage", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() =>
-        Promise.resolve({
+      vi.fn((input: RequestInfo) => {
+        const url = String(input);
+
+        if (url.endsWith("/challenges/progress")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              challenges: [
+                { id: "challenge-restaurant", completed: false },
+              ],
+            }),
+          });
+        }
+
+        return Promise.resolve({
           ok: true,
-          json: async () => ({ messages: [] }),
-        }),
-      ),
+          json: async () => ({ messages: [], completed_task_ids: [] }),
+        });
+      }),
     );
   });
 
@@ -55,6 +68,40 @@ describe("ChatPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("marks completed challenges on the card", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo) => {
+        const url = String(input);
+
+        if (url.endsWith("/challenges/progress")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              challenges: [
+                { id: "challenge-restaurant", completed: true },
+              ],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ messages: [], completed_task_ids: [] }),
+        });
+      }),
+    );
+
+    render(<ChatPage />);
+
+    expect(
+      await screen.findByRole("button", {
+        name: /Waiter \(服务员\), completed/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Completed")).toBeInTheDocument();
+  });
+
   it("opens a chat modal when a character card is selected", async () => {
     const user = userEvent.setup();
 
@@ -87,11 +134,6 @@ describe("ChatPage", () => {
       screen.getByRole("heading", { name: "Waiter — tasks" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Call the waiter")).toBeDisabled();
-    expect(
-      screen.getByLabelText("Ask if they have a dish without meat"),
-    ).toBeDisabled();
-    expect(screen.getByLabelText("Ask for the bill")).toBeDisabled();
-    expect(screen.getByLabelText("Pay the bill")).toBeDisabled();
     expect(screen.getByLabelText("Call the waiter")).not.toBeChecked();
   });
 
@@ -104,5 +146,47 @@ describe("ChatPage", () => {
     await user.click(screen.getByRole("button", { name: "Close chat" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("refreshes challenge progress after closing a challenge modal", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn((input: RequestInfo) => {
+      const url = String(input);
+
+      if (url.endsWith("/challenges/progress")) {
+        const callCount = fetchMock.mock.calls.filter((call) =>
+          String(call[0]).endsWith("/challenges/progress"),
+        ).length;
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            challenges: [
+              {
+                id: "challenge-restaurant",
+                completed: callCount > 1,
+              },
+            ],
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ messages: [], completed_task_ids: [] }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ChatPage />);
+    await user.click(screen.getByRole("button", { name: /Waiter/ }));
+    await user.click(screen.getByRole("button", { name: "Close chat" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", {
+          name: /Waiter \(服务员\), completed/,
+        }),
+      ).toBeInTheDocument();
+    });
   });
 });

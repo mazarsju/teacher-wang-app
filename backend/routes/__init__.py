@@ -5,6 +5,7 @@ def register_routes(app: Flask) -> None:
     from backend.routes import (
         bulk_characters,
         chat,
+        challenges,
         create_character,
         create_word,
         delete_character,
@@ -24,6 +25,7 @@ def register_routes(app: Flask) -> None:
 
     app.register_blueprint(health.bp)
     app.register_blueprint(chat.bp)
+    app.register_blueprint(challenges.bp)
     app.register_blueprint(llm_config.bp)
     app.register_blueprint(token_usage.bp)
     app.register_blueprint(list_characters.bp)
