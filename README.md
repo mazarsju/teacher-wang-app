@@ -209,29 +209,41 @@ The exchange between judge and character (when a revision happens) is returned o
 
 ### Interaction overview
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant Teacher as Teacher agent<br/>(grammar)
-    participant Character as Character agent<br/>(role-play)
-    participant Judge as Challenge judge
-
-    User->>Teacher: Chinese message
-    Teacher-->>User: Correction thread when grammar is wrong
-
-    User->>Character: Same message (main chat)
-    Note over Character: Prefer known vocabulary;<br/>rephrase up to 3 times if unknowns appear;<br/>keep attempt with fewest unknowns
-    Character->>Judge: Proposed reply
-
-    alt Reply coherent
-        Judge-->>Character: Tasks + OK
-        Character-->>User: Final reply + completed tasks
-    else Reply incoherent (1st attempt)
-        Judge->>Character: Explain why + ask to revise
-        Character->>Judge: Revised reply
-        Note over Judge: Second check for tasks;<br/>coherence cannot block again
-        Character-->>User: Final reply + completed tasks<br/>(+ judge_conversation)
-    end
+```text
+User
+ │
+ │  Chinese message
+ ├──────────────────────────────► Teacher agent (grammar)
+ │                                      │
+ │                                      └──► correction thread
+ │                                           (only if grammar is wrong)
+ │
+ │  same message (main chat)
+ └──────────────────────────────► Character agent (role-play)
+                                        │
+                                        │ prefer known vocabulary;
+                                        │ rephrase up to 3× if unknowns;
+                                        │ keep attempt with fewest unknowns
+                                        ▼
+                                  Challenge judge
+                                   /            \
+                          coherent /              \ incoherent (1st time only)
+                                  /                \
+                                 ▼                  ▼
+                          tasks + OK          explain why + ask to revise
+                                 │                  │
+                                 │                  ▼
+                                 │            Character revises once
+                                 │                  │
+                                 │                  ▼
+                                 │            Judge re-checks tasks
+                                 │            (cannot block again)
+                                 │                  │
+                                 └────────┬─────────┘
+                                          ▼
+                                   User sees final reply
+                                   (+ completed tasks;
+                                    + judge_conversation if revised)
 ```
 
 ## Feature
@@ -261,7 +273,9 @@ chat agents to practice your level.
 
 ![Chat](docs/screenshots/04-chat.png)
 
-![Chat with Xiao Ming](docs/screenshots/05-chat-xiao-ming.png)
+![Chat with Waiter challenge](docs/screenshots/05-chat-challenge-waiter.png)
+
+Step into real scenes: role-play with characters like the waiter, clear the checklist, and win the challenge in Mandarin.
 
 ## Roadmap
 

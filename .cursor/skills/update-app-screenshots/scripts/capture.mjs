@@ -50,10 +50,10 @@ async function main() {
   await goToNav(page, "Chat");
   await screenshot(page, "04-chat");
 
-  // 5. Chat after Xiao Ming
-  await page.getByRole("button", { name: /Xiao Ming/ }).click();
+  // 5. Chat after opening the Waiter challenge
+  await page.getByRole("button", { name: /Waiter/ }).click();
   await waitForSettled(page);
-  await screenshot(page, "05-chat-xiao-ming");
+  await screenshot(page, "05-chat-challenge-waiter");
 
   // Close chat modal before navigating away (overlay blocks navbar clicks)
   await page.getByRole("button", { name: "Close chat" }).click();

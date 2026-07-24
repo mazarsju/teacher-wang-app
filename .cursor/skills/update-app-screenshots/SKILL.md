@@ -21,7 +21,7 @@ Take the following screenshots:
 - 1 in the Knowledge base (view mode, meaning the default view)
 - 1 in the Knowledge base (edit mode, meaning after clicking on the "Modify" button)
 - 1 in the Chat
-- 1 in the Chat after clicking on the card "Xiao Ming"
+- 1 in the Chat after clicking on the **Waiter** challenge card (chat modal open)
 - 1 in the Preferences
 
 ## Output files
@@ -32,7 +32,7 @@ Take the following screenshots:
 | `docs/screenshots/02-knowledge-base-view.png` | Knowledge base (view) |
 | `docs/screenshots/03-knowledge-base-edit.png` | Knowledge base (edit / after Modify) |
 | `docs/screenshots/04-chat.png` | Chat |
-| `docs/screenshots/05-chat-xiao-ming.png` | Chat with Xiao Ming open |
+| `docs/screenshots/05-chat-challenge-waiter.png` | Chat with Waiter challenge modal open |
 | `docs/screenshots/06-preferences.png` | Preferences |
 
 ## Workflow
@@ -93,7 +93,7 @@ Confirm all six files above were written. Spot-check:
 
 - Knowledge base view shows the pinyin grid and a **Modify** button
 - Knowledge base edit shows character/word tables and a **View** button
-- Chat Xiao Ming shows the chat modal for Xiao Ming
+- Chat Waiter challenge shows the chat modal for the Waiter (tasks panel visible)
 - Preferences shows LLM configuration (API key may be masked)
 
 ### 6. Update README.md Feature section
@@ -101,6 +101,10 @@ Confirm all six files above were written. Spot-check:
 After capturing (or refreshing) screenshots, insert or replace a **Feature** section
 in `README.md` **immediately after** the **Getting started** section (before
 **Roadmap**).
+
+Note: if an **AI logic** section exists between Getting started and Feature, keep
+Feature after AI logic (or wherever the repo currently places it), but keep the
+Feature body structure below.
 
 Use this structure and image paths. Write catchy copy where noted; keep the
 Preferences blurb **verbatim**.
@@ -135,19 +139,27 @@ chat agents to practice your level.
 
 ![Chat](docs/screenshots/04-chat.png)
 
-![Chat with Xiao Ming](docs/screenshots/05-chat-xiao-ming.png)
+![Chat with Waiter challenge](docs/screenshots/05-chat-challenge-waiter.png)
+
+Step into real scenes: role-play with characters like the waiter, clear the
+checklist, and win the challenge in Mandarin.
 ```
 
 Rules:
 
 - Section title is **Feature** (singular), not Features.
-- Place it after **Getting started**, before **Roadmap**.
+- Place it after **Getting started**, before **Roadmap** (respect existing
+  sections such as **AI logic** if present).
 - If a Feature section already exists, replace its body so images and order stay
   in sync with the latest screenshots.
 - Image paths are relative to the repo root (`docs/screenshots/...`).
+- Always include the short catchy line **below** the Waiter challenge screenshot.
+- After a successful capture, remove obsolete `docs/screenshots/05-chat-xiao-ming.png`
+  if it still exists.
 
 ## Notes
 
-- Close the Xiao Ming chat modal before navigating to Preferences; the modal overlay blocks navbar clicks (the script already does this).
+- Close the Waiter challenge chat modal before navigating to Preferences; the modal overlay blocks navbar clicks (the script already does this).
+- Open the challenge via the **Waiter** card under the Challenges section (not Xiao Ming).
 - Do not commit `scripts/node_modules/`.
-- Prefer overwriting the existing PNGs in `docs/screenshots/` rather than creating new filenames.
+- Prefer overwriting the existing PNGs in `docs/screenshots/` rather than creating new filenames (except when renaming Xiao Ming → Waiter challenge as above).
