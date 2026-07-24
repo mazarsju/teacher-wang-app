@@ -1,0 +1,104 @@
+[
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.6-sol",
+    "inputPrice": 5.0,
+    "outputPrice": 30.0
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.6-terra",
+    "inputPrice": 2.5,
+    "outputPrice": 15.0
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.6-luna",
+    "inputPrice": 1.0,
+    "outputPrice": 6.0
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.5",
+    "inputPrice": 5.0,
+    "outputPrice": 30.0
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.4",
+    "inputPrice": 2.5,
+    "outputPrice": 15.0
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.4-mini",
+    "inputPrice": 0.75,
+    "outputPrice": 4.5
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-5.4-nano",
+    "inputPrice": 0.2,
+    "outputPrice": 1.25
+  },
+  {
+    "companyName": "openai",
+    "modelName": "gpt-4o-mini",
+    "inputPrice": 0.15,
+    "outputPrice": 0.6
+  },
+  {
+    "companyName": "anthropic",
+    "modelName": "claude-opus-4.8",
+    "inputPrice": 5.0,
+    "outputPrice": 25.0
+  },
+  {
+    "companyName": "anthropic",
+    "modelName": "claude-sonnet-5",
+    "inputPrice": 2.0,
+    "outputPrice": 10.0
+  },
+  {
+    "companyName": "anthropic",
+    "modelName": "claude-sonnet-4.6",
+    "inputPrice": 3.0,
+    "outputPrice": 15.0
+  },
+  {
+    "companyName": "anthropic",
+    "modelName": "claude-haiku-4.5",
+    "inputPrice": 1.0,
+    "outputPrice": 5.0
+  },
+  {
+    "companyName": "google",
+    "modelName": "gemini-3.1-pro",
+    "inputPrice": 2.0,
+    "outputPrice": 12.0
+  },
+  {
+    "companyName": "google",
+    "modelName": "gemini-3.5-flash",
+    "inputPrice": 1.5,
+    "outputPrice": 9.0
+  },
+  {
+    "companyName": "google",
+    "modelName": "gemini-3-flash",
+    "inputPrice": 0.5,
+    "outputPrice": 3.0
+  },
+  {
+    "companyName": "google",
+    "modelName": "gemini-3.1-flash-lite",
+    "inputPrice": 0.25,
+    "outputPrice": 1.5
+  },
+  {
+    "companyName": "meta",
+    "modelName": "muse-spark-1.1",
+    "inputPrice": 1.25,
+    "outputPrice": 4.25
+  }
+]

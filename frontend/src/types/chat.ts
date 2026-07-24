@@ -20,10 +20,17 @@ export type GrammarCorrection = {
   thread_messages?: ChatMessage[];
 };
 
+export type ChatTokenUsage = {
+  input: number;
+  output: number;
+  total: number;
+};
+
 export type ChatResponse = {
   message: ChatMessage;
   unknown_characters?: string[][];
   correction?: GrammarCorrection;
+  tokens?: ChatTokenUsage;
 };
 
 export type ChatHistoryResponse = {

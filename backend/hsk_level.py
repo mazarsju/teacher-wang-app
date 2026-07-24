@@ -5,12 +5,11 @@ from __future__ import annotations
 import math
 from typing import Protocol, TypedDict
 
-from backend.extensions import db
-from backend.models import Character, HskCharacter, LearnerProfile
+from backend.models import Character, HskCharacter
+from backend.settings import get_level, set_level
 
 HSK_MAX_LEVEL = 7
 HSK_LEVEL_COMPLETION_RATIO = 0.85
-LEARNER_PROFILE_ID = 1
 
 
 class HskVocabularyEntry(Protocol):
@@ -116,30 +115,15 @@ def compute_current_hsk_level(
     return get_hsk_level_status(known_characters, vocabulary)["current_level"]
 
 
-def get_or_create_learner_profile() -> LearnerProfile:
-    profile = db.session.get(LearnerProfile, LEARNER_PROFILE_ID)
-    if profile is None:
-        profile = LearnerProfile(id=LEARNER_PROFILE_ID, current_hsk_level=None)
-        db.session.add(profile)
-        db.session.flush()
-    return profile
-
-
 def refresh_current_hsk_level(*, commit: bool = True) -> int | None:
-    """Recompute HSK level from vocabulary and persist it on the learner profile."""
+    """Recompute HSK level from vocabulary and persist it in settings."""
     level = compute_current_hsk_level()
-    profile = get_or_create_learner_profile()
-    profile.current_hsk_level = level
-    if commit:
-        db.session.commit()
+    set_level(level, commit=commit)
     return level
 
 
 def get_stored_current_hsk_level() -> int | None:
-    profile = db.session.get(LearnerProfile, LEARNER_PROFILE_ID)
-    if profile is None:
-        return None
-    return profile.current_hsk_level
+    return get_level()
 
 
 def speaking_hsk_level_from_current(current_level: int | None) -> int:

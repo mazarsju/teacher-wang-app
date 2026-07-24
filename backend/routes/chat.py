@@ -2,6 +2,7 @@ from flask import Blueprint, request
 
 from backend.chat_service import (
     TEACHER_CHARACTER_ID,
+    LlmTokenUsage,
     check_user_grammar,
     generate_chat_reply,
 )
@@ -16,6 +17,7 @@ from backend.conversation_logs import (
     should_append_user_message,
     thread_exists,
 )
+from backend.token_usage import record_token_usage
 
 bp = Blueprint("chat", __name__)
 
@@ -111,6 +113,7 @@ def _handle_thread_chat(
     normalized_messages: list[dict[str, str]],
 ):
     last_user_message = normalized_messages[-1]
+    token_usage = LlmTokenUsage()
 
     try:
         if should_append_thread_user_message(
@@ -124,11 +127,16 @@ def _handle_thread_chat(
             )
 
         reply = generate_chat_reply(character_id, normalized_messages)
+        token_usage = token_usage + reply.token_usage
         append_thread_message(
             parent_character_id,
             thread_id,
             "assistant",
             reply.content,
+        )
+        record_token_usage(
+            input_tokens=token_usage.input_tokens,
+            output_tokens=token_usage.output_tokens,
         )
     except ValueError as error:
         return {"error": str(error)}, 400
@@ -139,7 +147,8 @@ def _handle_thread_chat(
         "message": {
             "role": "assistant",
             "content": reply.content,
-        }
+        },
+        "tokens": token_usage.to_dict(),
     }
     if reply.unknown_characters:
         response["unknown_characters"] = reply.unknown_characters
@@ -149,6 +158,7 @@ def _handle_thread_chat(
 
 def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str]]):
     last_user_message = normalized_messages[-1]
+    token_usage = LlmTokenUsage()
 
     try:
         correction = None
@@ -157,6 +167,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
 
         if character_id != TEACHER_CHARACTER_ID:
             correction = check_user_grammar(last_user_message["content"])
+            token_usage = token_usage + correction.token_usage
             if (
                 correction is not None
                 and not correction.correct
@@ -181,7 +192,12 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             )
 
         reply = generate_chat_reply(character_id, normalized_messages)
+        token_usage = token_usage + reply.token_usage
         append_message(character_id, "assistant", reply.content)
+        record_token_usage(
+            input_tokens=token_usage.input_tokens,
+            output_tokens=token_usage.output_tokens,
+        )
     except ValueError as error:
         return {"error": str(error)}, 400
     except Exception:
@@ -191,7 +207,8 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         "message": {
             "role": "assistant",
             "content": reply.content,
-        }
+        },
+        "tokens": token_usage.to_dict(),
     }
     if reply.unknown_characters:
         response["unknown_characters"] = reply.unknown_characters

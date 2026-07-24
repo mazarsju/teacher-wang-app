@@ -22,15 +22,40 @@ GRAMMAR_CHECK_INSTRUCTION = (
 
 
 @dataclass(frozen=True)
+class LlmTokenUsage:
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.input_tokens + self.output_tokens
+
+    def __add__(self, other: "LlmTokenUsage") -> "LlmTokenUsage":
+        return LlmTokenUsage(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+        )
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "input": self.input_tokens,
+            "output": self.output_tokens,
+            "total": self.total,
+        }
+
+
+@dataclass(frozen=True)
 class ChatReplyResult:
     content: str
     unknown_characters: list[list[str]]
+    token_usage: LlmTokenUsage = LlmTokenUsage()
 
 
 @dataclass(frozen=True)
 class GrammarCorrection:
     correct: bool
     answer: str | None = None
+    token_usage: LlmTokenUsage = LlmTokenUsage()
 
     def to_dict(self) -> dict:
         payload: dict = {"correct": self.correct}
@@ -58,6 +83,46 @@ def _llm_response_text(response) -> str:
             return combined
 
     raise ValueError("The LLM returned an empty response")
+
+
+def _tokens_from_response(response) -> LlmTokenUsage:
+    usage = getattr(response, "usage_metadata", None)
+    if isinstance(usage, dict):
+        input_tokens = usage.get("input_tokens")
+        output_tokens = usage.get("output_tokens")
+        if isinstance(input_tokens, int) and isinstance(output_tokens, int):
+            return LlmTokenUsage(
+                input_tokens=max(0, input_tokens),
+                output_tokens=max(0, output_tokens),
+            )
+
+        total = usage.get("total_tokens")
+        if isinstance(total, int) and total >= 0:
+            # Fallback when the provider only reports a combined total.
+            return LlmTokenUsage(input_tokens=total, output_tokens=0)
+
+    metadata = getattr(response, "response_metadata", None)
+    if isinstance(metadata, dict):
+        token_usage = metadata.get("token_usage") or metadata.get("usage") or {}
+        if isinstance(token_usage, dict):
+            prompt_tokens = token_usage.get("prompt_tokens")
+            completion_tokens = token_usage.get("completion_tokens")
+            if isinstance(prompt_tokens, int) and isinstance(completion_tokens, int):
+                return LlmTokenUsage(
+                    input_tokens=max(0, prompt_tokens),
+                    output_tokens=max(0, completion_tokens),
+                )
+
+            total = token_usage.get("total_tokens")
+            if isinstance(total, int) and total >= 0:
+                return LlmTokenUsage(input_tokens=total, output_tokens=0)
+
+    return LlmTokenUsage()
+
+
+def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
+    response = get_llm().invoke(messages)
+    return _llm_response_text(response), _tokens_from_response(response)
 
 
 def find_unknown_characters(
@@ -125,7 +190,7 @@ def check_user_grammar(user_message: str) -> GrammarCorrection:
         ),
         HumanMessage(content=content),
     ]
-    raw = _llm_response_text(get_llm().invoke(messages))
+    raw, token_usage = _invoke_llm(messages)
     parsed = _extract_json_object(raw)
 
     correct = parsed.get("correct")
@@ -133,7 +198,7 @@ def check_user_grammar(user_message: str) -> GrammarCorrection:
         raise ValueError("Grammar check response must include boolean 'correct'")
 
     if correct:
-        return GrammarCorrection(correct=True)
+        return GrammarCorrection(correct=True, token_usage=token_usage)
 
     answer = parsed.get("answer")
     if not isinstance(answer, str) or answer.strip() == "":
@@ -141,7 +206,11 @@ def check_user_grammar(user_message: str) -> GrammarCorrection:
             "Grammar check response must include non-empty 'answer' when incorrect"
         )
 
-    return GrammarCorrection(correct=False, answer=answer.strip())
+    return GrammarCorrection(
+        correct=False,
+        answer=answer.strip(),
+        token_usage=token_usage,
+    )
 
 
 def generate_chat_reply(
@@ -172,11 +241,14 @@ def generate_chat_reply(
         raise ValueError("The last message must be from the user")
 
     character = get_character(character_id)
-    llm = get_llm()
-    reply = _llm_response_text(llm.invoke(langchain_messages))
+    reply, token_usage = _invoke_llm(langchain_messages)
 
     if not character.get("retry_unknown_characters", False):
-        return ChatReplyResult(content=reply, unknown_characters=[])
+        return ChatReplyResult(
+            content=reply,
+            unknown_characters=[],
+            token_usage=token_usage,
+        )
 
     known_characters = {row.char for row in Character.query.all()}
     attempts: list[tuple[str, list[str]]] = []
@@ -195,7 +267,8 @@ def generate_chat_reply(
         langchain_messages.append(
             HumanMessage(content=_rephrase_instruction(unknown_characters))
         )
-        reply = _llm_response_text(llm.invoke(langchain_messages))
+        reply, attempt_usage = _invoke_llm(langchain_messages)
+        token_usage = token_usage + attempt_usage
 
     best_content, best_unknowns = _best_attempt(attempts)
     return ChatReplyResult(
@@ -203,4 +276,5 @@ def generate_chat_reply(
         unknown_characters=(
             [unknowns for _, unknowns in attempts] if best_unknowns else []
         ),
+        token_usage=token_usage,
     )

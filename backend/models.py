@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, Table
 
 from backend.extensions import db
 
@@ -97,10 +97,27 @@ class HskCharacter(db.Model):
     )
 
 
-class LearnerProfile(db.Model):
-    """Singleton row storing derived learner state such as current HSK level."""
+class Setting(db.Model):
+    """Application settings stored as key/value pairs."""
 
-    __tablename__ = "learner_profile"
+    __tablename__ = "settings"
 
-    id = db.Column(Integer, primary_key=True)
-    current_hsk_level = db.Column(Integer, nullable=True)
+    key = db.Column(String(64), primary_key=True)
+    value = db.Column(String, nullable=False, default="")
+
+
+class TokenCount(db.Model):
+    """One recorded LLM token-usage event (input or output)."""
+
+    __tablename__ = "token_count"
+
+    recorded_at = db.Column(
+        DateTime(timezone=True),
+        primary_key=True,
+        nullable=False,
+        default=utcnow,
+    )
+    type = db.Column(String(16), primary_key=True, nullable=False)
+    tokens = db.Column(Integer, nullable=False)
+    # Cost in USD cents, with 5 decimal places of precision.
+    price = db.Column(Numeric(20, 5), nullable=False, default=0)

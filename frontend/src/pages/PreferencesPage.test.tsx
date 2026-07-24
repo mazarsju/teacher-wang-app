@@ -20,6 +20,25 @@ describe("PreferencesPage", () => {
           });
         }
 
+        if (url.endsWith("/token-usage") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              total_tokens: 1250,
+              total_cost_usd: 0.000435,
+              days: [
+                { date: "2026-07-18", tokens: 10 },
+                { date: "2026-07-19", tokens: 20 },
+                { date: "2026-07-20", tokens: 0 },
+                { date: "2026-07-21", tokens: 100 },
+                { date: "2026-07-22", tokens: 50 },
+                { date: "2026-07-23", tokens: 70 },
+                { date: "2026-07-24", tokens: 1000 },
+              ],
+            }),
+          });
+        }
+
         if (url.endsWith("/llm-config") && method === "POST") {
           return Promise.resolve({
             ok: true,
@@ -53,6 +72,19 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText("LLM API key")).toHaveValue("existing-key");
     expect(screen.getByLabelText("LLM model")).toHaveValue("gpt-4o-mini");
+  });
+
+  it("shows total token usage and the 7-day chart", async () => {
+    render(<PreferencesPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Token usage" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Total tokens used")).toBeInTheDocument();
+    expect(screen.getByText("1,250 (roughly 0.000435$)")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Token usage for the last 7 days" }),
+    ).toBeInTheDocument();
   });
 
   it("saves the LLM configuration through the API", async () => {

@@ -61,6 +61,10 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_grammar = self.grammar_patcher.start()
         self.addCleanup(self.grammar_patcher.stop)
 
+        self.record_tokens_patcher = patch("backend.routes.chat.record_token_usage")
+        self.mock_record_tokens = self.record_tokens_patcher.start()
+        self.addCleanup(self.record_tokens_patcher.stop)
+
         self.mock_generate.reset_mock()
         self.mock_append.reset_mock()
         self.mock_append_thread.reset_mock()
@@ -71,12 +75,14 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_load.reset_mock()
         self.mock_clear.reset_mock()
         self.mock_grammar.reset_mock()
+        self.mock_record_tokens.reset_mock()
         self.mock_should_append.return_value = True
         self.mock_should_append_thread.return_value = True
         self.mock_thread_exists.return_value = True
         self.mock_grammar.return_value = MagicMock(
             correct=True,
             answer=None,
+            token_usage=MagicMock(input_tokens=0, output_tokens=0),
             to_dict=MagicMock(return_value={"correct": True}),
         )
 
@@ -84,6 +90,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_generate.return_value = MagicMock(
             content="你好，很高兴认识你。",
             unknown_characters=[],
+            token_usage=MagicMock(input_tokens=30, output_tokens=12),
         )
 
         response = self.client.post(
@@ -101,7 +108,8 @@ class TestChatEndpoint(unittest.TestCase):
                 "message": {
                     "role": "assistant",
                     "content": "你好，很高兴认识你。",
-                }
+                },
+                "tokens": {"input": 30, "output": 12, "total": 42},
             },
         )
         self.mock_generate.assert_called_once_with(
@@ -121,15 +129,21 @@ class TestChatEndpoint(unittest.TestCase):
         )
         self.mock_grammar.assert_not_called()
         self.mock_create_thread.assert_not_called()
+        self.mock_record_tokens.assert_called_once_with(
+            input_tokens=30,
+            output_tokens=12,
+        )
 
     def test_chat_includes_correction_thread_for_non_teacher_chats(self):
         self.mock_generate.return_value = MagicMock(
             content="我也很好！",
             unknown_characters=[],
+            token_usage=MagicMock(input_tokens=50, output_tokens=30),
         )
         self.mock_grammar.return_value = MagicMock(
             correct=False,
             answer="Say 我很好 instead of 我是很好.",
+            token_usage=MagicMock(input_tokens=20, output_tokens=5),
             to_dict=MagicMock(
                 return_value={
                     "correct": False,
@@ -167,6 +181,7 @@ class TestChatEndpoint(unittest.TestCase):
                     "thread_id": "thread123",
                     "thread_messages": thread_messages,
                 },
+                "tokens": {"input": 70, "output": 35, "total": 105},
             },
         )
         self.mock_grammar.assert_called_once_with("我是很好")
@@ -186,11 +201,16 @@ class TestChatEndpoint(unittest.TestCase):
             "我也很好！",
         )
         self.assertEqual(self.mock_append.call_count, 2)
+        self.mock_record_tokens.assert_called_once_with(
+            input_tokens=70,
+            output_tokens=35,
+        )
 
     def test_thread_chat_stores_messages_under_parent_conversation(self):
         self.mock_generate.return_value = MagicMock(
             content="Because 是 is not used that way.",
             unknown_characters=[],
+            token_usage=MagicMock(input_tokens=20, output_tokens=13),
         )
 
         response = self.client.post(
@@ -216,7 +236,8 @@ class TestChatEndpoint(unittest.TestCase):
                 "message": {
                     "role": "assistant",
                     "content": "Because 是 is not used that way.",
-                }
+                },
+                "tokens": {"input": 20, "output": 13, "total": 33},
             },
         )
         self.mock_grammar.assert_not_called()
@@ -232,6 +253,10 @@ class TestChatEndpoint(unittest.TestCase):
             "thread123",
             "assistant",
             "Because 是 is not used that way.",
+        )
+        self.mock_record_tokens.assert_called_once_with(
+            input_tokens=20,
+            output_tokens=13,
         )
 
     def test_thread_chat_rejects_non_teacher_character(self):
@@ -252,6 +277,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_generate.return_value = MagicMock(
             content="你好啊",
             unknown_characters=[["世", "界"], ["啊"]],
+            token_usage=MagicMock(input_tokens=8, output_tokens=4),
         )
 
         response = self.client.post(
@@ -271,6 +297,7 @@ class TestChatEndpoint(unittest.TestCase):
                     "content": "你好啊",
                 },
                 "unknown_characters": [["世", "界"], ["啊"]],
+                "tokens": {"input": 8, "output": 4, "total": 12},
             },
         )
 

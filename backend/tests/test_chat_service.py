@@ -10,6 +10,7 @@ database_module.configure_database = MagicMock()
 from backend.chat_service import (  # noqa: E402
     ChatReplyResult,
     GrammarCorrection,
+    LlmTokenUsage,
     check_user_grammar,
     find_unknown_characters,
     generate_chat_reply,
@@ -75,8 +76,14 @@ class TestGenerateChatReply(unittest.TestCase):
         ]
         mock_llm = MagicMock()
         mock_llm.invoke.side_effect = [
-            MagicMock(content="你好世界"),
-            MagicMock(content="你好！"),
+            MagicMock(
+                content="你好世界",
+                usage_metadata={"input_tokens": 10, "output_tokens": 4},
+            ),
+            MagicMock(
+                content="你好！",
+                usage_metadata={"input_tokens": 12, "output_tokens": 3},
+            ),
         ]
         mock_get_llm.return_value = mock_llm
 
@@ -87,7 +94,11 @@ class TestGenerateChatReply(unittest.TestCase):
 
         self.assertEqual(
             reply,
-            ChatReplyResult(content="你好！", unknown_characters=[]),
+            ChatReplyResult(
+                content="你好！",
+                unknown_characters=[],
+                token_usage=LlmTokenUsage(input_tokens=22, output_tokens=7),
+            ),
         )
         self.assertEqual(mock_llm.invoke.call_count, 2)
         rephrase_prompt = mock_llm.invoke.call_args_list[1].args[0][-1].content

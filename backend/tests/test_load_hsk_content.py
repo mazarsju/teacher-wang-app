@@ -8,7 +8,8 @@ from unittest.mock import MagicMock, patch
 from flask import Flask
 
 from backend.extensions import db
-from backend.models import HskCharacter, HskWord, LearnerProfile, hsk_word_character  # noqa: F401
+from backend.models import HskCharacter, HskWord, Setting, hsk_word_character  # noqa: F401
+from backend.settings import SETTING_LEVEL, get_setting
 from backend.routes.hsk_content_loader import load_hsk_content, reload_hsk_content
 from backend.routes.hsk_source import (
     COMPLETE_HSK_JSON_URL,
@@ -114,7 +115,8 @@ class TestLoadHskContent(unittest.TestCase):
         self.assertEqual(counts["hsk-7"], 2)
         self.assertEqual(HskWord.query.count(), 6)
         self.assertEqual(HskCharacter.query.count(), 10)
-        self.assertEqual(LearnerProfile.query.count(), 1)
+        self.assertEqual(get_setting(SETTING_LEVEL), "")
+        self.assertIsNotNone(db.session.get(Setting, SETTING_LEVEL))
 
         good = HskCharacter.query.filter_by(character="好").one()
         self.assertEqual(good.level, 1)

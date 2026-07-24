@@ -14,7 +14,8 @@ from backend.hsk_level import (
     refresh_current_hsk_level,
     speaking_hsk_level_from_current,
 )
-from backend.models import Character, HskCharacter, LearnerProfile
+from backend.models import Character, HskCharacter
+from backend.settings import SETTING_LEVEL, get_setting
 
 VOCABULARY = [
     SimpleNamespace(character="爱", level=1, frequency=30),
@@ -136,9 +137,7 @@ class TestHskLevel(unittest.TestCase):
         level = refresh_current_hsk_level()
 
         self.assertEqual(level, 1)
-        profile = LearnerProfile.query.first()
-        self.assertIsNotNone(profile)
-        self.assertEqual(profile.current_hsk_level, 1)
+        self.assertEqual(get_setting(SETTING_LEVEL), "1")
         self.assertEqual(get_chat_speaking_hsk_level(), 2)
 
 
