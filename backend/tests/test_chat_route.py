@@ -426,6 +426,7 @@ class TestChatEndpoint(unittest.TestCase):
             unknown_characters=[],
             completed_task_ids=[],
             judge_conversation=[
+                {"role": "assistant", "content": "好的，一共五十块。"},
                 {
                     "role": "judge",
                     "content": (
@@ -434,7 +435,6 @@ class TestChatEndpoint(unittest.TestCase):
                         "Please modify your answer."
                     ),
                 },
-                {"role": "assistant", "content": "请先点菜。"},
             ],
             token_usage=MagicMock(input_tokens=40, output_tokens=20),
         )
@@ -453,6 +453,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.assertEqual(
             payload["judge_conversation"],
             [
+                {"role": "assistant", "content": "好的，一共五十块。"},
                 {
                     "role": "judge",
                     "content": (
@@ -461,7 +462,6 @@ class TestChatEndpoint(unittest.TestCase):
                         "Please modify your answer."
                     ),
                 },
-                {"role": "assistant", "content": "请先点菜。"},
             ],
         )
         self.mock_append.assert_any_call(

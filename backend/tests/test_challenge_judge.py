@@ -198,6 +198,7 @@ class TestGenerateChallengeReply(unittest.TestCase):
         self.assertEqual(
             result.judge_conversation,
             [
+                {"role": "assistant", "content": "好的，一共五十块。"},
                 {
                     "role": "judge",
                     "content": (
@@ -206,7 +207,6 @@ class TestGenerateChallengeReply(unittest.TestCase):
                         "Please modify your answer."
                     ),
                 },
-                {"role": "assistant", "content": "请先点菜。"},
             ],
         )
         self.assertEqual(mock_generate.call_count, 2)
@@ -253,12 +253,26 @@ class TestGenerateChallengeReply(unittest.TestCase):
 
         self.assertEqual(result.content, "second bad reply")
         self.assertEqual(result.completed_task_ids, ["call-waiter"])
-        self.assertEqual(len(result.judge_conversation), 3)
-        self.assertEqual(result.judge_conversation[1]["content"], "second bad reply")
-        self.assertIn("sent anyway", result.judge_conversation[2]["content"])
-        self.assertIn(
-            "Revised reply still breaks progression.",
-            result.judge_conversation[2]["content"],
+        self.assertEqual(
+            result.judge_conversation,
+            [
+                {"role": "assistant", "content": "first bad reply"},
+                {
+                    "role": "judge",
+                    "content": (
+                        "Your reply is not coherent given the situation. "
+                        "First reply breaks progression. "
+                        "Please modify your answer."
+                    ),
+                },
+                {
+                    "role": "judge",
+                    "content": (
+                        "The revised reply is still not coherent, but it will "
+                        "be sent anyway. Revised reply still breaks progression."
+                    ),
+                },
+            ],
         )
         self.assertEqual(mock_generate.call_count, 2)
         self.assertEqual(mock_judge.call_count, 2)

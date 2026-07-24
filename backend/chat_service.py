@@ -491,20 +491,25 @@ def generate_challenge_reply(
 
     if not judgment.coherent:
         assert judgment.incoherence_reason is not None
-        judge_message = _judge_revision_request(judgment.incoherence_reason)
-        judge_conversation.append({"role": "judge", "content": judge_message})
+        refused_reply = reply.content
+        judge_conversation.append({"role": "assistant", "content": refused_reply})
+        judge_conversation.append(
+            {
+                "role": "judge",
+                "content": _judge_revision_request(judgment.incoherence_reason),
+            }
+        )
 
         revised = generate_chat_reply(
             character_id,
             messages,
-            previous_assistant_reply=reply.content,
+            previous_assistant_reply=refused_reply,
             revision_instruction=_coherence_revision_instruction(
                 judgment.incoherence_reason
             ),
         )
         token_usage = token_usage + revised.token_usage
         reply = revised
-        judge_conversation.append({"role": "assistant", "content": reply.content})
 
         conversation_for_judge = [
             *messages,
@@ -515,6 +520,7 @@ def generate_challenge_reply(
         judgment = second_judgment
 
         # One opposition only: accept the revised reply even if still incoherent.
+        # The final character reply is omitted here — it is returned as message.content.
         if not second_judgment.coherent and second_judgment.incoherence_reason:
             judge_conversation.append(
                 {

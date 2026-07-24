@@ -205,7 +205,7 @@ After the character agent replies in a challenge, a **Challenge Judge** reviews 
 1. **Task progress** — marks challenge tasks complete only when the learner attempted them in Chinese *and* the character cooperated (a refusal does not count).
 2. **Coherence** — checks that the character’s reply fits the situation and scenario rules. If it does not, the judge explains why and asks the character to revise **once**. If the second answer is still incoherent, it is sent anyway; the judge cannot block a reply twice.
 
-The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`. Only the final character reply is stored in the learner-facing history.
+The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`: it starts with the refused character reply, then the judge’s feedback (and a second judge note if the revision is still incoherent). The final character reply is only in `message.content`, not duplicated there. Only that final reply is stored in the learner-facing history.
 
 ### Interaction overview
 
