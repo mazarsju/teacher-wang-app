@@ -25,10 +25,12 @@ class TestSettings(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_ensure_default_settings_only_creates_level(self):
+    def test_ensure_default_settings_creates_level_and_anki_decks(self):
         ensure_default_settings()
-        self.assertEqual(Setting.query.count(), 1)
+        self.assertEqual(Setting.query.count(), 7)
         self.assertEqual(get_setting(SETTING_LEVEL), "")
+        self.assertEqual(get_setting("anki_mandarin_vocabulary_deck"), "")
+        self.assertEqual(get_setting("anki_mandarin_writting_deck"), "")
 
     def test_migrate_legacy_token_settings_into_token_count(self):
         now = datetime.now(timezone.utc)

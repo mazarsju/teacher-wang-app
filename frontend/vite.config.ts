@@ -33,6 +33,8 @@ export default defineConfig({
       "/challenges": "http://127.0.0.1:5000",
       "/hsk-characters": "http://127.0.0.1:5000",
       "/hsk-level": "http://127.0.0.1:5000",
+      // Trailing slash so /anki-connect/* static assets are not proxied to Flask.
+      "/anki/": "http://127.0.0.1:5000",
     },
   },
 });

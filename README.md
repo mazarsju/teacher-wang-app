@@ -31,6 +31,8 @@ learn-mandarin/
 │   ├── app.py              # Flask entry point
 │   ├── database.py         # SQLite configuration and initialization
 │   ├── extensions.py       # SQLAlchemy extension
+│   ├── anki_connect.py     # AnkiConnect HTTP client (localhost:8765)
+│   ├── anki_sync.py        # Anki deck mapping status and setup
 │   ├── llm.py              # LangChain LLM integration (get_llm)
 │   ├── llm_config.py       # Read/write LLM settings in .config.txt
 │   ├── chat_agents.py      # Chat character prompts
@@ -38,12 +40,15 @@ learn-mandarin/
 │   ├── conversation_logs.py
 │   ├── hsk.json            # Bundled HSK fallback if GitHub download fails
 │   ├── models.py           # Character, Word, HskWord, HskCharacter, and association tables
+│   ├── settings.py         # Key/value app settings (HSK level, Anki deck mappings)
 │   ├── routes/             # One endpoint per file (Flask blueprints); HSK load helpers
 │   ├── learn_mandarin.db   # SQLite database (created on first run)
 │   └── requirements.txt
 ├── frontend/
 │   ├── index.html
 │   ├── package.json
+│   ├── public/
+│   │   └── anki-connect/   # Illustrative AnkiConnect setup guide images
 │   ├── src/
 │   │   ├── App.tsx         # App shell and page routing
 │   │   ├── main.tsx        # React entry point
@@ -54,7 +59,9 @@ learn-mandarin/
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
 │   └── vite.config.ts      # Vite dev server and proxy config
-├── docs/screenshots/       # UI screenshots used in this README
+├── docs/
+│   ├── screenshots/        # UI screenshots used in this README
+│   └── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
 ├── agent.md
 └── README.md
 ```
@@ -137,6 +144,17 @@ curl -X POST http://127.0.0.1:5000/llm-config \
   -d '{"LLM_API_KEY":"your-api-key","LLM_MODEL":"gpt-4o-mini"}'
 ```
 
+#### AnkiConnect
+
+Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://git.sr.ht/~foosoft/anki-connect):
+
+| UI label | Kind | Required fields |
+| --- | --- | --- |
+| Mandarin vocabulary | `mandarin_vocabulary` | `writting`, `pinyin`, `definition` — note type should support three directions (writting↔pinyin↔definition) |
+| Mandarin writting | `mandarin_writting` | `recto` (definition (pinyin)), `verso` (characters) — writing practice only; only characters with “written known” are intended for this deck |
+
+Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The backend talks to `http://127.0.0.1:8765`. Setup stores the Anki deck name, note type, and field mapping in the SQLite `settings` table.
+
 #### API endpoints
 
 | Method | Route | Description |
@@ -144,6 +162,11 @@ curl -X POST http://127.0.0.1:5000/llm-config \
 | `GET` | `/health` | Health check |
 | `GET` | `/llm-config` | Read LLM API key and model from `.config.txt` |
 | `POST` | `/llm-config` | Update LLM API key and/or model in `.config.txt` |
+| `GET` | `/anki/status` | AnkiConnect reachability and Mandarin vocabulary/writting deck mapping status |
+| `GET` | `/anki/decks` | List deck names from AnkiConnect |
+| `GET` | `/anki/models` | List note types from AnkiConnect |
+| `GET` | `/anki/models/<model>/fields` | List field names for a note type |
+| `POST` | `/anki/decks/setup` | Map a mandarin_vocabulary/mandarin_writting deck, note type, and fields (optionally create the deck) |
 | `POST` | `/chat` | Send a chat message to the selected AI character |
 | `GET` | `/chat/history/<character_id>` | Load persisted chat history for a character |
 | `GET` | `/characters` | List all characters |
@@ -312,7 +335,7 @@ Several agents collaborating around focused learning scenarios.
 
 Ease the process of synchronization between the app knowledge base and Anki.
 
-- [ ] Add a connection to Anki in the setting section
+- [x] Add a connection to Anki in the setting section
 - [ ] Make it possible to load your Anki collection to your current database (way "in")
 - [ ] Make it possible to add new characters / words to your Anki collection (way "out")
 - [ ] Add a whole wizzard for the first connexion to help the user to populate his knowledge base

@@ -1,13 +1,42 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
+import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
+import { InfoIcon } from "../components/icons";
 import Page from "../components/Page";
+import {
+  ANKI_DECK_LABELS,
+  ANKI_DECK_ORDER,
+  type AnkiDeckKind,
+  type AnkiDeckStatus,
+  type AnkiStatus,
+} from "../types/anki";
 import type { LlmConfig } from "../types/llmConfig";
 import type { TokenUsageSummary } from "../types/tokenUsage";
+import { fetchAnkiStatus } from "../utils/ankiApi";
 import { fetchLlmConfig, saveLlmConfig } from "../utils/llmConfigApi";
 import { fetchTokenUsage } from "../utils/tokenUsageApi";
 
 const emptyLlmConfig: LlmConfig = {
   LLM_API_KEY: "",
   LLM_MODEL: "",
+};
+
+const emptyAnkiStatus: AnkiStatus = {
+  connected: false,
+  decks: {
+    mandarin_vocabulary: {
+      status: "not_configured",
+      deck_name: "",
+      model_name: "",
+      fields: {},
+    },
+    mandarin_writting: {
+      status: "not_configured",
+      deck_name: "",
+      model_name: "",
+      fields: {},
+    },
+  },
 };
 
 function formatDayLabel(isoDate: string): string {
@@ -28,24 +57,40 @@ function formatCostUsd(value: number): string {
   return Number(value).toPrecision(3);
 }
 
+function formatDeckStatus(status: AnkiDeckStatus): string {
+  switch (status) {
+    case "not_configured":
+      return "Not configured";
+    case "synchronized":
+      return "Synchronized";
+    case "not_synchronized":
+      return "Not synchronized";
+  }
+}
+
 export default function PreferencesPage() {
   const [llmConfig, setLlmConfig] = useState<LlmConfig>(emptyLlmConfig);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageSummary | null>(null);
+  const [ankiStatus, setAnkiStatus] = useState<AnkiStatus>(emptyAnkiStatus);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [setupKind, setSetupKind] = useState<AnkiDeckKind | null>(null);
 
   const loadPreferences = useCallback(async () => {
     setError(null);
 
     try {
-      const [config, usage] = await Promise.all([
+      const [config, usage, anki] = await Promise.all([
         fetchLlmConfig(),
         fetchTokenUsage(),
+        fetchAnkiStatus(),
       ]);
       setLlmConfig(config);
       setTokenUsage(usage);
+      setAnkiStatus(anki);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -82,10 +127,29 @@ export default function PreferencesPage() {
     }
   }
 
+  async function handleDeckConfigured() {
+    setSetupKind(null);
+    try {
+      const anki = await fetchAnkiStatus();
+      setAnkiStatus(anki);
+    } catch (refreshError) {
+      setError(
+        refreshError instanceof Error
+          ? refreshError.message
+          : "Failed to refresh Anki status.",
+      );
+    }
+  }
+
   const maxDailyTokens = Math.max(
     1,
     ...(tokenUsage?.days.map((day) => day.tokens) ?? [0]),
   );
+
+  const deckRows = ANKI_DECK_ORDER.map((kind) => ({
+    kind,
+    label: ANKI_DECK_LABELS[kind],
+  }));
 
   return (
     <Page title="Preferences">
@@ -186,6 +250,85 @@ export default function PreferencesPage() {
           </div>
         </section>
       )}
+
+      {!isLoading && (
+        <section className="preferences-section preferences-section--anki">
+          <h2 className="preferences-section-title">Anki synchronization</h2>
+          <p className="preferences-section-description">
+            Map your knowledge-base characters and words to Anki decks through
+            AnkiConnect.
+          </p>
+
+          {!ankiStatus.connected && (
+            <div className="anki-warning" role="status">
+              <div className="anki-warning-title-row">
+                <p className="anki-warning-text">
+                  Start the Anki app with the AnkiConnect add-on activated before
+                  configuring decks.
+                </p>
+                <button
+                  type="button"
+                  className="home-hsk-info-button"
+                  aria-label="How to set up AnkiConnect"
+                  title="How to set up AnkiConnect"
+                  onClick={() => setIsGuideOpen(true)}
+                >
+                  <InfoIcon className="home-hsk-info-icon" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <ul className="anki-deck-list">
+            {deckRows.map(({ kind, label }) => {
+              const mapping = ankiStatus.decks[kind];
+              return (
+                <li key={kind} className="anki-deck-row">
+                  <div className="anki-deck-row-main">
+                    <span className="anki-deck-name">{label}</span>
+                    <span
+                      className={`anki-deck-status anki-deck-status--${mapping.status}`}
+                    >
+                      {formatDeckStatus(mapping.status)}
+                    </span>
+                    {mapping.deck_name !== "" && (
+                      <span className="anki-deck-mapped-name">
+                        {mapping.deck_name}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="page-add-button"
+                    disabled={!ankiStatus.connected}
+                    onClick={() => setSetupKind(kind)}
+                  >
+                    Setup
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      <AnkiConnectGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => {
+          setIsGuideOpen(false);
+          void fetchAnkiStatus()
+            .then(setAnkiStatus)
+            .catch(() => {
+              /* keep previous status if refresh fails */
+            });
+        }}
+      />
+      <AnkiDeckSetupModal
+        isOpen={setupKind !== null}
+        kind={setupKind}
+        onCancel={() => setSetupKind(null)}
+        onConfigured={() => void handleDeckConfigured()}
+      />
     </Page>
   );
 }

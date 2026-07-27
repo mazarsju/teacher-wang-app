@@ -3,6 +3,7 @@ from flask import Flask
 
 def register_routes(app: Flask) -> None:
     from backend.routes import (
+        anki,
         bulk_characters,
         chat,
         challenges,
@@ -28,6 +29,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(challenges.bp)
     app.register_blueprint(llm_config.bp)
     app.register_blueprint(token_usage.bp)
+    app.register_blueprint(anki.bp)
     app.register_blueprint(list_characters.bp)
     app.register_blueprint(create_character.bp)
     app.register_blueprint(delete_character.bp)

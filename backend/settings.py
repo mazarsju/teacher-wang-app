@@ -6,9 +6,31 @@ from backend.extensions import db
 from backend.models import Setting
 
 SETTING_LEVEL = "level"
+SETTING_ANKI_MANDARIN_VOCABULARY_DECK = "anki_mandarin_vocabulary_deck"
+SETTING_ANKI_MANDARIN_VOCABULARY_MODEL = "anki_mandarin_vocabulary_model"
+SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS = "anki_mandarin_vocabulary_fields"
+SETTING_ANKI_MANDARIN_WRITTING_DECK = "anki_mandarin_writting_deck"
+SETTING_ANKI_MANDARIN_WRITTING_MODEL = "anki_mandarin_writting_model"
+SETTING_ANKI_MANDARIN_WRITTING_FIELDS = "anki_mandarin_writting_fields"
+
+LEGACY_SETTING_MIGRATIONS: tuple[tuple[str, str], ...] = (
+    ("anki_character_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
+    ("anki_characters_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
+    ("anki_characters_model", SETTING_ANKI_MANDARIN_WRITTING_MODEL),
+    ("anki_characters_fields", SETTING_ANKI_MANDARIN_WRITTING_FIELDS),
+    ("anki_words_deck", SETTING_ANKI_MANDARIN_VOCABULARY_DECK),
+    ("anki_words_model", SETTING_ANKI_MANDARIN_VOCABULARY_MODEL),
+    ("anki_words_fields", SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS),
+)
 
 DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_LEVEL: "",
+    SETTING_ANKI_MANDARIN_VOCABULARY_DECK: "",
+    SETTING_ANKI_MANDARIN_VOCABULARY_MODEL: "",
+    SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS: "",
+    SETTING_ANKI_MANDARIN_WRITTING_DECK: "",
+    SETTING_ANKI_MANDARIN_WRITTING_MODEL: "",
+    SETTING_ANKI_MANDARIN_WRITTING_FIELDS: "",
 }
 
 # Legacy token keys removed when migrating to the token_count table.
@@ -42,6 +64,14 @@ def set_setting(key: str, value: str, *, commit: bool = False) -> None:
 
 
 def ensure_default_settings(*, commit: bool = True) -> None:
+    for legacy_key, new_key in LEGACY_SETTING_MIGRATIONS:
+        legacy = db.session.get(Setting, legacy_key)
+        if legacy is not None and db.session.get(Setting, new_key) is None:
+            db.session.add(Setting(key=new_key, value=legacy.value))
+            db.session.delete(legacy)
+        elif legacy is not None:
+            db.session.delete(legacy)
+
     for key, default_value in DEFAULT_SETTINGS.items():
         if db.session.get(Setting, key) is None:
             db.session.add(Setting(key=key, value=default_value))
