@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
-import { InfoIcon } from "../components/icons";
+import { InfoIcon, SettingsIcon, SyncIcon } from "../components/icons";
 import Page from "../components/Page";
 import {
   ANKI_DECK_LABELS,
@@ -297,14 +297,27 @@ export default function PreferencesPage() {
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="page-add-button"
-                    disabled={!ankiStatus.connected}
-                    onClick={() => setSetupKind(kind)}
-                  >
-                    Setup
-                  </button>
+                  <div className="anki-deck-row-actions">
+                    {mapping.status === "not_synchronized" && (
+                      <button
+                        type="button"
+                        className="page-add-button anki-deck-action-button"
+                        disabled={!ankiStatus.connected}
+                      >
+                        <SyncIcon className="anki-deck-action-icon" />
+                        Sync
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="page-add-button anki-deck-action-button"
+                      disabled={!ankiStatus.connected}
+                      onClick={() => setSetupKind(kind)}
+                    >
+                      <SettingsIcon className="anki-deck-action-icon" />
+                      Setup
+                    </button>
+                  </div>
                 </li>
               );
             })}

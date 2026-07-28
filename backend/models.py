@@ -36,6 +36,7 @@ class Character(db.Model):
     char = db.Column(String, primary_key=True)
     pinyin = db.Column(String(6), nullable=False)
     writting_known = db.Column(Boolean, nullable=False, default=False)
+    synchronized = db.Column(Boolean, nullable=False, default=False)
     updated_at = db.Column(
         DateTime(timezone=True),
         nullable=False,
@@ -55,6 +56,7 @@ class Word(db.Model):
 
     word = db.Column(String(10), primary_key=True)
     definition = db.Column(String(100), nullable=True)
+    synchronized = db.Column(Boolean, nullable=False, default=False)
     updated_at = db.Column(
         DateTime(timezone=True),
         nullable=False,

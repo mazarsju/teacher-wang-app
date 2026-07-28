@@ -39,6 +39,28 @@ def _migrate_updated_at_columns() -> None:
     db.session.commit()
 
 
+def _migrate_synchronized_columns() -> None:
+    """Add synchronized (default false) to character and words tables."""
+    inspector = inspect(db.engine)
+    tables = ("character", "words")
+
+    for table_name in tables:
+        if table_name not in inspector.get_table_names():
+            continue
+        column_names = {column["name"] for column in inspector.get_columns(table_name)}
+        if "synchronized" in column_names:
+            continue
+
+        db.session.execute(
+            text(
+                f"ALTER TABLE {table_name} "
+                "ADD COLUMN synchronized BOOLEAN NOT NULL DEFAULT 0"
+            )
+        )
+
+    db.session.commit()
+
+
 def _migrate_drop_legacy_hsk_vocabulary() -> None:
     """Drop the old hsk_vocabulary table so content reloads into the new schema."""
     inspector = inspect(db.engine)
@@ -249,6 +271,7 @@ def init_db(app: Flask) -> None:
     with app.app_context():
         db.create_all()
         _migrate_updated_at_columns()
+        _migrate_synchronized_columns()
         _migrate_drop_legacy_hsk_vocabulary()
         _migrate_hsk_words_level()
         _migrate_learner_profile_to_settings()

@@ -138,6 +138,9 @@ describe("PreferencesPage", () => {
     expect(setupButtons).toHaveLength(2);
     expect(setupButtons[0]).toBeDisabled();
     expect(setupButtons[1]).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Sync" }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens the AnkiConnect guide from the info button", async () => {
@@ -313,6 +316,20 @@ describe("PreferencesPage", () => {
 
     const writingRow = screen.getByText("Mandarin writting").closest("li");
     expect(writingRow).not.toBeNull();
+    expect(
+      within(writingRow as HTMLElement).getByRole("button", {
+        name: "Sync",
+      }),
+    ).toBeInTheDocument();
+
+    const wordsRow = screen.getByText("Mandarin vocabulary").closest("li");
+    expect(wordsRow).not.toBeNull();
+    expect(
+      within(wordsRow as HTMLElement).queryByRole("button", {
+        name: "Sync",
+      }),
+    ).not.toBeInTheDocument();
+
     await user.click(
       within(writingRow as HTMLElement).getByRole("button", { name: "Setup" }),
     );
@@ -329,8 +346,6 @@ describe("PreferencesPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
-    const wordsRow = screen.getByText("Mandarin vocabulary").closest("li");
-    expect(wordsRow).not.toBeNull();
     await user.click(
       within(wordsRow as HTMLElement).getByRole("button", { name: "Setup" }),
     );
@@ -339,7 +354,7 @@ describe("PreferencesPage", () => {
       await screen.findByRole("heading", { name: "Set up Mandarin vocabulary" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/The Anki deck type should support 3 directions/),
+      screen.getByText(/This deck is the main deck for practicing vocabulary/),
     ).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Existing deck"), "Words");

@@ -109,8 +109,8 @@ On first start, a SQLite database is created at `backend/learn_mandarin.db` with
 
 | Table | Columns |
 | --- | --- |
-| `character` | `char` (PK), `pinyin` (max 6 chars), `writting_known` (boolean), `updated_at` (datetime) |
-| `words` | `word` (PK, max 10 chars), `definition` (max 100 chars, nullable), `updated_at` (datetime) |
+| `character` | `char` (PK), `pinyin` (max 6 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
+| `words` | `word` (PK, max 10 chars), `definition` (max 100 chars, nullable), `synchronized` (boolean, default false), `updated_at` (datetime) |
 | `character_word` | many-to-many link between `character` and `words` |
 | `hsk_words` | `word` (PK), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
 | `hsk_characters` | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |

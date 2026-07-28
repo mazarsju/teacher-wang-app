@@ -446,6 +446,25 @@ body {
   overflow-wrap: anywhere;
 }
 
+.anki-deck-row-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.anki-deck-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.anki-deck-action-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
 .anki-deck-row .page-add-button {
   flex-shrink: 0;
   margin-top: 0;
