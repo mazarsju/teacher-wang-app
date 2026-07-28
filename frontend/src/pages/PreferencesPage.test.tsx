@@ -44,6 +44,8 @@ describe("PreferencesPage", () => {
             ok: true,
             json: async () => ({
               connected: false,
+              synchronization_status: "not_synchronized",
+              pending_push_estimate: 0,
               decks: {
                 mandarin_vocabulary: {
                   status: "not_configured",
@@ -234,6 +236,8 @@ describe("PreferencesPage", () => {
             ok: true,
             json: async () => ({
               connected: true,
+              synchronization_status: "not_synchronized",
+              pending_push_estimate: 0,
               decks: {
                 mandarin_writting: {
                   status: "not_synchronized",

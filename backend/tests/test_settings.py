@@ -27,8 +27,9 @@ class TestSettings(unittest.TestCase):
 
     def test_ensure_default_settings_creates_level_and_anki_decks(self):
         ensure_default_settings()
-        self.assertEqual(Setting.query.count(), 7)
+        self.assertEqual(Setting.query.count(), 10)
         self.assertEqual(get_setting(SETTING_LEVEL), "")
+        self.assertEqual(get_setting("anki_synchronization_status"), "not_synchronized")
         self.assertEqual(get_setting("anki_mandarin_vocabulary_deck"), "")
         self.assertEqual(get_setting("anki_mandarin_writting_deck"), "")
 

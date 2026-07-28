@@ -24,6 +24,8 @@ const emptyLlmConfig: LlmConfig = {
 
 const emptyAnkiStatus: AnkiStatus = {
   connected: false,
+  synchronization_status: "not_synchronized",
+  pending_push_estimate: 0,
   decks: {
     mandarin_vocabulary: {
       status: "not_configured",

@@ -40,6 +40,8 @@ class TestAnkiRoutes(unittest.TestCase):
     def test_get_anki_status_returns_payload(self):
         self.mock_status.return_value = {
             "connected": False,
+            "synchronization_status": "not_synchronized",
+            "pending_push_estimate": 0,
             "decks": {
                 "mandarin_vocabulary": {
                     "status": "not_configured",
@@ -273,6 +275,36 @@ class TestAnkiRoutes(unittest.TestCase):
             selected_ids=None,
         )
 
+    def test_quick_sync_anki_runs_both_decks(self):
+        with patch(
+            "backend.routes.anki.anki_sync.run_quick_sync",
+            return_value={
+                "mandarin_vocabulary": {
+                    "kind": "mandarin_vocabulary",
+                    "action": "synchronize_all",
+                    "added": 1,
+                    "ignored": 0,
+                    "failed": 0,
+                    "deck": {"status": "synchronized"},
+                },
+                "mandarin_writting": {
+                    "kind": "mandarin_writting",
+                    "action": "synchronize_all",
+                    "added": 1,
+                    "ignored": 0,
+                    "failed": 0,
+                    "deck": {"status": "synchronized"},
+                },
+                "synchronization_status": "synchronized",
+                "pending_push_estimate": 0,
+            },
+        ) as mock_quick:
+            response = self.client.post("/anki/sync/quick", json={})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["pending_push_estimate"], 0)
+        mock_quick.assert_called_once_with()
+
 
 class TestAnkiSyncHelpers(unittest.TestCase):
     def setUp(self):
@@ -304,12 +336,145 @@ class TestAnkiSyncHelpers(unittest.TestCase):
             status = get_anki_status()
 
         self.assertFalse(status["connected"])
+        self.assertEqual(status["synchronization_status"], "not_synchronized")
+        self.assertEqual(status["pending_push_estimate"], 0)
         self.assertEqual(
             status["decks"]["mandarin_vocabulary"]["status"], "not_configured"
         )
         self.assertEqual(
             status["decks"]["mandarin_writting"]["status"], "not_configured"
         )
+
+    def test_overall_status_promotes_when_both_decks_synchronized(self):
+        from backend.anki_sync import (
+            get_overall_anki_synchronization_status,
+            maybe_promote_overall_anki_synchronization,
+            setup_deck,
+        )
+        from backend.settings import SETTING_ANKI_SYNCHRONIZATION_STATUS, get_setting
+
+        with (
+            patch("backend.anki_sync.anki_connect.create_deck"),
+            patch(
+                "backend.anki_sync.anki_connect.deck_names",
+                return_value=["Vocab", "Writing"],
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.model_names",
+                return_value=["Basic"],
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.model_field_names",
+                return_value=["Front", "Back", "Extra"],
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+                return_value=[],
+            ),
+        ):
+            setup_deck(
+                "mandarin_vocabulary",
+                "Vocab",
+                model_name="Basic",
+                fields={
+                    "writting": "Front",
+                    "pinyin": "Back",
+                    "definition": "Extra",
+                },
+            )
+            self.assertEqual(
+                get_overall_anki_synchronization_status(), "not_synchronized"
+            )
+            setup_deck(
+                "mandarin_writting",
+                "Writing",
+                model_name="Basic",
+                fields={"recto": "Front", "verso": "Back"},
+            )
+            status = maybe_promote_overall_anki_synchronization(check_pull=True)
+
+        self.assertEqual(status, "synchronized")
+        self.assertEqual(
+            get_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS), "synchronized"
+        )
+
+    def test_overall_status_stays_synchronized_when_new_pending_cards_exist(self):
+        from backend.anki_sync import (
+            get_anki_status,
+            maybe_promote_overall_anki_synchronization,
+            pending_anki_push_estimate,
+        )
+        from backend.extensions import db
+        from backend.models import Word
+        from backend.settings import (
+            SETTING_ANKI_SYNCHRONIZATION_STATUS,
+            set_setting,
+        )
+
+        self._configure_vocabulary_deck()
+        self._configure_writting_deck()
+        set_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS, "synchronized", commit=True)
+        db.session.add(Word(word="火", definition="fire", synchronized=False))
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.is_connected",
+            return_value=False,
+        ):
+            status = get_anki_status()
+
+        self.assertEqual(status["synchronization_status"], "synchronized")
+        self.assertEqual(status["pending_push_estimate"], 1)
+        self.assertEqual(pending_anki_push_estimate(), 1)
+        self.assertEqual(
+            maybe_promote_overall_anki_synchronization(
+                vocabulary_status="not_synchronized",
+                writting_status="synchronized",
+            ),
+            "synchronized",
+        )
+
+    def test_run_quick_sync_pushes_both_decks(self):
+        from backend.anki_sync import run_quick_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+        from backend.settings import (
+            SETTING_ANKI_SYNCHRONIZATION_STATUS,
+            set_setting,
+        )
+
+        self._configure_vocabulary_deck()
+        self._configure_writting_deck()
+        set_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS, "synchronized", commit=True)
+        fire = Character(char="火", pinyin="huo3", writting_known=True)
+        word = Word(word="火", definition="fire")
+        db.session.add_all([fire, word])
+        fire.words.append(word)
+        db.session.commit()
+
+        with (
+            patch(
+                "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+                return_value=[],
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.add_notes",
+                side_effect=lambda notes: [
+                    1000 + index for index, _ in enumerate(notes)
+                ],
+            ) as mock_add,
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
+        ):
+            result = run_quick_sync()
+
+        self.assertEqual(result["mandarin_vocabulary"]["added"], 1)
+        self.assertEqual(result["mandarin_writting"]["added"], 1)
+        self.assertEqual(result["pending_push_estimate"], 0)
+        self.assertEqual(result["synchronization_status"], "synchronized")
+        self.assertEqual(mock_add.call_count, 2)
+        mock_ankiweb_sync.assert_called_once_with()
 
     def test_setup_deck_persists_not_synchronized_status(self):
         from backend.anki_sync import setup_deck
@@ -626,10 +791,14 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 return_value=[],
             ),
             patch("backend.anki_sync.anki_connect.add_notes") as mock_add,
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
         ):
             result = run_sync("mandarin_vocabulary", "cancel_all")
 
         mock_add.assert_not_called()
+        mock_ankiweb_sync.assert_not_called()
         self.assertEqual(result["added"], 0)
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(Word.query.filter_by(word="猫").one().synchronized)
@@ -654,10 +823,14 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 "backend.anki_sync.anki_connect.add_notes",
                 return_value=[12345],
             ) as mock_add,
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
         ):
             result = run_sync("mandarin_vocabulary", "synchronize_all")
 
         mock_add.assert_called_once()
+        mock_ankiweb_sync.assert_called_once_with()
         note = mock_add.call_args.args[0][0]
         self.assertEqual(note["deckName"], "Vocab")
         self.assertEqual(note["modelName"], "VocabModel")
@@ -690,6 +863,9 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 "backend.anki_sync.anki_connect.add_notes",
                 return_value=[99],
             ) as mock_add,
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
         ):
             result = run_sync(
                 "mandarin_vocabulary",
@@ -698,6 +874,7 @@ class TestAnkiSyncHelpers(unittest.TestCase):
             )
 
         mock_add.assert_called_once()
+        mock_ankiweb_sync.assert_called_once_with()
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(Word.query.filter_by(word="一").one().synchronized)
@@ -1015,10 +1192,14 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 return_value=[],
             ),
             patch("backend.anki_sync.anki_connect.add_notes") as mock_add,
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
         ):
             result = run_sync("mandarin_writting", "cancel_all")
 
         mock_add.assert_not_called()
+        mock_ankiweb_sync.assert_not_called()
         self.assertEqual(result["added"], 0)
         self.assertEqual(result["ignored"], 2)
         self.assertTrue(Character.query.filter_by(char="水").one().synchronized)
@@ -1051,6 +1232,9 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 "backend.anki_sync.anki_connect.add_notes",
                 return_value=[11],
             ),
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
         ):
             result = run_sync(
                 "mandarin_writting",
@@ -1058,6 +1242,7 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 selected_ids=["water (shui3)"],
             )
 
+        mock_ankiweb_sync.assert_called_once_with()
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(Character.query.filter_by(char="水").one().synchronized)
@@ -1088,10 +1273,14 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 "backend.anki_sync.anki_connect.add_notes",
                 return_value=[1],
             ) as mock_add,
+            patch(
+                "backend.anki_sync.anki_connect.sync_with_ankiweb",
+            ) as mock_ankiweb_sync,
         ):
             result = run_sync("mandarin_writting", "synchronize_all")
 
         mock_add.assert_called_once()
+        mock_ankiweb_sync.assert_called_once_with()
         notes = mock_add.call_args.kwargs.get("notes") or mock_add.call_args.args[0]
         self.assertEqual(len(notes), 1)
         self.assertEqual(

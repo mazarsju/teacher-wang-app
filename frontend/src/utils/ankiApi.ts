@@ -3,6 +3,7 @@ import type {
   AnkiDeckSetupResult,
   AnkiFieldKey,
   AnkiPendingSync,
+  AnkiQuickSyncResult,
   AnkiStatus,
   AnkiSyncAction,
   AnkiSyncDirection,
@@ -166,4 +167,20 @@ export async function runAnkiSync(options: {
   }
 
   return (await response.json()) as AnkiSyncResult;
+}
+
+export async function runAnkiQuickSync(): Promise<AnkiQuickSyncResult> {
+  const response = await fetch("/anki/sync/quick", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, "Failed to quick-synchronize with Anki."),
+    );
+  }
+
+  return (await response.json()) as AnkiQuickSyncResult;
 }

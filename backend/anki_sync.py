@@ -19,12 +19,14 @@ from backend.settings import (
     SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
     SETTING_ANKI_MANDARIN_WRITTING_MODEL,
     SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED,
+    SETTING_ANKI_SYNCHRONIZATION_STATUS,
     get_setting,
     set_setting,
 )
 
 DeckKind = Literal["mandarin_vocabulary", "mandarin_writting"]
 DeckStatus = Literal["not_configured", "synchronized", "not_synchronized"]
+OverallAnkiSynchronizationStatus = Literal["not_synchronized", "synchronized"]
 SyncAction = Literal["synchronize_all", "cancel_all", "partial"]
 SyncDirection = Literal["push", "pull"]
 
@@ -403,6 +405,58 @@ def status_from_sync_counts(
     if push_count > 0 or pull_count > 0 or unsyncable_count > 0:
         return "not_synchronized"
     return "synchronized"
+
+
+def get_overall_anki_synchronization_status() -> OverallAnkiSynchronizationStatus:
+    raw = get_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS, "not_synchronized")
+    if raw == "synchronized":
+        return "synchronized"
+    return "not_synchronized"
+
+
+def pending_anki_push_estimate() -> int:
+    """Estimate of local records that still need an Anki push card."""
+    return _pending_count_for_kind("mandarin_vocabulary") + _pending_count_for_kind(
+        "mandarin_writting"
+    )
+
+
+def maybe_promote_overall_anki_synchronization(
+    *,
+    vocabulary_status: DeckStatus | None = None,
+    writting_status: DeckStatus | None = None,
+    check_pull: bool = True,
+) -> OverallAnkiSynchronizationStatus:
+    """Promote overall status to synchronized once both decks are synchronized.
+
+    The overall status is sticky: after the first complete synchronization it
+    stays ``synchronized`` even if new local cards are added later.
+    """
+    current = get_overall_anki_synchronization_status()
+    if current == "synchronized":
+        return current
+
+    vocab_status = vocabulary_status
+    if vocab_status is None:
+        vocab_status = get_deck_mapping(
+            "mandarin_vocabulary",
+            check_pull=check_pull,
+        )["status"]
+    write_status = writting_status
+    if write_status is None:
+        write_status = get_deck_mapping(
+            "mandarin_writting",
+            check_pull=check_pull,
+        )["status"]
+
+    if vocab_status == "synchronized" and write_status == "synchronized":
+        set_setting(
+            SETTING_ANKI_SYNCHRONIZATION_STATUS,
+            "synchronized",
+            commit=True,
+        )
+        return "synchronized"
+    return current
 
 
 def _parse_string_list_setting(raw: str) -> list[str]:
@@ -997,6 +1051,7 @@ def run_sync(
     action: SyncAction,
     *,
     selected_ids: list[str] | None = None,
+    sync_to_ankiweb: bool = True,
 ) -> dict[str, Any]:
     pending = get_pending_sync(kind)
     cards: list[dict[str, str]] = pending["cards"]
@@ -1062,26 +1117,37 @@ def run_sync(
             )
         if failed > 0:
             ignored = _mark_synchronized(kind, to_ignore_ids)
-            return {
-                "kind": kind,
-                "action": action,
-                "direction": "push",
-                "added": added,
-                "ignored": ignored,
-                "failed": failed,
-                "deck": get_deck_mapping(kind),
-            }
+            result = _finalize_deck_sync_result(
+                {
+                    "kind": kind,
+                    "action": action,
+                    "direction": "push",
+                    "added": added,
+                    "ignored": ignored,
+                    "failed": failed,
+                    "deck": get_deck_mapping(kind),
+                }
+            )
+            _maybe_sync_ankiweb_after_push(
+                notes_added=added,
+                enabled=sync_to_ankiweb,
+            )
+            return result
 
     ignored = _mark_synchronized(kind, to_ignore_ids)
-    return {
-        "kind": kind,
-        "action": action,
-        "direction": "push",
-        "added": added,
-        "ignored": ignored,
-        "failed": 0,
-        "deck": get_deck_mapping(kind),
-    }
+    result = _finalize_deck_sync_result(
+        {
+            "kind": kind,
+            "action": action,
+            "direction": "push",
+            "added": added,
+            "ignored": ignored,
+            "failed": 0,
+            "deck": get_deck_mapping(kind),
+        }
+    )
+    _maybe_sync_ankiweb_after_push(notes_added=added, enabled=sync_to_ankiweb)
+    return result
 
 
 def run_pull(
@@ -1172,15 +1238,58 @@ def run_pull(
     if failed > 0 and imported == 0 and to_import:
         raise ValueError(f"Failed to import {failed} card(s) from Anki.")
 
+    return _finalize_deck_sync_result(
+        {
+            "kind": kind,
+            "action": action,
+            "direction": "pull",
+            "added": imported,
+            "characters_added": characters_added,
+            "ignored": ignored,
+            "failed": failed,
+            "deck": get_deck_mapping(kind),
+        }
+    )
+
+
+def _finalize_deck_sync_result(result: dict[str, Any]) -> dict[str, Any]:
+    kind = result["kind"]
+    deck_status = result["deck"]["status"]
+    maybe_promote_overall_anki_synchronization(
+        vocabulary_status=deck_status if kind == "mandarin_vocabulary" else None,
+        writting_status=deck_status if kind == "mandarin_writting" else None,
+    )
+    return result
+
+
+def _maybe_sync_ankiweb_after_push(*, notes_added: int, enabled: bool = True) -> None:
+    """Ask Anki Desktop to sync its collection to AnkiWeb after a push."""
+    if not enabled or notes_added <= 0:
+        return
+    anki_connect.sync_with_ankiweb()
+
+
+def run_quick_sync() -> dict[str, Any]:
+    """Push all pending cards for both Anki decks (vocabulary then writting)."""
+    vocabulary = run_sync(
+        "mandarin_vocabulary",
+        "synchronize_all",
+        sync_to_ankiweb=False,
+    )
+    writting = run_sync(
+        "mandarin_writting",
+        "synchronize_all",
+        sync_to_ankiweb=False,
+    )
+    _maybe_sync_ankiweb_after_push(
+        notes_added=int(vocabulary.get("added") or 0)
+        + int(writting.get("added") or 0),
+    )
     return {
-        "kind": kind,
-        "action": action,
-        "direction": "pull",
-        "added": imported,
-        "characters_added": characters_added,
-        "ignored": ignored,
-        "failed": failed,
-        "deck": get_deck_mapping(kind),
+        "mandarin_vocabulary": vocabulary,
+        "mandarin_writting": writting,
+        "synchronization_status": get_overall_anki_synchronization_status(),
+        "pending_push_estimate": pending_anki_push_estimate(),
     }
 
 
@@ -1225,17 +1334,26 @@ def get_deck_mapping(
 
 def get_anki_status() -> dict:
     connected = anki_connect.is_connected()
+    vocabulary = get_deck_mapping(
+        "mandarin_vocabulary",
+        check_pull=connected,
+    )
+    writting = get_deck_mapping(
+        "mandarin_writting",
+        check_pull=connected,
+    )
+    synchronization_status = maybe_promote_overall_anki_synchronization(
+        vocabulary_status=vocabulary["status"],
+        writting_status=writting["status"],
+        check_pull=False,
+    )
     return {
         "connected": connected,
+        "synchronization_status": synchronization_status,
+        "pending_push_estimate": pending_anki_push_estimate(),
         "decks": {
-            "mandarin_vocabulary": get_deck_mapping(
-                "mandarin_vocabulary",
-                check_pull=connected,
-            ),
-            "mandarin_writting": get_deck_mapping(
-                "mandarin_writting",
-                check_pull=connected,
-            ),
+            "mandarin_vocabulary": vocabulary,
+            "mandarin_writting": writting,
         },
     }
 

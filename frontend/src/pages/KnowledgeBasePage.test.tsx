@@ -57,6 +57,31 @@ describe("KnowledgeBasePage", () => {
           });
         }
 
+        if (url.endsWith("/anki/status")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              connected: true,
+              synchronization_status: "not_synchronized",
+              pending_push_estimate: 0,
+              decks: {
+                mandarin_vocabulary: {
+                  status: "not_configured",
+                  deck_name: "",
+                  model_name: "",
+                  fields: {},
+                },
+                mandarin_writting: {
+                  status: "not_configured",
+                  deck_name: "",
+                  model_name: "",
+                  fields: {},
+                },
+              },
+            }),
+          });
+        }
+
         return Promise.resolve({
           ok: false,
           json: async () => ({}),
@@ -198,6 +223,120 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Associated words:")).toBeInTheDocument();
     expect(screen.getByText("爱好 (hobby)")).toBeInTheDocument();
+  });
+
+  it("shows a quick synchro banner after overall Anki sync when cards are pending", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    let pendingEstimate = 2;
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/characters")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => characters,
+        });
+      }
+
+      if (url.endsWith("/words")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => words,
+        });
+      }
+
+      if (url.endsWith("/anki/status") && method === "GET") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            connected: true,
+            synchronization_status: "synchronized",
+            pending_push_estimate: pendingEstimate,
+            decks: {
+              mandarin_vocabulary: {
+                status: "not_synchronized",
+                deck_name: "Vocab",
+                model_name: "Vocab",
+                fields: {
+                  writting: "writting",
+                  pinyin: "pinyin",
+                  definition: "definition",
+                },
+              },
+              mandarin_writting: {
+                status: "synchronized",
+                deck_name: "Writting",
+                model_name: "Basic",
+                fields: { recto: "Front", verso: "Back" },
+              },
+            },
+          }),
+        });
+      }
+
+      if (url.endsWith("/anki/sync/quick") && method === "POST") {
+        pendingEstimate = 0;
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            mandarin_vocabulary: {
+              kind: "mandarin_vocabulary",
+              action: "synchronize_all",
+              added: 1,
+              ignored: 0,
+              failed: 0,
+              deck: {
+                status: "synchronized",
+                deck_name: "Vocab",
+                model_name: "Vocab",
+                fields: {},
+              },
+            },
+            mandarin_writting: {
+              kind: "mandarin_writting",
+              action: "synchronize_all",
+              added: 1,
+              ignored: 0,
+              failed: 0,
+              deck: {
+                status: "synchronized",
+                deck_name: "Writting",
+                model_name: "Basic",
+                fields: {},
+              },
+            },
+            synchronization_status: "synchronized",
+            pending_push_estimate: 0,
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      });
+    });
+
+    render(<KnowledgeBasePage />);
+
+    expect(
+      await screen.findByText(
+        "2 cards need to be added in Anki for synchronization.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Quick synchro" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(
+          "2 cards need to be added in Anki for synchronization.",
+        ),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("exports the database from edit mode", async () => {

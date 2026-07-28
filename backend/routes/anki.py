@@ -15,6 +15,18 @@ def get_anki_status():
     return anki_sync.get_anki_status(), 200
 
 
+@bp.post("/anki/sync/quick")
+def quick_sync_anki():
+    try:
+        result = anki_sync.run_quick_sync()
+    except AnkiConnectError as exc:
+        return {"error": str(exc)}, 503
+    except ValueError as exc:
+        return {"error": str(exc)}, 400
+
+    return result, 200
+
+
 @bp.get("/anki/decks")
 def list_anki_decks():
     try:

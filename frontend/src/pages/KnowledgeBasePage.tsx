@@ -11,6 +11,7 @@ import PinyinGridView from "../components/PinyinGridView";
 import Table, { type TableColumn } from "../components/Table";
 import type { Character } from "../types/character";
 import type { Word } from "../types/word";
+import { fetchAnkiStatus, runAnkiQuickSync } from "../utils/ankiApi";
 import { formatDateTime } from "../utils/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBaseApi";
 import { buildWordsByCharacter } from "../utils/wordsByCharacter";
@@ -125,6 +126,10 @@ export default function KnowledgeBasePage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [ankiOverallSynchronized, setAnkiOverallSynchronized] = useState(false);
+  const [pendingAnkiPushEstimate, setPendingAnkiPushEstimate] = useState(0);
+  const [isQuickSyncing, setIsQuickSyncing] = useState(false);
+  const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const knownCharacters = useMemo(
@@ -167,6 +172,19 @@ export default function KnowledgeBasePage() {
       ? []
       : (wordsByCharacter.get(selectedCharacter) ?? []);
 
+  const showAnkiSyncBanner =
+    ankiOverallSynchronized && pendingAnkiPushEstimate > 0;
+
+  const refreshAnkiSyncBanner = useCallback(async () => {
+    try {
+      const status = await fetchAnkiStatus();
+      setAnkiOverallSynchronized(status.synchronization_status === "synchronized");
+      setPendingAnkiPushEstimate(status.pending_push_estimate);
+    } catch {
+      // Banner is optional; keep the knowledge base usable if Anki status fails.
+    }
+  }, []);
+
   const loadKnowledgeBase = useCallback(async () => {
     setError(null);
 
@@ -177,6 +195,7 @@ export default function KnowledgeBasePage() {
       ]);
       setCharacters(charactersData);
       setWords(wordsData);
+      await refreshAnkiSyncBanner();
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -186,7 +205,7 @@ export default function KnowledgeBasePage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshAnkiSyncBanner]);
 
   useEffect(() => {
     void loadKnowledgeBase();
@@ -442,6 +461,7 @@ export default function KnowledgeBasePage() {
           left.word.localeCompare(right.word),
         ),
       );
+      await refreshAnkiSyncBanner();
     } catch (addWordError) {
       setError(
         addWordError instanceof Error
@@ -451,8 +471,48 @@ export default function KnowledgeBasePage() {
     }
   }
 
+  async function handleQuickSynchro() {
+    setQuickSyncError(null);
+    setIsQuickSyncing(true);
+    try {
+      const result = await runAnkiQuickSync();
+      setAnkiOverallSynchronized(
+        result.synchronization_status === "synchronized",
+      );
+      setPendingAnkiPushEstimate(result.pending_push_estimate);
+    } catch (syncError) {
+      setQuickSyncError(
+        syncError instanceof Error
+          ? syncError.message
+          : "Failed to quick-synchronize with Anki.",
+      );
+    } finally {
+      setIsQuickSyncing(false);
+    }
+  }
+
+  const ankiSyncBanner = showAnkiSyncBanner ? (
+    <div className="anki-sync-banner" role="status">
+      <p className="anki-sync-banner-text">
+        {pendingAnkiPushEstimate} card
+        {pendingAnkiPushEstimate === 1 ? "" : "s"} need to be added in Anki for
+        synchronization.
+      </p>
+      <button
+        type="button"
+        className="anki-sync-banner-button"
+        onClick={() => void handleQuickSynchro()}
+        disabled={isQuickSyncing}
+      >
+        {isQuickSyncing ? "Syncing..." : "Quick synchro"}
+      </button>
+    </div>
+  ) : null;
+
   return (
-    <Page
+    <>
+      {ankiSyncBanner}
+      <Page
       title="Knowledge base"
       fullWidth={pageMode === "view"}
       headerCenter={
@@ -542,6 +602,7 @@ export default function KnowledgeBasePage() {
         )
       }
     >
+      {quickSyncError && <p className="table-error">{quickSyncError}</p>}
       {pageMode === "view" && (
         <>
           <CharacterWordsModal
@@ -732,5 +793,6 @@ export default function KnowledgeBasePage() {
         </>
       )}
     </Page>
+    </>
   );
 }

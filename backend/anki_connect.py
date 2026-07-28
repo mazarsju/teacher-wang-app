@@ -113,6 +113,11 @@ def add_notes(
     return result
 
 
+def sync_with_ankiweb(*, timeout: float = 120.0) -> None:
+    """Synchronize the local Anki collection with AnkiWeb via AnkiConnect."""
+    invoke("sync", timeout=timeout)
+
+
 def _quote_anki_query_value(value: str) -> str:
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'

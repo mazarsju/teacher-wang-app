@@ -72,6 +72,14 @@ class TestAnkiConnectClient(unittest.TestCase):
             timeout=30.0,
         )
 
+    def test_sync_with_ankiweb_invokes_sync_action(self):
+        from backend.anki_connect import sync_with_ankiweb
+
+        with patch("backend.anki_connect.invoke", return_value=None) as mock_invoke:
+            sync_with_ankiweb()
+
+        mock_invoke.assert_called_once_with("sync", timeout=120.0)
+
     def test_field_values_in_deck_reads_notes_info(self):
         from backend.anki_connect import field_values_in_deck
 

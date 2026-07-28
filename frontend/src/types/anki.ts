@@ -5,6 +5,10 @@ export type AnkiDeckStatus =
   | "synchronized"
   | "not_synchronized";
 
+export type AnkiOverallSynchronizationStatus =
+  | "not_synchronized"
+  | "synchronized";
+
 export type AnkiVocabularyFieldKey = "writting" | "pinyin" | "definition";
 export type AnkiWrittingFieldKey = "recto" | "verso";
 export type AnkiFieldKey = AnkiVocabularyFieldKey | AnkiWrittingFieldKey;
@@ -18,6 +22,8 @@ export type AnkiDeckMapping = {
 
 export type AnkiStatus = {
   connected: boolean;
+  synchronization_status: AnkiOverallSynchronizationStatus;
+  pending_push_estimate: number;
   decks: Record<AnkiDeckKind, AnkiDeckMapping>;
 };
 
@@ -72,6 +78,13 @@ export type AnkiSyncResult = {
   ignored: number;
   failed: number;
   deck: AnkiDeckMapping;
+};
+
+export type AnkiQuickSyncResult = {
+  mandarin_vocabulary: AnkiSyncResult;
+  mandarin_writting: AnkiSyncResult;
+  synchronization_status: AnkiOverallSynchronizationStatus;
+  pending_push_estimate: number;
 };
 
 export type AnkiLogicalField = {

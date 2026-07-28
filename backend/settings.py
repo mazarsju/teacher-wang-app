@@ -6,6 +6,7 @@ from backend.extensions import db
 from backend.models import Setting
 
 SETTING_LEVEL = "level"
+SETTING_ANKI_SYNCHRONIZATION_STATUS = "anki_synchronization_status"
 SETTING_ANKI_MANDARIN_VOCABULARY_DECK = "anki_mandarin_vocabulary_deck"
 SETTING_ANKI_MANDARIN_VOCABULARY_MODEL = "anki_mandarin_vocabulary_model"
 SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS = "anki_mandarin_vocabulary_fields"
@@ -31,6 +32,7 @@ LEGACY_SETTING_MIGRATIONS: tuple[tuple[str, str], ...] = (
 
 DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_LEVEL: "",
+    SETTING_ANKI_SYNCHRONIZATION_STATUS: "not_synchronized",
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK: "",
     SETTING_ANKI_MANDARIN_VOCABULARY_MODEL: "",
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS: "",
