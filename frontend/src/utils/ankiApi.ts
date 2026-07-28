@@ -2,7 +2,10 @@ import type {
   AnkiDeckKind,
   AnkiDeckSetupResult,
   AnkiFieldKey,
+  AnkiPendingSync,
   AnkiStatus,
+  AnkiSyncAction,
+  AnkiSyncResult,
 } from "../types/anki";
 
 async function readErrorMessage(
@@ -120,4 +123,44 @@ export async function autoSetupVocabularyDeck(options: {
   }
 
   return (await response.json()) as AnkiDeckSetupResult;
+}
+
+export async function fetchAnkiPendingSync(
+  kind: AnkiDeckKind,
+): Promise<AnkiPendingSync> {
+  const response = await fetch(`/anki/sync/pending/${encodeURIComponent(kind)}`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, "Failed to load pending Anki cards."),
+    );
+  }
+
+  return (await response.json()) as AnkiPendingSync;
+}
+
+export async function runAnkiSync(options: {
+  kind: AnkiDeckKind;
+  action: AnkiSyncAction;
+  selectedIds?: string[];
+}): Promise<AnkiSyncResult> {
+  const response = await fetch("/anki/sync", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: options.kind,
+      action: options.action,
+      selected_ids: options.selectedIds,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, "Failed to synchronize with Anki."),
+    );
+  }
+
+  return (await response.json()) as AnkiSyncResult;
 }

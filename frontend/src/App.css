@@ -560,6 +560,94 @@ body {
   overflow-y: auto;
 }
 
+.anki-sync-modal {
+  max-width: 32rem;
+  max-height: min(90vh, 40rem);
+  overflow-y: auto;
+}
+
+.anki-sync-modal--partial {
+  max-width: 44rem;
+  max-height: min(90vh, 48rem);
+}
+
+.anki-sync-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.anki-sync-actions .page-add-button,
+.anki-sync-actions .modal-button-cancel,
+.anki-sync-actions .modal-button-confirm,
+.anki-sync-actions .modal-button-confirm-primary {
+  width: 100%;
+  justify-content: center;
+}
+
+.anki-sync-partial-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.anki-sync-partial-count {
+  margin-left: auto;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.anki-sync-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(50vh, 22rem);
+  margin-bottom: 1.25rem;
+  padding-right: 0.25rem;
+  overflow-y: auto;
+}
+
+.anki-sync-card-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(4rem, 0.9fr) minmax(5rem, 1fr) minmax(6rem, 1.4fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111827;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.anki-sync-card-row--header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-color: transparent;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: default;
+}
+
+.anki-sync-card-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.anki-sync-card-writting {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
 .anki-setup-description {
   white-space: pre-wrap;
 }

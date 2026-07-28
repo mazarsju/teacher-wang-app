@@ -26,6 +26,34 @@ export type AnkiDeckSetupResult = {
   deck: AnkiDeckMapping;
 };
 
+export type AnkiPendingCard = {
+  id: string;
+  writting: string;
+  pinyin: string;
+  definition: string;
+};
+
+export type AnkiPendingSync = {
+  kind: AnkiDeckKind;
+  count: number;
+  cards: AnkiPendingCard[];
+  deck: AnkiDeckMapping;
+};
+
+export type AnkiSyncAction =
+  | "synchronize_all"
+  | "cancel_all"
+  | "partial";
+
+export type AnkiSyncResult = {
+  kind: AnkiDeckKind;
+  action: AnkiSyncAction;
+  added: number;
+  ignored: number;
+  failed: number;
+  deck: AnkiDeckMapping;
+};
+
 export type AnkiLogicalField = {
   key: AnkiFieldKey;
   description: string;

@@ -101,6 +101,73 @@ def create_model(
     return invoke("createModel", params=params)
 
 
+def add_notes(
+    notes: list[dict[str, Any]],
+    *,
+    timeout: float = 30.0,
+) -> list[Any]:
+    """Create notes in Anki. Returns note IDs (null entries for failures)."""
+    result = invoke("addNotes", params={"notes": notes}, timeout=timeout)
+    if not isinstance(result, list):
+        raise AnkiConnectError("AnkiConnect returned an invalid addNotes result.")
+    return result
+
+
+def _quote_anki_query_value(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def find_notes(query: str, *, timeout: float = 30.0) -> list[int]:
+    result = invoke("findNotes", params={"query": query}, timeout=timeout)
+    if not isinstance(result, list) or not all(isinstance(note_id, int) for note_id in result):
+        raise AnkiConnectError("AnkiConnect returned an invalid findNotes result.")
+    return result
+
+
+def notes_info(
+    note_ids: list[int],
+    *,
+    timeout: float = 30.0,
+) -> list[dict[str, Any]]:
+    if not note_ids:
+        return []
+    result = invoke("notesInfo", params={"notes": note_ids}, timeout=timeout)
+    if not isinstance(result, list) or not all(isinstance(item, dict) for item in result):
+        raise AnkiConnectError("AnkiConnect returned an invalid notesInfo result.")
+    return result
+
+
+def field_values_in_deck(
+    deck_name: str,
+    field_name: str,
+    *,
+    timeout: float = 30.0,
+) -> set[str]:
+    """Return the set of non-empty values for a note field in a deck."""
+    query = f"deck:{_quote_anki_query_value(deck_name)}"
+    note_ids = find_notes(query, timeout=timeout)
+    values: set[str] = set()
+    # notesInfo can be large; process in chunks to keep payloads manageable.
+    chunk_size = 250
+    for start in range(0, len(note_ids), chunk_size):
+        chunk = note_ids[start : start + chunk_size]
+        for info in notes_info(chunk, timeout=timeout):
+            fields = info.get("fields")
+            if not isinstance(fields, dict):
+                continue
+            field = fields.get(field_name)
+            if isinstance(field, dict):
+                raw = field.get("value")
+            else:
+                raw = field
+            if isinstance(raw, str):
+                trimmed = raw.strip()
+                if trimmed != "":
+                    values.add(trimmed)
+    return values
+
+
 def is_connected() -> bool:
     try:
         deck_names()

@@ -6,6 +6,8 @@ import json
 from typing import Any, Literal
 
 from backend import anki_connect
+from backend.extensions import db
+from backend.models import Character, Word
 from backend.settings import (
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
@@ -19,6 +21,7 @@ from backend.settings import (
 
 DeckKind = Literal["mandarin_vocabulary", "mandarin_writting"]
 DeckStatus = Literal["not_configured", "synchronized", "not_synchronized"]
+SyncAction = Literal["synchronize_all", "cancel_all", "partial"]
 
 DECK_SETTING_KEYS: dict[DeckKind, str] = {
     "mandarin_vocabulary": SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
@@ -193,6 +196,53 @@ def _fields_complete(kind: DeckKind, fields: dict[str, str]) -> bool:
     return all(fields.get(key, "").strip() != "" for key in REQUIRED_FIELDS[kind])
 
 
+def _pending_vocabulary_words() -> list[Word]:
+    return (
+        Word.query.filter_by(synchronized=False)
+        .order_by(Word.word)
+        .all()
+    )
+
+
+def _vocabulary_card_pinyin(word_text: str) -> str:
+    """Build pinyin for a word, keeping unrecognized characters as-is.
+
+    Recognized characters become their pinyin, separated by spaces.
+    Characters missing from the character table (e.g. punctuation) are kept
+    literally with no surrounding spaces, e.g. ``除了。。以外。。`` →
+    ``chu2 le。。yi3 wai4。。``.
+    """
+    pieces: list[str] = []
+    last_was_pinyin = False
+    for char in word_text:
+        character = Character.query.filter_by(char=char).first()
+        if character is not None:
+            if last_was_pinyin:
+                pieces.append(" ")
+            pieces.append(character.pinyin)
+            last_was_pinyin = True
+        else:
+            pieces.append(char)
+            last_was_pinyin = False
+    return "".join(pieces)
+
+
+def vocabulary_card_from_word(word: Word) -> dict[str, str]:
+    return {
+        "id": word.word,
+        "writting": word.word,
+        "pinyin": _vocabulary_card_pinyin(word.word),
+        "definition": word.definition or "",
+    }
+
+
+def _pending_count_for_kind(kind: DeckKind) -> int:
+    if kind == "mandarin_vocabulary":
+        return Word.query.filter_by(synchronized=False).count()
+    # Mandarin writting sync is not implemented yet.
+    return 0
+
+
 def deck_status_for_mapping(
     deck_name: str,
     model_name: str,
@@ -205,8 +255,170 @@ def deck_status_for_mapping(
         or not _fields_complete(kind, fields)
     ):
         return "not_configured"
-    # Content sync is not implemented yet; configured decks stay not synchronized.
-    return "not_synchronized"
+    if kind == "mandarin_writting":
+        # Content sync for writting is not implemented yet.
+        return "not_synchronized"
+    if _pending_count_for_kind(kind) > 0:
+        return "not_synchronized"
+    return "synchronized"
+
+
+def get_pending_sync(kind: DeckKind) -> dict[str, Any]:
+    mapping = get_deck_mapping(kind)
+    if mapping["status"] == "not_configured":
+        raise ValueError(f'Deck kind "{kind}" is not configured.')
+
+    if kind == "mandarin_writting":
+        raise ValueError("Mandarin writting synchronization is not implemented yet.")
+
+    writting_field = mapping["fields"].get("writting", "").strip()
+    if writting_field == "":
+        raise ValueError('Mapped Anki field for "writting" is missing.')
+
+    existing_writtings = anki_connect.field_values_in_deck(
+        mapping["deck_name"],
+        writting_field,
+    )
+
+    pending_words: list[Word] = []
+    already_in_anki: list[str] = []
+    for word in _pending_vocabulary_words():
+        if word.word in existing_writtings:
+            already_in_anki.append(word.word)
+        else:
+            pending_words.append(word)
+
+    # Words already present in Anki should not stay pending forever.
+    if already_in_anki:
+        _mark_words_synchronized(already_in_anki)
+        mapping = get_deck_mapping(kind)
+
+    cards = [vocabulary_card_from_word(word) for word in pending_words]
+    return {
+        "kind": kind,
+        "count": len(cards),
+        "cards": cards,
+        "deck": mapping,
+    }
+
+
+def _mark_words_synchronized(word_ids: list[str]) -> int:
+    if not word_ids:
+        return 0
+    updated = 0
+    for word_id in word_ids:
+        word = Word.query.filter_by(word=word_id).first()
+        if word is None or word.synchronized:
+            continue
+        word.synchronized = True
+        updated += 1
+    db.session.commit()
+    return updated
+
+
+def _build_anki_notes(
+    *,
+    deck_name: str,
+    model_name: str,
+    field_map: dict[str, str],
+    cards: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    notes: list[dict[str, Any]] = []
+    for card in cards:
+        anki_fields = {
+            field_map["writting"]: card["writting"],
+            field_map["pinyin"]: card["pinyin"],
+            field_map["definition"]: card["definition"],
+        }
+        notes.append(
+            {
+                "deckName": deck_name,
+                "modelName": model_name,
+                "fields": anki_fields,
+                "options": {"allowDuplicate": True},
+                "tags": ["learn-mandarin"],
+            }
+        )
+    return notes
+
+
+def run_sync(
+    kind: DeckKind,
+    action: SyncAction,
+    *,
+    selected_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    pending = get_pending_sync(kind)
+    cards: list[dict[str, str]] = pending["cards"]
+    mapping = pending["deck"]
+
+    if action == "synchronize_all":
+        to_add = cards
+        to_ignore: list[dict[str, str]] = []
+    elif action == "cancel_all":
+        to_add = []
+        to_ignore = cards
+    elif action == "partial":
+        if selected_ids is None:
+            raise ValueError("selected_ids is required for partial synchronization")
+        if not isinstance(selected_ids, list) or not all(
+            isinstance(item, str) for item in selected_ids
+        ):
+            raise ValueError("selected_ids must be an array of strings")
+        pending_ids = {card["id"] for card in cards}
+        unknown = [item for item in selected_ids if item not in pending_ids]
+        if unknown:
+            raise ValueError(
+                f"Unknown pending card ids: {', '.join(sorted(unknown))}"
+            )
+        selected_set = set(selected_ids)
+        to_add = [card for card in cards if card["id"] in selected_set]
+        to_ignore = [card for card in cards if card["id"] not in selected_set]
+    else:
+        raise ValueError(f'Unsupported sync action "{action}"')
+
+    added = 0
+    if to_add:
+        notes = _build_anki_notes(
+            deck_name=mapping["deck_name"],
+            model_name=mapping["model_name"],
+            field_map=mapping["fields"],
+            cards=to_add,
+        )
+        results = anki_connect.add_notes(notes)
+        succeeded_ids: list[str] = []
+        failed = 0
+        for card, note_id in zip(to_add, results):
+            if note_id is None:
+                failed += 1
+                continue
+            succeeded_ids.append(card["id"])
+        if succeeded_ids:
+            added = _mark_words_synchronized(succeeded_ids)
+        if failed > 0 and added == 0:
+            raise anki_connect.AnkiConnectError(
+                f"Failed to add {failed} note(s) to Anki."
+            )
+        if failed > 0:
+            ignored = _mark_words_synchronized([card["id"] for card in to_ignore])
+            return {
+                "kind": kind,
+                "action": action,
+                "added": added,
+                "ignored": ignored,
+                "failed": failed,
+                "deck": get_deck_mapping(kind),
+            }
+
+    ignored = _mark_words_synchronized([card["id"] for card in to_ignore])
+    return {
+        "kind": kind,
+        "action": action,
+        "added": added,
+        "ignored": ignored,
+        "failed": 0,
+        "deck": get_deck_mapping(kind),
+    }
 
 
 def get_deck_mapping(kind: DeckKind) -> dict[str, Any]:

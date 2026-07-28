@@ -52,6 +52,48 @@ class TestAnkiConnectClient(unittest.TestCase):
         ):
             self.assertFalse(is_connected())
 
+    def test_add_notes_invokes_anki_connect(self):
+        from backend.anki_connect import add_notes
+
+        notes = [
+            {
+                "deckName": "Vocab",
+                "modelName": "Basic",
+                "fields": {"Front": "a", "Back": "b"},
+            }
+        ]
+        with patch("backend.anki_connect.invoke", return_value=[1]) as mock_invoke:
+            result = add_notes(notes)
+
+        self.assertEqual(result, [1])
+        mock_invoke.assert_called_once_with(
+            "addNotes",
+            params={"notes": notes},
+            timeout=30.0,
+        )
+
+    def test_field_values_in_deck_reads_notes_info(self):
+        from backend.anki_connect import field_values_in_deck
+
+        with (
+            patch(
+                "backend.anki_connect.find_notes",
+                return_value=[1, 2],
+            ) as mock_find,
+            patch(
+                "backend.anki_connect.notes_info",
+                return_value=[
+                    {"fields": {"writting": {"value": "水", "order": 0}}},
+                    {"fields": {"writting": {"value": " 火 ", "order": 0}}},
+                ],
+            ) as mock_info,
+        ):
+            values = field_values_in_deck("My Vocab", "writting")
+
+        mock_find.assert_called_once_with('deck:"My Vocab"', timeout=30.0)
+        mock_info.assert_called_once_with([1, 2], timeout=30.0)
+        self.assertEqual(values, {"水", "火"})
+
 
 if __name__ == "__main__":
     unittest.main()

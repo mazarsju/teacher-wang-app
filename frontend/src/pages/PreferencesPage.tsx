@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
+import AnkiSyncModal from "../components/AnkiSyncModal";
 import { InfoIcon, SettingsIcon, SyncIcon } from "../components/icons";
 import Page from "../components/Page";
 import {
@@ -78,6 +79,7 @@ export default function PreferencesPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [setupKind, setSetupKind] = useState<AnkiDeckKind | null>(null);
+  const [syncKind, setSyncKind] = useState<AnkiDeckKind | null>(null);
 
   const loadPreferences = useCallback(async () => {
     setError(null);
@@ -129,6 +131,20 @@ export default function PreferencesPage() {
 
   async function handleDeckConfigured() {
     setSetupKind(null);
+    try {
+      const anki = await fetchAnkiStatus();
+      setAnkiStatus(anki);
+    } catch (refreshError) {
+      setError(
+        refreshError instanceof Error
+          ? refreshError.message
+          : "Failed to refresh Anki status.",
+      );
+    }
+  }
+
+  async function handleSyncCompleted() {
+    setSyncKind(null);
     try {
       const anki = await fetchAnkiStatus();
       setAnkiStatus(anki);
@@ -303,6 +319,7 @@ export default function PreferencesPage() {
                         type="button"
                         className="page-add-button anki-deck-action-button"
                         disabled={!ankiStatus.connected}
+                        onClick={() => setSyncKind(kind)}
                       >
                         <SyncIcon className="anki-deck-action-icon" />
                         Sync
@@ -342,6 +359,12 @@ export default function PreferencesPage() {
         initialMapping={setupKind ? ankiStatus.decks[setupKind] : null}
         onCancel={() => setSetupKind(null)}
         onConfigured={() => void handleDeckConfigured()}
+      />
+      <AnkiSyncModal
+        isOpen={syncKind !== null}
+        kind={syncKind}
+        onCancel={() => setSyncKind(null)}
+        onSynced={() => void handleSyncCompleted()}
       />
     </Page>
   );

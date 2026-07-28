@@ -6,6 +6,7 @@ from backend.anki_connect import AnkiConnectError
 bp = Blueprint("anki", __name__)
 
 VALID_KINDS = frozenset({"mandarin_vocabulary", "mandarin_writting"})
+VALID_SYNC_ACTIONS = frozenset({"synchronize_all", "cancel_all", "partial"})
 
 
 @bp.get("/anki/status")
@@ -123,3 +124,62 @@ def auto_setup_vocabulary():
         return {"error": str(exc)}, 400
 
     return {"kind": "mandarin_vocabulary", "deck": deck}, 200
+
+
+@bp.get("/anki/sync/pending/<kind>")
+def get_pending_sync(kind: str):
+    if kind not in VALID_KINDS:
+        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
+
+    try:
+        payload = anki_sync.get_pending_sync(kind)
+    except ValueError as exc:
+        return {"error": str(exc)}, 400
+
+    return payload, 200
+
+
+@bp.post("/anki/sync")
+def sync_anki_deck():
+    data = request.get_json(silent=True)
+    if data is None:
+        return {"error": "Invalid JSON body"}, 400
+
+    if not isinstance(data, dict):
+        return {"error": "Request body must be a JSON object"}, 400
+
+    kind = data.get("kind")
+    action = data.get("action")
+    selected_ids = data.get("selected_ids")
+
+    if kind not in VALID_KINDS:
+        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
+
+    if action not in VALID_SYNC_ACTIONS:
+        return {
+            "error": (
+                'action must be "synchronize_all", "cancel_all", or "partial"'
+            )
+        }, 400
+
+    if action == "partial" and selected_ids is None:
+        return {"error": "selected_ids is required for partial synchronization"}, 400
+
+    if selected_ids is not None and (
+        not isinstance(selected_ids, list)
+        or not all(isinstance(item, str) for item in selected_ids)
+    ):
+        return {"error": "selected_ids must be an array of strings"}, 400
+
+    try:
+        result = anki_sync.run_sync(
+            kind,
+            action,
+            selected_ids=selected_ids,
+        )
+    except AnkiConnectError as exc:
+        return {"error": str(exc)}, 503
+    except ValueError as exc:
+        return {"error": str(exc)}, 400
+
+    return result, 200
