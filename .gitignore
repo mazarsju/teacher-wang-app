@@ -5,3 +5,7 @@ __pycache__/
 .config.txt
 conversation_logs/
 .cursor/skills/update-app-screenshots/scripts/node_modules/
+build/
+dist-desktop/
+frontend/src-tauri/binaries/learn-mandarin-api
+frontend/src-tauri/binaries/learn-mandarin-api-*

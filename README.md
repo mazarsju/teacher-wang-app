@@ -20,6 +20,7 @@ This project was intentionally developed using Cursor AI and coding agents. My o
 
 - **Backend:** Python, Flask, SQLAlchemy, SQLite
 - **Frontend:** React, TypeScript, Vite
+- **Desktop:** Tauri 2 (native shell) + PyInstaller sidecar for the Flask API
 - **AI:** LangChain (`langchain-core`, `langchain-openai`), OpenAI-compatible chat models via `ChatOpenAI`
 
 ## Project structure
@@ -58,7 +59,11 @@ learn-mandarin/
 │   │   └── utils/
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
-│   └── vite.config.ts      # Vite dev server and proxy config
+│   ├── vite.config.ts      # Vite dev server and proxy config
+│   └── src-tauri/          # Tauri desktop shell (Rust) + sidecar wiring
+├── scripts/
+│   ├── build-sidecar.sh   # Bundle Flask API with PyInstaller for Tauri
+│   └── build-desktop.sh   # Full local desktop installer build
 ├── docs/
 │   ├── screenshots/        # UI screenshots used in this README
 │   └── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
@@ -210,6 +215,47 @@ The coverage report is written to `frontend/coverage/` (open `coverage/index.htm
 
 To enable the hosted report, go to **Settings → Pages** and set **Build and deployment → Source** to **Deploy from a branch**, then choose branch **`gh-pages`** and folder **`/ (root)`**. The workflow creates and updates that branch automatically.
 
+### Desktop app (Tauri)
+
+The desktop package wraps the React UI in a native window and runs the Flask API as a bundled sidecar, so end users do not need Python or Node installed.
+
+#### Prerequisites (builders only)
+
+1. [Rust](https://rustup.rs/) (`rustc` / `cargo`)
+2. Platform tooling: Xcode Command Line Tools on macOS (`xcode-select --install`)
+3. Node.js + npm (frontend)
+4. Python venv with desktop deps:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python3 -m pip install -r backend/requirements-desktop.txt
+cd frontend && npm install
+```
+
+#### Build a local installer
+
+From the project root:
+
+```bash
+bash scripts/build-desktop.sh
+```
+
+Or from `frontend/`:
+
+```bash
+npm run tauri:build
+```
+
+On macOS, installers are written under `frontend/src-tauri/target/release/bundle/`:
+
+- `macos/Learn Mandarin.app`
+- `dmg/Learn Mandarin_<version>_<arch>.dmg`
+
+Open the `.dmg` (or the `.app`) to run the packaged app. User data (SQLite DB, LLM config, conversation logs) is stored in the OS app-data directory, not inside the install bundle.
+
+GitHub Actions release packaging can be added later on top of this same local build flow.
+
 ## AI logic
 
 Chat turns in this app are not a single LLM call. Several specialized agents collaborate on each message, especially in challenge scenarios.
@@ -347,4 +393,5 @@ Ease the process of synchronization between the app knowledge base and Anki.
 
 Make it easier for external users to install and play with the app
 
-- [ ] TODO
+- [x] Package the application as a strandalone application using Tauri
+- [ ] Integrate the packaging process directly in Gitlab using Gitlab actions

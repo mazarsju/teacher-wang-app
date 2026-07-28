@@ -2,8 +2,19 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const host = process.env.TAURI_DEV_HOST;
+
 export default defineConfig({
   plugins: [react()],
+  // Relative asset URLs are required when the UI is loaded from the Tauri webview.
+  base: "./",
+  clearScreen: false,
+  envPrefix: ["VITE_", "TAURI_"],
+  build: {
+    target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
+    minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+  },
   test: {
     globals: true,
     environment: "jsdom",
@@ -17,11 +28,25 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/test/**",
         "src/main.tsx",
+        "src/desktopApi.ts",
         "src/vite-env.d.ts",
       ],
     },
   },
   server: {
+    port: 5173,
+    strictPort: true,
+    host: host || false,
+    hmr: host
+      ? {
+          protocol: "ws",
+          host,
+          port: 1421,
+        }
+      : undefined,
+    watch: {
+      ignored: ["**/src-tauri/**"],
+    },
     proxy: {
       "/health": "http://127.0.0.1:5000",
       "/characters": "http://127.0.0.1:5000",

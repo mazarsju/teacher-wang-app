@@ -161,6 +161,8 @@ export default function ChatModal({
     return null;
   }
 
+  const activeCharacter = character;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedMessage = message.trim();
@@ -183,7 +185,7 @@ export default function ChatModal({
 
     try {
       const response = await sendChatMessage(
-        character.id,
+        activeCharacter.id,
         nextMessages,
         thread,
       );
@@ -245,7 +247,7 @@ export default function ChatModal({
     setError(null);
 
     try {
-      await clearChatHistory(character.id);
+      await clearChatHistory(activeCharacter.id);
       setMessages([]);
       setMessage("");
       setCompletedTaskIds(new Set());

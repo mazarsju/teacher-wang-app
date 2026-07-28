@@ -142,7 +142,7 @@ describe("KnowledgeBasePage", () => {
     const previewCharacters = characters.slice(0, 1);
     const previewWords = words.slice(0, 1);
 
-    fetchMock.mockImplementation((input: RequestInfo) => {
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
 
       if (matchesApiPath(url, "/characters")) {
@@ -328,7 +328,7 @@ describe("KnowledgeBasePage", () => {
     const fetchMock = vi.mocked(fetch);
     let pendingEstimate = 2;
 
-    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? "GET";
 
@@ -444,7 +444,7 @@ describe("KnowledgeBasePage", () => {
     render(<KnowledgeBasePage />);
     await screen.findByRole("button", { name: "Export" });
 
-    fetchMock.mockImplementation((input: RequestInfo) => {
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
 
       if (url.endsWith("/database/export")) {
@@ -493,7 +493,7 @@ describe("KnowledgeBasePage", () => {
     render(<KnowledgeBasePage />);
     await screen.findByRole("button", { name: "Import" });
 
-    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
 
       if (url.endsWith("/characters/bulk") && init?.method === "POST") {
