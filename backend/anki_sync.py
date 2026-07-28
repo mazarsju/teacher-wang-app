@@ -204,6 +204,14 @@ def _pending_vocabulary_words() -> list[Word]:
     )
 
 
+def _pending_writting_characters() -> list[Character]:
+    return (
+        Character.query.filter_by(writting_known=True, synchronized=False)
+        .order_by(Character.char)
+        .all()
+    )
+
+
 def _vocabulary_card_pinyin(word_text: str) -> str:
     """Build pinyin for a word, keeping unrecognized characters as-is.
 
@@ -236,10 +244,72 @@ def vocabulary_card_from_word(word: Word) -> dict[str, str]:
     }
 
 
+def _is_word_eligible_for_writting(word: Word) -> bool:
+    if word.definition is None or word.definition.strip() == "":
+        return False
+    for char in word.word:
+        character = Character.query.filter_by(char=char).first()
+        if character is None or not character.writting_known:
+            return False
+    return True
+
+
+def _find_writting_word_for_character(character: Character) -> Word | None:
+    candidates = [
+        word for word in character.words if _is_word_eligible_for_writting(word)
+    ]
+    if not candidates:
+        return None
+    # Prefer the character itself as a one-char word, then shortest, then alpha.
+    candidates.sort(
+        key=lambda word: (
+            0 if word.word == character.char else 1,
+            len(word.word),
+            word.word,
+        )
+    )
+    return candidates[0]
+
+
+def writting_card_from_character(character: Character) -> dict[str, str] | None:
+    word = _find_writting_word_for_character(character)
+    if word is None:
+        return None
+    definition = (word.definition or "").strip()
+    pinyin = _vocabulary_card_pinyin(word.word)
+    recto = f"{definition} ({pinyin})"
+    return {
+        # Unique by recto so multi-char words appear once in the sync list.
+        "id": recto,
+        "recto": recto,
+        "verso": word.word,
+    }
+
+
+def _character_ids_from_verso(verso: str) -> list[str]:
+    return list(verso)
+
+
+def _character_ids_from_writting_cards(cards: list[dict[str, str]]) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for card in cards:
+        for char_id in _character_ids_from_verso(card["verso"]):
+            if char_id in seen:
+                continue
+            seen.add(char_id)
+            ids.append(char_id)
+    return ids
+
+
 def _pending_count_for_kind(kind: DeckKind) -> int:
     if kind == "mandarin_vocabulary":
         return Word.query.filter_by(synchronized=False).count()
-    # Mandarin writting sync is not implemented yet.
+    if kind == "mandarin_writting":
+        return Character.query.filter_by(
+            writting_known=True,
+            synchronized=False,
+        ).count()
     return 0
 
 
@@ -255,22 +325,12 @@ def deck_status_for_mapping(
         or not _fields_complete(kind, fields)
     ):
         return "not_configured"
-    if kind == "mandarin_writting":
-        # Content sync for writting is not implemented yet.
-        return "not_synchronized"
     if _pending_count_for_kind(kind) > 0:
         return "not_synchronized"
     return "synchronized"
 
 
-def get_pending_sync(kind: DeckKind) -> dict[str, Any]:
-    mapping = get_deck_mapping(kind)
-    if mapping["status"] == "not_configured":
-        raise ValueError(f'Deck kind "{kind}" is not configured.')
-
-    if kind == "mandarin_writting":
-        raise ValueError("Mandarin writting synchronization is not implemented yet.")
-
+def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
     writting_field = mapping["fields"].get("writting", "").strip()
     if writting_field == "":
         raise ValueError('Mapped Anki field for "writting" is missing.')
@@ -288,18 +348,71 @@ def get_pending_sync(kind: DeckKind) -> dict[str, Any]:
         else:
             pending_words.append(word)
 
-    # Words already present in Anki should not stay pending forever.
     if already_in_anki:
         _mark_words_synchronized(already_in_anki)
-        mapping = get_deck_mapping(kind)
+        mapping = get_deck_mapping("mandarin_vocabulary")
 
     cards = [vocabulary_card_from_word(word) for word in pending_words]
     return {
-        "kind": kind,
+        "kind": "mandarin_vocabulary",
         "count": len(cards),
         "cards": cards,
+        "unsyncable": [],
         "deck": mapping,
     }
+
+
+def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
+    verso_field = mapping["fields"].get("verso", "").strip()
+    if verso_field == "":
+        raise ValueError('Mapped Anki field for "verso" is missing.')
+
+    existing_versos = anki_connect.field_values_in_deck(
+        mapping["deck_name"],
+        verso_field,
+    )
+
+    cards: list[dict[str, str]] = []
+    unsyncable: list[str] = []
+    already_in_anki: list[str] = []
+    seen_rectos: set[str] = set()
+
+    for character in _pending_writting_characters():
+        card = writting_card_from_character(character)
+        if card is None:
+            unsyncable.append(character.char)
+            continue
+        if card["verso"] in existing_versos:
+            already_in_anki.extend(_character_ids_from_verso(card["verso"]))
+            continue
+        if card["recto"] in seen_rectos:
+            continue
+        seen_rectos.add(card["recto"])
+        cards.append(card)
+
+    if already_in_anki:
+        _mark_characters_synchronized(already_in_anki)
+        mapping = get_deck_mapping("mandarin_writting")
+
+    return {
+        "kind": "mandarin_writting",
+        "count": len(cards),
+        "cards": cards,
+        "unsyncable": unsyncable,
+        "deck": mapping,
+    }
+
+
+def get_pending_sync(kind: DeckKind) -> dict[str, Any]:
+    mapping = get_deck_mapping(kind)
+    if mapping["status"] == "not_configured":
+        raise ValueError(f'Deck kind "{kind}" is not configured.')
+
+    if kind == "mandarin_vocabulary":
+        return _get_pending_vocabulary_sync(mapping)
+    if kind == "mandarin_writting":
+        return _get_pending_writting_sync(mapping)
+    raise ValueError(f'Unsupported deck kind "{kind}"')
 
 
 def _mark_words_synchronized(word_ids: list[str]) -> int:
@@ -316,8 +429,39 @@ def _mark_words_synchronized(word_ids: list[str]) -> int:
     return updated
 
 
+def _mark_characters_synchronized(char_ids: list[str]) -> int:
+    if not char_ids:
+        return 0
+    updated = 0
+    for char_id in char_ids:
+        character = Character.query.filter_by(char=char_id).first()
+        if character is None or character.synchronized:
+            continue
+        character.synchronized = True
+        updated += 1
+    db.session.commit()
+    return updated
+
+
+def _mark_synchronized(kind: DeckKind, ids: list[str]) -> int:
+    if kind == "mandarin_vocabulary":
+        return _mark_words_synchronized(ids)
+    return _mark_characters_synchronized(ids)
+
+
+def _sync_mark_ids_for_cards(
+    kind: DeckKind,
+    cards: list[dict[str, str]],
+) -> list[str]:
+    """IDs to mark synchronized after syncing/ignoring these cards."""
+    if kind == "mandarin_vocabulary":
+        return [card["id"] for card in cards]
+    return _character_ids_from_writting_cards(cards)
+
+
 def _build_anki_notes(
     *,
+    kind: DeckKind,
     deck_name: str,
     model_name: str,
     field_map: dict[str, str],
@@ -325,11 +469,17 @@ def _build_anki_notes(
 ) -> list[dict[str, Any]]:
     notes: list[dict[str, Any]] = []
     for card in cards:
-        anki_fields = {
-            field_map["writting"]: card["writting"],
-            field_map["pinyin"]: card["pinyin"],
-            field_map["definition"]: card["definition"],
-        }
+        if kind == "mandarin_vocabulary":
+            anki_fields = {
+                field_map["writting"]: card["writting"],
+                field_map["pinyin"]: card["pinyin"],
+                field_map["definition"]: card["definition"],
+            }
+        else:
+            anki_fields = {
+                field_map["recto"]: card["recto"],
+                field_map["verso"]: card["verso"],
+            }
         notes.append(
             {
                 "deckName": deck_name,
@@ -350,14 +500,18 @@ def run_sync(
 ) -> dict[str, Any]:
     pending = get_pending_sync(kind)
     cards: list[dict[str, str]] = pending["cards"]
+    unsyncable: list[str] = pending.get("unsyncable") or []
     mapping = pending["deck"]
 
     if action == "synchronize_all":
         to_add = cards
-        to_ignore: list[dict[str, str]] = []
+        to_ignore_cards: list[dict[str, str]] = []
+        extra_ignore_ids: list[str] = []
     elif action == "cancel_all":
         to_add = []
-        to_ignore = cards
+        to_ignore_cards = cards
+        # Writing: also ignore characters that cannot form a syncable card.
+        extra_ignore_ids = unsyncable
     elif action == "partial":
         if selected_ids is None:
             raise ValueError("selected_ids is required for partial synchronization")
@@ -373,34 +527,41 @@ def run_sync(
             )
         selected_set = set(selected_ids)
         to_add = [card for card in cards if card["id"] in selected_set]
-        to_ignore = [card for card in cards if card["id"] not in selected_set]
+        to_ignore_cards = [card for card in cards if card["id"] not in selected_set]
+        extra_ignore_ids = []
     else:
         raise ValueError(f'Unsupported sync action "{action}"')
+
+    to_ignore_ids = _sync_mark_ids_for_cards(kind, to_ignore_cards) + extra_ignore_ids
 
     added = 0
     if to_add:
         notes = _build_anki_notes(
+            kind=kind,
             deck_name=mapping["deck_name"],
             model_name=mapping["model_name"],
             field_map=mapping["fields"],
             cards=to_add,
         )
         results = anki_connect.add_notes(notes)
-        succeeded_ids: list[str] = []
+        succeeded_cards: list[dict[str, str]] = []
         failed = 0
         for card, note_id in zip(to_add, results):
             if note_id is None:
                 failed += 1
                 continue
-            succeeded_ids.append(card["id"])
-        if succeeded_ids:
-            added = _mark_words_synchronized(succeeded_ids)
+            succeeded_cards.append(card)
+        if succeeded_cards:
+            added = _mark_synchronized(
+                kind,
+                _sync_mark_ids_for_cards(kind, succeeded_cards),
+            )
         if failed > 0 and added == 0:
             raise anki_connect.AnkiConnectError(
                 f"Failed to add {failed} note(s) to Anki."
             )
         if failed > 0:
-            ignored = _mark_words_synchronized([card["id"] for card in to_ignore])
+            ignored = _mark_synchronized(kind, to_ignore_ids)
             return {
                 "kind": kind,
                 "action": action,
@@ -410,7 +571,7 @@ def run_sync(
                 "deck": get_deck_mapping(kind),
             }
 
-    ignored = _mark_words_synchronized([card["id"] for card in to_ignore])
+    ignored = _mark_synchronized(kind, to_ignore_ids)
     return {
         "kind": kind,
         "action": action,

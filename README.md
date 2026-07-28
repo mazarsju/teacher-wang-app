@@ -168,7 +168,7 @@ Anki must be running with the AnkiConnect add-on installed (code `2055492159`). 
 | `GET` | `/anki/models/<model>/fields` | List field names for a deck type |
 | `POST` | `/anki/decks/setup` | Map a mandarin_vocabulary/mandarin_writting deck, deck type, and fields (optionally create the deck) |
 | `POST` | `/anki/vocabulary/auto-setup` | Create a 3-direction Mandarin vocabulary deck type + deck (mapping is saved from the setup form) |
-| `GET` | `/anki/sync/pending/<kind>` | List unsynchronized cards awaiting Anki sync (`mandarin_vocabulary` only for now) |
+| `GET` | `/anki/sync/pending/<kind>` | List unsynchronized cards awaiting Anki sync (vocabulary words / writting characters) |
 | `POST` | `/anki/sync` | Push selected cards to Anki and/or mark cards as synchronized (`synchronize_all`, `cancel_all`, or `partial`) |
 | `POST` | `/chat` | Send a chat message to the selected AI character |
 | `GET` | `/chat/history/<character_id>` | Load persisted chat history for a character |
@@ -340,7 +340,7 @@ Ease the process of synchronization between the app knowledge base and Anki.
 
 - [x] Add a connection to Anki in the setting section
 - [ ] Make it possible to load your Anki collection to your current database (way "in")
-- [x] Make it possible to add new words to your Anki collection (way "out" for Mandarin vocabulary; writting deck sync still TODO)
+- [x] Make it possible to add new characters / words to your Anki collection (way "out" for Mandarin vocabulary and Mandarin writting)
 - [ ] Add a whole wizzard for the first connexion to help the user to populate his knowledge base
 
 ### 5. Packaging of the application

@@ -4,6 +4,8 @@ import {
   type AnkiDeckKind,
   type AnkiPendingCard,
   type AnkiPendingSync,
+  type AnkiPendingVocabularyCard,
+  type AnkiPendingWrittingCard,
 } from "../types/anki";
 import { fetchAnkiPendingSync, runAnkiSync } from "../utils/ankiApi";
 import ConfirmModal from "./ConfirmModal";
@@ -22,6 +24,23 @@ type AnkiSyncModalProps = {
   onCancel: () => void;
   onSynced: () => void;
 };
+
+function isVocabularyCard(
+  card: AnkiPendingCard,
+): card is AnkiPendingVocabularyCard {
+  return "writting" in card;
+}
+
+function isWrittingCard(card: AnkiPendingCard): card is AnkiPendingWrittingCard {
+  return "recto" in card;
+}
+
+function cardLabel(card: AnkiPendingCard): string {
+  if (isVocabularyCard(card)) {
+    return card.writting;
+  }
+  return card.verso;
+}
 
 export default function AnkiSyncModal({
   isOpen,
@@ -56,18 +75,15 @@ export default function AnkiSyncModal({
     setView("overview");
     setConfirmAction(null);
 
-    if (kind === "mandarin_writting") {
-      setError("Mandarin writting synchronization is not implemented yet.");
-      setIsLoading(false);
-      return;
-    }
-
     void fetchAnkiPendingSync(kind)
       .then((payload) => {
         if (!isMounted) {
           return;
         }
-        setPending(payload);
+        setPending({
+          ...payload,
+          unsyncable: payload.unsyncable ?? [],
+        });
         setSelectedIds(new Set(payload.cards.map((card) => card.id)));
       })
       .catch((loadError: unknown) => {
@@ -93,6 +109,9 @@ export default function AnkiSyncModal({
 
   const selectedCount = selectedIds.size;
   const ignoredCount = (pending?.count ?? 0) - selectedCount;
+  const unsyncable = pending?.unsyncable ?? [];
+  const cancelAllCount = (pending?.count ?? 0) + unsyncable.length;
+  const canCancelAll = cancelAllCount > 0;
 
   const confirmMessage = useMemo(() => {
     if (confirmAction === null || pending === null) {
@@ -106,6 +125,13 @@ export default function AnkiSyncModal({
       );
     }
     if (confirmAction.type === "cancel_all") {
+      if (pending.kind === "mandarin_writting") {
+        return (
+          `This action cannot be undone. All ${cancelAllCount} character` +
+          `${cancelAllCount === 1 ? "" : "s"} with “written known” will be ` +
+          "ignored for future synchronization."
+        );
+      }
       return (
         `This action cannot be undone. All ${total} card` +
         `${total === 1 ? "" : "s"} will be ignored for future synchronization.`
@@ -117,13 +143,14 @@ export default function AnkiSyncModal({
       `with the Anki deck, and ${ignoredCount} card` +
       `${ignoredCount === 1 ? "" : "s"} not selected will be ignored.`
     );
-  }, [confirmAction, ignoredCount, pending, selectedCount]);
+  }, [cancelAllCount, confirmAction, ignoredCount, pending, selectedCount]);
 
   if (!isOpen || kind === null) {
     return null;
   }
 
   const label = ANKI_DECK_LABELS[kind];
+  const isWritting = kind === "mandarin_writting";
 
   const toggleCard = (cardId: string) => {
     setSelectedIds((previous) => {
@@ -228,7 +255,7 @@ export default function AnkiSyncModal({
                 <button
                   type="button"
                   className="modal-button-confirm"
-                  disabled={pending.count === 0 || isSubmitting}
+                  disabled={!canCancelAll || isSubmitting}
                   onClick={() => setConfirmAction({ type: "cancel_all" })}
                 >
                   Cancel all synchronization
@@ -250,6 +277,24 @@ export default function AnkiSyncModal({
                   Cancel
                 </button>
               </div>
+
+              {isWritting && unsyncable.length > 0 && (
+                <div className="anki-sync-unsyncable" role="note">
+                  <p className="anki-sync-unsyncable-title">
+                    Characters that cannot be synchronized
+                  </p>
+                  <p className="anki-sync-unsyncable-text">
+                    These characters are not connected to a word with a
+                    definition (using only characters marked as “written
+                    known”):{" "}
+                    <span className="anki-sync-unsyncable-chars">
+                      {unsyncable.join("、")}
+                    </span>
+                    . You can ignore synchronization for all of them by choosing
+                    “Cancel all synchronization”.
+                  </p>
+                </div>
+              )}
             </>
           )}
 
@@ -283,37 +328,73 @@ export default function AnkiSyncModal({
               </div>
 
               <div className="anki-sync-card-list" role="list">
-                <div className="anki-sync-card-row anki-sync-card-row--header">
-                  <span className="anki-sync-card-check" aria-hidden="true" />
-                  <span>Writting</span>
-                  <span>Pinyin</span>
-                  <span>Definition</span>
-                </div>
-                {pending.cards.map((card: AnkiPendingCard) => {
-                  const checked = selectedIds.has(card.id);
-                  return (
-                    <label
-                      key={card.id}
-                      className="anki-sync-card-row"
-                      role="listitem"
-                    >
-                      <span className="anki-sync-card-check">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={isSubmitting}
-                          onChange={() => toggleCard(card.id)}
-                          aria-label={`Select ${card.writting}`}
-                        />
-                      </span>
-                      <span className="anki-sync-card-writting">
-                        {card.writting}
-                      </span>
-                      <span>{card.pinyin}</span>
-                      <span>{card.definition}</span>
-                    </label>
-                  );
-                })}
+                {isWritting ? (
+                  <>
+                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writting">
+                      <span className="anki-sync-card-check" aria-hidden="true" />
+                      <span>Recto</span>
+                      <span>Verso</span>
+                    </div>
+                    {pending.cards.filter(isWrittingCard).map((card) => {
+                      const checked = selectedIds.has(card.id);
+                      return (
+                        <label
+                          key={card.id}
+                          className="anki-sync-card-row anki-sync-card-row--writting"
+                          role="listitem"
+                        >
+                          <span className="anki-sync-card-check">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={isSubmitting}
+                              onChange={() => toggleCard(card.id)}
+                              aria-label={`Select ${cardLabel(card)}`}
+                            />
+                          </span>
+                          <span>{card.recto}</span>
+                          <span className="anki-sync-card-writting">
+                            {card.verso}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <>
+                    <div className="anki-sync-card-row anki-sync-card-row--header">
+                      <span className="anki-sync-card-check" aria-hidden="true" />
+                      <span>Writting</span>
+                      <span>Pinyin</span>
+                      <span>Definition</span>
+                    </div>
+                    {pending.cards.filter(isVocabularyCard).map((card) => {
+                      const checked = selectedIds.has(card.id);
+                      return (
+                        <label
+                          key={card.id}
+                          className="anki-sync-card-row"
+                          role="listitem"
+                        >
+                          <span className="anki-sync-card-check">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={isSubmitting}
+                              onChange={() => toggleCard(card.id)}
+                              aria-label={`Select ${card.writting}`}
+                            />
+                          </span>
+                          <span className="anki-sync-card-writting">
+                            {card.writting}
+                          </span>
+                          <span>{card.pinyin}</span>
+                          <span>{card.definition}</span>
+                        </label>
+                      );
+                    })}
+                  </>
+                )}
               </div>
 
               <div className="modal-actions">

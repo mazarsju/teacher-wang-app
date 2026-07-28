@@ -342,10 +342,11 @@ class TestAnkiSyncHelpers(unittest.TestCase):
             )
 
         mock_create.assert_called_once_with("Characters")
+        # No pending writting_known characters → configured deck is synchronized.
         self.assertEqual(
             result,
             {
-                "status": "not_synchronized",
+                "status": "synchronized",
                 "deck_name": "Characters",
                 "model_name": "Basic",
                 "fields": {"recto": "Front", "verso": "Back"},
@@ -631,6 +632,199 @@ class TestAnkiSyncHelpers(unittest.TestCase):
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(Word.query.filter_by(word="一").one().synchronized)
         self.assertTrue(Word.query.filter_by(word="二").one().synchronized)
+
+    def _configure_writting_deck(self):
+        from backend.settings import (
+            SETTING_ANKI_MANDARIN_WRITTING_DECK,
+            SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
+            SETTING_ANKI_MANDARIN_WRITTING_MODEL,
+            set_setting,
+        )
+
+        set_setting(SETTING_ANKI_MANDARIN_WRITTING_DECK, "Writting", commit=False)
+        set_setting(SETTING_ANKI_MANDARIN_WRITTING_MODEL, "Basic", commit=False)
+        set_setting(
+            SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
+            '{"recto": "Front", "verso": "Back"}',
+            commit=True,
+        )
+
+    def test_pending_writting_builds_recto_verso_and_lists_unsyncable(self):
+        from backend.anki_sync import get_pending_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_writting_deck()
+        water = Character(char="水", pinyin="shui3", writting_known=True)
+        fire = Character(char="火", pinyin="huo3", writting_known=True)
+        lonely = Character(char="孤", pinyin="gu1", writting_known=True)
+        db.session.add_all([water, fire, lonely])
+        water_word = Word(word="水", definition="water")
+        fire_word = Word(word="火", definition="")  # blank → unsyncable via this word
+        db.session.add_all([water_word, fire_word])
+        water.words.append(water_word)
+        fire.words.append(fire_word)
+        # lonely has no linked word
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.field_values_in_deck",
+            return_value=set(),
+        ):
+            pending = get_pending_sync("mandarin_writting")
+
+        self.assertEqual(pending["count"], 1)
+        self.assertEqual(
+            pending["cards"],
+            [
+                {
+                    "id": "water (shui3)",
+                    "recto": "water (shui3)",
+                    "verso": "水",
+                }
+            ],
+        )
+        self.assertEqual(sorted(pending["unsyncable"]), ["孤", "火"])
+
+    def test_pending_writting_dedupes_by_recto(self):
+        from backend.anki_sync import get_pending_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_writting_deck()
+        feng = Character(char="风", pinyin="feng1", writting_known=True)
+        xian = Character(char="险", pinyin="xian1", writting_known=True)
+        db.session.add_all([feng, xian])
+        risk = Word(word="风险", definition="Le risque")
+        db.session.add(risk)
+        feng.words.append(risk)
+        xian.words.append(risk)
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.field_values_in_deck",
+            return_value=set(),
+        ):
+            pending = get_pending_sync("mandarin_writting")
+
+        self.assertEqual(pending["count"], 1)
+        self.assertEqual(
+            pending["cards"],
+            [
+                {
+                    "id": "Le risque (feng1 xian1)",
+                    "recto": "Le risque (feng1 xian1)",
+                    "verso": "风险",
+                }
+            ],
+        )
+    def test_writting_cancel_all_marks_syncable_and_unsyncable(self):
+        from backend.anki_sync import run_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_writting_deck()
+        water = Character(char="水", pinyin="shui3", writting_known=True)
+        lonely = Character(char="孤", pinyin="gu1", writting_known=True)
+        db.session.add_all([water, lonely])
+        water_word = Word(word="水", definition="water")
+        db.session.add(water_word)
+        water.words.append(water_word)
+        db.session.commit()
+
+        with (
+            patch(
+                "backend.anki_sync.anki_connect.field_values_in_deck",
+                return_value=set(),
+            ),
+            patch("backend.anki_sync.anki_connect.add_notes") as mock_add,
+        ):
+            result = run_sync("mandarin_writting", "cancel_all")
+
+        mock_add.assert_not_called()
+        self.assertEqual(result["added"], 0)
+        self.assertEqual(result["ignored"], 2)
+        self.assertTrue(Character.query.filter_by(char="水").one().synchronized)
+        self.assertTrue(Character.query.filter_by(char="孤").one().synchronized)
+        self.assertEqual(result["deck"]["status"], "synchronized")
+
+    def test_writting_partial_does_not_touch_unsyncable(self):
+        from backend.anki_sync import run_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_writting_deck()
+        water = Character(char="水", pinyin="shui3", writting_known=True)
+        fire = Character(char="火", pinyin="huo3", writting_known=True)
+        lonely = Character(char="孤", pinyin="gu1", writting_known=True)
+        db.session.add_all([water, fire, lonely])
+        water_word = Word(word="水", definition="water")
+        fire_word = Word(word="火", definition="fire")
+        db.session.add_all([water_word, fire_word])
+        water.words.append(water_word)
+        fire.words.append(fire_word)
+        db.session.commit()
+
+        with (
+            patch(
+                "backend.anki_sync.anki_connect.field_values_in_deck",
+                return_value=set(),
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.add_notes",
+                return_value=[11],
+            ),
+        ):
+            result = run_sync(
+                "mandarin_writting",
+                "partial",
+                selected_ids=["water (shui3)"],
+            )
+
+        self.assertEqual(result["added"], 1)
+        self.assertEqual(result["ignored"], 1)
+        self.assertTrue(Character.query.filter_by(char="水").one().synchronized)
+        self.assertTrue(Character.query.filter_by(char="火").one().synchronized)
+        self.assertFalse(Character.query.filter_by(char="孤").one().synchronized)
+
+    def test_writting_synchronize_all_adds_recto_verso_notes(self):
+        from backend.anki_sync import run_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_writting_deck()
+        ni = Character(char="你", pinyin="ni3", writting_known=True)
+        hao = Character(char="好", pinyin="hao3", writting_known=True)
+        db.session.add_all([ni, hao])
+        hello = Word(word="你好", definition="hello")
+        db.session.add(hello)
+        ni.words.append(hello)
+        hao.words.append(hello)
+        db.session.commit()
+
+        with (
+            patch(
+                "backend.anki_sync.anki_connect.field_values_in_deck",
+                return_value=set(),
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.add_notes",
+                return_value=[1],
+            ) as mock_add,
+        ):
+            result = run_sync("mandarin_writting", "synchronize_all")
+
+        mock_add.assert_called_once()
+        notes = mock_add.call_args.kwargs.get("notes") or mock_add.call_args.args[0]
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(
+            notes[0]["fields"],
+            {"Front": "hello (ni3 hao3)", "Back": "你好"},
+        )
+        # One Anki note, but every character in the verso is marked synchronized.
+        self.assertEqual(result["added"], 2)
+        self.assertTrue(Character.query.filter_by(char="你").one().synchronized)
+        self.assertTrue(Character.query.filter_by(char="好").one().synchronized)
 
 
 if __name__ == "__main__":

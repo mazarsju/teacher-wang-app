@@ -26,17 +26,28 @@ export type AnkiDeckSetupResult = {
   deck: AnkiDeckMapping;
 };
 
-export type AnkiPendingCard = {
+export type AnkiPendingVocabularyCard = {
   id: string;
   writting: string;
   pinyin: string;
   definition: string;
 };
 
+export type AnkiPendingWrittingCard = {
+  id: string;
+  recto: string;
+  verso: string;
+};
+
+export type AnkiPendingCard =
+  | AnkiPendingVocabularyCard
+  | AnkiPendingWrittingCard;
+
 export type AnkiPendingSync = {
   kind: AnkiDeckKind;
   count: number;
   cards: AnkiPendingCard[];
+  unsyncable: string[];
   deck: AnkiDeckMapping;
 };
 
