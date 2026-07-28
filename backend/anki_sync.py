@@ -6,9 +6,9 @@ import json
 from typing import Any, Literal
 
 from backend import anki_connect
-from backend.chinese_validation import is_han_character, is_han_text
+from backend.chinese_validation import is_han_character
 from backend.extensions import db
-from backend.models import Character, Word, utcnow
+from backend.models import Character, IgnoreVocabCard, IgnoreWrittingCard, Word, utcnow
 from backend.pinyin import normalize_anki_pinyin_token
 from backend.settings import (
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
@@ -18,6 +18,7 @@ from backend.settings import (
     SETTING_ANKI_MANDARIN_WRITTING_DECK,
     SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
     SETTING_ANKI_MANDARIN_WRITTING_MODEL,
+    SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED,
     get_setting,
     set_setting,
 )
@@ -290,8 +291,14 @@ def writting_card_from_character(character: Character) -> dict[str, str] | None:
     }
 
 
+def _verso_significant_part(verso: str) -> str:
+    """Keep only the part before the first '-' (Anki annotations after are ignored)."""
+    return verso.split("-", 1)[0]
+
+
 def _character_ids_from_verso(verso: str) -> list[str]:
-    return list(verso)
+    significant = _verso_significant_part(verso)
+    return [char for char in significant if is_han_character(char)]
 
 
 def _character_ids_from_writting_cards(cards: list[dict[str, str]]) -> list[str]:
@@ -304,6 +311,14 @@ def _character_ids_from_writting_cards(cards: list[dict[str, str]]) -> list[str]
             seen.add(char_id)
             ids.append(char_id)
     return ids
+
+
+def _significant_anki_versos(versos: set[str]) -> set[str]:
+    return {
+        part.strip()
+        for part in (_verso_significant_part(verso) for verso in versos)
+        if part.strip() != ""
+    }
 
 
 def _pending_count_for_kind(kind: DeckKind) -> int:
@@ -333,17 +348,23 @@ def _pending_pull_count_for_kind(kind: DeckKind, mapping: dict[str, Any]) -> int
                 "definition": definition_field,
             },
         )
-        return len(_vocabulary_pull_cards_from_notes(notes))
+        pull_cards, pull_missing = _vocabulary_pull_cards_from_notes(notes)
+        return len(pull_cards) + len(pull_missing)
 
     if kind == "mandarin_writting":
+        recto_field = mapping["fields"].get("recto", "").strip()
         verso_field = mapping["fields"].get("verso", "").strip()
-        if verso_field == "":
+        if recto_field == "" or verso_field == "":
             return 0
-        existing_versos = anki_connect.field_values_in_deck(
+        notes = anki_connect.mapped_notes_in_deck(
             mapping["deck_name"],
-            verso_field,
+            {
+                "recto": recto_field,
+                "verso": verso_field,
+            },
         )
-        return _pull_count_from_anki_keys(existing_versos)
+        pull_cards, missing, _warning_rectos = _writting_pull_from_notes(notes)
+        return len(pull_cards) + len(missing)
 
     return 0
 
@@ -384,14 +405,6 @@ def status_from_sync_counts(
     return "synchronized"
 
 
-def _pull_count_from_anki_keys(anki_keys: set[str]) -> int:
-    """Count Anki note keys that are not yet local Word.word values."""
-    if not anki_keys:
-        return 0
-    local_words = {row.word for row in Word.query.with_entities(Word.word).all()}
-    return sum(1 for key in anki_keys if key not in local_words)
-
-
 def _parse_string_list_setting(raw: str) -> list[str]:
     if raw.strip() == "":
         return []
@@ -404,26 +417,141 @@ def _parse_string_list_setting(raw: str) -> list[str]:
     return [str(item) for item in data if isinstance(item, str) and item.strip() != ""]
 
 
+def _migrate_pull_ignored_settings_to_tables() -> None:
+    """One-time copy of legacy JSON ignore settings into ignore_* tables."""
+    vocab_raw = get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED, "[]")
+    for writting in _parse_string_list_setting(vocab_raw):
+        if IgnoreVocabCard.query.filter_by(writting=writting).first() is None:
+            db.session.add(IgnoreVocabCard(writting=writting))
+    writting_raw = get_setting(SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED, "[]")
+    for recto in _parse_string_list_setting(writting_raw):
+        if IgnoreWrittingCard.query.filter_by(recto=recto).first() is None:
+            db.session.add(IgnoreWrittingCard(recto=recto))
+    db.session.commit()
+
+
 def _get_vocabulary_pull_ignored() -> set[str]:
-    return set(
-        _parse_string_list_setting(
-            get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED, "[]")
-        )
-    )
+    return {
+        row.writting
+        for row in IgnoreVocabCard.query.with_entities(IgnoreVocabCard.writting).all()
+    }
 
 
 def _add_vocabulary_pull_ignored(writtings: list[str]) -> int:
-    if not writtings:
-        return 0
-    ignored = _get_vocabulary_pull_ignored()
-    before = len(ignored)
-    ignored.update(item for item in writtings if item.strip() != "")
-    set_setting(
-        SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED,
-        json.dumps(sorted(ignored), ensure_ascii=False),
-        commit=True,
+    added = 0
+    for writting in writtings:
+        key = writting.strip()
+        if key == "":
+            continue
+        if IgnoreVocabCard.query.filter_by(writting=key).first() is not None:
+            continue
+        db.session.add(IgnoreVocabCard(writting=key))
+        added += 1
+    if added:
+        db.session.commit()
+    return added
+
+
+def _get_writting_pull_ignored() -> set[str]:
+    return {
+        row.recto
+        for row in IgnoreWrittingCard.query.with_entities(IgnoreWrittingCard.recto).all()
+    }
+
+
+def _add_writting_pull_ignored(rectos: list[str]) -> int:
+    added = 0
+    for recto in rectos:
+        key = recto.strip()
+        if key == "":
+            continue
+        if IgnoreWrittingCard.query.filter_by(recto=key).first() is not None:
+            continue
+        db.session.add(IgnoreWrittingCard(recto=key))
+        added += 1
+    if added:
+        db.session.commit()
+    return added
+
+
+def _writting_anki_notes(mapping: dict[str, Any]) -> list[dict[str, str]]:
+    recto_field = mapping["fields"].get("recto", "").strip()
+    verso_field = mapping["fields"].get("verso", "").strip()
+    if recto_field == "" or verso_field == "":
+        raise ValueError("Mapped Anki writing fields are incomplete.")
+    return anki_connect.mapped_notes_in_deck(
+        mapping["deck_name"],
+        {
+            "recto": recto_field,
+            "verso": verso_field,
+        },
     )
-    return len(ignored) - before
+
+
+def _writting_pull_from_notes(
+    notes: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], list[str], list[str]]:
+    """Build pullable writing characters, missing chars, and warning Anki rectos."""
+    ignored = _get_writting_pull_ignored()
+    pull_cards: list[dict[str, str]] = []
+    missing: list[str] = []
+    warning_rectos: list[str] = []
+    seen_pull: set[str] = set()
+    seen_missing: set[str] = set()
+    seen_warning_recto: set[str] = set()
+
+    for note in notes:
+        recto = (note.get("recto") or "").strip()
+        if recto == "" or recto in ignored:
+            continue
+        verso = _verso_significant_part(note.get("verso") or "")
+        note_has_missing = False
+        for char in verso:
+            if not is_han_character(char):
+                continue
+            # Legacy settings migrated character ids into this table too.
+            if char in ignored:
+                continue
+            record = Character.query.filter_by(char=char).first()
+            if record is None:
+                note_has_missing = True
+                if char not in seen_missing:
+                    seen_missing.add(char)
+                    missing.append(char)
+                continue
+            if record.writting_known:
+                continue
+            if char in seen_pull:
+                continue
+            seen_pull.add(char)
+            pull_cards.append(
+                {
+                    "id": char,
+                    "recto": record.pinyin,
+                    "verso": char,
+                    "anki_recto": recto,
+                }
+            )
+        if note_has_missing and recto not in seen_warning_recto:
+            seen_warning_recto.add(recto)
+            warning_rectos.append(recto)
+
+    return pull_cards, missing, warning_rectos
+
+
+def _import_writting_pull_card(card: dict[str, Any]) -> bool:
+    char = str(card.get("id") or card.get("verso") or "").strip()
+    if char == "" or not is_han_character(char):
+        return False
+    record = Character.query.filter_by(char=char).first()
+    if record is None:
+        return False
+    now = utcnow()
+    record.writting_known = True
+    record.synchronized = True
+    record.updated_at = now
+    db.session.commit()
+    return True
 
 
 def _pair_writting_with_pinyin_tokens(
@@ -444,26 +572,75 @@ def _pair_writting_with_pinyin_tokens(
     return pairs
 
 
-def _characters_to_create_for_card(word_text: str, pinyin_field: str) -> list[str] | None:
-    """Return chars that would be created, or None if the card cannot fully resolve."""
+def _build_pinyin_guess_map(notes: list[dict[str, str]]) -> dict[str, str]:
+    """Guess character pinyin from any Anki note that has a non-empty pinyin field."""
+    guesses: dict[str, str] = {}
+    for note in notes:
+        writting = (note.get("writting") or "").strip()
+        pinyin_field = (note.get("pinyin") or "").strip()
+        if writting == "" or pinyin_field == "":
+            continue
+        for char, pinyin in _pair_writting_with_pinyin_tokens(writting, pinyin_field):
+            if pinyin is None or len(pinyin) > 6 or char in guesses:
+                continue
+            guesses[char] = pinyin
+    return guesses
+
+
+def _resolved_char_pinyin(
+    card_pinyin: str | None,
+    char: str,
+    guesses: dict[str, str],
+) -> str | None:
+    if card_pinyin is not None and len(card_pinyin) <= 6:
+        return card_pinyin
+    guessed = guesses.get(char)
+    if guessed is not None and len(guessed) <= 6:
+        return guessed
+    return None
+
+
+def _characters_to_create_for_card(
+    word_text: str,
+    pinyin_field: str,
+    guesses: dict[str, str] | None = None,
+) -> list[str] | None:
+    """Return chars that would be created, or None if the card cannot fully resolve.
+
+    Empty Anki pinyin is allowed: the word card is still pullable. Missing
+    characters are created when pinyin can be taken from the card itself or
+    guessed from other cards in the deck.
+    """
+    guess_map = guesses or {}
+    pinyin_blank = pinyin_field.strip() == ""
     to_create: list[str] = []
-    for char, pinyin in _pair_writting_with_pinyin_tokens(word_text, pinyin_field):
+    for char, card_pinyin in _pair_writting_with_pinyin_tokens(word_text, pinyin_field):
         if Character.query.filter_by(char=char).first() is not None:
             continue
-        if pinyin is None or len(pinyin) > 6:
+        pinyin = _resolved_char_pinyin(card_pinyin, char, guess_map)
+        if pinyin is None:
+            if pinyin_blank:
+                # Cannot create this character yet; still allow pulling the word.
+                continue
             return None
         to_create.append(char)
     return to_create
 
 
-def _ensure_characters_from_pinyin(word_text: str, pinyin_field: str) -> list[str]:
+def _ensure_characters_from_pinyin(
+    word_text: str,
+    pinyin_field: str,
+    guesses: dict[str, str] | None = None,
+) -> list[str]:
     """Create missing characters from Anki pinyin. Returns created char ids."""
+    guess_map = guesses or {}
     created: list[str] = []
     now = utcnow()
-    for char, pinyin in _pair_writting_with_pinyin_tokens(word_text, pinyin_field):
+    for char, card_pinyin in _pair_writting_with_pinyin_tokens(word_text, pinyin_field):
         if Character.query.filter_by(char=char).first() is not None:
             continue
-        if pinyin is None or len(pinyin) > 6:
+        pinyin = _resolved_char_pinyin(card_pinyin, char, guess_map)
+        if pinyin is None:
             continue
         db.session.add(
             Character(
@@ -479,17 +656,26 @@ def _ensure_characters_from_pinyin(word_text: str, pinyin_field: str) -> list[st
     return created
 
 
-def _import_vocabulary_card(card: dict[str, Any]) -> tuple[bool, int]:
+def _import_vocabulary_card(
+    card: dict[str, Any],
+    guesses: dict[str, str] | None = None,
+) -> tuple[bool, int]:
     """Import one vocabulary card. Returns (word_created, characters_created)."""
     word_text = str(card.get("writting") or "").strip()
-    if word_text == "" or not is_han_text(word_text) or len(word_text) > 10:
+    han_chars = [char for char in word_text if is_han_character(char)]
+    if word_text == "" or not han_chars or len(word_text) > 10:
         return False, 0
     if Word.query.filter_by(word=word_text).first() is not None:
         return False, 0
 
     definition = str(card.get("definition") or "").strip()[:100]
     pinyin_field = str(card.get("pinyin") or "")
-    created_chars = _ensure_characters_from_pinyin(word_text, pinyin_field)
+    pinyin_blank = pinyin_field.strip() == ""
+    created_chars = _ensure_characters_from_pinyin(
+        word_text,
+        pinyin_field,
+        guesses,
+    )
 
     missing = [
         char
@@ -497,7 +683,7 @@ def _import_vocabulary_card(card: dict[str, Any]) -> tuple[bool, int]:
         if is_han_character(char)
         and Character.query.filter_by(char=char).first() is None
     ]
-    if missing:
+    if missing and not pinyin_blank:
         # Roll back characters created for this failed word.
         for char in created_chars:
             record = Character.query.filter_by(char=char).first()
@@ -541,11 +727,21 @@ def _unique_characters_to_create(cards: list[dict[str, Any]]) -> list[str]:
 
 def _vocabulary_pull_cards_from_notes(
     notes: list[dict[str, str]],
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Return pullable vocab cards and writtings that cannot be pulled.
+
+    Cards longer than 10 characters are auto-added to ignore_vocab_card.
+    Warnings are only for cards that contain Han characters whose pinyin
+    cannot be resolved from the deck. Mixed / punctuation content is allowed.
+    """
     local_words = {row.word for row in Word.query.with_entities(Word.word).all()}
     ignored = _get_vocabulary_pull_ignored()
+    guesses = _build_pinyin_guess_map(notes)
     cards: list[dict[str, Any]] = []
+    missing: list[str] = []
+    auto_ignore: list[str] = []
     seen: set[str] = set()
+    seen_missing: set[str] = set()
     for note in notes:
         writting = (note.get("writting") or "").strip()
         if (
@@ -553,13 +749,24 @@ def _vocabulary_pull_cards_from_notes(
             or writting in local_words
             or writting in ignored
             or writting in seen
-            or not is_han_text(writting)
-            or len(writting) > 10
+            or writting in seen_missing
         ):
             continue
+        if len(writting) > 10:
+            auto_ignore.append(writting)
+            continue
+        han_chars = [char for char in writting if is_han_character(char)]
+        if not han_chars:
+            continue
         pinyin = (note.get("pinyin") or "").strip()
-        characters_to_create = _characters_to_create_for_card(writting, pinyin)
+        characters_to_create = _characters_to_create_for_card(
+            writting,
+            pinyin,
+            guesses,
+        )
         if characters_to_create is None:
+            seen_missing.add(writting)
+            missing.append(writting)
             continue
         seen.add(writting)
         definition = (note.get("definition") or "").strip()[:100]
@@ -572,18 +779,20 @@ def _vocabulary_pull_cards_from_notes(
                 "characters_to_create": characters_to_create,
             }
         )
+    if auto_ignore:
+        _add_vocabulary_pull_ignored(auto_ignore)
     cards.sort(key=lambda card: str(card["writting"]))
-    return cards
+    missing.sort()
+    return cards, missing
 
 
-def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
+def _vocabulary_anki_notes(mapping: dict[str, Any]) -> list[dict[str, str]]:
     writting_field = mapping["fields"].get("writting", "").strip()
     pinyin_field = mapping["fields"].get("pinyin", "").strip()
     definition_field = mapping["fields"].get("definition", "").strip()
     if writting_field == "" or pinyin_field == "" or definition_field == "":
         raise ValueError("Mapped Anki vocabulary fields are incomplete.")
-
-    notes = anki_connect.mapped_notes_in_deck(
+    return anki_connect.mapped_notes_in_deck(
         mapping["deck_name"],
         {
             "writting": writting_field,
@@ -591,12 +800,16 @@ def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
             "definition": definition_field,
         },
     )
+
+
+def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
+    notes = _vocabulary_anki_notes(mapping)
     existing_writtings = {
         (note.get("writting") or "").strip()
         for note in notes
         if (note.get("writting") or "").strip() != ""
     }
-    pull_cards = _vocabulary_pull_cards_from_notes(notes)
+    pull_cards, pull_missing = _vocabulary_pull_cards_from_notes(notes)
     pull_characters = _unique_characters_to_create(pull_cards)
 
     pending_words: list[Word] = []
@@ -616,7 +829,7 @@ def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         "status": status_from_sync_counts(
             configured=True,
             push_count=len(cards),
-            pull_count=len(pull_cards),
+            pull_count=len(pull_cards) + len(pull_missing),
         ),
     }
     return {
@@ -624,9 +837,10 @@ def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         "count": len(cards),
         "cards": cards,
         "unsyncable": [],
-        "pull_count": len(pull_cards),
+        "pull_count": len(pull_cards) + len(pull_missing),
         "pull_cards": pull_cards,
         "pull_characters_to_create_count": len(pull_characters),
+        "pull_missing": pull_missing,
         "deck": mapping,
     }
 
@@ -636,11 +850,14 @@ def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
     if verso_field == "":
         raise ValueError('Mapped Anki field for "verso" is missing.')
 
-    existing_versos = anki_connect.field_values_in_deck(
-        mapping["deck_name"],
-        verso_field,
-    )
-    pull_count = _pull_count_from_anki_keys(existing_versos)
+    notes = _writting_anki_notes(mapping)
+    existing_versos = {
+        (note.get("verso") or "").strip()
+        for note in notes
+        if (note.get("verso") or "").strip() != ""
+    }
+    anki_verso_keys = _significant_anki_versos(existing_versos)
+    pull_cards, pull_missing, pull_warning_rectos = _writting_pull_from_notes(notes)
 
     cards: list[dict[str, str]] = []
     unsyncable: list[str] = []
@@ -652,7 +869,7 @@ def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         if card is None:
             unsyncable.append(character.char)
             continue
-        if card["verso"] in existing_versos:
+        if card["verso"] in anki_verso_keys:
             already_in_anki.extend(_character_ids_from_verso(card["verso"]))
             continue
         if card["recto"] in seen_rectos:
@@ -668,7 +885,7 @@ def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         "status": status_from_sync_counts(
             configured=True,
             push_count=len(cards),
-            pull_count=pull_count,
+            pull_count=len(pull_cards) + len(pull_missing),
             unsyncable_count=len(unsyncable),
         ),
     }
@@ -677,8 +894,10 @@ def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         "count": len(cards),
         "cards": cards,
         "unsyncable": unsyncable,
-        "pull_count": pull_count,
-        "pull_cards": [],
+        "pull_count": len(pull_cards) + len(pull_missing),
+        "pull_cards": pull_cards,
+        "pull_missing": pull_missing,
+        "pull_warning_rectos": pull_warning_rectos,
         "pull_characters_to_create_count": 0,
         "deck": mapping,
     }
@@ -871,15 +1090,12 @@ def run_pull(
     *,
     selected_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    if kind != "mandarin_vocabulary":
-        raise ValueError("Pull from Anki is only implemented for Mandarin vocabulary.")
-
     pending = get_pending_sync(kind)
-    cards: list[dict[str, str]] = pending.get("pull_cards") or []
+    cards: list[dict[str, Any]] = list(pending.get("pull_cards") or [])
 
     if action == "synchronize_all":
         to_import = cards
-        to_ignore = []
+        to_ignore: list[dict[str, Any]] = []
     elif action == "cancel_all":
         to_import = []
         to_ignore = cards
@@ -890,30 +1106,68 @@ def run_pull(
             isinstance(item, str) for item in selected_ids
         ):
             raise ValueError("selected_ids must be an array of strings")
-        pending_ids = {card["id"] for card in cards}
+        pending_ids = {str(card["id"]) for card in cards}
         unknown = [item for item in selected_ids if item not in pending_ids]
         if unknown:
             raise ValueError(
                 f"Unknown pending pull card ids: {', '.join(sorted(unknown))}"
             )
         selected_set = set(selected_ids)
-        to_import = [card for card in cards if card["id"] in selected_set]
-        to_ignore = [card for card in cards if card["id"] not in selected_set]
+        to_import = [card for card in cards if str(card["id"]) in selected_set]
+        to_ignore = [card for card in cards if str(card["id"]) not in selected_set]
     else:
         raise ValueError(f'Unsupported sync action "{action}"')
 
     imported = 0
     characters_added = 0
     failed = 0
-    for card in to_import:
-        word_created, chars_created = _import_vocabulary_card(card)
-        if word_created:
-            imported += 1
-            characters_added += chars_created
-        else:
-            failed += 1
-
-    ignored = _add_vocabulary_pull_ignored([str(card["id"]) for card in to_ignore])
+    if kind == "mandarin_vocabulary":
+        guesses: dict[str, str] = {}
+        if to_import:
+            try:
+                notes = _vocabulary_anki_notes(
+                    pending.get("deck") or get_deck_mapping(kind, check_pull=False)
+                )
+                guesses = _build_pinyin_guess_map(notes)
+            except Exception:
+                guesses = {}
+        for card in to_import:
+            word_created, chars_created = _import_vocabulary_card(card, guesses)
+            if word_created:
+                imported += 1
+                characters_added += chars_created
+            else:
+                failed += 1
+        ignore_keys = [str(card["id"]) for card in to_ignore]
+        if action == "cancel_all":
+            ignore_keys.extend(
+                str(item)
+                for item in (pending.get("pull_missing") or [])
+                if str(item).strip() != ""
+            )
+        ignored = _add_vocabulary_pull_ignored(ignore_keys)
+    elif kind == "mandarin_writting":
+        for card in to_import:
+            if _import_writting_pull_card(card):
+                imported += 1
+            else:
+                failed += 1
+        ignore_keys: list[str] = []
+        for card in to_ignore:
+            anki_recto = str(card.get("anki_recto") or "").strip()
+            if anki_recto != "":
+                ignore_keys.append(anki_recto)
+            else:
+                ignore_keys.append(str(card["id"]))
+        if action == "cancel_all":
+            ignore_keys.extend(
+                str(item)
+                for item in (pending.get("pull_warning_rectos") or [])
+                if str(item).strip() != ""
+            )
+        ignored = _add_writting_pull_ignored(ignore_keys)
+    else:
+        raise ValueError(f'Unsupported deck kind "{kind}"')
 
     if failed > 0 and imported == 0 and to_import:
         raise ValueError(f"Failed to import {failed} card(s) from Anki.")

@@ -15,6 +15,9 @@ SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED = (
 SETTING_ANKI_MANDARIN_WRITTING_DECK = "anki_mandarin_writting_deck"
 SETTING_ANKI_MANDARIN_WRITTING_MODEL = "anki_mandarin_writting_model"
 SETTING_ANKI_MANDARIN_WRITTING_FIELDS = "anki_mandarin_writting_fields"
+SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED = (
+    "anki_mandarin_writting_pull_ignored"
+)
 
 LEGACY_SETTING_MIGRATIONS: tuple[tuple[str, str], ...] = (
     ("anki_character_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
@@ -35,6 +38,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_ANKI_MANDARIN_WRITTING_DECK: "",
     SETTING_ANKI_MANDARIN_WRITTING_MODEL: "",
     SETTING_ANKI_MANDARIN_WRITTING_FIELDS: "",
+    SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED: "[]",
 }
 
 # Legacy token keys removed when migrating to the token_count table.

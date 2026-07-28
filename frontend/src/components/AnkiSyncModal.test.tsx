@@ -362,58 +362,113 @@ describe("AnkiSyncModal", () => {
     });
   });
 
-  it("keeps writting pull stubbed", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo, init?: RequestInit) => {
-        const url = String(input);
-        const method = init?.method ?? "GET";
+  it("pulls writing characters and shows missing warning", async () => {
+    const onSynced = vi.fn();
+    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
 
-        if (
-          url.endsWith("/anki/sync/pending/mandarin_writting") &&
-          method === "GET"
-        ) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              kind: "mandarin_writting",
-              count: 0,
-              cards: [],
-              unsyncable: [],
-              pull_count: 2,
-              pull_cards: [],
-              deck: {
-                status: "synchronized",
-                deck_name: "Writting",
-                model_name: "Basic",
-                fields: { recto: "Front", verso: "Back" },
-              },
-            }),
-          });
-        }
-
+      if (
+        url.endsWith("/anki/sync/pending/mandarin_writting") &&
+        method === "GET"
+      ) {
         return Promise.resolve({
-          ok: false,
-          json: async () => ({}),
+          ok: true,
+          json: async () => ({
+            kind: "mandarin_writting",
+            count: 0,
+            cards: [],
+            unsyncable: [],
+            pull_count: 2,
+            pull_cards: [
+              {
+                id: "水",
+                recto: "shui3",
+                verso: "水",
+              },
+            ],
+            pull_missing: ["孤"],
+            deck: {
+              status: "not_synchronized",
+              deck_name: "Writting",
+              model_name: "Basic",
+              fields: { recto: "Front", verso: "Back" },
+            },
+          }),
         });
-      }),
-    );
+      }
+
+      if (url.endsWith("/anki/sync") && method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            kind: "mandarin_writting",
+            action: "synchronize_all",
+            direction: "pull",
+            added: 1,
+            ignored: 0,
+            failed: 0,
+            deck: {
+              status: "synchronized",
+              deck_name: "Writting",
+              model_name: "Basic",
+              fields: { recto: "Front", verso: "Back" },
+            },
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
     render(
       <AnkiSyncModal
         isOpen
         kind="mandarin_writting"
         onCancel={vi.fn()}
-        onSynced={vi.fn()}
+        onSynced={onSynced}
       />,
     );
 
-    expect(await screen.findByText("2 cards to pull")).toBeInTheDocument();
+    expect(await screen.findByText("2 characters to pull")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Characters not yet in the knowledge base/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/孤/)).toBeInTheDocument();
+
     await userEvent.click(
       screen.getByRole("button", { name: "Pull all from Anki" }),
     );
+    const confirmDialog = screen.getByRole("dialog", {
+      name: /cannot be undone/i,
+    });
     expect(
-      screen.getByText(/Pull from Anki for Mandarin writting is not available yet/),
+      within(confirmDialog).getByText(
+        /pull all 1 character from Anki and mark them as “written known”/,
+      ),
     ).toBeInTheDocument();
+    await userEvent.click(
+      within(confirmDialog).getByRole("button", { name: "Confirm" }),
+    );
+
+    await waitFor(() => {
+      expect(onSynced).toHaveBeenCalledTimes(1);
+    });
+
+    const syncCall = fetchMock.mock.calls.find(
+      ([url, init]) =>
+        String(url).endsWith("/anki/sync") &&
+        (init as RequestInit | undefined)?.method === "POST",
+    );
+    expect(JSON.parse(String((syncCall?.[1] as RequestInit).body))).toEqual({
+      kind: "mandarin_writting",
+      action: "synchronize_all",
+      direction: "pull",
+      selected_ids: undefined,
+    });
   });
 });

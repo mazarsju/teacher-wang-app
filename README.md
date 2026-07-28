@@ -339,8 +339,8 @@ Several agents collaborating around focused learning scenarios.
 Ease the process of synchronization between the app knowledge base and Anki.
 
 - [x] Add a connection to Anki in the setting section
-- [ ] Make it possible to load your Anki collection to your current database (way "in"; vocabulary pull is implemented, Mandarin writting pull still TODO)
-- [x] Make it possible to add new characters / words to your Anki collection (way "out" for Mandarin vocabulary and Mandarin writting)
+- [x] Make it possible to add new characters / words to your Anki collection (way "out")
+- [x] Make it possible to load your Anki collection to your current database (way "in")
 - [ ] Add a whole wizzard for the first connexion to help the user to populate his knowledge base
 
 ### 5. Packaging of the application

@@ -52,6 +52,7 @@ export type AnkiPendingSync = {
   pull_count: number;
   pull_cards: AnkiPendingCard[];
   pull_characters_to_create_count?: number;
+  pull_missing?: string[];
   deck: AnkiDeckMapping;
 };
 

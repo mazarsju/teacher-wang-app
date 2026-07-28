@@ -85,7 +85,6 @@ export default function AnkiSyncModal({
   const [view, setView] = useState<SyncView>("overview");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmAction, setConfirmAction] = useState<PendingConfirm>(null);
-  const [pullComingSoonOpen, setPullComingSoonOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen || kind === null) {
@@ -96,7 +95,6 @@ export default function AnkiSyncModal({
       setView("overview");
       setSelectedIds(new Set());
       setConfirmAction(null);
-      setPullComingSoonOpen(false);
       return;
     }
 
@@ -106,7 +104,6 @@ export default function AnkiSyncModal({
     setPending(null);
     setView("overview");
     setConfirmAction(null);
-    setPullComingSoonOpen(false);
 
     void fetchAnkiPendingSync(kind)
       .then((payload) => {
@@ -121,6 +118,7 @@ export default function AnkiSyncModal({
           pull_characters_to_create_count:
             payload.pull_characters_to_create_count ??
             uniqueCharactersToCreate(payload.pull_cards ?? []),
+          pull_missing: payload.pull_missing ?? [],
         };
         setPending(next);
         setSelectedIds(new Set(next.cards.map((card) => card.id)));
@@ -150,17 +148,19 @@ export default function AnkiSyncModal({
   const pullCards = pending?.pull_cards ?? [];
   const pushCount = pending?.count ?? 0;
   const pullCount = pending?.pull_count ?? 0;
+  const pullActionableCount = pullCards.length;
   const pullCharactersToCreateCount =
     pending?.pull_characters_to_create_count ??
     uniqueCharactersToCreate(pullCards);
+  const pullMissing = pending?.pull_missing ?? [];
+  const canIgnoreAllPull = pullActionableCount > 0 || pullMissing.length > 0;
   const unsyncable = pending?.unsyncable ?? [];
   const cancelAllPushCount = pushCount + unsyncable.length;
   const canIgnoreAllPush = cancelAllPushCount > 0;
   const selectedCount = selectedIds.size;
   const activeCardCount =
-    view === "partial-pull" ? pullCount : pushCount;
+    view === "partial-pull" ? pullActionableCount : pushCount;
   const ignoredCount = activeCardCount - selectedCount;
-  const pullEnabled = kind === "mandarin_vocabulary";
   const selectedPullCharactersToCreateCount = useMemo(() => {
     if (confirmAction?.direction !== "pull" || confirmAction.type !== "partial") {
       return 0;
@@ -204,6 +204,12 @@ export default function AnkiSyncModal({
     }
 
     if (confirmAction.type === "all") {
+      if (pending.kind === "mandarin_writting") {
+        return (
+          `This action cannot be undone. It will pull all ${pullActionableCount} character` +
+          `${pullActionableCount === 1 ? "" : "s"} from Anki and mark them as “written known”.`
+        );
+      }
       return (
         `This action cannot be undone. It will pull all ${pullCount} card` +
         `${pullCount === 1 ? "" : "s"} from Anki into your knowledge base` +
@@ -211,9 +217,26 @@ export default function AnkiSyncModal({
       );
     }
     if (confirmAction.type === "ignore_all") {
+      const ignoreTotal = pullActionableCount + pullMissing.length;
+      if (pending.kind === "mandarin_writting") {
+        return (
+          `This action cannot be undone. All ${ignoreTotal} character` +
+          `${ignoreTotal === 1 ? "" : "s"} pending for pull (including warnings) ` +
+          "will be ignored for future pulls from Anki."
+        );
+      }
       return (
-        `This action cannot be undone. All ${pullCount} card` +
-        `${pullCount === 1 ? "" : "s"} will be ignored for future pulls from Anki.`
+        `This action cannot be undone. All ${ignoreTotal} card` +
+        `${ignoreTotal === 1 ? "" : "s"} pending for pull (including warnings) ` +
+        "will be ignored for future pulls from Anki."
+      );
+    }
+    if (pending.kind === "mandarin_writting") {
+      return (
+        `This action cannot be undone. ${selectedCount} character` +
+        `${selectedCount === 1 ? "" : "s"} currently selected will be marked as ` +
+        `“written known”, and ${ignoredCount} character` +
+        `${ignoredCount === 1 ? "" : "s"} not selected will be ignored for future pulls.`
       );
     }
     return (
@@ -228,8 +251,10 @@ export default function AnkiSyncModal({
     confirmAction,
     ignoredCount,
     pending,
+    pullActionableCount,
     pullCharactersToCreateCount,
     pullCount,
+    pullMissing.length,
     pushCount,
     selectedCount,
     selectedPullCharactersToCreateCount,
@@ -268,10 +293,6 @@ export default function AnkiSyncModal({
   };
 
   const openPartialPull = () => {
-    if (!pullEnabled) {
-      setPullComingSoonOpen(true);
-      return;
-    }
     setSelectedIds(new Set(pullCards.map((card) => card.id)));
     setView("partial-pull");
   };
@@ -279,10 +300,6 @@ export default function AnkiSyncModal({
   const handlePullAction = (
     type: "all" | "ignore_all" | "partial",
   ) => {
-    if (!pullEnabled) {
-      setPullComingSoonOpen(true);
-      return;
-    }
     if (type === "partial") {
       openPartialPull();
       return;
@@ -457,20 +474,24 @@ export default function AnkiSyncModal({
                 <div className="anki-sync-panel-header">
                   <h3 className="anki-sync-panel-title">Pull from Anki</h3>
                   <p className="anki-sync-panel-count">
-                    {formatCount(pullCount, "card to pull", "cards to pull")}
+                    {formatCount(
+                      pullCount,
+                      isWritting ? "character to pull" : "card to pull",
+                      isWritting ? "characters to pull" : "cards to pull",
+                    )}
                   </p>
                 </div>
                 <p className="anki-sync-panel-copy">
-                  {pullEnabled
-                    ? "Cards found in this Anki deck that are not yet in your knowledge base."
-                    : "Cards found in this Anki deck that are not yet in your knowledge base. Import for Mandarin writting is not available yet."}
+                  {isWritting
+                    ? "Characters found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”."
+                    : "Cards found in this Anki deck that are not yet in your knowledge base."}
                 </p>
 
                 <div className="anki-sync-actions">
                   <button
                     type="button"
                     className="modal-button-confirm-primary"
-                    disabled={pullCount === 0 || isSubmitting}
+                    disabled={pullActionableCount === 0 || isSubmitting}
                     onClick={() => handlePullAction("all")}
                   >
                     Pull all from Anki
@@ -478,7 +499,7 @@ export default function AnkiSyncModal({
                   <button
                     type="button"
                     className="modal-button-confirm"
-                    disabled={pullCount === 0 || isSubmitting}
+                    disabled={!canIgnoreAllPull || isSubmitting}
                     onClick={() => handlePullAction("ignore_all")}
                   >
                     Ignore all for pull
@@ -486,12 +507,46 @@ export default function AnkiSyncModal({
                   <button
                     type="button"
                     className="page-add-button"
-                    disabled={pullCount === 0 || isSubmitting}
+                    disabled={pullActionableCount === 0 || isSubmitting}
                     onClick={() => handlePullAction("partial")}
                   >
                     Choose what to pull
                   </button>
                 </div>
+
+                {isWritting && pullMissing.length > 0 && (
+                  <div className="anki-sync-unsyncable" role="note">
+                    <p className="anki-sync-unsyncable-title">
+                      Characters not yet in the knowledge base
+                    </p>
+                    <p className="anki-sync-unsyncable-text">
+                      These characters from Anki are not yet part of a known
+                      word. Add them manually in the app, or synchronize the
+                      Mandarin vocabulary deck with a word that includes them
+                      first:{" "}
+                      <span className="anki-sync-unsyncable-chars">
+                        {pullMissing.join("、")}
+                      </span>
+                      .
+                    </p>
+                  </div>
+                )}
+
+                {!isWritting && pullMissing.length > 0 && (
+                  <div className="anki-sync-unsyncable" role="note">
+                    <p className="anki-sync-unsyncable-title">
+                      Cards that cannot be pulled
+                    </p>
+                    <p className="anki-sync-unsyncable-text">
+                      These Anki cards contain Chinese characters whose pinyin
+                      could not be resolved from the deck:{" "}
+                      <span className="anki-sync-unsyncable-chars">
+                        {pullMissing.join("、")}
+                      </span>
+                      .
+                    </p>
+                  </div>
+                )}
               </section>
 
               <div className="modal-actions anki-sync-footer">
@@ -604,8 +659,9 @@ export default function AnkiSyncModal({
           {!isLoading && pending !== null && view === "partial-pull" && (
             <>
               <p className="modal-message">
-                Choose which cards to pull from Anki. Unselected cards will be
-                ignored for future pulls.
+                {isWritting
+                  ? "Choose which characters to mark as “written known”. Unselected characters will be ignored for future pulls."
+                  : "Choose which cards to pull from Anki. Unselected cards will be ignored for future pulls."}
               </p>
 
               <div className="anki-sync-partial-toolbar">
@@ -626,12 +682,46 @@ export default function AnkiSyncModal({
                   Unselect all
                 </button>
                 <span className="anki-sync-partial-count">
-                  {selectedCount} of {pullCount} selected
+                  {selectedCount} of {pullActionableCount} selected
                 </span>
               </div>
 
               <div className="anki-sync-card-list" role="list">
-                {renderVocabularyPartialList(pullCards)}
+                {isWritting ? (
+                  <>
+                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writting">
+                      <span className="anki-sync-card-check" aria-hidden="true" />
+                      <span>Pinyin</span>
+                      <span>Character</span>
+                    </div>
+                    {pullCards.filter(isWrittingCard).map((card) => {
+                      const checked = selectedIds.has(card.id);
+                      return (
+                        <label
+                          key={card.id}
+                          className="anki-sync-card-row anki-sync-card-row--writting"
+                          role="listitem"
+                        >
+                          <span className="anki-sync-card-check">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={isSubmitting}
+                              onChange={() => toggleCard(card.id)}
+                              aria-label={`Select ${cardLabel(card)}`}
+                            />
+                          </span>
+                          <span>{card.recto}</span>
+                          <span className="anki-sync-card-writting">
+                            {card.verso}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </>
+                ) : (
+                  renderVocabularyPartialList(pullCards)
+                )}
               </div>
 
               <div className="modal-actions">
@@ -686,13 +776,6 @@ export default function AnkiSyncModal({
         onConfirm={() => {
           void handleConfirm();
         }}
-      />
-
-      <ConfirmModal
-        isOpen={pullComingSoonOpen}
-        message="Pull from Anki for Mandarin writting is not available yet."
-        onCancel={() => setPullComingSoonOpen(false)}
-        onConfirm={() => setPullComingSoonOpen(false)}
       />
     </>
   );

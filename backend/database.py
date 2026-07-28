@@ -280,3 +280,6 @@ def init_db(app: Flask) -> None:
         _migrate_settings_token_keys_to_token_count()
         _ensure_hsk_content_loaded()
         _ensure_settings()
+        from backend.anki_sync import _migrate_pull_ignored_settings_to_tables
+
+        _migrate_pull_ignored_settings_to_tables()

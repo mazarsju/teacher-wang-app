@@ -108,6 +108,22 @@ class Setting(db.Model):
     value = db.Column(String, nullable=False, default="")
 
 
+class IgnoreVocabCard(db.Model):
+    """Anki vocabulary writting values ignored for pull sync."""
+
+    __tablename__ = "ignore_vocab_card"
+
+    writting = db.Column(String, primary_key=True)
+
+
+class IgnoreWrittingCard(db.Model):
+    """Anki writing recto values ignored for pull sync."""
+
+    __tablename__ = "ignore_writting_card"
+
+    recto = db.Column(String, primary_key=True)
+
+
 class TokenCount(db.Model):
     """One recorded LLM token-usage event (input or output)."""
 
