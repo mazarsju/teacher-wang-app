@@ -7,7 +7,7 @@ describe("AnkiSyncModal", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads pending vocabulary cards and runs synchronize all", async () => {
+  it("loads push/pull sections and runs push all to Anki", async () => {
     const onSynced = vi.fn();
     const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
       const url = String(input);
@@ -34,6 +34,7 @@ describe("AnkiSyncModal", () => {
               },
             ],
             unsyncable: [],
+            pull_count: 3,
             deck: {
               status: "not_synchronized",
               deck_name: "Vocab",
@@ -88,20 +89,22 @@ describe("AnkiSyncModal", () => {
     );
 
     expect(
-      await screen.findByText("2 elements need to be synchronized."),
+      await screen.findByRole("heading", { name: "Sync — Mandarin vocabulary" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Push to Anki" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pull from Anki" })).toBeInTheDocument();
+    expect(screen.getByText("2 cards to push")).toBeInTheDocument();
+    expect(screen.getByText("3 cards to pull")).toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Synchronize all" }),
+      screen.getByRole("button", { name: "Push all to Anki" }),
     );
 
     const confirmDialog = screen.getByRole("dialog", {
       name: /cannot be undone/i,
     });
     expect(
-      within(confirmDialog).getByText(
-        /It will add all 2 cards to the Anki deck/,
-      ),
+      within(confirmDialog).getByText(/It will push all 2 cards to the Anki deck/),
     ).toBeInTheDocument();
 
     await userEvent.click(
@@ -125,7 +128,7 @@ describe("AnkiSyncModal", () => {
     });
   });
 
-  it("supports partial selection with select/unselect all", async () => {
+  it("supports choose what to push with select/unselect all", async () => {
     const onSynced = vi.fn();
     vi.stubGlobal(
       "fetch",
@@ -157,6 +160,7 @@ describe("AnkiSyncModal", () => {
                 },
               ],
               unsyncable: [],
+              pull_count: 0,
               deck: {
                 status: "not_synchronized",
                 deck_name: "Vocab",
@@ -210,9 +214,9 @@ describe("AnkiSyncModal", () => {
       />,
     );
 
-    await screen.findByText("2 elements need to be synchronized.");
+    await screen.findByText("2 cards to push");
     await userEvent.click(
-      screen.getByRole("button", { name: "Partial synchronization" }),
+      screen.getByRole("button", { name: "Choose what to push" }),
     );
 
     expect(screen.getByText("2 of 2 selected")).toBeInTheDocument();
@@ -221,13 +225,13 @@ describe("AnkiSyncModal", () => {
     await userEvent.click(screen.getByLabelText("Select 水"));
     expect(screen.getByText("1 of 2 selected")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm push" }));
     const confirmDialog = screen.getByRole("dialog", {
       name: /cannot be undone/i,
     });
     expect(
       within(confirmDialog).getByText(
-        /1 card currently selected will be synchronized/,
+        /1 card currently selected will be pushed/,
       ),
     ).toBeInTheDocument();
 
@@ -240,7 +244,69 @@ describe("AnkiSyncModal", () => {
     });
   });
 
-  it("shows unsyncable writing characters and keeps cancel-all available", async () => {
+  it("shows pull coming-soon message when pull actions are used", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/anki/sync/pending/mandarin_vocabulary") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              kind: "mandarin_vocabulary",
+              count: 0,
+              cards: [],
+              unsyncable: [],
+              pull_count: 4,
+              deck: {
+                status: "synchronized",
+                deck_name: "Vocab",
+                model_name: "Vocab",
+                fields: {
+                  writting: "writting",
+                  pinyin: "pinyin",
+                  definition: "definition",
+                },
+              },
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(
+      <AnkiSyncModal
+        isOpen
+        kind="mandarin_vocabulary"
+        onCancel={vi.fn()}
+        onSynced={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText("4 cards to pull")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Push all to Anki" }),
+    ).toBeDisabled();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Pull all from Anki" }),
+    );
+    expect(
+      screen.getByText(/Pull from Anki is not available yet/),
+    ).toBeInTheDocument();
+  });
+
+  it("shows unsyncable writing characters under push", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo, init?: RequestInit) => {
@@ -264,6 +330,7 @@ describe("AnkiSyncModal", () => {
                 },
               ],
               unsyncable: ["孤"],
+              pull_count: 0,
               deck: {
                 status: "not_synchronized",
                 deck_name: "Writting",
@@ -290,19 +357,17 @@ describe("AnkiSyncModal", () => {
       />,
     );
 
+    expect(await screen.findByText("1 card to push")).toBeInTheDocument();
     expect(
-      await screen.findByText("1 element needs to be synchronized."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Characters that cannot be synchronized/),
+      screen.getByText(/Characters that cannot be pushed/),
     ).toBeInTheDocument();
     expect(screen.getByText("孤")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Cancel all synchronization" }),
+      screen.getByRole("button", { name: "Ignore all for push" }),
     ).toBeEnabled();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Partial synchronization" }),
+      screen.getByRole("button", { name: "Choose what to push" }),
     );
     expect(screen.getByText("Recto")).toBeInTheDocument();
     expect(screen.getByText("water (shui3)")).toBeInTheDocument();

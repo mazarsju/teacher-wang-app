@@ -330,6 +330,14 @@ def deck_status_for_mapping(
     return "synchronized"
 
 
+def _pull_count_from_anki_keys(anki_keys: set[str]) -> int:
+    """Count Anki note keys that are not yet local Word.word values."""
+    if not anki_keys:
+        return 0
+    local_words = {row.word for row in Word.query.with_entities(Word.word).all()}
+    return sum(1 for key in anki_keys if key not in local_words)
+
+
 def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
     writting_field = mapping["fields"].get("writting", "").strip()
     if writting_field == "":
@@ -339,6 +347,7 @@ def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         mapping["deck_name"],
         writting_field,
     )
+    pull_count = _pull_count_from_anki_keys(existing_writtings)
 
     pending_words: list[Word] = []
     already_in_anki: list[str] = []
@@ -358,6 +367,7 @@ def _get_pending_vocabulary_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         "count": len(cards),
         "cards": cards,
         "unsyncable": [],
+        "pull_count": pull_count,
         "deck": mapping,
     }
 
@@ -371,6 +381,7 @@ def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         mapping["deck_name"],
         verso_field,
     )
+    pull_count = _pull_count_from_anki_keys(existing_versos)
 
     cards: list[dict[str, str]] = []
     unsyncable: list[str] = []
@@ -399,6 +410,7 @@ def _get_pending_writting_sync(mapping: dict[str, Any]) -> dict[str, Any]:
         "count": len(cards),
         "cards": cards,
         "unsyncable": unsyncable,
+        "pull_count": pull_count,
         "deck": mapping,
     }
 

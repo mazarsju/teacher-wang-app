@@ -48,6 +48,7 @@ export type AnkiPendingSync = {
   count: number;
   cards: AnkiPendingCard[];
   unsyncable: string[];
+  pull_count: number;
   deck: AnkiDeckMapping;
 };
 

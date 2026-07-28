@@ -10,12 +10,12 @@ import {
 import { fetchAnkiPendingSync, runAnkiSync } from "../utils/ankiApi";
 import ConfirmModal from "./ConfirmModal";
 
-type SyncView = "overview" | "partial";
+type SyncView = "overview" | "partial-push";
 
-type PendingConfirm =
-  | { type: "synchronize_all" }
-  | { type: "cancel_all" }
-  | { type: "partial"; selectedIds: string[] }
+type PushConfirm =
+  | { type: "push_all" }
+  | { type: "ignore_all_push" }
+  | { type: "partial_push"; selectedIds: string[] }
   | null;
 
 type AnkiSyncModalProps = {
@@ -42,6 +42,10 @@ function cardLabel(card: AnkiPendingCard): string {
   return card.verso;
 }
 
+function formatCount(count: number, singular: string, plural: string): string {
+  return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+}
+
 export default function AnkiSyncModal({
   isOpen,
   kind,
@@ -54,7 +58,8 @@ export default function AnkiSyncModal({
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<SyncView>("overview");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [confirmAction, setConfirmAction] = useState<PendingConfirm>(null);
+  const [confirmAction, setConfirmAction] = useState<PushConfirm>(null);
+  const [pullComingSoonOpen, setPullComingSoonOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen || kind === null) {
@@ -65,6 +70,7 @@ export default function AnkiSyncModal({
       setView("overview");
       setSelectedIds(new Set());
       setConfirmAction(null);
+      setPullComingSoonOpen(false);
       return;
     }
 
@@ -74,6 +80,7 @@ export default function AnkiSyncModal({
     setPending(null);
     setView("overview");
     setConfirmAction(null);
+    setPullComingSoonOpen(false);
 
     void fetchAnkiPendingSync(kind)
       .then((payload) => {
@@ -83,6 +90,7 @@ export default function AnkiSyncModal({
         setPending({
           ...payload,
           unsyncable: payload.unsyncable ?? [],
+          pull_count: payload.pull_count ?? 0,
         });
         setSelectedIds(new Set(payload.cards.map((card) => card.id)));
       })
@@ -110,40 +118,48 @@ export default function AnkiSyncModal({
   const selectedCount = selectedIds.size;
   const ignoredCount = (pending?.count ?? 0) - selectedCount;
   const unsyncable = pending?.unsyncable ?? [];
-  const cancelAllCount = (pending?.count ?? 0) + unsyncable.length;
-  const canCancelAll = cancelAllCount > 0;
+  const pushCount = pending?.count ?? 0;
+  const pullCount = pending?.pull_count ?? 0;
+  const cancelAllCount = pushCount + unsyncable.length;
+  const canIgnoreAllPush = cancelAllCount > 0;
 
   const confirmMessage = useMemo(() => {
     if (confirmAction === null || pending === null) {
       return "";
     }
-    const total = pending.count;
-    if (confirmAction.type === "synchronize_all") {
+    if (confirmAction.type === "push_all") {
       return (
-        `This action cannot be undone. It will add all ${total} card` +
-        `${total === 1 ? "" : "s"} to the Anki deck.`
+        `This action cannot be undone. It will push all ${pushCount} card` +
+        `${pushCount === 1 ? "" : "s"} to the Anki deck.`
       );
     }
-    if (confirmAction.type === "cancel_all") {
+    if (confirmAction.type === "ignore_all_push") {
       if (pending.kind === "mandarin_writting") {
         return (
           `This action cannot be undone. All ${cancelAllCount} character` +
           `${cancelAllCount === 1 ? "" : "s"} with “written known” will be ` +
-          "ignored for future synchronization."
+          "ignored for future pushes to Anki."
         );
       }
       return (
-        `This action cannot be undone. All ${total} card` +
-        `${total === 1 ? "" : "s"} will be ignored for future synchronization.`
+        `This action cannot be undone. All ${pushCount} card` +
+        `${pushCount === 1 ? "" : "s"} will be ignored for future pushes to Anki.`
       );
     }
     return (
       `This action cannot be undone. ${selectedCount} card` +
-      `${selectedCount === 1 ? "" : "s"} currently selected will be synchronized ` +
-      `with the Anki deck, and ${ignoredCount} card` +
-      `${ignoredCount === 1 ? "" : "s"} not selected will be ignored.`
+      `${selectedCount === 1 ? "" : "s"} currently selected will be pushed ` +
+      `to the Anki deck, and ${ignoredCount} card` +
+      `${ignoredCount === 1 ? "" : "s"} not selected will be ignored for future pushes.`
     );
-  }, [cancelAllCount, confirmAction, ignoredCount, pending, selectedCount]);
+  }, [
+    cancelAllCount,
+    confirmAction,
+    ignoredCount,
+    pending,
+    pushCount,
+    selectedCount,
+  ]);
 
   if (!isOpen || kind === null) {
     return null;
@@ -184,9 +200,9 @@ export default function AnkiSyncModal({
     setError(null);
 
     try {
-      if (confirmAction.type === "synchronize_all") {
+      if (confirmAction.type === "push_all") {
         await runAnkiSync({ kind, action: "synchronize_all" });
-      } else if (confirmAction.type === "cancel_all") {
+      } else if (confirmAction.type === "ignore_all_push") {
         await runAnkiSync({ kind, action: "cancel_all" });
       } else {
         await runAnkiSync({
@@ -202,7 +218,7 @@ export default function AnkiSyncModal({
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Failed to synchronize with Anki.",
+          : "Failed to push cards to Anki.",
       );
     } finally {
       setIsSubmitting(false);
@@ -214,7 +230,7 @@ export default function AnkiSyncModal({
       <div className="modal-overlay" onClick={onCancel}>
         <div
           className={`modal-dialog anki-sync-modal${
-            view === "partial" ? " anki-sync-modal--partial" : ""
+            view === "partial-push" ? " anki-sync-modal--partial" : ""
           }`}
           role="dialog"
           aria-modal="true"
@@ -222,10 +238,10 @@ export default function AnkiSyncModal({
           onClick={(event) => event.stopPropagation()}
         >
           <h2 id="anki-sync-modal-title" className="modal-title">
-            Synchronize {label}
+            Sync — {label}
           </h2>
 
-          {isLoading && <p className="modal-message">Loading pending cards…</p>}
+          {isLoading && <p className="modal-message">Loading sync status…</p>}
 
           {!isLoading && error !== null && (
             <p className="table-error" role="alert">
@@ -235,74 +251,130 @@ export default function AnkiSyncModal({
 
           {!isLoading && pending !== null && view === "overview" && (
             <>
-              <p className="modal-message">
-                {pending.count === 0
-                  ? "There are no elements that need to be synchronized."
-                  : pending.count === 1
-                    ? "1 element needs to be synchronized."
-                    : `${pending.count} elements need to be synchronized.`}
+              <p className="anki-sync-lead">
+                Choose a direction. Push sends local knowledge-base content to
+                Anki. Pull will later import Anki cards into the app.
               </p>
 
-              <div className="anki-sync-actions">
-                <button
-                  type="button"
-                  className="modal-button-confirm-primary"
-                  disabled={pending.count === 0 || isSubmitting}
-                  onClick={() => setConfirmAction({ type: "synchronize_all" })}
-                >
-                  Synchronize all
-                </button>
-                <button
-                  type="button"
-                  className="modal-button-confirm"
-                  disabled={!canCancelAll || isSubmitting}
-                  onClick={() => setConfirmAction({ type: "cancel_all" })}
-                >
-                  Cancel all synchronization
-                </button>
-                <button
-                  type="button"
-                  className="page-add-button"
-                  disabled={pending.count === 0 || isSubmitting}
-                  onClick={() => setView("partial")}
-                >
-                  Partial synchronization
-                </button>
+              <section className="anki-sync-panel anki-sync-panel--push">
+                <div className="anki-sync-panel-header">
+                  <h3 className="anki-sync-panel-title">Push to Anki</h3>
+                  <p className="anki-sync-panel-count">
+                    {formatCount(pushCount, "card to push", "cards to push")}
+                  </p>
+                </div>
+                <p className="anki-sync-panel-copy">
+                  One-way only: add new local cards to this Anki deck, or ignore
+                  them so they are not offered again.
+                </p>
+
+                <div className="anki-sync-actions">
+                  <button
+                    type="button"
+                    className="modal-button-confirm-primary"
+                    disabled={pushCount === 0 || isSubmitting}
+                    onClick={() => setConfirmAction({ type: "push_all" })}
+                  >
+                    Push all to Anki
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-button-confirm"
+                    disabled={!canIgnoreAllPush || isSubmitting}
+                    onClick={() => setConfirmAction({ type: "ignore_all_push" })}
+                  >
+                    Ignore all for push
+                  </button>
+                  <button
+                    type="button"
+                    className="page-add-button"
+                    disabled={pushCount === 0 || isSubmitting}
+                    onClick={() => setView("partial-push")}
+                  >
+                    Choose what to push
+                  </button>
+                </div>
+
+                {isWritting && unsyncable.length > 0 && (
+                  <div className="anki-sync-unsyncable" role="note">
+                    <p className="anki-sync-unsyncable-title">
+                      Characters that cannot be pushed
+                    </p>
+                    <p className="anki-sync-unsyncable-text">
+                      These characters are not connected to a word with a
+                      definition (using only characters marked as “written
+                      known”):{" "}
+                      <span className="anki-sync-unsyncable-chars">
+                        {unsyncable.join("、")}
+                      </span>
+                      . You can skip them with “Ignore all for push”.
+                    </p>
+                  </div>
+                )}
+              </section>
+
+              <section className="anki-sync-panel anki-sync-panel--pull">
+                <div className="anki-sync-panel-header">
+                  <h3 className="anki-sync-panel-title">Pull from Anki</h3>
+                  <p className="anki-sync-panel-count">
+                    {formatCount(
+                      pullCount,
+                      "card to pull",
+                      "cards to pull",
+                    )}
+                  </p>
+                </div>
+                <p className="anki-sync-panel-copy">
+                  Cards found in this Anki deck that are not yet in your
+                  knowledge base. Import is not available yet.
+                </p>
+
+                <div className="anki-sync-actions">
+                  <button
+                    type="button"
+                    className="modal-button-confirm-primary"
+                    disabled={pullCount === 0 || isSubmitting}
+                    onClick={() => setPullComingSoonOpen(true)}
+                  >
+                    Pull all from Anki
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-button-confirm"
+                    disabled={pullCount === 0 || isSubmitting}
+                    onClick={() => setPullComingSoonOpen(true)}
+                  >
+                    Ignore all for pull
+                  </button>
+                  <button
+                    type="button"
+                    className="page-add-button"
+                    disabled={pullCount === 0 || isSubmitting}
+                    onClick={() => setPullComingSoonOpen(true)}
+                  >
+                    Choose what to pull
+                  </button>
+                </div>
+              </section>
+
+              <div className="modal-actions anki-sync-footer">
                 <button
                   type="button"
                   className="modal-button-cancel"
                   disabled={isSubmitting}
                   onClick={onCancel}
                 >
-                  Cancel
+                  Close
                 </button>
               </div>
-
-              {isWritting && unsyncable.length > 0 && (
-                <div className="anki-sync-unsyncable" role="note">
-                  <p className="anki-sync-unsyncable-title">
-                    Characters that cannot be synchronized
-                  </p>
-                  <p className="anki-sync-unsyncable-text">
-                    These characters are not connected to a word with a
-                    definition (using only characters marked as “written
-                    known”):{" "}
-                    <span className="anki-sync-unsyncable-chars">
-                      {unsyncable.join("、")}
-                    </span>
-                    . You can ignore synchronization for all of them by choosing
-                    “Cancel all synchronization”.
-                  </p>
-                </div>
-              )}
             </>
           )}
 
-          {!isLoading && pending !== null && view === "partial" && (
+          {!isLoading && pending !== null && view === "partial-push" && (
             <>
               <p className="modal-message">
-                Choose which cards to add to Anki. Unselected cards will be
-                ignored for future synchronization.
+                Choose which cards to push to Anki. Unselected cards will be
+                ignored for future pushes.
               </p>
 
               <div className="anki-sync-partial-toolbar">
@@ -323,7 +395,7 @@ export default function AnkiSyncModal({
                   Unselect all
                 </button>
                 <span className="anki-sync-partial-count">
-                  {selectedCount} of {pending.count} selected
+                  {selectedCount} of {pushCount} selected
                 </span>
               </div>
 
@@ -412,12 +484,12 @@ export default function AnkiSyncModal({
                   disabled={isSubmitting}
                   onClick={() =>
                     setConfirmAction({
-                      type: "partial",
+                      type: "partial_push",
                       selectedIds: Array.from(selectedIds),
                     })
                   }
                 >
-                  Confirm
+                  Confirm push
                 </button>
               </div>
             </>
@@ -448,6 +520,13 @@ export default function AnkiSyncModal({
         onConfirm={() => {
           void handleConfirm();
         }}
+      />
+
+      <ConfirmModal
+        isOpen={pullComingSoonOpen}
+        message="Pull from Anki is not available yet. Importing Anki cards into the knowledge base will come in a later update."
+        onCancel={() => setPullComingSoonOpen(false)}
+        onConfirm={() => setPullComingSoonOpen(false)}
       />
     </>
   );

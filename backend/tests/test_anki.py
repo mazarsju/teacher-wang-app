@@ -216,6 +216,8 @@ class TestAnkiRoutes(unittest.TestCase):
                         "definition": "water",
                     }
                 ],
+                "unsyncable": [],
+                "pull_count": 0,
                 "deck": {
                     "status": "not_synchronized",
                     "deck_name": "Vocab",
@@ -486,6 +488,7 @@ class TestAnkiSyncHelpers(unittest.TestCase):
             pending = get_pending_sync("mandarin_vocabulary")
 
         self.assertEqual(pending["count"], 1)
+        self.assertEqual(pending["pull_count"], 0)
         self.assertEqual(
             pending["cards"],
             [
@@ -499,6 +502,24 @@ class TestAnkiSyncHelpers(unittest.TestCase):
         )
         self.assertEqual(pending["deck"]["status"], "not_synchronized")
 
+    def test_pending_vocabulary_pull_count_excludes_local_words(self):
+        from backend.anki_sync import get_pending_sync
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_vocabulary_deck()
+        db.session.add(Character(char="水", pinyin="shui3", writting_known=False))
+        db.session.add(Word(word="水", definition="water", synchronized=True))
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.field_values_in_deck",
+            return_value={"水", "火", "风"},
+        ):
+            pending = get_pending_sync("mandarin_vocabulary")
+
+        self.assertEqual(pending["pull_count"], 2)
+        self.assertEqual(pending["count"], 0)
     def test_vocabulary_pinyin_keeps_unrecognized_characters(self):
         from backend.anki_sync import _vocabulary_card_pinyin
         from backend.extensions import db
@@ -674,6 +695,7 @@ class TestAnkiSyncHelpers(unittest.TestCase):
             pending = get_pending_sync("mandarin_writting")
 
         self.assertEqual(pending["count"], 1)
+        self.assertEqual(pending["pull_count"], 0)
         self.assertEqual(
             pending["cards"],
             [
