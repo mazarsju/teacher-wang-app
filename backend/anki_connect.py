@@ -83,6 +83,24 @@ def model_field_names(model_name: str) -> list[str]:
     return result
 
 
+def create_model(
+    *,
+    model_name: str,
+    fields: list[str],
+    card_templates: list[dict[str, str]],
+    css: str | None = None,
+) -> Any:
+    params: dict[str, Any] = {
+        "modelName": model_name,
+        "inOrderFields": fields,
+        "cardTemplates": card_templates,
+        "isCloze": False,
+    }
+    if css is not None:
+        params["css"] = css
+    return invoke("createModel", params=params)
+
+
 def is_connected() -> bool:
     try:
         deck_names()

@@ -326,6 +326,7 @@ export default function PreferencesPage() {
       <AnkiDeckSetupModal
         isOpen={setupKind !== null}
         kind={setupKind}
+        initialMapping={setupKind ? ankiStatus.decks[setupKind] : null}
         onCancel={() => setSetupKind(null)}
         onConfigured={() => void handleDeckConfigured()}
       />

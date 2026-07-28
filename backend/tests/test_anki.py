@@ -168,6 +168,40 @@ class TestAnkiRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Missing", response.get_json()["error"])
 
+    def test_auto_setup_vocabulary_creates_model_and_mapping(self):
+        auto_patcher = patch(
+            "backend.routes.anki.anki_sync.create_vocabulary_three_direction_setup"
+        )
+        mock_auto = auto_patcher.start()
+        self.addCleanup(auto_patcher.stop)
+        mock_auto.return_value = {
+            "status": "not_configured",
+            "deck_name": "Mandarin vocabulary",
+            "model_name": "Mandarin vocabulary",
+            "fields": {
+                "writting": "writting",
+                "pinyin": "pinyin",
+                "definition": "definition",
+            },
+        }
+
+        response = self.client.post(
+            "/anki/vocabulary/auto-setup",
+            json={
+                "deck_name": "Mandarin vocabulary",
+                "model_name": "Mandarin vocabulary",
+                "optional_fields": ["example"],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_auto.assert_called_once_with(
+            deck_name="Mandarin vocabulary",
+            model_name="Mandarin vocabulary",
+            optional_fields=["example"],
+        )
+        self.assertEqual(response.get_json()["kind"], "mandarin_vocabulary")
+
 
 class TestAnkiSyncHelpers(unittest.TestCase):
     def setUp(self):
@@ -208,6 +242,12 @@ class TestAnkiSyncHelpers(unittest.TestCase):
 
     def test_setup_deck_persists_not_synchronized_status(self):
         from backend.anki_sync import setup_deck
+        from backend.settings import (
+            SETTING_ANKI_MANDARIN_WRITTING_DECK,
+            SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
+            SETTING_ANKI_MANDARIN_WRITTING_MODEL,
+            get_setting,
+        )
 
         with (
             patch("backend.anki_sync.anki_connect.create_deck") as mock_create,
@@ -240,6 +280,103 @@ class TestAnkiSyncHelpers(unittest.TestCase):
                 "deck_name": "Characters",
                 "model_name": "Basic",
                 "fields": {"recto": "Front", "verso": "Back"},
+            },
+        )
+        self.assertEqual(
+            get_setting(SETTING_ANKI_MANDARIN_WRITTING_DECK), "Characters"
+        )
+        self.assertEqual(
+            get_setting(SETTING_ANKI_MANDARIN_WRITTING_MODEL), "Basic"
+        )
+        self.assertEqual(
+            get_setting(SETTING_ANKI_MANDARIN_WRITTING_FIELDS),
+            '{"recto": "Front", "verso": "Back"}',
+        )
+
+    def test_setup_vocabulary_deck_persists_settings(self):
+        from backend.anki_sync import setup_deck
+        from backend.settings import (
+            SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
+            SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
+            SETTING_ANKI_MANDARIN_VOCABULARY_MODEL,
+            get_setting,
+        )
+
+        with (
+            patch(
+                "backend.anki_sync.anki_connect.deck_names",
+                return_value=["Mandarin vocabulary"],
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.model_names",
+                return_value=["Mandarin vocabulary"],
+            ),
+            patch(
+                "backend.anki_sync.anki_connect.model_field_names",
+                return_value=["writting", "pinyin", "definition"],
+            ),
+        ):
+            result = setup_deck(
+                "mandarin_vocabulary",
+                "Mandarin vocabulary",
+                model_name="Mandarin vocabulary",
+                fields={
+                    "writting": "writting",
+                    "pinyin": "pinyin",
+                    "definition": "definition",
+                },
+                create=False,
+            )
+
+        self.assertEqual(result["status"], "not_synchronized")
+        self.assertEqual(
+            get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_DECK),
+            "Mandarin vocabulary",
+        )
+        self.assertEqual(
+            get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_MODEL),
+            "Mandarin vocabulary",
+        )
+        self.assertEqual(
+            get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS),
+            '{"writting": "writting", "pinyin": "pinyin", "definition": "definition"}',
+        )
+
+    def test_create_vocabulary_three_direction_setup(self):
+        from backend.anki_sync import create_vocabulary_three_direction_setup
+
+        with (
+            patch(
+                "backend.anki_sync.anki_connect.model_names",
+                side_effect=[["Basic"], ["Basic", "Mandarin vocabulary"]],
+            ),
+            patch("backend.anki_sync.anki_connect.create_model") as mock_create_model,
+            patch("backend.anki_sync.anki_connect.create_deck") as mock_create_deck,
+        ):
+            result = create_vocabulary_three_direction_setup(
+                deck_name="Mandarin vocabulary",
+                model_name="Mandarin vocabulary",
+                optional_fields=["example"],
+            )
+
+        mock_create_model.assert_called_once()
+        create_kwargs = mock_create_model.call_args.kwargs
+        self.assertEqual(create_kwargs["model_name"], "Mandarin vocabulary")
+        self.assertEqual(
+            create_kwargs["fields"],
+            ["writting", "pinyin", "definition", "example"],
+        )
+        self.assertEqual(len(create_kwargs["card_templates"]), 3)
+        mock_create_deck.assert_called_once_with("Mandarin vocabulary")
+        self.assertEqual(result["status"], "not_configured")
+        self.assertEqual(result["deck_name"], "Mandarin vocabulary")
+        self.assertEqual(result["model_name"], "Mandarin vocabulary")
+        self.assertEqual(
+            result["fields"],
+            {
+                "writting": "writting",
+                "pinyin": "pinyin",
+                "definition": "definition",
             },
         )
 

@@ -252,22 +252,28 @@ describe("PreferencesPage", () => {
         if (url.endsWith("/anki/decks") && method === "GET") {
           return Promise.resolve({
             ok: true,
-            json: async () => ({ decks: ["Default", "Words"] }),
+            json: async () => ({ decks: ["Default", "Characters", "Words"] }),
           });
         }
 
         if (url.endsWith("/anki/models") && method === "GET") {
           return Promise.resolve({
             ok: true,
-            json: async () => ({ models: ["Words"] }),
+            json: async () => ({ models: ["Basic", "Words"] }),
           });
         }
 
         if (url.includes("/anki/models/") && url.endsWith("/fields")) {
+          const modelName = decodeURIComponent(
+            url.split("/anki/models/")[1]?.replace(/\/fields$/, "") ?? "",
+          );
           return Promise.resolve({
             ok: true,
             json: async () => ({
-              fields: ["Hanzi", "Reading", "Meaning"],
+              fields:
+                modelName === "Basic"
+                  ? ["Front", "Back"]
+                  : ["Hanzi", "Reading", "Meaning"],
             }),
           });
         }
@@ -305,6 +311,24 @@ describe("PreferencesPage", () => {
     expect(screen.getByText("Not synchronized")).toBeInTheDocument();
     expect(screen.getByText("Characters")).toBeInTheDocument();
 
+    const writingRow = screen.getByText("Mandarin writting").closest("li");
+    expect(writingRow).not.toBeNull();
+    await user.click(
+      within(writingRow as HTMLElement).getByRole("button", { name: "Setup" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Set up Mandarin writting" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Existing deck")).toHaveValue("Characters");
+    expect(screen.getByLabelText("Deck type")).toHaveValue("Basic");
+
+    await screen.findByLabelText(/recto/);
+    expect(screen.getByLabelText(/recto/)).toHaveValue("Front");
+    expect(screen.getByLabelText(/verso/)).toHaveValue("Back");
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
     const wordsRow = screen.getByText("Mandarin vocabulary").closest("li");
     expect(wordsRow).not.toBeNull();
     await user.click(
@@ -315,11 +339,11 @@ describe("PreferencesPage", () => {
       await screen.findByRole("heading", { name: "Set up Mandarin vocabulary" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/The Anki note type should support 3 directions/),
+      screen.getByText(/The Anki deck type should support 3 directions/),
     ).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Existing deck"), "Words");
-    await user.selectOptions(screen.getByLabelText("Note type"), "Words");
+    await user.selectOptions(screen.getByLabelText("Deck type"), "Words");
 
     await screen.findByLabelText(/writting/);
     await user.selectOptions(screen.getByLabelText(/writting/), "Hanzi");

@@ -43,7 +43,7 @@ export async function fetchAnkiModels(): Promise<string[]> {
 
   if (!response.ok) {
     throw new Error(
-      await readErrorMessage(response, "Failed to load Anki note types."),
+      await readErrorMessage(response, "Failed to load Anki deck types."),
     );
   }
 
@@ -89,6 +89,33 @@ export async function setupAnkiDeck(options: {
   if (!response.ok) {
     throw new Error(
       await readErrorMessage(response, "Failed to set up Anki deck."),
+    );
+  }
+
+  return (await response.json()) as AnkiDeckSetupResult;
+}
+
+export async function autoSetupVocabularyDeck(options: {
+  deckName: string;
+  modelName: string;
+  optionalFields?: string[];
+}): Promise<AnkiDeckSetupResult> {
+  const response = await fetch("/anki/vocabulary/auto-setup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      deck_name: options.deckName,
+      model_name: options.modelName,
+      optional_fields: options.optionalFields ?? [],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(
+        response,
+        "Failed to create the 3-direction vocabulary deck type.",
+      ),
     );
   }
 

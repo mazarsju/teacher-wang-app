@@ -40,6 +40,138 @@ REQUIRED_FIELDS: dict[DeckKind, tuple[str, ...]] = {
     "mandarin_vocabulary": ("writting", "pinyin", "definition"),
 }
 
+VOCABULARY_MANDATORY_FIELDS = ("writting", "pinyin", "definition")
+
+VOCABULARY_MODEL_CSS = """\
+.card {
+  font-family: arial;
+  font-size: 20px;
+  text-align: center;
+  color: black;
+  background-color: white;
+}
+.hanzi {
+  font-size: 42px;
+}
+.extra-fields {
+  margin-top: 1em;
+  font-size: 16px;
+  color: #444444;
+}
+"""
+
+
+def _anki_field_ref(name: str) -> str:
+    return "{{" + name + "}}"
+
+
+def _optional_fields_html(optional_fields: list[str]) -> str:
+    if not optional_fields:
+        return ""
+    lines = "<br>".join(_anki_field_ref(name) for name in optional_fields)
+    return f'<div class="extra-fields">{lines}</div>'
+
+
+def build_vocabulary_card_templates(optional_fields: list[str]) -> list[dict[str, str]]:
+    extras = _optional_fields_html(optional_fields)
+    writting = _anki_field_ref("writting")
+    pinyin = _anki_field_ref("pinyin")
+    definition = _anki_field_ref("definition")
+
+    return [
+        {
+            "Name": "Writting → Pinyin + Definition",
+            "Front": f'<div class="hanzi">{writting}</div>',
+            "Back": (
+                "{{FrontSide}}<hr id=answer>"
+                f"{pinyin}<br>{definition}{extras}"
+            ),
+        },
+        {
+            "Name": "Pinyin → Writting + Definition",
+            "Front": pinyin,
+            "Back": (
+                "{{FrontSide}}<hr id=answer>"
+                f'<div class="hanzi">{writting}</div><br>{definition}{extras}'
+            ),
+        },
+        {
+            "Name": "Definition → Writting + Pinyin",
+            "Front": definition,
+            "Back": (
+                "{{FrontSide}}<hr id=answer>"
+                f'<div class="hanzi">{writting}</div><br>{pinyin}{extras}'
+            ),
+        },
+    ]
+
+
+def normalize_optional_fields(optional_fields: list[str] | None) -> list[str]:
+    if optional_fields is None:
+        return []
+    if not isinstance(optional_fields, list):
+        raise ValueError("optional_fields must be an array of strings")
+
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in optional_fields:
+        if not isinstance(raw, str):
+            raise ValueError("optional_fields must be an array of strings")
+        name = raw.strip()
+        if name == "":
+            continue
+        if name in VOCABULARY_MANDATORY_FIELDS:
+            raise ValueError(
+                f'Optional field "{name}" conflicts with a mandatory field name.'
+            )
+        lowered = name.casefold()
+        if lowered in seen:
+            raise ValueError(f'Duplicate optional field "{name}".')
+        seen.add(lowered)
+        cleaned.append(name)
+    return cleaned
+
+
+def create_vocabulary_three_direction_setup(
+    *,
+    deck_name: str,
+    model_name: str,
+    optional_fields: list[str] | None = None,
+) -> dict[str, Any]:
+    trimmed_deck = deck_name.strip()
+    trimmed_model = model_name.strip()
+    if trimmed_deck == "":
+        raise ValueError("deck_name must be a non-empty string")
+    if trimmed_model == "":
+        raise ValueError("model_name must be a non-empty string")
+
+    extras = normalize_optional_fields(optional_fields)
+    field_names = [*VOCABULARY_MANDATORY_FIELDS, *extras]
+
+    existing_models = anki_connect.model_names()
+    if trimmed_model in existing_models:
+        raise ValueError(f'Note type "{trimmed_model}" already exists in Anki.')
+
+    anki_connect.create_model(
+        model_name=trimmed_model,
+        fields=field_names,
+        card_templates=build_vocabulary_card_templates(extras),
+        css=VOCABULARY_MODEL_CSS,
+    )
+    anki_connect.create_deck(trimmed_deck)
+
+    # Create only — the UI pre-fills the setup form so the user can save mapping.
+    return {
+        "status": "not_configured",
+        "deck_name": trimmed_deck,
+        "model_name": trimmed_model,
+        "fields": {
+            "writting": "writting",
+            "pinyin": "pinyin",
+            "definition": "definition",
+        },
+    }
+
 
 def _parse_fields(raw: str) -> dict[str, str]:
     if raw.strip() == "":

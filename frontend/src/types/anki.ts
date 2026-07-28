@@ -43,9 +43,9 @@ export const ANKI_DECK_ORDER: AnkiDeckKind[] = [
 
 export const ANKI_DECK_DESCRIPTIONS: Record<AnkiDeckKind, string> = {
   mandarin_writting:
-    "This deck is for practicing writing only. The only direction is recto → verso. Only characters with “written known” ticked will be part of this deck.",
+    "This deck is for practicing writing only. It asks you to guess the characters from the definition and pinyin. Only characters with “written known” ticked will be part of this deck.",
   mandarin_vocabulary:
-    "The Anki note type should support 3 directions: 1) asking writting → guessing pinyin + definition, 2) asking pinyin → guessing writting + definition, 3) asking definition → guessing writting + pinyin.",
+    "This deck is the main deck for practicing vocabulary. It either asks you to guess the character from the pinyin and definition, or the pinyin from the character and definition, or the definition from the character and pinyin.",
 };
 
 export const ANKI_REQUIRED_FIELDS: Record<AnkiDeckKind, AnkiLogicalField[]> = {
