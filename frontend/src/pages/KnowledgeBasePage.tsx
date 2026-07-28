@@ -81,8 +81,9 @@ function filterCharactersForView(
   );
 }
 
-async function fetchCharacters() {
-  const response = await fetch("/characters", { method: "GET" });
+async function fetchCharacters(limit?: number) {
+  const query = limit == null ? "" : `?limit=${limit}`;
+  const response = await fetch(`/characters${query}`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load characters.");
@@ -91,8 +92,9 @@ async function fetchCharacters() {
   return (await response.json()) as Character[];
 }
 
-async function fetchWords() {
-  const response = await fetch("/words", { method: "GET" });
+async function fetchWords(limit?: number) {
+  const query = limit == null ? "" : `?limit=${limit}`;
+  const response = await fetch(`/words${query}`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load words.");
@@ -101,10 +103,12 @@ async function fetchWords() {
   return (await response.json()) as Word[];
 }
 
+const INITIAL_PREVIEW_LIMIT = 10;
+
 type KnowledgeBaseMode = "view" | "edit";
 
 export default function KnowledgeBasePage() {
-  const [pageMode, setPageMode] = useState<KnowledgeBaseMode>("view");
+  const [pageMode, setPageMode] = useState<KnowledgeBaseMode>("edit");
   const [characters, setCharacters] = useState<Character[]>([]);
   const [words, setWords] = useState<Word[]>([]);
   const [showWritingKnown, setShowWritingKnown] = useState(true);
@@ -131,6 +135,7 @@ export default function KnowledgeBasePage() {
   const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const loadGenerationRef = useRef(0);
 
   const knownCharacters = useMemo(
     () => characters.map((character) => character.char),
@@ -185,30 +190,67 @@ export default function KnowledgeBasePage() {
     }
   }, []);
 
-  const loadKnowledgeBase = useCallback(async () => {
-    setError(null);
+  const loadKnowledgeBase = useCallback(
+    async (options?: { progressive?: boolean }) => {
+      const generation = ++loadGenerationRef.current;
+      setError(null);
 
-    try {
-      const [charactersData, wordsData] = await Promise.all([
-        fetchCharacters(),
-        fetchWords(),
-      ]);
-      setCharacters(charactersData);
-      setWords(wordsData);
-      await refreshAnkiSyncBanner();
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load knowledge base.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refreshAnkiSyncBanner]);
+      try {
+        if (options?.progressive) {
+          const [previewCharacters, previewWords] = await Promise.all([
+            fetchCharacters(INITIAL_PREVIEW_LIMIT),
+            fetchWords(INITIAL_PREVIEW_LIMIT),
+          ]);
+          if (generation !== loadGenerationRef.current) {
+            return;
+          }
+          setCharacters(previewCharacters);
+          setWords(previewWords);
+          setIsLoading(false);
+          void refreshAnkiSyncBanner();
+
+          const [charactersData, wordsData] = await Promise.all([
+            fetchCharacters(),
+            fetchWords(),
+          ]);
+          if (generation !== loadGenerationRef.current) {
+            return;
+          }
+          setCharacters(charactersData);
+          setWords(wordsData);
+          return;
+        }
+
+        const [charactersData, wordsData] = await Promise.all([
+          fetchCharacters(),
+          fetchWords(),
+        ]);
+        if (generation !== loadGenerationRef.current) {
+          return;
+        }
+        setCharacters(charactersData);
+        setWords(wordsData);
+        await refreshAnkiSyncBanner();
+      } catch (loadError) {
+        if (generation !== loadGenerationRef.current) {
+          return;
+        }
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load knowledge base.",
+        );
+      } finally {
+        if (generation === loadGenerationRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [refreshAnkiSyncBanner],
+  );
 
   useEffect(() => {
-    void loadKnowledgeBase();
+    void loadKnowledgeBase({ progressive: true });
   }, [loadKnowledgeBase]);
 
   const openAddCharacterModal = useCallback((prefilledChar = "") => {
@@ -688,57 +730,6 @@ export default function KnowledgeBasePage() {
         <>
           <section className="knowledge-base-section">
             <div className="knowledge-base-section-header">
-              <h2 className="knowledge-base-section-title">Characters</h2>
-              <button
-                type="button"
-                className="page-add-button"
-                onClick={() => openAddCharacterModal()}
-              >
-                Add character
-              </button>
-            </div>
-            <label className="search-bar">
-              <span className="search-bar-label">Search</span>
-              <input
-                type="search"
-                value={characterSearchQuery}
-                placeholder="Search characters..."
-                onChange={(event) => setCharacterSearchQuery(event.target.value)}
-              />
-            </label>
-            <Table
-              columns={CHARACTER_COLUMNS}
-              rows={filteredCharacters}
-              compact
-              maxVisibleRows={5}
-              getRowKey={(row) => row.char}
-              emptyMessage={
-                characters.length === 0
-                  ? "No characters in the database yet."
-                  : "No characters match your search."
-              }
-              renderRowActions={(row) => (
-                <div className="table-row-actions">
-                  <button
-                    type="button"
-                    className="table-edit-button"
-                    onClick={() => setCharacterToEdit(row)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="table-delete-button"
-                    onClick={() => setCharacterToDelete(row)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            />
-          </section>
-          <section className="knowledge-base-section">
-            <div className="knowledge-base-section-header">
               <h2 className="knowledge-base-section-title">Words</h2>
               <button
                 type="button"
@@ -781,6 +772,57 @@ export default function KnowledgeBasePage() {
                     type="button"
                     className="table-delete-button"
                     onClick={() => setWordToDelete(row)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            />
+          </section>
+          <section className="knowledge-base-section">
+            <div className="knowledge-base-section-header">
+              <h2 className="knowledge-base-section-title">Characters</h2>
+              <button
+                type="button"
+                className="page-add-button"
+                onClick={() => openAddCharacterModal()}
+              >
+                Add character
+              </button>
+            </div>
+            <label className="search-bar">
+              <span className="search-bar-label">Search</span>
+              <input
+                type="search"
+                value={characterSearchQuery}
+                placeholder="Search characters..."
+                onChange={(event) => setCharacterSearchQuery(event.target.value)}
+              />
+            </label>
+            <Table
+              columns={CHARACTER_COLUMNS}
+              rows={filteredCharacters}
+              compact
+              maxVisibleRows={5}
+              getRowKey={(row) => row.char}
+              emptyMessage={
+                characters.length === 0
+                  ? "No characters in the database yet."
+                  : "No characters match your search."
+              }
+              renderRowActions={(row) => (
+                <div className="table-row-actions">
+                  <button
+                    type="button"
+                    className="table-edit-button"
+                    onClick={() => setCharacterToEdit(row)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="table-delete-button"
+                    onClick={() => setCharacterToDelete(row)}
                   >
                     Delete
                   </button>
