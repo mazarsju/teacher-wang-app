@@ -7,6 +7,7 @@ bp = Blueprint("anki", __name__)
 
 VALID_KINDS = frozenset({"mandarin_vocabulary", "mandarin_writting"})
 VALID_SYNC_ACTIONS = frozenset({"synchronize_all", "cancel_all", "partial"})
+VALID_SYNC_DIRECTIONS = frozenset({"push", "pull"})
 
 
 @bp.get("/anki/status")
@@ -150,6 +151,7 @@ def sync_anki_deck():
 
     kind = data.get("kind")
     action = data.get("action")
+    direction = data.get("direction", "push")
     selected_ids = data.get("selected_ids")
 
     if kind not in VALID_KINDS:
@@ -162,6 +164,9 @@ def sync_anki_deck():
             )
         }, 400
 
+    if direction not in VALID_SYNC_DIRECTIONS:
+        return {"error": 'direction must be "push" or "pull"'}, 400
+
     if action == "partial" and selected_ids is None:
         return {"error": "selected_ids is required for partial synchronization"}, 400
 
@@ -172,11 +177,18 @@ def sync_anki_deck():
         return {"error": "selected_ids must be an array of strings"}, 400
 
     try:
-        result = anki_sync.run_sync(
-            kind,
-            action,
-            selected_ids=selected_ids,
-        )
+        if direction == "pull":
+            result = anki_sync.run_pull(
+                kind,
+                action,
+                selected_ids=selected_ids,
+            )
+        else:
+            result = anki_sync.run_sync(
+                kind,
+                action,
+                selected_ids=selected_ids,
+            )
     except AnkiConnectError as exc:
         return {"error": str(exc)}, 503
     except ValueError as exc:

@@ -31,6 +31,7 @@ export type AnkiPendingVocabularyCard = {
   writting: string;
   pinyin: string;
   definition: string;
+  characters_to_create?: string[];
 };
 
 export type AnkiPendingWrittingCard = {
@@ -49,6 +50,8 @@ export type AnkiPendingSync = {
   cards: AnkiPendingCard[];
   unsyncable: string[];
   pull_count: number;
+  pull_cards: AnkiPendingCard[];
+  pull_characters_to_create_count?: number;
   deck: AnkiDeckMapping;
 };
 
@@ -57,10 +60,14 @@ export type AnkiSyncAction =
   | "cancel_all"
   | "partial";
 
+export type AnkiSyncDirection = "push" | "pull";
+
 export type AnkiSyncResult = {
   kind: AnkiDeckKind;
   action: AnkiSyncAction;
+  direction?: AnkiSyncDirection;
   added: number;
+  characters_added?: number;
   ignored: number;
   failed: number;
   deck: AnkiDeckMapping;

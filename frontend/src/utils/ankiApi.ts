@@ -5,6 +5,7 @@ import type {
   AnkiPendingSync,
   AnkiStatus,
   AnkiSyncAction,
+  AnkiSyncDirection,
   AnkiSyncResult,
 } from "../types/anki";
 
@@ -144,6 +145,7 @@ export async function fetchAnkiPendingSync(
 export async function runAnkiSync(options: {
   kind: AnkiDeckKind;
   action: AnkiSyncAction;
+  direction?: AnkiSyncDirection;
   selectedIds?: string[];
 }): Promise<AnkiSyncResult> {
   const response = await fetch("/anki/sync", {
@@ -152,6 +154,7 @@ export async function runAnkiSync(options: {
     body: JSON.stringify({
       kind: options.kind,
       action: options.action,
+      direction: options.direction ?? "push",
       selected_ids: options.selectedIds,
     }),
   });

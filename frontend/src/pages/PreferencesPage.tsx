@@ -314,7 +314,7 @@ export default function PreferencesPage() {
                     )}
                   </div>
                   <div className="anki-deck-row-actions">
-                    {mapping.status === "not_synchronized" && (
+                    {mapping.status !== "not_configured" && (
                       <button
                         type="button"
                         className="page-add-button anki-deck-action-button"

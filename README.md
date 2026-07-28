@@ -168,8 +168,8 @@ Anki must be running with the AnkiConnect add-on installed (code `2055492159`). 
 | `GET` | `/anki/models/<model>/fields` | List field names for a deck type |
 | `POST` | `/anki/decks/setup` | Map a mandarin_vocabulary/mandarin_writting deck, deck type, and fields (optionally create the deck) |
 | `POST` | `/anki/vocabulary/auto-setup` | Create a 3-direction Mandarin vocabulary deck type + deck (mapping is saved from the setup form) |
-| `GET` | `/anki/sync/pending/<kind>` | Pending push cards plus `pull_count` of Anki notes not yet in the knowledge base |
-| `POST` | `/anki/sync` | Push selected cards to Anki and/or mark cards as synchronized (`synchronize_all`, `cancel_all`, or `partial`) |
+| `GET` | `/anki/sync/pending/<kind>` | Pending push cards, `pull_cards` / `pull_count` for Anki notes not yet in the knowledge base |
+| `POST` | `/anki/sync` | Push or pull (`direction`: `push` \| `pull`) with `synchronize_all`, `cancel_all`, or `partial` |
 | `POST` | `/chat` | Send a chat message to the selected AI character |
 | `GET` | `/chat/history/<character_id>` | Load persisted chat history for a character |
 | `GET` | `/characters` | List all characters |
@@ -339,7 +339,7 @@ Several agents collaborating around focused learning scenarios.
 Ease the process of synchronization between the app knowledge base and Anki.
 
 - [x] Add a connection to Anki in the setting section
-- [ ] Make it possible to load your Anki collection to your current database (way "in"; Preferences sync modal already shows pull counts, import still TODO)
+- [ ] Make it possible to load your Anki collection to your current database (way "in"; vocabulary pull is implemented, Mandarin writting pull still TODO)
 - [x] Make it possible to add new characters / words to your Anki collection (way "out" for Mandarin vocabulary and Mandarin writting)
 - [ ] Add a whole wizzard for the first connexion to help the user to populate his knowledge base
 

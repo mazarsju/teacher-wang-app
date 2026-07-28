@@ -415,6 +415,38 @@ class TestAnkiSyncHelpers(unittest.TestCase):
             '{"writting": "writting", "pinyin": "pinyin", "definition": "definition"}',
         )
 
+    def test_deck_status_not_synchronized_when_pull_pending(self):
+        from backend.anki_sync import get_deck_mapping
+        from backend.extensions import db
+
+        self._configure_vocabulary_deck()
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[
+                {"writting": "火", "pinyin": "huo3", "definition": "fire"},
+            ],
+        ):
+            mapping = get_deck_mapping("mandarin_vocabulary")
+
+        self.assertEqual(mapping["status"], "not_synchronized")
+
+    def test_deck_status_synchronized_only_when_push_and_pull_empty(self):
+        from backend.anki_sync import get_deck_mapping
+        from backend.extensions import db
+
+        self._configure_vocabulary_deck()
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[],
+        ):
+            mapping = get_deck_mapping("mandarin_vocabulary")
+
+        self.assertEqual(mapping["status"], "synchronized")
+
     def test_create_vocabulary_three_direction_setup(self):
         from backend.anki_sync import create_vocabulary_three_direction_setup
 
@@ -482,13 +514,14 @@ class TestAnkiSyncHelpers(unittest.TestCase):
         db.session.commit()
 
         with patch(
-            "backend.anki_sync.anki_connect.field_values_in_deck",
-            return_value=set(),
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[],
         ):
             pending = get_pending_sync("mandarin_vocabulary")
 
         self.assertEqual(pending["count"], 1)
         self.assertEqual(pending["pull_count"], 0)
+        self.assertEqual(pending["pull_cards"], [])
         self.assertEqual(
             pending["cards"],
             [
@@ -513,13 +546,27 @@ class TestAnkiSyncHelpers(unittest.TestCase):
         db.session.commit()
 
         with patch(
-            "backend.anki_sync.anki_connect.field_values_in_deck",
-            return_value={"水", "火", "风"},
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[
+                {"writting": "水", "pinyin": "shui3", "definition": "water"},
+                {"writting": "火", "pinyin": "huo3", "definition": "fire"},
+                {"writting": "风", "pinyin": "feng1", "definition": "wind"},
+            ],
         ):
             pending = get_pending_sync("mandarin_vocabulary")
 
         self.assertEqual(pending["pull_count"], 2)
+        self.assertEqual(
+            [card["id"] for card in pending["pull_cards"]],
+            ["火", "风"],
+        )
+        self.assertEqual(pending["pull_characters_to_create_count"], 2)
+        self.assertEqual(
+            pending["pull_cards"][0]["characters_to_create"],
+            ["火"],
+        )
         self.assertEqual(pending["count"], 0)
+
     def test_vocabulary_pinyin_keeps_unrecognized_characters(self):
         from backend.anki_sync import _vocabulary_card_pinyin
         from backend.extensions import db
@@ -550,12 +597,14 @@ class TestAnkiSyncHelpers(unittest.TestCase):
         db.session.commit()
 
         with patch(
-            "backend.anki_sync.anki_connect.field_values_in_deck",
-            return_value={"你好"},
-        ) as mock_existing:
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[
+                {"writting": "你好", "pinyin": "ni3 hao3", "definition": "hello"},
+            ],
+        ) as mock_notes:
             pending = get_pending_sync("mandarin_vocabulary")
 
-        mock_existing.assert_called_once_with("Vocab", "writting")
+        mock_notes.assert_called_once()
         self.assertEqual(pending["count"], 1)
         self.assertEqual(pending["cards"][0]["id"], "水")
         self.assertTrue(Word.query.filter_by(word="你好").one().synchronized)
@@ -573,8 +622,8 @@ class TestAnkiSyncHelpers(unittest.TestCase):
 
         with (
             patch(
-                "backend.anki_sync.anki_connect.field_values_in_deck",
-                return_value=set(),
+                "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+                return_value=[],
             ),
             patch("backend.anki_sync.anki_connect.add_notes") as mock_add,
         ):
@@ -598,8 +647,8 @@ class TestAnkiSyncHelpers(unittest.TestCase):
 
         with (
             patch(
-                "backend.anki_sync.anki_connect.field_values_in_deck",
-                return_value=set(),
+                "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+                return_value=[],
             ),
             patch(
                 "backend.anki_sync.anki_connect.add_notes",
@@ -634,8 +683,8 @@ class TestAnkiSyncHelpers(unittest.TestCase):
 
         with (
             patch(
-                "backend.anki_sync.anki_connect.field_values_in_deck",
-                return_value=set(),
+                "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+                return_value=[],
             ),
             patch(
                 "backend.anki_sync.anki_connect.add_notes",
@@ -653,6 +702,125 @@ class TestAnkiSyncHelpers(unittest.TestCase):
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(Word.query.filter_by(word="一").one().synchronized)
         self.assertTrue(Word.query.filter_by(word="二").one().synchronized)
+
+    def test_vocabulary_pull_all_imports_words_and_characters(self):
+        from backend.anki_sync import run_pull
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_vocabulary_deck()
+        db.session.commit()
+
+        with patch(
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[
+                {"writting": "你好", "pinyin": "ni3 hao3", "definition": "hello"},
+            ],
+        ):
+            result = run_pull("mandarin_vocabulary", "synchronize_all")
+
+        self.assertEqual(result["added"], 1)
+        self.assertEqual(result["characters_added"], 2)
+        self.assertEqual(result["ignored"], 0)
+        word = Word.query.filter_by(word="你好").one()
+        self.assertEqual(word.definition, "hello")
+        self.assertTrue(word.synchronized)
+        ni = Character.query.filter_by(char="你").one()
+        hao = Character.query.filter_by(char="好").one()
+        self.assertEqual(ni.pinyin, "ni3")
+        self.assertFalse(ni.writting_known)
+        self.assertEqual(hao.pinyin, "hao3")
+        self.assertFalse(hao.writting_known)
+
+    def test_vocabulary_pull_normalizes_accented_pinyin_and_counts_characters(
+        self,
+    ):
+        from backend.anki_sync import get_pending_sync, run_pull
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        self._configure_vocabulary_deck()
+        db.session.commit()
+
+        notes = [
+            {
+                "writting": "亲",
+                "pinyin": "Qīn",
+                "definition": "close",
+            },
+            {
+                "writting": "一把刀",
+                "pinyin": "Yi ba3 dao1",
+                "definition": "a knife",
+            },
+        ]
+        with patch(
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=notes,
+        ):
+            pending = get_pending_sync("mandarin_vocabulary")
+            result = run_pull("mandarin_vocabulary", "synchronize_all")
+
+        self.assertEqual(pending["pull_count"], 2)
+        self.assertEqual(pending["pull_characters_to_create_count"], 4)
+        self.assertEqual(result["added"], 2)
+        self.assertEqual(result["characters_added"], 4)
+        self.assertEqual(Character.query.filter_by(char="亲").one().pinyin, "qin1")
+        self.assertEqual(Character.query.filter_by(char="一").one().pinyin, "yi")
+        self.assertEqual(Character.query.filter_by(char="把").one().pinyin, "ba3")
+        self.assertEqual(Character.query.filter_by(char="刀").one().pinyin, "dao1")
+        self.assertIsNotNone(Word.query.filter_by(word="亲").first())
+        self.assertIsNotNone(Word.query.filter_by(word="一把刀").first())
+
+    def test_vocabulary_pull_ignore_all_persists_ignored_keys(self):
+        from backend.anki_sync import get_pending_sync, run_pull
+        from backend.settings import (
+            SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED,
+            get_setting,
+        )
+
+        self._configure_vocabulary_deck()
+
+        notes = [
+            {"writting": "火", "pinyin": "huo3", "definition": "fire"},
+            {"writting": "风", "pinyin": "feng1", "definition": "wind"},
+        ]
+        with patch(
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=notes,
+        ):
+            result = run_pull("mandarin_vocabulary", "cancel_all")
+            pending = get_pending_sync("mandarin_vocabulary")
+
+        self.assertEqual(result["added"], 0)
+        self.assertEqual(result["ignored"], 2)
+        self.assertEqual(pending["pull_count"], 0)
+        self.assertIn("火", get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED))
+
+    def test_vocabulary_pull_partial_imports_selected_and_ignores_rest(self):
+        from backend.anki_sync import run_pull
+        from backend.extensions import db
+        from backend.models import Word
+
+        self._configure_vocabulary_deck()
+
+        with patch(
+            "backend.anki_sync.anki_connect.mapped_notes_in_deck",
+            return_value=[
+                {"writting": "火", "pinyin": "huo3", "definition": "fire"},
+                {"writting": "风", "pinyin": "feng1", "definition": "wind"},
+            ],
+        ):
+            result = run_pull(
+                "mandarin_vocabulary",
+                "partial",
+                selected_ids=["火"],
+            )
+
+        self.assertEqual(result["added"], 1)
+        self.assertEqual(result["ignored"], 1)
+        self.assertIsNotNone(Word.query.filter_by(word="火").first())
+        self.assertIsNone(Word.query.filter_by(word="风").first())
 
     def _configure_writting_deck(self):
         from backend.settings import (

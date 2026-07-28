@@ -145,10 +145,24 @@ def field_values_in_deck(
     timeout: float = 30.0,
 ) -> set[str]:
     """Return the set of non-empty values for a note field in a deck."""
+    notes = mapped_notes_in_deck(
+        deck_name,
+        {"value": field_name},
+        timeout=timeout,
+    )
+    return {note["value"] for note in notes if note.get("value", "").strip() != ""}
+
+
+def mapped_notes_in_deck(
+    deck_name: str,
+    logical_to_anki: dict[str, str],
+    *,
+    timeout: float = 30.0,
+) -> list[dict[str, str]]:
+    """Return notes in a deck with values keyed by logical field names."""
     query = f"deck:{_quote_anki_query_value(deck_name)}"
     note_ids = find_notes(query, timeout=timeout)
-    values: set[str] = set()
-    # notesInfo can be large; process in chunks to keep payloads manageable.
+    notes: list[dict[str, str]] = []
     chunk_size = 250
     for start in range(0, len(note_ids), chunk_size):
         chunk = note_ids[start : start + chunk_size]
@@ -156,16 +170,16 @@ def field_values_in_deck(
             fields = info.get("fields")
             if not isinstance(fields, dict):
                 continue
-            field = fields.get(field_name)
-            if isinstance(field, dict):
-                raw = field.get("value")
-            else:
-                raw = field
-            if isinstance(raw, str):
-                trimmed = raw.strip()
-                if trimmed != "":
-                    values.add(trimmed)
-    return values
+            mapped: dict[str, str] = {}
+            for logical_key, anki_field in logical_to_anki.items():
+                field = fields.get(anki_field)
+                if isinstance(field, dict):
+                    raw = field.get("value")
+                else:
+                    raw = field
+                mapped[logical_key] = raw.strip() if isinstance(raw, str) else ""
+            notes.append(mapped)
+    return notes
 
 
 def is_connected() -> bool:
