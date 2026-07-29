@@ -9,7 +9,7 @@ from backend.extensions import db
 def configure_database(app: Flask) -> None:
     db_path = os.environ.get(
         "DATABASE_PATH",
-        os.path.join(os.path.dirname(__file__), "learn_mandarin.db"),
+        os.path.join(os.path.dirname(__file__), "teacher_wang.db"),
     )
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False

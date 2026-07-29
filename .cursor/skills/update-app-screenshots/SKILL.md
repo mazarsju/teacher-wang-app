@@ -1,7 +1,7 @@
 ---
 name: update-app-screenshots
 description: >-
-  Starts the learn-mandarin frontend and backend, captures fresh UI screenshots
+  Starts the teacher-wang frontend and backend, captures fresh UI screenshots
   into docs/screenshots/, then updates the README.md Feature section with those
   images. Use when the user asks to update app screenshots, refresh README/docs
   screenshots, or re-capture Home, Knowledge base, Chat, or Preferences screens.
@@ -9,7 +9,7 @@ description: >-
 
 # Update app screenshots
 
-Capture the current learn-mandarin UI into `docs/screenshots/`, then insert those
+Capture the current teacher-wang UI into `docs/screenshots/`, then insert those
 screenshots into `README.md` under a **Feature** section placed after
 **Getting started**.
 

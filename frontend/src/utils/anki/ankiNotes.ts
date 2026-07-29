@@ -78,8 +78,8 @@ export function buildAnkiNotes(options: {
       deckName: options.deckName,
       modelName: options.modelName,
       fields: ankiFields,
-      options: { allowDuplicate: true },
-      tags: ["learn-mandarin"],
+      options: { allowDuplicate: false },
+      tags: ["teacher-wang"],
     });
   }
   return notes;

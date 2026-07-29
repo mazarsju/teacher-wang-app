@@ -10,7 +10,7 @@ description: >-
 # Update token prices
 
 Maintain `backend/token_price.json`: a JSON array of model pricing entries used
-by the learn-mandarin app.
+by the teacher-wang app.
 
 ## Output file
 

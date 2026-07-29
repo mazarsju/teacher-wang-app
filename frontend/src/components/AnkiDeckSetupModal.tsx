@@ -391,7 +391,7 @@ export default function AnkiDeckSetupModal({
                   Field mapping
                 </legend>
                 <p className="anki-field-mapping-hint">
-                  Map each learn-mandarin field to a field on the selected Anki
+                  Map each Teacher Wang field to a field on the selected Anki
                   deck type.
                 </p>
                 {isLoadingFields && <p>Loading note fields…</p>}

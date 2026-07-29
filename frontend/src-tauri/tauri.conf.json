@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Learn Mandarin",
+  "productName": "Teacher Wang",
   "version": "0.1.0",
-  "identifier": "app.learnmandarin.desktop",
+  "identifier": "app.teacherwang.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Learn Mandarin",
+        "title": "Teacher Wang",
         "width": 1280,
         "height": 840,
         "resizable": true,
@@ -34,7 +34,7 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "binaries/learn-mandarin-api"
+      "binaries/teacher-wang-api"
     ],
     "macOS": {
       "minimumSystemVersion": "10.15"

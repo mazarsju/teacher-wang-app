@@ -2,7 +2,7 @@
 name: create-challenge
 description: >-
   Adds a new Mandarin role-play challenge (card, chat agent, tasks, judge) to
-  learn-mandarin. Use when the user asks to create a challenge, add a challenge
+  teacher-wang. Use when the user asks to create a challenge, add a challenge
   scenario, or register a new challenge character with tasks.
 ---
 

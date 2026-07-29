@@ -4,6 +4,6 @@
 /gen/schemas
 
 # PyInstaller sidecar binaries (rebuilt locally / in CI)
-/binaries/learn-mandarin-api
-/binaries/learn-mandarin-api-*
+/binaries/teacher-wang-api
+/binaries/teacher-wang-api-*
 !/binaries/.gitkeep

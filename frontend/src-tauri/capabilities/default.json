@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main Learn Mandarin window",
+  "description": "Capability for the main Teacher Wang window",
   "windows": [
     "main"
   ],
@@ -11,7 +11,7 @@
       "identifier": "shell:allow-spawn",
       "allow": [
         {
-          "name": "binaries/learn-mandarin-api",
+          "name": "binaries/teacher-wang-api",
           "sidecar": true,
           "args": true
         }
@@ -21,7 +21,7 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "binaries/learn-mandarin-api",
+          "name": "binaries/teacher-wang-api",
           "sidecar": true,
           "args": true
         }

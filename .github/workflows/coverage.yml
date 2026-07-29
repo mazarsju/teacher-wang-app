@@ -93,9 +93,9 @@ jobs:
             "",
             table("Backend test coverage", backend),
             "",
-            "- [Coverage home](https://mazarsju.github.io/learn-mandarin/)",
-            "- [Frontend HTML report](https://mazarsju.github.io/learn-mandarin/frontend/)",
-            "- [Backend HTML report](https://mazarsju.github.io/learn-mandarin/backend/)",
+            "- [Coverage home](https://mazarsju.github.io/teacher-wang/)",
+            "- [Frontend HTML report](https://mazarsju.github.io/teacher-wang/frontend/)",
+            "- [Backend HTML report](https://mazarsju.github.io/teacher-wang/backend/)",
           ].join("\n");
 
           require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, markdown);

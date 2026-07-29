@@ -1,6 +1,6 @@
 > 🚧 **Work in progress** — This repository is currently under active development. See the [roadmap](#roadmap) for planned features and progress.
 
-# learn-mandarin
+# teacher-wang
 
 ![Frontend-Statements](.github/badges/frontend-coverage-statements.svg)
 ![Frontend-Branches](.github/badges/frontend-coverage-branches.svg)
@@ -26,7 +26,7 @@ This project was intentionally developed using Cursor AI and coding agents. My o
 ## Project structure
 
 ```
-learn-mandarin/
+teacher-wang/
 ├── backend/
 │   ├── __init__.py         # Application factory (create_app)
 │   ├── app.py              # Flask entry point
@@ -42,7 +42,7 @@ learn-mandarin/
 │   ├── models.py           # Character, Word, HskWord, HskCharacter, and association tables
 │   ├── settings.py         # Key/value app settings (HSK level, Anki deck mappings)
 │   ├── routes/             # One endpoint per file (Flask blueprints); HSK load helpers
-│   ├── learn_mandarin.db   # SQLite database (created on first run)
+│   ├── teacher_wang.db     # SQLite database (created on first run)
 │   └── requirements.txt
 ├── frontend/
 │   ├── index.html
@@ -112,7 +112,7 @@ The coverage report is written to `backend/coverage/` (open `coverage/index.html
 
 #### Database
 
-On first start, a SQLite database is created at `backend/learn_mandarin.db` with the following tables:
+On first start, a SQLite database is created at `backend/teacher_wang.db` with the following tables:
 
 | Table | Columns |
 | --- | --- |
@@ -210,7 +210,7 @@ npm test
 npm run test:coverage
 ```
 
-The coverage report is written to `frontend/coverage/` (open `coverage/index.html` in a browser for the HTML report). On GitHub, badges in this README are updated automatically on each push to `main`, and the full HTML reports are published at [mazarsju.github.io/learn-mandarin](https://mazarsju.github.io/learn-mandarin/) ([frontend](https://mazarsju.github.io/learn-mandarin/frontend/), [backend](https://mazarsju.github.io/learn-mandarin/backend/)).
+The coverage report is written to `frontend/coverage/` (open `coverage/index.html` in a browser for the HTML report). On GitHub, badges in this README are updated automatically on each push to `main`, and the full HTML reports are published at [mazarsju.github.io/teacher-wang](https://mazarsju.github.io/teacher-wang/) ([frontend](https://mazarsju.github.io/teacher-wang/frontend/), [backend](https://mazarsju.github.io/teacher-wang/backend/)).
 
 To enable the hosted report, go to **Settings → Pages** and set **Build and deployment → Source** to **Deploy from a branch**, then choose branch **`gh-pages`** and folder **`/ (root)`**. The workflow creates and updates that branch automatically.
 
@@ -248,8 +248,8 @@ npm run tauri:build
 
 On macOS, installers are written under `frontend/src-tauri/target/release/bundle/`:
 
-- `macos/Learn Mandarin.app`
-- `dmg/Learn Mandarin_<version>_<arch>.dmg`
+- `macos/Teacher Wang.app`
+- `dmg/Teacher Wang_<version>_<arch>.dmg`
 
 Open the `.dmg` (or the `.app`) to run the packaged app. User data (SQLite DB, LLM config, conversation logs) is stored in the OS app-data directory, not inside the install bundle.
 

@@ -32,7 +32,7 @@ fi
 BINARIES_DIR="$ROOT_DIR/frontend/src-tauri/binaries"
 mkdir -p "$BINARIES_DIR"
 
-SIDECAR_NAME="learn-mandarin-api"
+SIDECAR_NAME="teacher-wang-api"
 OUTPUT_PATH="$BINARIES_DIR/${SIDECAR_NAME}-${TARGET_TRIPLE}"
 
 echo "Building sidecar for ${TARGET_TRIPLE}..."

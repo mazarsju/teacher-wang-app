@@ -69,7 +69,7 @@ describe("buildAnkiNotes", () => {
           Meaning: "water",
         },
         options: { allowDuplicate: true },
-        tags: ["learn-mandarin"],
+        tags: ["teacher-wang"],
       },
     ]);
   });

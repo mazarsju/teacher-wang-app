@@ -1,4 +1,4 @@
-"""Production entry point for the Learn Mandarin desktop (Tauri) API sidecar."""
+"""Production entry point for the Teacher Wang desktop (Tauri) API sidecar."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def main() -> None:
 
     app = create_app()
     threading.Thread(target=_watch_stdin_for_shutdown, daemon=True).start()
-    print(f"learn-mandarin-api listening on http://{host}:{port}", flush=True)
+    print(f"teacher-wang-api listening on http://{host}:{port}", flush=True)
     serve(app, host=host, port=port, threads=8)
 
 

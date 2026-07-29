@@ -9,7 +9,7 @@ use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager, RunEvent};
 
 const API_PORT: u16 = 17831;
-const SIDECAR_BASENAME: &str = "learn-mandarin-api";
+const SIDECAR_BASENAME: &str = "teacher-wang-api";
 
 fn wait_for_api(port: u16) -> bool {
   for _ in 0..100 {
@@ -70,14 +70,14 @@ fn spawn_api_sidecar(app: &AppHandle) -> Result<(), String> {
 
   let data_dir = app
     .path()
-    .resolve("learn-mandarin", BaseDirectory::AppData)
+    .resolve("teacher-wang", BaseDirectory::AppData)
     .map_err(|err| format!("Failed to resolve app data dir: {err}"))?;
   std::fs::create_dir_all(&data_dir)
     .map_err(|err| format!("Failed to create app data dir: {err}"))?;
   std::fs::create_dir_all(data_dir.join("conversation_logs"))
     .map_err(|err| format!("Failed to create conversation logs dir: {err}"))?;
 
-  let database_path = data_dir.join("learn_mandarin.db");
+  let database_path = data_dir.join("teacher_wang.db");
   let config_path = data_dir.join(".config.txt");
   let logs_dir = data_dir.join("conversation_logs");
   let export_path = data_dir.join("db.txt");
@@ -148,7 +148,7 @@ pub fn run() {
       Ok(())
     })
     .build(tauri::generate_context!())
-    .expect("error while building Learn Mandarin")
+    .expect("error while building Teacher Wang")
     .run(|app_handle, event| {
       if let RunEvent::ExitRequested { .. } = event {
         shutdown_api_sidecar(app_handle);

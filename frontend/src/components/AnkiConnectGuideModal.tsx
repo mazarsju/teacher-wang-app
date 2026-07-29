@@ -37,7 +37,7 @@ const GUIDE_STEPS: GuideStep[] = [
   {
     title: "Allow browser access (CORS)",
     description:
-      "In Anki, open Tools → Add-ons → AnkiConnect → Config and set webCorsOriginList to [\"*\"] (or include http://localhost:5173). Restart Anki so learn-mandarin can call AnkiConnect from the app.",
+      "In Anki, open Tools → Add-ons → AnkiConnect → Config and set webCorsOriginList to [\"*\"] (or include http://localhost:5173). Restart Anki so Teacher Wang can call AnkiConnect from the app.",
   },
   {
     title: "Verify the connection",
@@ -74,7 +74,7 @@ export default function AnkiConnectGuideModal({
           Set up AnkiConnect
         </h2>
         <p className="modal-message">
-          learn-mandarin talks to Anki through the AnkiConnect add-on. Follow
+          Teacher Wang talks to Anki through the AnkiConnect add-on. Follow
           these steps, then close this guide to re-check the connection.
         </p>
 

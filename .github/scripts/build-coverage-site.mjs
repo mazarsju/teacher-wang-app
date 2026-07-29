@@ -28,7 +28,7 @@ writeFileSync(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>learn-mandarin — test coverage</title>
+  <title>teacher-wang — test coverage</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
     ul { line-height: 2; }
