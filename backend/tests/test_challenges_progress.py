@@ -32,7 +32,10 @@ class TestChallengesProgress(unittest.TestCase):
         )
 
     def test_challenge_completed_when_all_tasks_done(self):
-        save_completed_task_ids("challenge-restaurant", ["call-waiter"])
+        save_completed_task_ids(
+            "challenge-restaurant",
+            ["call-waiter", "ask-no-meat", "ask-bill", "pay-bill"],
+        )
         self.assertTrue(is_challenge_completed("challenge-restaurant"))
         self.assertEqual(
             get_challenges_progress(),

@@ -7,6 +7,3 @@ __pycache__/
 conversation_logs/
 .cursor/skills/update-app-screenshots/scripts/node_modules/
 build/
-dist-desktop/
-frontend/src-tauri/binaries/teacher-wang-api
-frontend/src-tauri/binaries/teacher-wang-api-*

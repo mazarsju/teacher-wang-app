@@ -15,19 +15,19 @@ A first idea was to connect the application backend directly to users' AnkiWeb a
 * Asking users for Anki credentials would create unnecessary security and maintenance concerns.
 * Depending on Anki's private synchronization protocol would make the project fragile over time.
 
-The app itself runs locally: a Flask API (dev server or Tauri sidecar) plus a React UI in the browser or a Tauri webview. There is no multi-tenant cloud Anki bridge.
+The product is a web app (React + Flask) with a PostgreSQL knowledge base, aimed at cloud hosting. Anki sync still needs the learner’s local Anki Desktop because there is no public AnkiWeb API.
 
 ## Decision
 
-The application follows a hybrid local architecture:
+The application follows a hybrid architecture:
 
 ```
-Browser / Tauri webview (React)
+Browser (React)
         │
-        ├────────────► Local Backend (Python / Flask)
+        ├────────────► Backend (Python / Flask, cloud or local)
         │                    │
         │                    ├── AI features
-        │                    ├── SQL knowledge base (Postgres locally; SQLite for desktop/tests)
+        │                    ├── SQL knowledge base (PostgreSQL)
         │                    ├── Deck mapping settings
         │                    └── Sync bookkeeping (synchronized flags, ignore lists)
         │
@@ -63,9 +63,8 @@ This architecture was chosen because it:
 * avoids storing users' Anki credentials;
 * relies only on the stable AnkiConnect API instead of Anki's private sync protocol;
 * keeps AI and knowledge-base logic in the Flask app;
-* requires no desktop companion besides Anki itself (or the optional Tauri shell);
-* works the same in browser-dev and packaged Tauri builds, as long as Anki runs on the same machine;
-* remains compatible with a future native client that could call AnkiConnect without a webview.
+* requires no desktop companion besides Anki itself;
+* remains compatible with cloud hosting of the web app while Anki sync stays on the learner’s machine.
 
 ## Consequences
 
@@ -80,9 +79,10 @@ This architecture was chosen because it:
 
 * Anki Desktop must be running during synchronization.
 * The AnkiConnect add-on must be installed, with `webCorsOriginList` allowing the app origin.
-* Synchronization can only occur from the machine hosting the local Anki collection.
-* Browser/webview CORS and localhost access must stay valid on supported clients.
+* Synchronization can only occur from the machine hosting the local Anki collection (browser must reach `localhost:8765`).
+* Browser CORS and localhost access must stay valid on supported clients.
+* A purely remote cloud UI can only sync Anki when the user runs AnkiConnect on the same machine as the browser (or via a future local bridge).
 
 ## Future evolution
 
-If Anki eventually exposes an official API or OAuth authentication, this architecture can be revisited. A native desktop client could later reuse the same Flask API while replacing the webview-to-AnkiConnect bridge with direct local communication.
+If Anki eventually exposes an official API or OAuth authentication, this architecture can be revisited. Until then, cloud deployment covers the web app and database; Anki remains a local bridge via AnkiConnect.

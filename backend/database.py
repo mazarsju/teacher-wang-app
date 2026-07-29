@@ -1,8 +1,6 @@
 """Database configuration and initialization.
 
-PostgreSQL schema is managed by Alembic. SQLite (tests / Tauri) uses
-``db.create_all()`` against the current models. One-shot data migrations that
-are still useful on both dialects run after schema setup.
+PostgreSQL schema is managed by Alembic. Seed / data helpers run after upgrade.
 """
 
 from __future__ import annotations
@@ -19,8 +17,8 @@ def configure_database(app: Flask) -> None:
     db.init_app(app)
 
 
-def _run_alembic_upgrade() -> None:
-    """Apply pending Alembic revisions (Postgres schema source of truth)."""
+def _run_alembic_upgrade(database_url: str | None = None) -> None:
+    """Apply pending Alembic revisions."""
     from pathlib import Path
 
     from alembic import command
@@ -28,7 +26,10 @@ def _run_alembic_upgrade() -> None:
 
     repo_root = Path(__file__).resolve().parents[1]
     config = Config(str(repo_root / "alembic.ini"))
-    config.set_main_option("sqlalchemy.url", resolve_database_url())
+    config.set_main_option(
+        "sqlalchemy.url",
+        database_url or resolve_database_url(),
+    )
     command.upgrade(config, "head")
 
 
@@ -123,12 +124,12 @@ def init_db(app: Flask) -> None:
     import backend.models  # noqa: F401
 
     with app.app_context():
-        dialect = db.engine.dialect.name
-        if dialect == "postgresql":
-            _run_alembic_upgrade()
-        else:
-            # Tests and Tauri desktop: current models via create_all.
-            db.create_all()
+        if db.engine.dialect.name != "postgresql":
+            raise RuntimeError(
+                f"Unsupported database dialect {db.engine.dialect.name!r}; "
+                "Teacher Wang requires PostgreSQL."
+            )
+        _run_alembic_upgrade()
 
         _ensure_hsk_content_loaded()
         _ensure_settings()

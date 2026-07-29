@@ -2,29 +2,14 @@ import bootstrap  # noqa: F401
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask
-
 from backend.database import _migrate_settings_token_keys_to_token_count
 from backend.extensions import db
 from backend.models import Setting, TokenCount
 from backend.settings import SETTING_LEVEL, ensure_default_settings, get_setting
+from postgres_test_case import PostgresTestCase
 
 
-class TestSettings(unittest.TestCase):
-    def setUp(self):
-        self.app = Flask(__name__)
-        self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        db.init_app(self.app)
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
+class TestSettings(PostgresTestCase):
     def test_ensure_default_settings_creates_level_and_anki_decks(self):
         ensure_default_settings()
         self.assertEqual(Setting.query.count(), 10)

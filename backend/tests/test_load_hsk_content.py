@@ -5,8 +5,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from flask import Flask
-
 from backend.extensions import db
 from backend.models import HskCharacter, HskWord, Setting, hsk_word_character  # noqa: F401
 from backend.settings import SETTING_LEVEL, get_setting
@@ -19,6 +17,7 @@ from backend.routes.hsk_source import (
     load_fallback_hsk_entries,
     words_by_new_level,
 )
+from postgres_test_case import PostgresTestCase
 
 FIXTURE_PATH = (
     Path(__file__).resolve().parents[1]
@@ -90,21 +89,10 @@ class TestHskSource(unittest.TestCase):
         self.assertEqual(entries, load_fallback_hsk_entries(HSK_FALLBACK_PATH))
 
 
-class TestLoadHskContent(unittest.TestCase):
+class TestLoadHskContent(PostgresTestCase):
     def setUp(self) -> None:
-        self.app = Flask(__name__)
-        self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        db.init_app(self.app)
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
+        super().setUp()
         self.entries = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
-
-    def tearDown(self) -> None:
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
 
     def test_load_keeps_lowest_level_and_links_characters(self) -> None:
         counts = load_hsk_content(self.entries)

@@ -9,6 +9,7 @@ on:
       - ".coveragerc"
       - ".github/workflows/coverage.yml"
       - ".github/scripts/**"
+      - "alembic.ini"
   pull_request:
     paths:
       - "frontend/**"
@@ -16,6 +17,7 @@ on:
       - ".coveragerc"
       - ".github/workflows/coverage.yml"
       - ".github/scripts/**"
+      - "alembic.ini"
 
 concurrency:
   group: coverage-${{ github.ref }}
@@ -27,6 +29,26 @@ permissions:
 jobs:
   coverage:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: teacher_wang_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d teacher_wang_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/teacher_wang_test
+      # App imports may resolve DATABASE_URL; point it at the same throwaway test DB.
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/teacher_wang_test
 
     steps:
       - name: Checkout

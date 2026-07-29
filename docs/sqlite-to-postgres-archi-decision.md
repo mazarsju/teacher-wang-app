@@ -2,118 +2,80 @@
 
 ## Status
 
-Accepted (Phases 0–2 done; Phase 3 desktop deferred)
+Accepted
 
 ## Context
 
-Teacher Wang historically used a local SQLite file (`DATABASE_PATH` → `sqlite:///…`) with schema created by `db.create_all()` and imperative `_migrate_*` helpers in `backend/database.py`. That approach does not scale to a shared Postgres instance, makes schema history hard to review, and blocks multi-machine / hosted deployments.
+Teacher Wang historically used a local SQLite file with schema created by `db.create_all()` and imperative `_migrate_*` helpers in `backend/database.py`. That approach does not scale to a shared Postgres instance or cloud hosting, and makes schema history hard to review.
 
-Local Postgres is available (`localhost:5432`). Connection secrets must not live in git.
+Connection secrets must not live in git.
 
 ## Decision
 
 ### Connection configuration
 
-* Prefer a full SQLAlchemy URL via **`DATABASE_URL`**.
+* App runtime requires **`DATABASE_URL`** (PostgreSQL).
+* Backend tests require **`TEST_DATABASE_URL`** pointing at a **dedicated** database (for example `teacher_wang_test`), never the primary app DB.
 * Store local credentials in a **gitignored** repo-root `.env` (template: `.env.example`).
-* Resolution order (`backend/db_config.py`):
-  1. `DATABASE_PATH` → SQLite (Tauri desktop only)
-  2. `DATABASE_URL` → Postgres (required for local/web dev)
-  3. Otherwise **raise** — no silent SQLite fallback
-
-Current local `.env` target:
-
-```text
-postgresql+psycopg://postgres:…@localhost:5432/teacher_wang
-```
+* Missing URLs raise at startup / test setup (no silent SQLite fallback).
 
 ### Schema management
 
-* **PostgreSQL:** Alembic is the source of truth (`alembic.ini`, `backend/migrations/`). App startup runs `alembic upgrade head` before seeds.
-* **SQLite (tests / desktop):** `db.create_all()` against current models only — legacy imperative schema `_migrate_*` helpers were removed.
-* Seed / data helpers (`_ensure_hsk_content_loaded`, `_ensure_settings`, legacy token-settings → `token_count`, ignore-list table migration) still run in `init_db` for both dialects.
+* Alembic is the source of truth (`alembic.ini`, `backend/migrations/`).
+* App startup and the test harness both run `alembic upgrade head` (tests pass an explicit URL so migrations apply to `TEST_DATABASE_URL`).
+* Seed / data helpers (`_ensure_hsk_content_loaded`, `_ensure_settings`, legacy token-settings → `token_count`, ignore-list table migration) run in `init_db` for the app.
 
-### Dialect-specific SQL
+### Tests
 
-* HSK bulk load uses `INSERT … ON CONFLICT DO NOTHING` via a dialect switch (`postgresql` / `sqlite`) in `backend/routes/hsk_content_loader.py`.
+* ORM / integration tests inherit `PostgresTestCase` (`backend/tests/postgres_test_case.py`), which truncates learner/reference tables between tests.
+* GitHub Actions coverage workflow runs Postgres 15 as a service and exports `TEST_DATABASE_URL` / `DATABASE_URL`.
+* The one-shot SQLite→Postgres **data import** script may still use temporary SQLite files when verifying copy helpers; the application itself does not use SQLite.
 
 ### Learner data import
 
-* One-shot copy from an existing SQLite file into Postgres:
-  `python3 scripts/migrate_sqlite_to_postgres.py`
-* Replaces learner tables (`character`, `words`, links, `settings`, ignore lists, `token_count`); does **not** overwrite HSK reference tables.
-* During import, `character.pinyin` was widened to `VARCHAR(8)` (Alembic `376edc4d57aa`) so values like `chuang1` fit — SQLite never enforced the old length-6 limit.
+* `python3 scripts/migrate_sqlite_to_postgres.py` copies learner tables from an old SQLite file into Postgres (HSK tables skipped).
+* `character.pinyin` is `VARCHAR(8)` (Alembic `376edc4d57aa`).
 
-## Migration plan
+## Migration plan (completed)
 
-### Phase 0 — Scaffolding — done
+Phases 0–2 (scaffold, local cutover, retire SQLite runtime) are done. Desktop packaging was cancelled in favor of cloud. Tests and CI are Postgres-only.
 
-1. `.env` / `.env.example`, gitignore `.env`.
-2. Dependencies: `alembic`, `psycopg[binary]`, `python-dotenv`.
-3. `DATABASE_URL` via `backend/db_config.py`.
-4. Alembic initial revision matching models.
-5. Database `teacher_wang` + `alembic upgrade head`.
-
-### Phase 1 — Cut over local development — done
-
-1. Developers use `.env` + local Postgres.
-2. App start applies migrations + seeds.
-3. SQLite → Postgres learner import script (`scripts/migrate_sqlite_to_postgres.py` / `backend/sqlite_postgres_migrate.py`).
-4. README is Postgres-first; SQLite documented for tests/desktop.
-
-### Phase 2 — Retire SQLite schema path (app code) — done
-
-1. Removed imperative schema `_migrate_*` helpers from `database.py`.
-2. Unit tests keep in-memory SQLite + `create_all`; schema-migration-only tests dropped.
-3. Local default no longer falls back to `backend/teacher_wang.db`.
-
-### Phase 3 — Desktop / Tauri — deferred
-
-**Decision for now:** keep SQLite for the packaged app via `DATABASE_PATH` in the OS app-data directory. Packaged users should not need a local Postgres server.
-
-Follow-ups when revisited: remote `DATABASE_URL`, embedded Postgres, or sync-to-cloud API.
-
-### Phase 4 — Ongoing schema changes
+### Ongoing schema changes
 
 1. Change models in `backend/models.py`.
 2. `python3 -m alembic revision --autogenerate -m "…"`.
-3. Review the generated script; apply with `python3 -m alembic upgrade head` (or app startup).
+3. Review the generated script; apply with `python3 -m alembic upgrade head` (or app/test startup).
 4. Update this document / README when bootstrap commands change.
 
 ## Commands
 
 ```bash
-# one-time: create DB (as superuser)
 PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
   -c 'CREATE DATABASE teacher_wang;'
+PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
+  -c 'CREATE DATABASE teacher_wang_test;'
 
 cp .env.example .env
 python3 -m pip install -r backend/requirements.txt
-python3 -m alembic upgrade head   # also on app start for Postgres
+python3 -m alembic upgrade head
+
+python3 -m unittest discover -s backend/tests -v
 
 # optional: import learner data from an old SQLite file
 python3 scripts/migrate_sqlite_to_postgres.py \
   --sqlite backend/teacher_wang.db
-
-# new revision after model changes
-python3 -m alembic revision --autogenerate -m "describe change"
 ```
 
 ## Consequences
 
 ### Advantages
 
-* Reviewable schema history; reproducible Postgres setups.
+* Reviewable schema history; local, CI, and cloud share one dialect.
 * Secrets stay out of git (`.env`).
-* Local app targets the same engine family as a future hosted backend.
-* Existing SQLite learner data can be imported deliberately.
+* Tests exercise real Postgres constraints and upserts.
 
 ### Drawbacks / follow-ups
 
-* Developers need a running Postgres for local/web work.
-* Tauri still uses SQLite (`DATABASE_PATH`) until Phase 3 changes.
-* Very old SQLite files that predate the current model shape are no longer upgraded in-place by imperative migrations (use a current export or recreate).
-
-## Future evolution
-
-After Phase 3, drop SQLite from desktop if Postgres or a remote API is chosen. Revisit unbounded `String` columns vs `Text` if Postgres tooling complains.
+* Developers and CI need a running Postgres.
+* Tests are slightly slower than in-memory SQLite.
+* Very old SQLite files are not upgraded in-place (use the import script).

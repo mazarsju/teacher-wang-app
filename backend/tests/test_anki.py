@@ -8,6 +8,7 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from postgres_test_case import PostgresTestCase  # noqa: E402
 
 
 class TestAnkiRoutes(unittest.TestCase):
@@ -225,28 +226,12 @@ class TestAnkiRoutes(unittest.TestCase):
         self.mock_pull.assert_called_once()
 
 
-class TestAnkiSyncHelpers(unittest.TestCase):
+class TestAnkiSyncHelpers(PostgresTestCase):
     def setUp(self):
-        from flask import Flask
-
-        from backend.extensions import db
         from backend.settings import ensure_default_settings
 
-        self.app = Flask(__name__)
-        self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        db.init_app(self.app)
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
+        super().setUp()
         ensure_default_settings()
-
-    def tearDown(self):
-        from backend.extensions import db
-
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
 
     def test_get_anki_status_defaults_to_not_configured(self):
         from backend.anki_sync import get_anki_status

@@ -2,8 +2,6 @@ import bootstrap  # noqa: F401
 import unittest
 from types import SimpleNamespace
 
-from flask import Flask
-
 from backend.extensions import db
 from backend.hsk_level import (
     HSK_LEVEL_COMPLETION_RATIO,
@@ -16,6 +14,7 @@ from backend.hsk_level import (
 )
 from backend.models import Character, HskCharacter
 from backend.settings import SETTING_LEVEL, get_setting
+from postgres_test_case import PostgresTestCase
 
 VOCABULARY = [
     SimpleNamespace(character="爱", level=1, frequency=30),
@@ -26,21 +25,7 @@ VOCABULARY = [
 ]
 
 
-class TestHskLevel(unittest.TestCase):
-    def setUp(self):
-        self.app = Flask(__name__)
-        self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        db.init_app(self.app)
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
+class TestHskLevel(PostgresTestCase):
     def test_status_orders_missing_characters_by_frequency(self):
         self.assertEqual(
             get_hsk_level_status({"爱"}, VOCABULARY),

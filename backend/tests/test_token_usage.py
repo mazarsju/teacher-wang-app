@@ -7,8 +7,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from flask import Flask
-
 from backend.extensions import db
 from backend.models import TokenCount
 from backend.token_usage import (
@@ -20,17 +18,12 @@ from backend.token_usage import (
     get_total_tokens,
     record_token_usage,
 )
+from postgres_test_case import PostgresTestCase
 
 
-class TestTokenUsage(unittest.TestCase):
+class TestTokenUsage(PostgresTestCase):
     def setUp(self):
-        self.app = Flask(__name__)
-        self.app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        db.init_app(self.app)
-        self.app_context = self.app.app_context()
-        self.app_context.push()
-        db.create_all()
+        super().setUp()
 
         self.temp_dir = TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
@@ -60,11 +53,6 @@ class TestTokenUsage(unittest.TestCase):
         )
         self.model_patcher.start()
         self.addCleanup(self.model_patcher.stop)
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
 
     def test_compute_price_cents_uses_per_million_usd_rate(self):
         # 1M tokens at $0.15 / 1M = $0.15 = 15 cents

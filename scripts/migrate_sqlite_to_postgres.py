@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -39,7 +38,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.database_url:
         database_url = args.database_url
     else:
-        os.environ.pop("DATABASE_PATH", None)
         database_url = resolve_database_url()
 
     if database_url.startswith("sqlite:"):

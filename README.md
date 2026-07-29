@@ -18,9 +18,8 @@ An app to learn Mandarin.
 
 This project was intentionally developed using Cursor AI and coding agents. My objective was not only to build an AI product, but also to explore modern AI-assisted software engineering workflows.
 
-- **Backend:** Python, Flask, SQLAlchemy, PostgreSQL (Alembic); SQLite still used for unit tests and the Tauri desktop data dir
+- **Backend:** Python, Flask, SQLAlchemy, PostgreSQL (Alembic)
 - **Frontend:** React, TypeScript, Vite
-- **Desktop:** Tauri 2 (native shell) + PyInstaller sidecar for the Flask API
 - **AI:** LangChain (`langchain-core`, `langchain-openai`), OpenAI-compatible chat models via `ChatOpenAI`
 
 ## Project structure
@@ -30,8 +29,8 @@ teacher-wang/
 ├── backend/
 │   ├── __init__.py         # Application factory (create_app)
 │   ├── app.py              # Flask entry point
-│   ├── database.py         # DB init, Alembic upgrade (Postgres), legacy SQLite migrations
-│   ├── db_config.py        # Resolve DATABASE_URL / DATABASE_PATH from .env
+│   ├── database.py         # DB init, Alembic upgrade (Postgres)
+│   ├── db_config.py        # Resolve DATABASE_URL from .env
 │   ├── sqlite_postgres_migrate.py  # Learner-data copy helpers (SQLite → Postgres)
 │   ├── extensions.py       # SQLAlchemy extension
 │   ├── migrations/         # Alembic revisions (Postgres schema)
@@ -65,11 +64,8 @@ teacher-wang/
 │   │       └── aiChat/         # Chat, LLM config, token usage
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
-│   ├── vite.config.ts      # Vite dev server and proxy config
-│   └── src-tauri/          # Tauri desktop shell (Rust) + sidecar wiring
+│   └── vite.config.ts      # Vite dev server and proxy config
 ├── scripts/
-│   ├── build-sidecar.sh   # Bundle Flask API with PyInstaller for Tauri
-│   ├── build-desktop.sh   # Full local desktop installer build
 │   └── migrate_sqlite_to_postgres.py  # One-shot learner data import into Postgres
 ├── docs/
 │   ├── screenshots/        # UI screenshots used in this README
@@ -113,7 +109,7 @@ PORT=8080 python3 -m backend.app
 
 #### Tests
 
-From the project root (requires the project virtual environment at `venv/` with dependencies installed):
+Backend tests require PostgreSQL via `TEST_DATABASE_URL` (see `.env.example`). Create the test database once, then from the project root:
 
 ```bash
 python3 -m unittest discover -s backend/tests -v
@@ -126,23 +122,28 @@ From the `backend/` directory:
 make test-coverage
 ```
 
+GitHub Actions starts a Postgres 15 service and sets `TEST_DATABASE_URL` automatically.
+
 The coverage report is written to `backend/coverage/` (open `coverage/index.html` in a browser for the HTML report).
 
 #### Database
 
-Local development targets **PostgreSQL** via `DATABASE_URL` in a gitignored `.env` (copy from `.env.example`):
+Local development targets **PostgreSQL** via `DATABASE_URL` in a gitignored `.env` (copy from `.env.example`). Backend tests use a separate `TEST_DATABASE_URL` (for example `teacher_wang_test`) so they never touch your app data:
 
 ```bash
 cp .env.example .env
-# default: postgresql+psycopg://postgres:1234@localhost:5432/teacher_wang
+# DATABASE_URL=.../teacher_wang
+# TEST_DATABASE_URL=.../teacher_wang_test
 
 PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
   -c 'CREATE DATABASE teacher_wang;'
+PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
+  -c 'CREATE DATABASE teacher_wang_test;'
 python3 -m pip install -r backend/requirements.txt
 python3 -m alembic upgrade head   # also runs automatically on app start
 ```
 
-Schema is managed with **Alembic** (`backend/migrations/`). See [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md) for the full cutover plan.
+Schema is managed with **Alembic** (`backend/migrations/`). See [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md) for the cutover notes.
 
 On first start the app seeds HSK content and default settings. Main tables:
 
@@ -158,7 +159,7 @@ On first start the app seeds HSK content and default settings. Main tables:
 | `ignore_vocab_card` / `ignore_writting_card` | Anki pull ignore lists |
 | `token_count` | LLM token usage events |
 
-`DATABASE_PATH` still forces a local SQLite file (Tauri desktop and some tests). Unit tests typically use in-memory SQLite. To copy learner data from an old `teacher_wang.db` into Postgres:
+To copy learner data from an old `teacher_wang.db` into Postgres:
 
 ```bash
 python3 scripts/migrate_sqlite_to_postgres.py --sqlite backend/teacher_wang.db
@@ -199,7 +200,7 @@ Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://g
 | Mandarin vocabulary | `mandarin_vocabulary` | `writting`, `pinyin`, `definition` — deck type should support three directions (writting↔pinyin↔definition) |
 | Mandarin writting | `mandarin_writting` | `recto` (definition (pinyin)), `verso` (characters) — writing practice only; only characters with “written known” are intended for this deck |
 
-Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser/webview. Deck name, deck type, and field mappings are stored in the `settings` table via thin Flask routes.
+Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser. Deck name, deck type, and field mappings are stored in the `settings` table via thin Flask routes.
 
 Architecture notes: [AnkiConnect bridge](docs/anki-connect-archi-decision.md), [push / pull sync](docs/anki-sync-archi-decision.md).
 
@@ -254,47 +255,6 @@ npm run test:coverage
 The coverage report is written to `frontend/coverage/` (open `coverage/index.html` in a browser for the HTML report). On GitHub, badges in this README are updated automatically on each push to `main`, and the full HTML reports are published at [mazarsju.github.io/teacher-wang](https://mazarsju.github.io/teacher-wang/) ([frontend](https://mazarsju.github.io/teacher-wang/frontend/), [backend](https://mazarsju.github.io/teacher-wang/backend/)).
 
 To enable the hosted report, go to **Settings → Pages** and set **Build and deployment → Source** to **Deploy from a branch**, then choose branch **`gh-pages`** and folder **`/ (root)`**. The workflow creates and updates that branch automatically.
-
-### Desktop app (Tauri)
-
-The desktop package wraps the React UI in a native window and runs the Flask API as a bundled sidecar, so end users do not need Python or Node installed.
-
-#### Prerequisites (builders only)
-
-1. [Rust](https://rustup.rs/) (`rustc` / `cargo`)
-2. Platform tooling: Xcode Command Line Tools on macOS (`xcode-select --install`)
-3. Node.js + npm (frontend)
-4. Python venv with desktop deps:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-python3 -m pip install -r backend/requirements-desktop.txt
-cd frontend && npm install
-```
-
-#### Build a local installer
-
-From the project root:
-
-```bash
-bash scripts/build-desktop.sh
-```
-
-Or from `frontend/`:
-
-```bash
-npm run tauri:build
-```
-
-On macOS, installers are written under `frontend/src-tauri/target/release/bundle/`:
-
-- `macos/Teacher Wang.app`
-- `dmg/Teacher Wang_<version>_<arch>.dmg`
-
-Open the `.dmg` (or the `.app`) to run the packaged app. User data (SQLite DB via `DATABASE_PATH`, LLM config, conversation logs) is stored in the OS app-data directory, not inside the install bundle. Local web development uses Postgres via `.env` instead — see [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md).
-
-GitHub Actions release packaging can be added later on top of this same local build flow.
 
 ## AI logic
 
@@ -371,9 +331,9 @@ Ease the process of synchronization between the app knowledge base and Anki.
 - [x] Make it possible to load your Anki collection to your current database (way "in")
 - [ ] Add a whole wizzard for the first connexion to help the user to populate his knowledge base
 
-### 5. Packaging of the application
+### 5. Cloud deployment
 
-Make it easier for external users to install and play with the app
+Host the web app so learners can use it without a local install.
 
-- [x] Package the application as a strandalone application using Tauri
-- [ ] Integrate the packaging process directly in Gitlab using Gitlab actions
+- [ ] Deploy frontend + Flask API + Postgres to a cloud environment
+- [ ] Wire production secrets (`DATABASE_URL`, LLM config) and HTTPS
