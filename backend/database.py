@@ -19,18 +19,9 @@ def configure_database(app: Flask) -> None:
 
 def _run_alembic_upgrade(database_url: str | None = None) -> None:
     """Apply pending Alembic revisions."""
-    from pathlib import Path
+    from backend.alembic_runner import run_alembic_upgrade
 
-    from alembic import command
-    from alembic.config import Config
-
-    repo_root = Path(__file__).resolve().parents[1]
-    config = Config(str(repo_root / "alembic.ini"))
-    config.set_main_option(
-        "sqlalchemy.url",
-        database_url or resolve_database_url(),
-    )
-    command.upgrade(config, "head")
+    run_alembic_upgrade(database_url)
 
 
 def _migrate_settings_token_keys_to_token_count() -> None:

@@ -63,10 +63,11 @@ const words = [
 ];
 
 function matchesApiPath(url: string, path: string) {
+  const expected = path.startsWith("/api/") ? path : `/api${path}`;
   try {
-    return new URL(url, "http://localhost").pathname === path;
+    return new URL(url, "http://localhost").pathname === expected;
   } catch {
-    return url === path || url.startsWith(`${path}?`);
+    return url === expected || url.startsWith(`${expected}?`);
   }
 }
 

@@ -7,6 +7,7 @@ import unittest
 from flask import Flask
 from sqlalchemy import text
 
+from backend.alembic_runner import run_alembic_upgrade
 from backend.db_config import resolve_test_database_url
 from backend.extensions import db
 
@@ -25,18 +26,6 @@ _TRUNCATE_TABLES = (
     "ignore_writting_card",
     "token_count",
 )
-
-
-def run_alembic_upgrade(database_url: str) -> None:
-    from pathlib import Path
-
-    from alembic import command
-    from alembic.config import Config
-
-    repo_root = Path(__file__).resolve().parents[2]
-    config = Config(str(repo_root / "alembic.ini"))
-    config.set_main_option("sqlalchemy.url", database_url)
-    command.upgrade(config, "head")
 
 
 def truncate_all_tables() -> None:

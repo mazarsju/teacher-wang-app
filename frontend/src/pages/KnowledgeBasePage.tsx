@@ -12,6 +12,7 @@ import Table, { type TableColumn } from "../components/Table";
 import type { Character } from "../types/character";
 import type { Word } from "../types/word";
 import { fetchAnkiStatus, runAnkiQuickSync } from "../utils/anki/ankiApi";
+import { API_BASE } from "../utils/apiBase";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
@@ -83,7 +84,7 @@ function filterCharactersForView(
 
 async function fetchCharacters(limit?: number) {
   const query = limit == null ? "" : `?limit=${limit}`;
-  const response = await fetch(`/characters${query}`, { method: "GET" });
+  const response = await fetch(`${API_BASE}/characters${query}`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load characters.");
@@ -94,7 +95,7 @@ async function fetchCharacters(limit?: number) {
 
 async function fetchWords(limit?: number) {
   const query = limit == null ? "" : `?limit=${limit}`;
-  const response = await fetch(`/words${query}`, { method: "GET" });
+  const response = await fetch(`${API_BASE}/words${query}`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load words.");
@@ -329,7 +330,7 @@ export default function KnowledgeBasePage() {
 
     try {
       const response = await fetch(
-        `/characters/${encodeURIComponent(character.char)}`,
+        `${API_BASE}/characters/${encodeURIComponent(character.char)}`,
         { method: "DELETE" },
       );
 
@@ -359,7 +360,7 @@ export default function KnowledgeBasePage() {
 
     try {
       const response = await fetch(
-        `/words/${encodeURIComponent(word.word)}`,
+        `${API_BASE}/words/${encodeURIComponent(word.word)}`,
         { method: "DELETE" },
       );
 
@@ -389,7 +390,7 @@ export default function KnowledgeBasePage() {
 
     try {
       const response = await fetch(
-        `/characters/${encodeURIComponent(character.char)}`,
+        `${API_BASE}/characters/${encodeURIComponent(character.char)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -429,7 +430,7 @@ export default function KnowledgeBasePage() {
 
     try {
       const response = await fetch(
-        `/words/${encodeURIComponent(word.word)}`,
+        `${API_BASE}/words/${encodeURIComponent(word.word)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -462,7 +463,7 @@ export default function KnowledgeBasePage() {
     closeAddCharacterModal();
 
     try {
-      const response = await fetch("/characters", {
+      const response = await fetch(`${API_BASE}/characters`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -484,7 +485,7 @@ export default function KnowledgeBasePage() {
     setIsAddWordModalOpen(false);
 
     try {
-      const response = await fetch("/words", {
+      const response = await fetch(`${API_BASE}/words`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

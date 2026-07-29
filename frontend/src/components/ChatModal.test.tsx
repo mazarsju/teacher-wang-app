@@ -64,10 +64,10 @@ describe("ChatModal", () => {
 
     expect(await screen.findByText("Hello")).toBeInTheDocument();
     expect(await screen.findByText("你好！")).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/chat/history/teacher-wang", {
+    expect(fetch).toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
       method: "GET",
     });
-    expect(fetch).toHaveBeenCalledWith("/chat", {
+    expect(fetch).toHaveBeenCalledWith("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -212,7 +212,7 @@ describe("ChatModal", () => {
         "Clear all chat history with Teacher Wang? This cannot be undone.",
       ),
     ).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalledWith("/chat/history/teacher-wang", {
+    expect(fetch).not.toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
       method: "DELETE",
     });
 
@@ -221,7 +221,7 @@ describe("ChatModal", () => {
     expect(
       await screen.findByText("Start a conversation with Teacher Wang."),
     ).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/chat/history/teacher-wang", {
+    expect(fetch).toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
       method: "DELETE",
     });
   });
@@ -260,7 +260,7 @@ describe("ChatModal", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.getByText("Earlier message")).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalledWith("/chat/history/teacher-wang", {
+    expect(fetch).not.toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
       method: "DELETE",
     });
   });

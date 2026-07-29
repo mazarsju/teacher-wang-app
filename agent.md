@@ -16,8 +16,8 @@ This app is deployed as **two images** consumed by [teacher-wang-infra](https://
 - Build context is always the **repo root** (`-f backend/Dockerfile .` / `-f frontend/Dockerfile .`).
 - Target platform is **`linux/arm64`** (Graviton Spot `t4g`).
 - Backend accepts `DATABASE_URL` **or** ECS-style `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD`.
-- Frontend nginx reads `BACKEND_UPSTREAM` and reverse-proxies the same API paths as Vite’s dev proxy; the browser must not call the backend directly.
-- Both images define a Docker `HEALTHCHECK` against `GET /health` (backend includes a Postgres `SELECT 1`; frontend is nginx-only and is not proxied to the API).
+- Frontend nginx reverse-proxies **`/api/*`** to `BACKEND_UPSTREAM` (stripping the `/api` prefix). The browser must call `${API_BASE}/…` with `API_BASE = "/api"` — never hit the backend host directly.
+- Both images define a Docker `HEALTHCHECK` against `GET /health` (backend includes a Postgres `SELECT 1`; frontend is nginx-only and is not under `/api`).
 - Push helper: `./scripts/push-ecr.sh` (requires `ECR_BACKEND` / `ECR_FRONTEND` from infra Terraform outputs).
 
 ## Architecture decision documents

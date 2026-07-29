@@ -88,7 +88,7 @@ describe("chatApi", () => {
       },
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/chat", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -112,7 +112,7 @@ describe("chatApi", () => {
     );
 
     await expect(clearChatHistory("teacher-wang")).resolves.toBeUndefined();
-    expect(fetch).toHaveBeenCalledWith("/chat/history/teacher-wang", {
+    expect(fetch).toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
       method: "DELETE",
     });
   });

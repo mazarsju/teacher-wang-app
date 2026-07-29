@@ -22,7 +22,8 @@ Connection secrets must not live in git.
 ### Schema management
 
 * Alembic is the source of truth (`alembic.ini`, `backend/migrations/`).
-* App startup and the test harness both run `alembic upgrade head` (tests pass an explicit URL so migrations apply to `TEST_DATABASE_URL`).
+* App startup and the test harness both run `alembic upgrade head` via `backend/alembic_runner.py` (tests pass an explicit URL so migrations apply to `TEST_DATABASE_URL`).
+* The SQLAlchemy URL is passed through Alembic `Config.attributes`, not `set_main_option`, so URL-encoded passwords (`%XX` from ECS `DB_PASSWORD`) do not trip ConfigParser interpolation.
 * Seed / data helpers (`_ensure_hsk_content_loaded`, `_ensure_settings`, legacy token-settings → `token_count`, ignore-list table migration) run in `init_db` for the app.
 
 ### Tests

@@ -1,13 +1,11 @@
 import type { TokenUsageSummary } from "../../types/tokenUsage";
+import { API_BASE } from "../apiBase";
 
 export async function fetchTokenUsage(): Promise<TokenUsageSummary> {
-  const response = await fetch("/token-usage", { method: "GET" });
+  const response = await fetch(`${API_BASE}/token-usage`, { method: "GET" });
 
   if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-    throw new Error(data?.error ?? "Failed to load token usage.");
+    throw new Error("Failed to load token usage.");
   }
 
   return (await response.json()) as TokenUsageSummary;

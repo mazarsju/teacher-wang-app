@@ -5,6 +5,7 @@ import type {
   ChatResponse,
   ChatThreadContext,
 } from "../../types/chat";
+import { API_BASE } from "../apiBase";
 
 export type ChatHistoryResult = {
   messages: ChatMessage[];
@@ -15,7 +16,7 @@ export async function fetchChatHistory(
   characterId: string,
 ): Promise<ChatHistoryResult> {
   const response = await fetch(
-    `/chat/history/${encodeURIComponent(characterId)}`,
+    `${API_BASE}/chat/history/${encodeURIComponent(characterId)}`,
     { method: "GET" },
   );
 
@@ -48,7 +49,7 @@ export async function sendChatMessage(
     body.thread_id = thread.threadId;
   }
 
-  const response = await fetch("/chat", {
+  const response = await fetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -66,7 +67,7 @@ export async function sendChatMessage(
 
 export async function clearChatHistory(characterId: string): Promise<void> {
   const response = await fetch(
-    `/chat/history/${encodeURIComponent(characterId)}`,
+    `${API_BASE}/chat/history/${encodeURIComponent(characterId)}`,
     { method: "DELETE" },
   );
 

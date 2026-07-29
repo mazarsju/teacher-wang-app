@@ -1,5 +1,9 @@
+import { API_BASE } from "../apiBase";
+
 export async function exportDatabase() {
-  const response = await fetch("/database/export", { method: "POST" });
+  const response = await fetch(`${API_BASE}/database/export`, {
+    method: "POST",
+  });
 
   if (!response.ok) {
     throw new Error("Failed to export database.");
@@ -12,7 +16,7 @@ export async function importDatabase(file: File) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("/characters/bulk", {
+  const response = await fetch(`${API_BASE}/characters/bulk`, {
     method: "POST",
     body: formData,
   });

@@ -41,7 +41,7 @@ describe("MissingHskCharactersModal", () => {
       expect(screen.getByText("爱好")).toBeInTheDocument();
     });
     expect(fetch).toHaveBeenCalledWith(
-      "/hsk-characters/%E7%88%B1/words?level=1",
+      "/api/hsk-characters/%E7%88%B1/words?level=1",
       { method: "GET" },
     );
   });

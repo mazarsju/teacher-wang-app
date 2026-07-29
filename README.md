@@ -32,6 +32,7 @@ teacher-wang/
 │   ├── __init__.py         # Application factory (create_app)
 │   ├── app.py              # Flask entry point
 │   ├── database.py         # DB init, Alembic upgrade (Postgres)
+│   ├── alembic_runner.py   # Alembic Config helper (URL via attributes; safe for % in passwords)
 │   ├── db_config.py        # Resolve DATABASE_URL or ECS DB_* vars
 │   ├── sqlite_postgres_migrate.py  # Learner-data copy helpers (SQLite → Postgres)
 │   ├── extensions.py       # SQLAlchemy extension
@@ -65,12 +66,13 @@ teacher-wang/
 │   │   ├── components/
 │   │   ├── types/
 │   │   └── utils/
+│   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
 │   │       ├── anki/           # AnkiConnect client + sync orchestration
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
 │   │       └── aiChat/         # Chat, LLM config, token usage
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
-│   └── vite.config.ts      # Vite dev server and proxy config
+│   └── vite.config.ts      # Dev server; proxies /api → Flask (strip prefix)
 ├── scripts/
 │   ├── push-ecr.sh         # Build/push arm64 images to AWS ECR
 │   └── migrate_sqlite_to_postgres.py  # One-shot learner data import into Postgres
@@ -248,7 +250,7 @@ npm install
 npm run dev
 ```
 
-The app runs at `http://localhost:5173`. Vite proxies API requests to the backend during development.
+The app runs at `http://localhost:5173`. Vite proxies `/api/*` to the backend (stripping the `/api` prefix) during development.
 
 #### Tests
 
@@ -399,7 +401,7 @@ docker buildx build --platform linux/arm64 \
 | Image | Container port | ECS host port | Runtime notes |
 | --- | --- | --- | --- |
 | Backend | 5000 | 5000 | gunicorn; `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` (or `DATABASE_URL`); Docker `HEALTHCHECK` → `GET /health` (includes DB) |
-| Frontend | 80 | 8080 | nginx; proxies API routes to `BACKEND_UPSTREAM` (browser never talks to the API directly); Docker `HEALTHCHECK` → `GET /health` (nginx only) |
+| Frontend | 80 | 8080 | nginx; proxies **`/api/*`** → `BACKEND_UPSTREAM/*` (browser uses `API_BASE = "/api"`); Docker `HEALTHCHECK` → `GET /health` (nginx only) |
 
 Health endpoints:
 

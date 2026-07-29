@@ -7,6 +7,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from backend.alembic_runner import SQLALCHEMY_URL_ATTRIBUTE
 from backend.db_config import resolve_database_url
 from backend.extensions import db
 import backend.models  # noqa: F401 — register models on metadata
@@ -20,7 +21,10 @@ target_metadata = db.Model.metadata
 
 
 def get_url() -> str:
-    """Prefer an explicit Alembic URL (tests / CLI), else ``DATABASE_URL``."""
+    """Prefer a programmatic override, then ini, else ``DATABASE_URL`` / ``DB_*``."""
+    override = config.attributes.get(SQLALCHEMY_URL_ATTRIBUTE)
+    if override:
+        return override
     configured = config.get_main_option("sqlalchemy.url")
     if configured and not configured.startswith("driver://"):
         return configured

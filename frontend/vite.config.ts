@@ -24,18 +24,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/health": "http://127.0.0.1:5000",
-      "/characters": "http://127.0.0.1:5000",
-      "/database": "http://127.0.0.1:5000",
-      "/words": "http://127.0.0.1:5000",
-      "/llm-config": "http://127.0.0.1:5000",
-      "/token-usage": "http://127.0.0.1:5000",
-      "/chat": "http://127.0.0.1:5000",
-      "/challenges": "http://127.0.0.1:5000",
-      "/hsk-characters": "http://127.0.0.1:5000",
-      "/hsk-level": "http://127.0.0.1:5000",
-      // Trailing slash so /anki-connect/* static assets are not proxied to Flask.
-      "/anki/": "http://127.0.0.1:5000",
+      // Strip /api so Flask keeps its root routes (/characters, /chat, …).
+      "/api": {
+        target: "http://127.0.0.1:5000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, "") || "/",
+      },
     },
   },
 });

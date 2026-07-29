@@ -36,7 +36,7 @@ describe("ankiDbClient", () => {
 
     const data = await fetchSyncData("mandarin_vocabulary");
     expect(data.kind).toBe("mandarin_vocabulary");
-    expect(fetch).toHaveBeenCalledWith("/anki/sync/data/mandarin_vocabulary", {
+    expect(fetch).toHaveBeenCalledWith("/api/anki/sync/data/mandarin_vocabulary", {
       method: "GET",
     });
   });

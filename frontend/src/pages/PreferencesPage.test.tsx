@@ -200,7 +200,7 @@ describe("PreferencesPage", () => {
       ).toBeInTheDocument();
     });
 
-    expect(fetch).toHaveBeenCalledWith("/llm-config", {
+    expect(fetch).toHaveBeenCalledWith("/api/llm-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
