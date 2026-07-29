@@ -13,7 +13,7 @@ import {
   fetchAnkiModelFields,
   fetchAnkiModels,
   setupAnkiDeck,
-} from "../utils/ankiApi";
+} from "../utils/anki/ankiApi";
 import { InfoIcon } from "./icons";
 import VocabularyNoteTypeInfoModal from "./VocabularyNoteTypeInfoModal";
 import VocabularyThreeDirectionSetupModal from "./VocabularyThreeDirectionSetupModal";

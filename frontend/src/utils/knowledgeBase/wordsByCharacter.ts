@@ -1,4 +1,4 @@
-import type { Word } from "../types/word";
+import type { Word } from "../../types/word";
 
 export function buildWordsByCharacter(words: Word[]): Map<string, Word[]> {
   const map = new Map<string, Word[]>();

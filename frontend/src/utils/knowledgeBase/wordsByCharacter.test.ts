@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Word } from "../types/word";
+import type { Word } from "../../types/word";
 import {
   buildWordsByCharacter,
   formatAssociatedWord,

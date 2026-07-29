@@ -1,4 +1,4 @@
-import type { LlmConfig } from "../types/llmConfig";
+import type { LlmConfig } from "../../types/llmConfig";
 
 export async function fetchLlmConfig(): Promise<LlmConfig> {
   const response = await fetch("/llm-config", { method: "GET" });

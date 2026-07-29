@@ -1,4 +1,4 @@
-import type { TokenUsageSummary } from "../types/tokenUsage";
+import type { TokenUsageSummary } from "../../types/tokenUsage";
 
 export async function fetchTokenUsage(): Promise<TokenUsageSummary> {
   const response = await fetch("/token-usage", { method: "GET" });

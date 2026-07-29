@@ -11,10 +11,10 @@ import PinyinGridView from "../components/PinyinGridView";
 import Table, { type TableColumn } from "../components/Table";
 import type { Character } from "../types/character";
 import type { Word } from "../types/word";
-import { fetchAnkiStatus, runAnkiQuickSync } from "../utils/ankiApi";
-import { formatDateTime } from "../utils/formatDateTime";
-import { exportDatabase, importDatabase } from "../utils/knowledgeBaseApi";
-import { buildWordsByCharacter } from "../utils/wordsByCharacter";
+import { fetchAnkiStatus, runAnkiQuickSync } from "../utils/anki/ankiApi";
+import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
+import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
 
 const CHARACTER_COLUMNS: TableColumn<Character>[] = [
   { key: "char", header: "char" },

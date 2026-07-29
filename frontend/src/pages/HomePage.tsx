@@ -3,11 +3,11 @@ import MissingHskCharactersModal from "../components/MissingHskCharactersModal";
 import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
 import type { Character } from "../types/character";
-import { getMotivationMessages } from "../utils/homeMotivation";
+import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
 import {
   fetchHskLevelStatus,
   type HskLevelStatus,
-} from "../utils/hskLevelApi";
+} from "../utils/knowledgeBase/hskLevelApi";
 
 async function fetchCharacters() {
   const response = await fetch("/characters", { method: "GET" });

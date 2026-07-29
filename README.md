@@ -56,6 +56,9 @@ learn-mandarin/
 │   │   ├── components/
 │   │   ├── types/
 │   │   └── utils/
+│   │       ├── anki/           # AnkiConnect client + sync orchestration
+│   │       ├── knowledgeBase/  # Words, characters, HSK helpers
+│   │       └── aiChat/         # Chat, LLM config, token usage
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
 │   ├── vite.config.ts      # Vite dev server and proxy config

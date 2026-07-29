@@ -1,0 +1,242 @@
+import { isHanCharacter } from "../knowledgeBase/chineseCharacters";
+import { normalizeAnkiPinyinToken } from "../../types/pinyin";
+import type {
+  AnkiPendingVocabularyCard,
+  AnkiPendingWrittingCard,
+} from "../../types/anki";
+import { versoSignificantPart } from "./ankiHelpers";
+
+export type SyncDataCharacter = {
+  char: string;
+  pinyin: string;
+  writting_known: boolean;
+  synchronized: boolean;
+};
+
+export function pairWrittingWithPinyinTokens(
+  wordText: string,
+  pinyinField: string,
+): Array<[string, string | null]> {
+  const tokens = pinyinField.split(/\s+/).filter((token) => token !== "");
+  const pairs: Array<[string, string | null]> = [];
+  let tokenIdx = 0;
+  for (const char of wordText) {
+    if (!isHanCharacter(char)) {
+      continue;
+    }
+    const raw = tokenIdx < tokens.length ? tokens[tokenIdx] : "";
+    tokenIdx += 1;
+    const normalized = raw ? normalizeAnkiPinyinToken(raw) : null;
+    pairs.push([char, normalized]);
+  }
+  return pairs;
+}
+
+export function buildPinyinGuessMap(
+  notes: Array<Record<string, string>>,
+): Record<string, string> {
+  const guesses: Record<string, string> = {};
+  for (const note of notes) {
+    const writting = (note.writting ?? "").trim();
+    const pinyinField = (note.pinyin ?? "").trim();
+    if (writting === "" || pinyinField === "") {
+      continue;
+    }
+    for (const [char, pinyin] of pairWrittingWithPinyinTokens(
+      writting,
+      pinyinField,
+    )) {
+      if (pinyin === null || pinyin.length > 6 || char in guesses) {
+        continue;
+      }
+      guesses[char] = pinyin;
+    }
+  }
+  return guesses;
+}
+
+function resolvedCharPinyin(
+  cardPinyin: string | null,
+  char: string,
+  guesses: Record<string, string>,
+): string | null {
+  if (cardPinyin !== null && cardPinyin.length <= 6) {
+    return cardPinyin;
+  }
+  const guessed = guesses[char];
+  if (guessed !== undefined && guessed.length <= 6) {
+    return guessed;
+  }
+  return null;
+}
+
+export function charactersToCreateForCard(
+  wordText: string,
+  pinyinField: string,
+  characterByChar: Map<string, SyncDataCharacter>,
+  guesses: Record<string, string>,
+): string[] | null {
+  const pinyinBlank = pinyinField.trim() === "";
+  const toCreate: string[] = [];
+  for (const [char, cardPinyin] of pairWrittingWithPinyinTokens(
+    wordText,
+    pinyinField,
+  )) {
+    if (characterByChar.has(char)) {
+      continue;
+    }
+    const pinyin = resolvedCharPinyin(cardPinyin, char, guesses);
+    if (pinyin === null) {
+      if (pinyinBlank) {
+        continue;
+      }
+      return null;
+    }
+    toCreate.push(char);
+  }
+  return toCreate;
+}
+
+export function uniqueCharactersToCreate(
+  cards: AnkiPendingVocabularyCard[],
+): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const card of cards) {
+    for (const char of card.characters_to_create ?? []) {
+      if (seen.has(char)) {
+        continue;
+      }
+      seen.add(char);
+      ordered.push(char);
+    }
+  }
+  return ordered;
+}
+
+export function vocabularyPullCardsFromNotes(
+  notes: Array<Record<string, string>>,
+  localWords: Set<string>,
+  ignored: Set<string>,
+  characterByChar: Map<string, SyncDataCharacter>,
+): {
+  cards: AnkiPendingVocabularyCard[];
+  missing: string[];
+  autoIgnore: string[];
+  guesses: Record<string, string>;
+} {
+  const guesses = buildPinyinGuessMap(notes);
+  const cards: AnkiPendingVocabularyCard[] = [];
+  const missing: string[] = [];
+  const autoIgnore: string[] = [];
+  const seen = new Set<string>();
+  const seenMissing = new Set<string>();
+
+  for (const note of notes) {
+    const writting = (note.writting ?? "").trim();
+    if (
+      writting === "" ||
+      localWords.has(writting) ||
+      ignored.has(writting) ||
+      seen.has(writting) ||
+      seenMissing.has(writting)
+    ) {
+      continue;
+    }
+    if (writting.length > 10) {
+      autoIgnore.push(writting);
+      continue;
+    }
+    const hanChars = [...writting].filter(isHanCharacter);
+    if (hanChars.length === 0) {
+      continue;
+    }
+    const pinyin = (note.pinyin ?? "").trim();
+    const charactersToCreate = charactersToCreateForCard(
+      writting,
+      pinyin,
+      characterByChar,
+      guesses,
+    );
+    if (charactersToCreate === null) {
+      seenMissing.add(writting);
+      missing.push(writting);
+      continue;
+    }
+    seen.add(writting);
+    const definition = (note.definition ?? "").trim().slice(0, 100);
+    cards.push({
+      id: writting,
+      writting,
+      pinyin,
+      definition,
+      characters_to_create: charactersToCreate,
+    });
+  }
+
+  cards.sort((a, b) => a.writting.localeCompare(b.writting));
+  missing.sort();
+  return { cards, missing, autoIgnore, guesses };
+}
+
+export function writtingPullFromNotes(
+  notes: Array<Record<string, string>>,
+  ignored: Set<string>,
+  characterByChar: Map<string, SyncDataCharacter>,
+): {
+  pullCards: AnkiPendingWrittingCard[];
+  missing: string[];
+  warningRectos: string[];
+} {
+  const pullCards: AnkiPendingWrittingCard[] = [];
+  const missing: string[] = [];
+  const warningRectos: string[] = [];
+  const seenPull = new Set<string>();
+  const seenMissing = new Set<string>();
+  const seenWarningRecto = new Set<string>();
+
+  for (const note of notes) {
+    const recto = (note.recto ?? "").trim();
+    if (recto === "" || ignored.has(recto)) {
+      continue;
+    }
+    const verso = versoSignificantPart(note.verso ?? "");
+    let noteHasMissing = false;
+    for (const char of verso) {
+      if (!isHanCharacter(char)) {
+        continue;
+      }
+      if (ignored.has(char)) {
+        continue;
+      }
+      const record = characterByChar.get(char);
+      if (record === undefined) {
+        noteHasMissing = true;
+        if (!seenMissing.has(char)) {
+          seenMissing.add(char);
+          missing.push(char);
+        }
+        continue;
+      }
+      if (record.writting_known) {
+        continue;
+      }
+      if (seenPull.has(char)) {
+        continue;
+      }
+      seenPull.add(char);
+      pullCards.push({
+        id: char,
+        recto: record.pinyin,
+        verso: char,
+        anki_recto: recto,
+      });
+    }
+    if (noteHasMissing && !seenWarningRecto.has(recto)) {
+      seenWarningRecto.add(recto);
+      warningRectos.push(recto);
+    }
+  }
+
+  return { pullCards, missing, warningRectos };
+}

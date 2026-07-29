@@ -8,7 +8,7 @@ import {
   type AnkiPendingWrittingCard,
   type AnkiSyncDirection,
 } from "../types/anki";
-import { fetchAnkiPendingSync, runAnkiSync } from "../utils/ankiApi";
+import { fetchAnkiPendingSync, runAnkiSync } from "../utils/anki/ankiApi";
 import ConfirmModal from "./ConfirmModal";
 
 type SyncView = "overview" | "partial-push" | "partial-pull";

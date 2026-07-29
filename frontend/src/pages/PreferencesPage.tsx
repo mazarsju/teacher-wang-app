@@ -13,9 +13,9 @@ import {
 } from "../types/anki";
 import type { LlmConfig } from "../types/llmConfig";
 import type { TokenUsageSummary } from "../types/tokenUsage";
-import { fetchAnkiStatus } from "../utils/ankiApi";
-import { fetchLlmConfig, saveLlmConfig } from "../utils/llmConfigApi";
-import { fetchTokenUsage } from "../utils/tokenUsageApi";
+import { fetchAnkiStatus } from "../utils/anki/ankiApi";
+import { fetchLlmConfig, saveLlmConfig } from "../utils/aiChat/llmConfigApi";
+import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
 
 const emptyLlmConfig: LlmConfig = {
   LLM_API_KEY: "",

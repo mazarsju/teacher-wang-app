@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { AnkiDeckSetupResult } from "../types/anki";
-import { autoSetupVocabularyDeck } from "../utils/ankiApi";
+import { autoSetupVocabularyDeck } from "../utils/anki/ankiApi";
 
 type VocabularyThreeDirectionSetupModalProps = {
   isOpen: boolean;

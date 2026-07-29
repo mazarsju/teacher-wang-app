@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AnkiSyncModal from "./AnkiSyncModal";
-import * as ankiApi from "../utils/ankiApi";
+import * as ankiApi from "../utils/anki/ankiApi";
 import type { AnkiPendingSync, AnkiSyncResult } from "../types/anki";
 
-vi.mock("../utils/ankiApi", () => ({
+vi.mock("../utils/anki/ankiApi", () => ({
   fetchAnkiPendingSync: vi.fn(),
   runAnkiSync: vi.fn(),
 }));

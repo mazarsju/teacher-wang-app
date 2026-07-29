@@ -1,5 +1,5 @@
 import type { Word } from "../types/word";
-import { formatAssociatedWord } from "../utils/wordsByCharacter";
+import { formatAssociatedWord } from "../utils/knowledgeBase/wordsByCharacter";
 
 type CharacterWordsModalProps = {
   isOpen: boolean;

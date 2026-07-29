@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { Word } from "../types/word";
-import { isValidChineseWord } from "../utils/chineseCharacters";
-import { getMissingCharacters } from "../utils/wordCharacters";
+import { isValidChineseWord } from "../utils/knowledgeBase/chineseCharacters";
+import { getMissingCharacters } from "../utils/knowledgeBase/wordCharacters";
 
 export type WordFormValues = {
   word: string;

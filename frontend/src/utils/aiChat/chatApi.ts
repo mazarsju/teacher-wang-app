@@ -4,7 +4,7 @@ import type {
   ChatRequest,
   ChatResponse,
   ChatThreadContext,
-} from "../types/chat";
+} from "../../types/chat";
 
 export type ChatHistoryResult = {
   messages: ChatMessage[];

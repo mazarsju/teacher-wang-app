@@ -8,7 +8,7 @@ import Page from "../components/Page";
 import { CHALLENGES } from "../data/challenges";
 import { CHAT_CHARACTERS } from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
-import { fetchChallengesProgress } from "../utils/challengesApi";
+import { fetchChallengesProgress } from "../utils/aiChat/challengesApi";
 
 export default function ChatPage() {
   const [selectedCharacter, setSelectedCharacter] =

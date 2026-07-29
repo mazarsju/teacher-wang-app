@@ -5,4 +5,4 @@ export type Character = {
   updated_at: string;
 };
 
-export { isValidCharacter } from "../utils/chineseCharacters";
+export { isValidCharacter } from "../utils/knowledgeBase/chineseCharacters";

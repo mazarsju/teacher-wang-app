@@ -11,8 +11,8 @@ import {
   clearChatHistory,
   fetchChatHistory,
   sendChatMessage,
-} from "../utils/chatApi";
-import { parseMessageSegments } from "../utils/stageDirection";
+} from "../utils/aiChat/chatApi";
+import { parseMessageSegments } from "../utils/aiChat/stageDirection";
 
 type CorrectionThreadState = {
   messageIndex: number;

@@ -1,4 +1,4 @@
-import type { ChallengeProgressSummary } from "../types/challenge";
+import type { ChallengeProgressSummary } from "../../types/challenge";
 
 export async function fetchChallengesProgress(): Promise<ChallengeProgressSummary> {
   const response = await fetch("/challenges/progress", { method: "GET" });

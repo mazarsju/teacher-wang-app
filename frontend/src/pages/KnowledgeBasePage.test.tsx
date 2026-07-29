@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import KnowledgeBasePage from "./KnowledgeBasePage";
-import * as ankiApi from "../utils/ankiApi";
+import * as ankiApi from "../utils/anki/ankiApi";
 import type { AnkiStatus } from "../types/anki";
 
-vi.mock("../utils/ankiApi", () => ({
+vi.mock("../utils/anki/ankiApi", () => ({
   fetchAnkiStatus: vi.fn(),
   runAnkiQuickSync: vi.fn(),
 }));
