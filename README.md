@@ -27,10 +27,12 @@ This project was intentionally developed using Cursor AI and coding agents. My o
 ```
 teacher-wang/
 ├── backend/
+│   ├── Dockerfile          # ECS image (gunicorn :5000); build from repo root
+│   ├── .dockerignore
 │   ├── __init__.py         # Application factory (create_app)
 │   ├── app.py              # Flask entry point
 │   ├── database.py         # DB init, Alembic upgrade (Postgres)
-│   ├── db_config.py        # Resolve DATABASE_URL from .env
+│   ├── db_config.py        # Resolve DATABASE_URL or ECS DB_* vars
 │   ├── sqlite_postgres_migrate.py  # Learner-data copy helpers (SQLite → Postgres)
 │   ├── extensions.py       # SQLAlchemy extension
 │   ├── migrations/         # Alembic revisions (Postgres schema)
@@ -48,6 +50,10 @@ teacher-wang/
 ├── alembic.ini             # Alembic config (URL overridden from .env)
 ├── .env.example            # Template for local DATABASE_URL (copy to .env)
 ├── frontend/
+│   ├── Dockerfile          # ECS image (nginx :80 + API reverse proxy)
+│   ├── .dockerignore
+│   ├── nginx/
+│   │   └── default.conf.template  # Proxies API paths to BACKEND_UPSTREAM
 │   ├── index.html
 │   ├── package.json
 │   ├── public/
@@ -66,6 +72,7 @@ teacher-wang/
 │   ├── tsconfig.node.json
 │   └── vite.config.ts      # Vite dev server and proxy config
 ├── scripts/
+│   ├── push-ecr.sh         # Build/push arm64 images to AWS ECR
 │   └── migrate_sqlite_to_postgres.py  # One-shot learner data import into Postgres
 ├── docs/
 │   ├── screenshots/        # UI screenshots used in this README
@@ -208,7 +215,7 @@ Architecture notes: [AnkiConnect bridge](docs/anki-connect-archi-decision.md), [
 
 | Method | Route | Description |
 | --- | --- | --- |
-| `GET` | `/health` | Health check |
+| `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) |
 | `GET` | `/llm-config` | Read LLM API key and model from `.config.txt` |
 | `POST` | `/llm-config` | Update LLM API key and/or model in `.config.txt` |
 | `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
@@ -333,7 +340,72 @@ Ease the process of synchronization between the app knowledge base and Anki.
 
 ### 5. Cloud deployment
 
-Host the web app so learners can use it without a local install.
+Host the web app so learners can use it without a local install. Infrastructure lives in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra) (Terraform → VPC, RDS, ECR, optional ECS + ALB).
 
-- [ ] Deploy frontend + Flask API + Postgres to a cloud environment
-- [ ] Wire production secrets (`DATABASE_URL`, LLM config) and HTTPS
+- [x] Separate frontend and backend container images (`frontend/Dockerfile`, `backend/Dockerfile`)
+- [x] Script to build `linux/arm64` images and push to ECR (`scripts/push-ecr.sh`)
+- [ ] Enable ECS in infra and wire LLM secrets / HTTPS
+
+#### Push images to AWS ECR (from this Mac)
+
+ECS capacity uses Graviton (`t4g`) — images must be **`linux/arm64`** (native on Apple Silicon).
+
+1. **Start the Docker daemon locally** (Docker Desktop on macOS). Wait until it is fully running — `docker info` should show a Server section:
+
+```bash
+open -a Docker
+# wait for the whale icon to settle, then:
+docker info
+```
+
+2. From **teacher-wang-infra** (once per shell):
+
+```bash
+cd environments/prod
+source ../../config
+export AWS_REGION="$(terraform output -raw aws_region)"
+export ECR_BACKEND="$(terraform output -raw ecr_backend_repository_url)"
+export ECR_FRONTEND="$(terraform output -raw ecr_frontend_repository_url)"
+aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login --username AWS --password-stdin "$(echo "$ECR_BACKEND" | cut -d/ -f1)"
+```
+
+3. Then from **this repo** (teacher-wang-app):
+
+```bash
+./scripts/push-ecr.sh           # both images
+./scripts/push-ecr.sh backend   # backend only
+./scripts/push-ecr.sh frontend  # frontend only
+```
+
+Or run the Cursor skill wrapper (login + push in one step):
+
+```bash
+.cursor/skills/update-ecr-images/scripts/push.sh
+```
+
+Equivalent manual commands:
+
+```bash
+docker buildx build --platform linux/arm64 \
+  -t "$ECR_BACKEND:latest" -t "$ECR_BACKEND:$(git rev-parse --short HEAD)" \
+  -f backend/Dockerfile --push .
+
+docker buildx build --platform linux/arm64 \
+  -t "$ECR_FRONTEND:latest" -t "$ECR_FRONTEND:$(git rev-parse --short HEAD)" \
+  -f frontend/Dockerfile --push .
+```
+
+| Image | Container port | ECS host port | Runtime notes |
+| --- | --- | --- | --- |
+| Backend | 5000 | 5000 | gunicorn; `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` (or `DATABASE_URL`); Docker `HEALTHCHECK` → `GET /health` (includes DB) |
+| Frontend | 80 | 8080 | nginx; proxies API routes to `BACKEND_UPSTREAM` (browser never talks to the API directly); Docker `HEALTHCHECK` → `GET /health` (nginx only) |
+
+Health endpoints:
+
+| Service | URL | Meaning |
+| --- | --- | --- |
+| Backend | `http://<backend>:5000/health` | `{"status":"ok","service":"backend","database":"up"}` or `503` if DB is down |
+| Frontend | `http://<frontend>/health` (ALB path `/health`) | `{"status":"ok","service":"frontend"}` — does not call the API |
+
+Push images **before** (or right after) setting `enable_ecs = true` in infra, or tasks will fail to pull.

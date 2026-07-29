@@ -4,6 +4,22 @@
 
 After every AI-assisted change in this repository, update `README.md` so it reflects the current setup, commands, and project structure. Use `README.md` as the primary source of truth when orienting yourself in the codebase; keep `agent.md` aligned with it so agents can find their way through the repository faster.
 
+## Cloud containers (AWS / ECS)
+
+This app is deployed as **two images** consumed by [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra):
+
+| Component | Dockerfile | Port in container | ECS host port |
+| --- | --- | --- | --- |
+| Backend | `backend/Dockerfile` | 5000 | 5000 |
+| Frontend | `frontend/Dockerfile` | 80 | 8080 |
+
+- Build context is always the **repo root** (`-f backend/Dockerfile .` / `-f frontend/Dockerfile .`).
+- Target platform is **`linux/arm64`** (Graviton Spot `t4g`).
+- Backend accepts `DATABASE_URL` **or** ECS-style `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD`.
+- Frontend nginx reads `BACKEND_UPSTREAM` and reverse-proxies the same API paths as Vite’s dev proxy; the browser must not call the backend directly.
+- Both images define a Docker `HEALTHCHECK` against `GET /health` (backend includes a Postgres `SELECT 1`; frontend is nginx-only and is not proxied to the API).
+- Push helper: `./scripts/push-ecr.sh` (requires `ECR_BACKEND` / `ECR_FRONTEND` from infra Terraform outputs).
+
 ## Architecture decision documents
 
 Architecture decisions live under `docs/` as `*-archi-decision.md` files (for example AnkiConnect, Anki sync, and multi-agent chat). After any change that affects those areas—sync behavior, AnkiConnect responsibilities, chat agent collaboration, related APIs, or project structure—review the matching decision docs and update them so they stay accurate. Do not leave stale architecture notes behind when the implementation moves on.

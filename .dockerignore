@@ -1,0 +1,23 @@
+# Keep Docker build contexts small (context is always the repo root).
+.git/
+.github/
+.cursor/
+venv/
+**/node_modules/
+**/dist/
+**/coverage/
+**/__pycache__/
+*.pyc
+*.db
+.env
+.config.txt
+conversation_logs/
+coverage-site/
+docs/
+agent.md
+README.md
+frontend/src/**/*.test.ts
+frontend/src/**/*.test.tsx
+backend/tests/
+backend/coverage/
+backend/test_coverage.py
