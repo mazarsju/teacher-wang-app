@@ -1,93 +1,87 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AnkiSyncModal from "./AnkiSyncModal";
+import * as ankiApi from "../utils/ankiApi";
+import type { AnkiPendingSync, AnkiSyncResult } from "../types/anki";
+
+vi.mock("../utils/ankiApi", () => ({
+  fetchAnkiPendingSync: vi.fn(),
+  runAnkiSync: vi.fn(),
+}));
+
+const fetchAnkiPendingSync = vi.mocked(ankiApi.fetchAnkiPendingSync);
+const runAnkiSync = vi.mocked(ankiApi.runAnkiSync);
+
+const vocabularyPending: AnkiPendingSync = {
+  kind: "mandarin_vocabulary",
+  count: 2,
+  cards: [
+    {
+      id: "水",
+      writting: "水",
+      pinyin: "shui3",
+      definition: "water",
+    },
+    {
+      id: "火",
+      writting: "火",
+      pinyin: "huo3",
+      definition: "fire",
+    },
+  ],
+  unsyncable: [],
+  pull_count: 3,
+  pull_cards: [
+    {
+      id: "风",
+      writting: "风",
+      pinyin: "feng1",
+      definition: "wind",
+    },
+  ],
+  deck: {
+    status: "not_synchronized",
+    deck_name: "Vocab",
+    model_name: "Vocab",
+    fields: {
+      writting: "writting",
+      pinyin: "pinyin",
+      definition: "definition",
+    },
+  },
+};
+
+const pushAllResult: AnkiSyncResult = {
+  kind: "mandarin_vocabulary",
+  action: "synchronize_all",
+  direction: "push",
+  added: 2,
+  ignored: 0,
+  failed: 0,
+  deck: {
+    status: "synchronized",
+    deck_name: "Vocab",
+    model_name: "Vocab",
+    fields: {
+      writting: "writting",
+      pinyin: "pinyin",
+      definition: "definition",
+    },
+  },
+};
 
 describe("AnkiSyncModal", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
+  beforeEach(() => {
+    fetchAnkiPendingSync.mockReset();
+    runAnkiSync.mockReset();
   });
 
   it("loads push/pull sections and runs push all to Anki", async () => {
     const onSynced = vi.fn();
-    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? "GET";
+    fetchAnkiPendingSync.mockResolvedValue(vocabularyPending);
+    runAnkiSync.mockResolvedValue(pushAllResult);
 
-      if (url.endsWith("/anki/sync/pending/mandarin_vocabulary") && method === "GET") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            kind: "mandarin_vocabulary",
-            count: 2,
-            cards: [
-              {
-                id: "水",
-                writting: "水",
-                pinyin: "shui3",
-                definition: "water",
-              },
-              {
-                id: "火",
-                writting: "火",
-                pinyin: "huo3",
-                definition: "fire",
-              },
-            ],
-            unsyncable: [],
-            pull_count: 3,
-            pull_cards: [
-              {
-                id: "风",
-                writting: "风",
-                pinyin: "feng1",
-                definition: "wind",
-              },
-            ],
-            deck: {
-              status: "not_synchronized",
-              deck_name: "Vocab",
-              model_name: "Vocab",
-              fields: {
-                writting: "writting",
-                pinyin: "pinyin",
-                definition: "definition",
-              },
-            },
-          }),
-        });
-      }
-
-      if (url.endsWith("/anki/sync") && method === "POST") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            kind: "mandarin_vocabulary",
-            action: "synchronize_all",
-            direction: "push",
-            added: 2,
-            ignored: 0,
-            failed: 0,
-            deck: {
-              status: "synchronized",
-              deck_name: "Vocab",
-              model_name: "Vocab",
-              fields: {
-                writting: "writting",
-                pinyin: "pinyin",
-                definition: "definition",
-              },
-            },
-          }),
-        });
-      }
-
-      return Promise.resolve({
-        ok: false,
-        json: async () => ({}),
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
+    const user = userEvent.setup();
     render(
       <AnkiSyncModal
         isOpen
@@ -98,237 +92,34 @@ describe("AnkiSyncModal", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Sync — Mandarin vocabulary" }),
+      await screen.findByRole("heading", { name: /Sync — Mandarin vocabulary/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("2 cards to push")).toBeInTheDocument();
-    expect(screen.getByText("3 cards to pull")).toBeInTheDocument();
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Push all to Anki" }),
-    );
-
-    const confirmDialog = screen.getByRole("dialog", {
-      name: /cannot be undone/i,
-    });
-    await userEvent.click(
-      within(confirmDialog).getByRole("button", { name: "Confirm" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Push all to Anki" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => {
-      expect(onSynced).toHaveBeenCalledTimes(1);
-    });
-
-    const syncCall = fetchMock.mock.calls.find(
-      ([url, init]) =>
-        String(url).endsWith("/anki/sync") &&
-        (init as RequestInit | undefined)?.method === "POST",
-    );
-    expect(JSON.parse(String((syncCall?.[1] as RequestInit).body))).toEqual({
-      kind: "mandarin_vocabulary",
-      action: "synchronize_all",
-      direction: "push",
-      selected_ids: undefined,
-    });
-  });
-
-  it("pulls all vocabulary cards from Anki", async () => {
-    const onSynced = vi.fn();
-    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? "GET";
-
-      if (url.endsWith("/anki/sync/pending/mandarin_vocabulary") && method === "GET") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            kind: "mandarin_vocabulary",
-            count: 0,
-            cards: [],
-            unsyncable: [],
-            pull_count: 2,
-            pull_cards: [
-              {
-                id: "火",
-                writting: "火",
-                pinyin: "huo3",
-                definition: "fire",
-                characters_to_create: ["火"],
-              },
-              {
-                id: "风",
-                writting: "风",
-                pinyin: "feng1",
-                definition: "wind",
-                characters_to_create: ["风"],
-              },
-            ],
-            pull_characters_to_create_count: 2,
-            deck: {
-              status: "synchronized",
-              deck_name: "Vocab",
-              model_name: "Vocab",
-              fields: {
-                writting: "writting",
-                pinyin: "pinyin",
-                definition: "definition",
-              },
-            },
-          }),
-        });
-      }
-
-      if (url.endsWith("/anki/sync") && method === "POST") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            kind: "mandarin_vocabulary",
-            action: "synchronize_all",
-            direction: "pull",
-            added: 2,
-            ignored: 0,
-            failed: 0,
-            deck: {
-              status: "synchronized",
-              deck_name: "Vocab",
-              model_name: "Vocab",
-              fields: {
-                writting: "writting",
-                pinyin: "pinyin",
-                definition: "definition",
-              },
-            },
-          }),
-        });
-      }
-
-      return Promise.resolve({
-        ok: false,
-        json: async () => ({}),
+      expect(runAnkiSync).toHaveBeenCalledWith({
+        kind: "mandarin_vocabulary",
+        action: "synchronize_all",
+        direction: "push",
       });
     });
-    vi.stubGlobal("fetch", fetchMock);
+    expect(onSynced).toHaveBeenCalled();
+  });
 
-    render(
-      <AnkiSyncModal
-        isOpen
-        kind="mandarin_vocabulary"
-        onCancel={vi.fn()}
-        onSynced={onSynced}
-      />,
-    );
-
-    expect(await screen.findByText("2 cards to pull")).toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Pull all from Anki" }),
-    );
-    const confirmDialog = screen.getByRole("dialog", {
-      name: /cannot be undone/i,
-    });
-    expect(
-      within(confirmDialog).getByText(
-        /pull all 2 cards from Anki into your knowledge base, adding 2 characters to the character table/,
-      ),
-    ).toBeInTheDocument();
-    await userEvent.click(
-      within(confirmDialog).getByRole("button", { name: "Confirm" }),
-    );
-
-    await waitFor(() => {
-      expect(onSynced).toHaveBeenCalledTimes(1);
-    });
-
-    const syncCall = fetchMock.mock.calls.find(
-      ([url, init]) =>
-        String(url).endsWith("/anki/sync") &&
-        (init as RequestInit | undefined)?.method === "POST",
-    );
-    expect(JSON.parse(String((syncCall?.[1] as RequestInit).body))).toEqual({
-      kind: "mandarin_vocabulary",
+  it("runs pull all from Anki", async () => {
+    const onSynced = vi.fn();
+    fetchAnkiPendingSync.mockResolvedValue(vocabularyPending);
+    runAnkiSync.mockResolvedValue({
+      ...pushAllResult,
       action: "synchronize_all",
       direction: "pull",
-      selected_ids: undefined,
+      added: 1,
     });
-  });
 
-  it("supports choose what to pull", async () => {
-    const onSynced = vi.fn();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo, init?: RequestInit) => {
-        const url = String(input);
-        const method = init?.method ?? "GET";
-
-        if (
-          url.endsWith("/anki/sync/pending/mandarin_vocabulary") &&
-          method === "GET"
-        ) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              kind: "mandarin_vocabulary",
-              count: 0,
-              cards: [],
-              unsyncable: [],
-              pull_count: 2,
-              pull_cards: [
-                {
-                  id: "火",
-                  writting: "火",
-                  pinyin: "huo3",
-                  definition: "fire",
-                },
-                {
-                  id: "风",
-                  writting: "风",
-                  pinyin: "feng1",
-                  definition: "wind",
-                },
-              ],
-              deck: {
-                status: "synchronized",
-                deck_name: "Vocab",
-                model_name: "Vocab",
-                fields: {
-                  writting: "writting",
-                  pinyin: "pinyin",
-                  definition: "definition",
-                },
-              },
-            }),
-          });
-        }
-
-        if (url.endsWith("/anki/sync") && method === "POST") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              kind: "mandarin_vocabulary",
-              action: "partial",
-              direction: "pull",
-              added: 1,
-              ignored: 1,
-              failed: 0,
-              deck: {
-                status: "synchronized",
-                deck_name: "Vocab",
-                model_name: "Vocab",
-                fields: {
-                  writting: "writting",
-                  pinyin: "pinyin",
-                  definition: "definition",
-                },
-              },
-            }),
-          });
-        }
-
-        return Promise.resolve({
-          ok: false,
-          json: async () => ({}),
-        });
-      }),
-    );
-
+    const user = userEvent.setup();
     render(
       <AnkiSyncModal
         isOpen
@@ -338,137 +129,92 @@ describe("AnkiSyncModal", () => {
       />,
     );
 
-    await screen.findByText("2 cards to pull");
-    await userEvent.click(
-      screen.getByRole("button", { name: "Choose what to pull" }),
-    );
-    expect(screen.getByText("2 of 2 selected")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Unselect all" }));
-    await userEvent.click(screen.getByLabelText("Select 火"));
-    await userEvent.click(screen.getByRole("button", { name: "Confirm pull" }));
-
-    const confirmDialog = screen.getByRole("dialog", {
-      name: /cannot be undone/i,
-    });
-    expect(
-      within(confirmDialog).getByText(/1 card currently selected will be pulled/),
-    ).toBeInTheDocument();
-    await userEvent.click(
-      within(confirmDialog).getByRole("button", { name: "Confirm" }),
-    );
+    await screen.findByText("3 cards to pull");
+    await user.click(screen.getByRole("button", { name: "Pull all from Anki" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => {
-      expect(onSynced).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it("pulls writing characters and shows missing warning", async () => {
-    const onSynced = vi.fn();
-    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? "GET";
-
-      if (
-        url.endsWith("/anki/sync/pending/mandarin_writting") &&
-        method === "GET"
-      ) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            kind: "mandarin_writting",
-            count: 0,
-            cards: [],
-            unsyncable: [],
-            pull_count: 2,
-            pull_cards: [
-              {
-                id: "水",
-                recto: "shui3",
-                verso: "水",
-              },
-            ],
-            pull_missing: ["孤"],
-            deck: {
-              status: "not_synchronized",
-              deck_name: "Writting",
-              model_name: "Basic",
-              fields: { recto: "Front", verso: "Back" },
-            },
-          }),
-        });
-      }
-
-      if (url.endsWith("/anki/sync") && method === "POST") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            kind: "mandarin_writting",
-            action: "synchronize_all",
-            direction: "pull",
-            added: 1,
-            ignored: 0,
-            failed: 0,
-            deck: {
-              status: "synchronized",
-              deck_name: "Writting",
-              model_name: "Basic",
-              fields: { recto: "Front", verso: "Back" },
-            },
-          }),
-        });
-      }
-
-      return Promise.resolve({
-        ok: false,
-        json: async () => ({}),
+      expect(runAnkiSync).toHaveBeenCalledWith({
+        kind: "mandarin_vocabulary",
+        action: "synchronize_all",
+        direction: "pull",
       });
     });
-    vi.stubGlobal("fetch", fetchMock);
+    expect(onSynced).toHaveBeenCalled();
+  });
+
+  it("runs partial push with selected cards", async () => {
+    const onSynced = vi.fn();
+    fetchAnkiPendingSync.mockResolvedValue(vocabularyPending);
+    runAnkiSync.mockResolvedValue({
+      ...pushAllResult,
+      action: "partial",
+      added: 1,
+      ignored: 1,
+    });
+
+    const user = userEvent.setup();
+    render(
+      <AnkiSyncModal
+        isOpen
+        kind="mandarin_vocabulary"
+        onCancel={vi.fn()}
+        onSynced={onSynced}
+      />,
+    );
+
+    await screen.findByText("2 cards to push");
+    await user.click(
+      screen.getByRole("button", { name: "Choose what to push" }),
+    );
+    const fireCheckbox = screen.getByRole("checkbox", { name: "Select 火" });
+    await user.click(fireCheckbox);
+    await user.click(screen.getByRole("button", { name: "Confirm push" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(runAnkiSync).toHaveBeenCalledWith({
+        kind: "mandarin_vocabulary",
+        action: "partial",
+        direction: "push",
+        selectedIds: ["水"],
+      });
+    });
+    expect(onSynced).toHaveBeenCalled();
+  });
+
+  it("shows writting unsyncable characters", async () => {
+    fetchAnkiPendingSync.mockResolvedValue({
+      kind: "mandarin_writting",
+      count: 1,
+      cards: [
+        {
+          id: "water (shui3)",
+          recto: "water (shui3)",
+          verso: "水",
+        },
+      ],
+      unsyncable: ["孤"],
+      pull_count: 0,
+      pull_cards: [],
+      deck: {
+        status: "not_synchronized",
+        deck_name: "Writting",
+        model_name: "Basic",
+        fields: { recto: "Front", verso: "Back" },
+      },
+    });
 
     render(
       <AnkiSyncModal
         isOpen
         kind="mandarin_writting"
         onCancel={vi.fn()}
-        onSynced={onSynced}
+        onSynced={vi.fn()}
       />,
     );
 
-    expect(await screen.findByText("2 characters to pull")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Characters not yet in the knowledge base/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/孤/)).toBeInTheDocument();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Pull all from Anki" }),
-    );
-    const confirmDialog = screen.getByRole("dialog", {
-      name: /cannot be undone/i,
-    });
-    expect(
-      within(confirmDialog).getByText(
-        /pull all 1 character from Anki and mark them as “written known”/,
-      ),
-    ).toBeInTheDocument();
-    await userEvent.click(
-      within(confirmDialog).getByRole("button", { name: "Confirm" }),
-    );
-
-    await waitFor(() => {
-      expect(onSynced).toHaveBeenCalledTimes(1);
-    });
-
-    const syncCall = fetchMock.mock.calls.find(
-      ([url, init]) =>
-        String(url).endsWith("/anki/sync") &&
-        (init as RequestInit | undefined)?.method === "POST",
-    );
-    expect(JSON.parse(String((syncCall?.[1] as RequestInit).body))).toEqual({
-      kind: "mandarin_writting",
-      action: "synchronize_all",
-      direction: "pull",
-      selected_ids: undefined,
-    });
+    expect(await screen.findByText("孤")).toBeInTheDocument();
+    expect(screen.getByText("1 card to push")).toBeInTheDocument();
   });
 });

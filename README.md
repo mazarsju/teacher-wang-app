@@ -32,8 +32,7 @@ learn-mandarin/
 │   ├── app.py              # Flask entry point
 │   ├── database.py         # SQLite configuration and initialization
 │   ├── extensions.py       # SQLAlchemy extension
-│   ├── anki_connect.py     # AnkiConnect HTTP client (localhost:8765)
-│   ├── anki_sync.py        # Anki deck mapping status and setup
+│   ├── anki_sync.py        # Anki deck mapping status and SQLite sync helpers
 │   ├── llm.py              # LangChain LLM integration (get_llm)
 │   ├── llm_config.py       # Read/write LLM settings in .config.txt
 │   ├── chat_agents.py      # Chat character prompts
@@ -158,7 +157,7 @@ Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://g
 | Mandarin vocabulary | `mandarin_vocabulary` | `writting`, `pinyin`, `definition` — deck type should support three directions (writting↔pinyin↔definition) |
 | Mandarin writting | `mandarin_writting` | `recto` (definition (pinyin)), `verso` (characters) — writing practice only; only characters with “written known” are intended for this deck |
 
-Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The backend talks to `http://127.0.0.1:8765`. Setup stores the Anki deck name, deck type, and field mapping in the SQLite `settings` table.
+Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser/webview. Deck name, deck type, and field mappings are stored in the SQLite `settings` table via thin Flask routes.
 
 #### API endpoints
 
@@ -167,14 +166,11 @@ Anki must be running with the AnkiConnect add-on installed (code `2055492159`). 
 | `GET` | `/health` | Health check |
 | `GET` | `/llm-config` | Read LLM API key and model from `.config.txt` |
 | `POST` | `/llm-config` | Update LLM API key and/or model in `.config.txt` |
-| `GET` | `/anki/status` | AnkiConnect reachability and Mandarin vocabulary/writting deck mapping status |
-| `GET` | `/anki/decks` | List deck names from AnkiConnect |
-| `GET` | `/anki/models` | List deck types from AnkiConnect |
-| `GET` | `/anki/models/<model>/fields` | List field names for a deck type |
-| `POST` | `/anki/decks/setup` | Map a mandarin_vocabulary/mandarin_writting deck, deck type, and fields (optionally create the deck) |
-| `POST` | `/anki/vocabulary/auto-setup` | Create a 3-direction Mandarin vocabulary deck type + deck (mapping is saved from the setup form) |
-| `GET` | `/anki/sync/pending/<kind>` | Pending push cards, `pull_cards` / `pull_count` for Anki notes not yet in the knowledge base |
-| `POST` | `/anki/sync` | Push or pull (`direction`: `push` \| `pull`) with `synchronize_all`, `cancel_all`, or `partial` |
+| `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
+| `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writting deck, deck type, and field mapping |
+| `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
+| `POST` | `/anki/sync/mark-synchronized` | Mark words/characters synchronized after a frontend Anki push (or cancel) |
+| `POST` | `/anki/sync/pull-apply` | Import pull cards into the knowledge base and/or record ignore keys |
 | `POST` | `/chat` | Send a chat message to the selected AI character |
 | `GET` | `/chat/history/<character_id>` | Load persisted chat history for a character |
 | `GET` | `/characters` | List all characters |

@@ -609,3 +609,88 @@ export function suggestUmlautPinyin(value: string): string | null {
 
   return null;
 }
+
+/** Accented vowels found in Anki pinyin fields → plain vowel + tone digit. */
+const PINYIN_ACCENT_MAP: Array<{
+  problematic_char: string;
+  corresponding_char: string;
+  corresponding_tone: string;
+}> = [
+  { problematic_char: "ī", corresponding_char: "i", corresponding_tone: "1" },
+  { problematic_char: "í", corresponding_char: "i", corresponding_tone: "2" },
+  { problematic_char: "ǐ", corresponding_char: "i", corresponding_tone: "3" },
+  { problematic_char: "ì", corresponding_char: "i", corresponding_tone: "4" },
+  { problematic_char: "ā", corresponding_char: "a", corresponding_tone: "1" },
+  { problematic_char: "á", corresponding_char: "a", corresponding_tone: "2" },
+  { problematic_char: "ǎ", corresponding_char: "a", corresponding_tone: "3" },
+  { problematic_char: "à", corresponding_char: "a", corresponding_tone: "4" },
+  { problematic_char: "ē", corresponding_char: "e", corresponding_tone: "1" },
+  { problematic_char: "é", corresponding_char: "e", corresponding_tone: "2" },
+  { problematic_char: "ě", corresponding_char: "e", corresponding_tone: "3" },
+  { problematic_char: "è", corresponding_char: "e", corresponding_tone: "4" },
+  { problematic_char: "ō", corresponding_char: "o", corresponding_tone: "1" },
+  { problematic_char: "ó", corresponding_char: "o", corresponding_tone: "2" },
+  { problematic_char: "ǒ", corresponding_char: "o", corresponding_tone: "3" },
+  { problematic_char: "ò", corresponding_char: "o", corresponding_tone: "4" },
+  { problematic_char: "ū", corresponding_char: "u", corresponding_tone: "1" },
+  { problematic_char: "ú", corresponding_char: "u", corresponding_tone: "2" },
+  { problematic_char: "ǔ", corresponding_char: "u", corresponding_tone: "3" },
+  { problematic_char: "ù", corresponding_char: "u", corresponding_tone: "4" },
+];
+
+const ACCENT_BY_CHAR = new Map(
+  PINYIN_ACCENT_MAP.map((rule) => [rule.problematic_char, rule]),
+);
+const ANKI_VALID_TONES = new Set(["1", "2", "3", "4"]);
+
+export function replacePinyinAccents(token: string): string {
+  let tone: string | undefined;
+  const chars: string[] = [];
+  for (const char of token) {
+    let rule = ACCENT_BY_CHAR.get(char);
+    if (rule === undefined) {
+      const lower = char.toLowerCase();
+      rule = ACCENT_BY_CHAR.get(lower);
+      if (rule !== undefined && char !== lower) {
+        chars.push(rule.corresponding_char.toUpperCase());
+        tone = rule.corresponding_tone;
+        continue;
+      }
+    }
+    if (rule === undefined) {
+      chars.push(char);
+      continue;
+    }
+    chars.push(rule.corresponding_char);
+    tone = rule.corresponding_tone;
+  }
+
+  const result = chars.join("");
+  if (tone === undefined) {
+    return result;
+  }
+  if (result !== "" && ANKI_VALID_TONES.has(result[result.length - 1] ?? "")) {
+    return result.slice(0, -1) + tone;
+  }
+  return result + tone;
+}
+
+/** Normalize one Anki pinyin syllable to app form (e.g. Qīn → qin1). */
+export function normalizeAnkiPinyinToken(token: string): string | null {
+  const trimmed = token.trim();
+  if (trimmed === "") {
+    return null;
+  }
+
+  const candidate = replacePinyinAccents(trimmed).toLowerCase();
+  if (isValidPinyin(candidate)) {
+    return candidate;
+  }
+
+  const umlaut = suggestUmlautPinyin(candidate);
+  if (umlaut !== null) {
+    return umlaut.toLowerCase();
+  }
+
+  return null;
+}

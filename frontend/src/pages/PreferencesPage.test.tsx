@@ -1,9 +1,50 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
+import * as ankiApi from "../utils/ankiApi";
+import type { AnkiStatus } from "../types/anki";
+
+vi.mock("../utils/ankiApi", () => ({
+  fetchAnkiStatus: vi.fn(),
+  fetchAnkiDecks: vi.fn(),
+  fetchAnkiModels: vi.fn(),
+  fetchAnkiModelFields: vi.fn(),
+  setupAnkiDeck: vi.fn(),
+  autoSetupVocabularyDeck: vi.fn(),
+  fetchAnkiPendingSync: vi.fn(),
+  runAnkiSync: vi.fn(),
+  runAnkiQuickSync: vi.fn(),
+}));
+
+const fetchAnkiStatus = vi.mocked(ankiApi.fetchAnkiStatus);
+const fetchAnkiDecks = vi.mocked(ankiApi.fetchAnkiDecks);
+const fetchAnkiModels = vi.mocked(ankiApi.fetchAnkiModels);
+const fetchAnkiModelFields = vi.mocked(ankiApi.fetchAnkiModelFields);
+const setupAnkiDeck = vi.mocked(ankiApi.setupAnkiDeck);
+
+const disconnectedStatus: AnkiStatus = {
+  connected: false,
+  synchronization_status: "not_synchronized",
+  pending_push_estimate: 0,
+  decks: {
+    mandarin_vocabulary: {
+      status: "not_configured",
+      deck_name: "",
+      model_name: "",
+      fields: {},
+    },
+    mandarin_writting: {
+      status: "not_configured",
+      deck_name: "",
+      model_name: "",
+      fields: {},
+    },
+  },
+};
 
 describe("PreferencesPage", () => {
   beforeEach(() => {
+    fetchAnkiStatus.mockResolvedValue(disconnectedStatus);
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo, init?: RequestInit) => {
@@ -39,31 +80,6 @@ describe("PreferencesPage", () => {
           });
         }
 
-        if (url.endsWith("/anki/status") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              connected: false,
-              synchronization_status: "not_synchronized",
-              pending_push_estimate: 0,
-              decks: {
-                mandarin_vocabulary: {
-                  status: "not_configured",
-                  deck_name: "",
-                  model_name: "",
-                  fields: {},
-                },
-                mandarin_writting: {
-                  status: "not_configured",
-                  deck_name: "",
-                  model_name: "",
-                  fields: {},
-                },
-              },
-            }),
-          });
-        }
-
         if (url.endsWith("/llm-config") && method === "POST") {
           return Promise.resolve({
             ok: true,
@@ -84,6 +100,7 @@ describe("PreferencesPage", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
   it("loads and displays the LLM configuration fields", async () => {
@@ -160,6 +177,7 @@ describe("PreferencesPage", () => {
     expect(screen.getByText("Create an Anki account")).toBeInTheDocument();
     expect(screen.getByText("Install Anki desktop")).toBeInTheDocument();
     expect(screen.getByText(/2055492159/)).toBeInTheDocument();
+    expect(screen.getByText(/webCorsOriginList/)).toBeInTheDocument();
   });
 
   it("saves the LLM configuration through the API", async () => {
@@ -196,120 +214,45 @@ describe("PreferencesPage", () => {
 
   it("allows deck setup with field mapping when AnkiConnect is connected", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo, init?: RequestInit) => {
-        const url = String(input);
-        const method = init?.method ?? "GET";
-
-        if (url.endsWith("/llm-config") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              LLM_API_KEY: "key",
-              LLM_MODEL: "gpt-4o-mini",
-            }),
-          });
-        }
-
-        if (url.endsWith("/token-usage") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              total_tokens: 0,
-              total_cost_usd: 0,
-              days: [
-                { date: "2026-07-18", tokens: 0 },
-                { date: "2026-07-19", tokens: 0 },
-                { date: "2026-07-20", tokens: 0 },
-                { date: "2026-07-21", tokens: 0 },
-                { date: "2026-07-22", tokens: 0 },
-                { date: "2026-07-23", tokens: 0 },
-                { date: "2026-07-24", tokens: 0 },
-              ],
-            }),
-          });
-        }
-
-        if (url.endsWith("/anki/status") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              connected: true,
-              synchronization_status: "not_synchronized",
-              pending_push_estimate: 0,
-              decks: {
-                mandarin_writting: {
-                  status: "not_synchronized",
-                  deck_name: "Characters",
-                  model_name: "Basic",
-                  fields: { recto: "Front", verso: "Back" },
-                },
-                mandarin_vocabulary: {
-                  status: "not_configured",
-                  deck_name: "",
-                  model_name: "",
-                  fields: {},
-                },
-              },
-            }),
-          });
-        }
-
-        if (url.endsWith("/anki/decks") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({ decks: ["Default", "Characters", "Words"] }),
-          });
-        }
-
-        if (url.endsWith("/anki/models") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({ models: ["Basic", "Words"] }),
-          });
-        }
-
-        if (url.includes("/anki/models/") && url.endsWith("/fields")) {
-          const modelName = decodeURIComponent(
-            url.split("/anki/models/")[1]?.replace(/\/fields$/, "") ?? "",
-          );
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              fields:
-                modelName === "Basic"
-                  ? ["Front", "Back"]
-                  : ["Hanzi", "Reading", "Meaning"],
-            }),
-          });
-        }
-
-        if (url.endsWith("/anki/decks/setup") && method === "POST") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              kind: "mandarin_vocabulary",
-              deck: {
-                status: "not_synchronized",
-                deck_name: "Words",
-                model_name: "Words",
-                fields: {
-                  writting: "Hanzi",
-                  pinyin: "Reading",
-                  definition: "Meaning",
-                },
-              },
-            }),
-          });
-        }
-
-        return Promise.resolve({
-          ok: false,
-          json: async () => ({}),
-        });
-      }),
+    fetchAnkiStatus.mockResolvedValue({
+      connected: true,
+      synchronization_status: "not_synchronized",
+      pending_push_estimate: 0,
+      decks: {
+        mandarin_writting: {
+          status: "not_synchronized",
+          deck_name: "Characters",
+          model_name: "Basic",
+          fields: { recto: "Front", verso: "Back" },
+        },
+        mandarin_vocabulary: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+        },
+      },
+    });
+    fetchAnkiDecks.mockResolvedValue(["Default", "Characters", "Words"]);
+    fetchAnkiModels.mockResolvedValue(["Basic", "Words"]);
+    fetchAnkiModelFields.mockImplementation(async (modelName: string) =>
+      modelName === "Basic"
+        ? ["Front", "Back"]
+        : ["Hanzi", "Reading", "Meaning"],
     );
+    setupAnkiDeck.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      deck: {
+        status: "not_synchronized",
+        deck_name: "Words",
+        model_name: "Words",
+        fields: {
+          writting: "Hanzi",
+          pinyin: "Reading",
+          definition: "Meaning",
+        },
+      },
+    });
 
     render(<PreferencesPage />);
     await screen.findByRole("heading", { name: "Anki synchronization" });
@@ -371,20 +314,16 @@ describe("PreferencesPage", () => {
     await user.click(screen.getByRole("button", { name: "Save mapping" }));
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith("/anki/decks/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "mandarin_vocabulary",
-          deck_name: "Words",
-          model_name: "Words",
-          fields: {
-            writting: "Hanzi",
-            pinyin: "Reading",
-            definition: "Meaning",
-          },
-          create: false,
-        }),
+      expect(setupAnkiDeck).toHaveBeenCalledWith({
+        kind: "mandarin_vocabulary",
+        deckName: "Words",
+        modelName: "Words",
+        fields: {
+          writting: "Hanzi",
+          pinyin: "Reading",
+          definition: "Meaning",
+        },
+        create: false,
       });
     });
   });

@@ -35,6 +35,11 @@ const GUIDE_STEPS: GuideStep[] = [
     imageAlt: "Anki Get Add-ons dialog with code 2055492159",
   },
   {
+    title: "Allow browser access (CORS)",
+    description:
+      "In Anki, open Tools → Add-ons → AnkiConnect → Config and set webCorsOriginList to [\"*\"] (or include http://localhost:5173). Restart Anki so learn-mandarin can call AnkiConnect from the app.",
+  },
+  {
     title: "Verify the connection",
     description:
       "Keep Anki open in the background, then open http://localhost:8765 in a browser. You should see the text “AnkiConnect”. Close this guide to refresh the connection status.",
