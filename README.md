@@ -68,10 +68,21 @@ teacher-wang/
 │   └── build-desktop.sh   # Full local desktop installer build
 ├── docs/
 │   ├── screenshots/        # UI screenshots used in this README
-│   └── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
+│   ├── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
+│   ├── anki-connect-archi-decision.md
+│   ├── anki-sync-archi-decision.md
+│   └── ai-agents-archi-decision.md
 ├── agent.md
 └── README.md
 ```
+
+## Architecture decisions
+
+Longer design notes live under `docs/`:
+
+- [AnkiConnect bridge](docs/anki-connect-archi-decision.md) — why the React client talks to local AnkiConnect instead of AnkiWeb
+- [Anki ↔ knowledge-base sync](docs/anki-sync-archi-decision.md) — push / pull orchestration, deck kinds, ignore lists
+- [Multi-agent chat](docs/ai-agents-archi-decision.md) — character, grammar teacher, and challenge judge collaboration
 
 ## Getting started
 
@@ -161,6 +172,8 @@ Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://g
 | Mandarin writting | `mandarin_writting` | `recto` (definition (pinyin)), `verso` (characters) — writing practice only; only characters with “written known” are intended for this deck |
 
 Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser/webview. Deck name, deck type, and field mappings are stored in the SQLite `settings` table via thin Flask routes.
+
+Architecture notes: [AnkiConnect bridge](docs/anki-connect-archi-decision.md), [push / pull sync](docs/anki-sync-archi-decision.md).
 
 #### API endpoints
 
@@ -257,65 +270,7 @@ GitHub Actions release packaging can be added later on top of this same local bu
 
 ## AI logic
 
-Chat turns in this app are not a single LLM call. Several specialized agents collaborate on each message, especially in challenge scenarios.
-
-### Character agent
-
-Each chat persona (friend, waiter, etc.) is a role-play agent with its own system prompt: situation, speaking style, and progression rules. In a **challenge**, that prompt encodes a fixed order of events (for example: call the waiter → order → eat → pay). The agent must stay in character, speak Chinese, and refuse out-of-order requests.
-
-Wherever possible, the character also tries to use only Han characters from the learner’s **knowledge base**. After each reply, unknown characters are detected against that vocabulary. If any appear, the agent is asked to rephrase without them (up to **3** retries). If unknown characters remain, the app keeps the attempt that used the **fewest** unknown characters.
-
-### Teacher agent (grammar)
-
-For every non–Teacher Wang conversation, Teacher Wang silently reviews the learner’s latest Chinese message. If the grammar is wrong, a short correction is returned and opened in a side thread so the learner can ask follow-up questions without leaving the main chat.
-
-### Challenge judge
-
-After the character agent replies in a challenge, a **Challenge Judge** reviews the full turn and does two jobs:
-
-1. **Task progress** — marks challenge tasks complete only when the learner attempted them in Chinese *and* the character cooperated (a refusal does not count).
-2. **Coherence** — checks that the character’s reply fits the situation and scenario rules. If it does not, the judge explains why and asks the character to revise **once**. If the second answer is still incoherent, it is sent anyway; the judge cannot block a reply twice.
-
-The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`: it starts with the refused character reply, then the judge’s feedback (and a second judge note if the revision is still incoherent). The final character reply is only in `message.content`, not duplicated there. Only that final reply is stored in the learner-facing history.
-
-### Interaction overview
-
-```text
-User
- │
- │  Chinese message
- ├──────────────────────────────► Teacher agent (grammar)
- │                                      │
- │                                      └──► correction thread
- │                                           (only if grammar is wrong)
- │
- │  same message (main chat)
- └──────────────────────────────► Character agent (role-play)
-                                        │
-                                        │ prefer known vocabulary;
-                                        │ rephrase up to 3× if unknowns;
-                                        │ keep attempt with fewest unknowns
-                                        ▼
-                                  Challenge judge
-                                   /            \
-                          coherent /              \ incoherent (1st time only)
-                                  /                \
-                                 ▼                  ▼
-                          tasks + OK          explain why + ask to revise
-                                 │                  │
-                                 │                  ▼
-                                 │            Character revises once
-                                 │                  │
-                                 │                  ▼
-                                 │            Judge re-checks tasks
-                                 │            (cannot block again)
-                                 │                  │
-                                 └────────┬─────────┘
-                                          ▼
-                                   User sees final reply
-                                   (+ completed tasks;
-                                    + judge_conversation if revised)
-```
+Chat turns are not a single LLM call: a character agent, grammar teacher, and (for challenges) a judge collaborate on each message. Full decision notes, including the interaction diagram, are in [docs/ai-agents-archi-decision.md](docs/ai-agents-archi-decision.md).
 
 ## Feature
 

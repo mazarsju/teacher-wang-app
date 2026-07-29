@@ -1,0 +1,100 @@
+# Multi-Agent Chat Architecture
+
+## Status
+
+Accepted
+
+## Context
+
+Chat practice is a core Teacher Wang feature. A single LLM call is not enough for challenge scenarios: the app must stay in character, prefer the learner’s known vocabulary, correct grammar without blocking the main thread, and advance structured challenge tasks only when both sides cooperate.
+
+The implementation lives mainly in `backend/chat_service.py`, with persona prompts in `backend/chat_agents.py` and orchestration in `backend/routes/chat.py`.
+
+## Decision
+
+Each user turn is handled by collaborating specialized agents rather than one monolithic prompt.
+
+### Character agent
+
+Each chat persona (friend, waiter, Teacher Wang, etc.) is a role-play agent with its own system prompt: situation, speaking style, and progression rules. In a **challenge**, that prompt encodes a fixed order of events (for example: call the waiter → order → eat → pay). The agent must stay in character, speak Chinese, and refuse out-of-order requests.
+
+Wherever possible, the character also tries to use only Han characters from the learner’s **knowledge base**. After each reply, unknown characters are detected against that vocabulary. If any appear, the agent is asked to rephrase without them (up to **3** retries). If unknown characters remain, the app keeps the attempt that used the **fewest** unknown characters.
+
+Teacher Wang itself does not run the unknown-character retry loop (`retry_unknown_characters: false`).
+
+### Teacher agent (grammar)
+
+For every non–Teacher Wang conversation, Teacher Wang silently reviews the learner’s latest Chinese message. If the grammar is wrong, a short correction is returned and opened in a side thread so the learner can ask follow-up questions without leaving the main chat.
+
+### Challenge judge
+
+After the character agent replies in a challenge, a **Challenge Judge** reviews the full turn and does two jobs:
+
+1. **Task progress** — marks challenge tasks complete only when the learner attempted them in Chinese *and* the character cooperated (a refusal does not count).
+2. **Coherence** — checks that the character’s reply fits the situation and scenario rules. If it does not, the judge explains why and asks the character to revise **once**. If the second answer is still incoherent, it is sent anyway; the judge cannot block a reply twice.
+
+The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`: it starts with the refused character reply, then the judge’s feedback (and a second judge note if the revision is still incoherent). The final character reply is only in `message.content`, not duplicated there. Only that final reply is stored in the learner-facing history.
+
+### Interaction overview
+
+```text
+User
+ │
+ │  Chinese message
+ ├──────────────────────────────► Teacher agent (grammar)
+ │                                      │
+ │                                      └──► correction thread
+ │                                           (only if grammar is wrong)
+ │
+ │  same message (main chat)
+ └──────────────────────────────► Character agent (role-play)
+                                        │
+                                        │ prefer known vocabulary;
+                                        │ rephrase up to 3× if unknowns;
+                                        │ keep attempt with fewest unknowns
+                                        ▼
+                                  Challenge judge
+                                   /            \
+                          coherent /              \ incoherent (1st time only)
+                                  /                \
+                                 ▼                  ▼
+                          tasks + OK          explain why + ask to revise
+                                 │                  │
+                                 │                  ▼
+                                 │            Character revises once
+                                 │                  │
+                                 │                  ▼
+                                 │            Judge re-checks tasks
+                                 │            (cannot block again)
+                                 │                  │
+                                 └────────┬─────────┘
+                                          ▼
+                                   User sees final reply
+                                   (+ completed tasks;
+                                    + judge_conversation if revised)
+```
+
+## Rationale
+
+* Separating grammar, role-play, and challenge judging keeps prompts focused and easier to evolve.
+* Vocabulary retries happen inside the character loop so the learner still gets one reply, not a cascade of UI steps.
+* The judge may revise the character once, then yields, so challenges cannot soft-lock on endless incoherence loops.
+* Grammar corrections live in a side thread so practice flow is not interrupted by every mistake.
+
+## Consequences
+
+### Advantages
+
+* Challenge scenarios stay rule-aware without stuffing every constraint into one giant system prompt.
+* Learners see corrections without losing the main conversation.
+* Unknown-vocabulary pressure is soft: best-effort rephrase, then best remaining attempt.
+
+### Drawbacks
+
+* One user turn can cost several LLM calls (grammar + character + retries + judge + optional revision).
+* Judge/character revision quality depends on structured JSON parsing from the model.
+* Adding a new challenge requires persona prompt, tasks, and judge-compatible task ids to stay aligned — mitigated by the Cursor **create-challenge** skill (`.cursor/skills/create-challenge/`), which wires one `character_id` through backend + frontend with shared task ids and mandatory agent rules.
+
+## Future evolution
+
+New challenge characters should keep the same split: character prompt for role-play, shared judge for tasks/coherence, optional grammar check on the learner message. Prefer extending `chat_agents` / challenge registration via the **create-challenge** skill over collapsing agents into a single prompt.
