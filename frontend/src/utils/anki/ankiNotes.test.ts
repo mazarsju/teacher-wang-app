@@ -68,7 +68,7 @@ describe("buildAnkiNotes", () => {
           Reading: "shui3",
           Meaning: "water",
         },
-        options: { allowDuplicate: true },
+        options: { allowDuplicate: false },
         tags: ["teacher-wang"],
       },
     ]);
