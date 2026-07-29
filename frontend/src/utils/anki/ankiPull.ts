@@ -46,7 +46,7 @@ export function buildPinyinGuessMap(
       writting,
       pinyinField,
     )) {
-      if (pinyin === null || pinyin.length > 6 || char in guesses) {
+      if (pinyin === null || pinyin.length > 8 || char in guesses) {
         continue;
       }
       guesses[char] = pinyin;
@@ -60,11 +60,11 @@ function resolvedCharPinyin(
   char: string,
   guesses: Record<string, string>,
 ): string | null {
-  if (cardPinyin !== null && cardPinyin.length <= 6) {
+  if (cardPinyin !== null && cardPinyin.length <= 8) {
     return cardPinyin;
   }
   const guessed = guesses[char];
-  if (guessed !== undefined && guessed.length <= 6) {
+  if (guessed !== undefined && guessed.length <= 8) {
     return guessed;
   }
   return null;

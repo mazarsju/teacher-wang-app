@@ -353,10 +353,10 @@ def _resolved_char_pinyin(
     char: str,
     guesses: dict[str, str],
 ) -> str | None:
-    if card_pinyin is not None and len(card_pinyin) <= 6:
+    if card_pinyin is not None and len(card_pinyin) <= 8:
         return card_pinyin
     guessed = guesses.get(char)
-    if guessed is not None and len(guessed) <= 6:
+    if guessed is not None and len(guessed) <= 8:
         return guessed
     return None
 

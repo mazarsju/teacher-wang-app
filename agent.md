@@ -13,6 +13,7 @@ Current decision docs:
 - `docs/anki-connect-archi-decision.md`
 - `docs/anki-sync-archi-decision.md`
 - `docs/ai-agents-archi-decision.md`
+- `docs/sqlite-to-postgres-archi-decision.md`
 
 ## Python
 

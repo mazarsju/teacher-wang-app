@@ -26,8 +26,8 @@ def update_character(char: str):
     if not isinstance(pinyin, str) or not pinyin.strip():
         return {"error": "pinyin must be a non-empty string"}, 400
 
-    if len(pinyin.strip()) > 6:
-        return {"error": "pinyin must be at most 6 characters"}, 400
+    if len(pinyin.strip()) > 8:
+        return {"error": "pinyin must be at most 8 characters"}, 400
 
     if not isinstance(writting_known, bool):
         return {"error": "writting_known must be a boolean"}, 400

@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Deck connectivity uses AnkiConnect from the React client (see [anki-connect-archi-decision.md](./anki-connect-archi-decision.md)). That leaves a second problem: how Teacher Wang’s SQLite knowledge base and the user’s Anki notes stay aligned without a shared Anki protocol on the backend.
+Deck connectivity uses AnkiConnect from the React client (see [anki-connect-archi-decision.md](./anki-connect-archi-decision.md)). That leaves a second problem: how Teacher Wang’s knowledge-base database and the user’s Anki notes stay aligned without a shared Anki protocol on the backend.
 
 Two mapped decks are supported:
 
@@ -23,7 +23,7 @@ Preferences store deck name, note type, and field mappings. Sync is user-trigger
 
 ```
 ┌──────────────────┐     sync data / mark / pull-apply      ┌─────────────────┐
-│ React (ankiSync) │ ◄────────────────────────────────────► │ Flask + SQLite  │
+│ React (ankiSync) │ ◄────────────────────────────────────► │ Flask + SQL DB  │
 └────────┬─────────┘                                        └─────────────────┘
          │
          │  findNotes / notesInfo / addNotes / sync
@@ -73,7 +73,7 @@ Optional AnkiWeb sync runs after a successful push that added notes (and once af
 ### Status model
 
 * Per-deck status: `not_configured` | `not_synchronized` | `synchronized` (pending push, pending pull, or unsyncable writing chars keep a configured deck `not_synchronized`).
-* Backend status is SQLite-centric; when AnkiConnect is reachable, the frontend may downgrade a “synchronized” deck if pull candidates exist.
+* Backend status is DB-centric (Postgres locally; see [sqlite-to-postgres-archi-decision.md](./sqlite-to-postgres-archi-decision.md)); when AnkiConnect is reachable, the frontend may downgrade a “synchronized” deck if pull candidates exist.
 * Overall Anki synchronization status becomes `synchronized` once **both** decks have been synchronized, and then stays sticky.
 
 ### Quick sync
@@ -83,7 +83,7 @@ Optional AnkiWeb sync runs after a successful push that added notes (and once af
 ## Rationale
 
 * Comparing note fields requires live Anki data; keeping that in the browser avoids teaching the Flask process AnkiConnect/CORS.
-* `synchronized` flags and ignore tables give durable “already handled” state without writing a second copy of the Anki collection into SQLite.
+* `synchronized` flags and ignore tables give durable “already handled” state without writing a second copy of the Anki collection into the knowledge-base DB.
 * Explicit push vs pull keeps user intent clear: practice decks are not silently mutated, and the KB is not silently filled from Anki.
 * Partial / cancel actions let learners curate what enters Anki or the KB instead of forcing an all-or-nothing merge.
 

@@ -34,7 +34,7 @@ class Character(db.Model):
     __tablename__ = "character"
 
     char = db.Column(String, primary_key=True)
-    pinyin = db.Column(String(6), nullable=False)
+    pinyin = db.Column(String(8), nullable=False)
     writting_known = db.Column(Boolean, nullable=False, default=False)
     synchronized = db.Column(Boolean, nullable=False, default=False)
     updated_at = db.Column(

@@ -27,7 +27,7 @@ Browser / Tauri webview (React)
         ├────────────► Local Backend (Python / Flask)
         │                    │
         │                    ├── AI features
-        │                    ├── SQLite knowledge base
+        │                    ├── SQL knowledge base (Postgres locally; SQLite for desktop/tests)
         │                    ├── Deck mapping settings
         │                    └── Sync bookkeeping (synchronized flags, ignore lists)
         │
@@ -41,8 +41,8 @@ The React client is the only process that talks to AnkiConnect. The backend neve
 
 High-level directions (product terms):
 
-* **Push** — Teacher Wang → Anki (create notes via AnkiConnect, then mark rows synchronized in SQLite).
-* **Pull** — Anki → Teacher Wang (read notes via AnkiConnect, then import into SQLite).
+* **Push** — Teacher Wang → Anki (create notes via AnkiConnect, then mark rows synchronized in the knowledge-base DB).
+* **Pull** — Anki → Teacher Wang (read notes via AnkiConnect, then import into the knowledge-base DB).
 
 Detailed push/pull rules live in [anki-sync-archi-decision.md](./anki-sync-archi-decision.md).
 
@@ -54,7 +54,7 @@ Detailed push/pull rules live in [anki-sync-archi-decision.md](./anki-sync-archi
 | Pending push candidates, local snapshot, ignore keys | Backend (`/anki/sync/data/<kind>`) |
 | Mark synchronized / apply pull imports | Backend (`/anki/sync/mark-synchronized`, `/anki/sync/pull-apply`) |
 | AnkiConnect reachability, note CRUD, AnkiWeb sync | Frontend (`frontend/src/utils/anki/`) |
-| Diffing Anki notes vs SQLite for push/pull UI | Frontend orchestration |
+| Diffing Anki notes vs the knowledge-base DB for push/pull UI | Frontend orchestration |
 
 ## Rationale
 

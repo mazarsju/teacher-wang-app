@@ -1,5 +1,3 @@
-from sqlalchemy.dialects.sqlite import insert
-
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
@@ -7,11 +5,24 @@ from backend.models import HskCharacter, HskWord, hsk_word_character
 from backend.routes.hsk_source import load_complete_hsk_entries, words_by_new_level
 
 
+def _dialect_insert(table):
+    """Return a dialect-specific INSERT that supports ON CONFLICT DO NOTHING."""
+    dialect = db.engine.dialect.name
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    elif dialect == "sqlite":
+        from sqlalchemy.dialects.sqlite import insert
+    else:
+        raise RuntimeError(f"Unsupported database dialect for HSK upsert: {dialect}")
+    return insert(table)
+
+
 def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
     """Load HSK words/characters/links from complete-hsk entries.
 
     When ``entries`` is omitted, downloads the upstream JSON from GitHub.
-    Words and characters use INSERT OR IGNORE so the first (lowest) level wins.
+    Words and characters use INSERT … ON CONFLICT DO NOTHING so the first
+    (lowest) level wins. Works on SQLite and PostgreSQL.
     Returns the number of words processed per level.
     """
     if entries is None:
@@ -26,7 +37,7 @@ def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
                     raise ValueError(f"Invalid character in word {word!r}: {char!r}")
 
             db.session.execute(
-                insert(HskWord)
+                _dialect_insert(HskWord)
                 .values(word=word, level=level, frequency=frequency)
                 .on_conflict_do_nothing(index_elements=["word"])
             )
@@ -38,12 +49,12 @@ def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
                 seen_in_word.add(char)
 
                 db.session.execute(
-                    insert(HskCharacter)
+                    _dialect_insert(HskCharacter)
                     .values(character=char, level=level, frequency=frequency)
                     .on_conflict_do_nothing(index_elements=["character"])
                 )
                 db.session.execute(
-                    insert(hsk_word_character)
+                    _dialect_insert(hsk_word_character)
                     .values(word=word, character=char)
                     .on_conflict_do_nothing(index_elements=["word", "character"])
                 )

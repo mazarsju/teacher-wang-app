@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.db
 .config.txt
+.env
 conversation_logs/
 .cursor/skills/update-app-screenshots/scripts/node_modules/
 build/

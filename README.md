@@ -18,7 +18,7 @@ An app to learn Mandarin.
 
 This project was intentionally developed using Cursor AI and coding agents. My objective was not only to build an AI product, but also to explore modern AI-assisted software engineering workflows.
 
-- **Backend:** Python, Flask, SQLAlchemy, SQLite
+- **Backend:** Python, Flask, SQLAlchemy, PostgreSQL (Alembic); SQLite still used for unit tests and the Tauri desktop data dir
 - **Frontend:** React, TypeScript, Vite
 - **Desktop:** Tauri 2 (native shell) + PyInstaller sidecar for the Flask API
 - **AI:** LangChain (`langchain-core`, `langchain-openai`), OpenAI-compatible chat models via `ChatOpenAI`
@@ -30,9 +30,12 @@ teacher-wang/
 ├── backend/
 │   ├── __init__.py         # Application factory (create_app)
 │   ├── app.py              # Flask entry point
-│   ├── database.py         # SQLite configuration and initialization
+│   ├── database.py         # DB init, Alembic upgrade (Postgres), legacy SQLite migrations
+│   ├── db_config.py        # Resolve DATABASE_URL / DATABASE_PATH from .env
+│   ├── sqlite_postgres_migrate.py  # Learner-data copy helpers (SQLite → Postgres)
 │   ├── extensions.py       # SQLAlchemy extension
-│   ├── anki_sync.py        # Anki deck mapping status and SQLite sync helpers
+│   ├── migrations/         # Alembic revisions (Postgres schema)
+│   ├── anki_sync.py        # Anki deck mapping status and sync helpers
 │   ├── llm.py              # LangChain LLM integration (get_llm)
 │   ├── llm_config.py       # Read/write LLM settings in .config.txt
 │   ├── chat_agents.py      # Chat character prompts
@@ -42,8 +45,9 @@ teacher-wang/
 │   ├── models.py           # Character, Word, HskWord, HskCharacter, and association tables
 │   ├── settings.py         # Key/value app settings (HSK level, Anki deck mappings)
 │   ├── routes/             # One endpoint per file (Flask blueprints); HSK load helpers
-│   ├── teacher_wang.db     # SQLite database (created on first run)
 │   └── requirements.txt
+├── alembic.ini             # Alembic config (URL overridden from .env)
+├── .env.example            # Template for local DATABASE_URL (copy to .env)
 ├── frontend/
 │   ├── index.html
 │   ├── package.json
@@ -65,13 +69,15 @@ teacher-wang/
 │   └── src-tauri/          # Tauri desktop shell (Rust) + sidecar wiring
 ├── scripts/
 │   ├── build-sidecar.sh   # Bundle Flask API with PyInstaller for Tauri
-│   └── build-desktop.sh   # Full local desktop installer build
+│   ├── build-desktop.sh   # Full local desktop installer build
+│   └── migrate_sqlite_to_postgres.py  # One-shot learner data import into Postgres
 ├── docs/
 │   ├── screenshots/        # UI screenshots used in this README
 │   ├── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
 │   ├── anki-connect-archi-decision.md
 │   ├── anki-sync-archi-decision.md
-│   └── ai-agents-archi-decision.md
+│   ├── ai-agents-archi-decision.md
+│   └── sqlite-to-postgres-archi-decision.md
 ├── agent.md
 └── README.md
 ```
@@ -83,6 +89,7 @@ Longer design notes live under `docs/`:
 - [AnkiConnect bridge](docs/anki-connect-archi-decision.md) — why the React client talks to local AnkiConnect instead of AnkiWeb
 - [Anki ↔ knowledge-base sync](docs/anki-sync-archi-decision.md) — push / pull orchestration, deck kinds, ignore lists
 - [Multi-agent chat](docs/ai-agents-archi-decision.md) — character, grammar teacher, and challenge judge collaboration
+- [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md) — Alembic migration plan and `DATABASE_URL` setup
 
 ## Getting started
 
@@ -123,18 +130,39 @@ The coverage report is written to `backend/coverage/` (open `coverage/index.html
 
 #### Database
 
-On first start, a SQLite database is created at `backend/teacher_wang.db` with the following tables:
+Local development targets **PostgreSQL** via `DATABASE_URL` in a gitignored `.env` (copy from `.env.example`):
+
+```bash
+cp .env.example .env
+# default: postgresql+psycopg://postgres:1234@localhost:5432/teacher_wang
+
+PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
+  -c 'CREATE DATABASE teacher_wang;'
+python3 -m pip install -r backend/requirements.txt
+python3 -m alembic upgrade head   # also runs automatically on app start
+```
+
+Schema is managed with **Alembic** (`backend/migrations/`). See [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md) for the full cutover plan.
+
+On first start the app seeds HSK content and default settings. Main tables:
 
 | Table | Columns |
 | --- | --- |
-| `character` | `char` (PK), `pinyin` (max 6 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
+| `character` | `char` (PK), `pinyin` (max 8 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
 | `words` | `word` (PK, max 10 chars), `definition` (max 100 chars, nullable), `synchronized` (boolean, default false), `updated_at` (datetime) |
 | `character_word` | many-to-many link between `character` and `words` |
 | `hsk_words` | `word` (PK), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
 | `hsk_characters` | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
 | `hsk_word_character` | many-to-many link between `hsk_words` and `hsk_characters` |
+| `settings` | `key` / `value` app settings (Anki mappings, HSK level, …) |
+| `ignore_vocab_card` / `ignore_writting_card` | Anki pull ignore lists |
+| `token_count` | LLM token usage events |
 
-Override the database file path with the `DATABASE_PATH` environment variable if needed.
+`DATABASE_PATH` still forces a local SQLite file (Tauri desktop and some tests). Unit tests typically use in-memory SQLite. To copy learner data from an old `teacher_wang.db` into Postgres:
+
+```bash
+python3 scripts/migrate_sqlite_to_postgres.py --sqlite backend/teacher_wang.db
+```
 
 You can preload characters and words with the bulk upload endpoint (see below), for example:
 
@@ -171,7 +199,7 @@ Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://g
 | Mandarin vocabulary | `mandarin_vocabulary` | `writting`, `pinyin`, `definition` — deck type should support three directions (writting↔pinyin↔definition) |
 | Mandarin writting | `mandarin_writting` | `recto` (definition (pinyin)), `verso` (characters) — writing practice only; only characters with “written known” are intended for this deck |
 
-Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser/webview. Deck name, deck type, and field mappings are stored in the SQLite `settings` table via thin Flask routes.
+Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser/webview. Deck name, deck type, and field mappings are stored in the `settings` table via thin Flask routes.
 
 Architecture notes: [AnkiConnect bridge](docs/anki-connect-archi-decision.md), [push / pull sync](docs/anki-sync-archi-decision.md).
 
@@ -264,7 +292,7 @@ On macOS, installers are written under `frontend/src-tauri/target/release/bundle
 - `macos/Teacher Wang.app`
 - `dmg/Teacher Wang_<version>_<arch>.dmg`
 
-Open the `.dmg` (or the `.app`) to run the packaged app. User data (SQLite DB, LLM config, conversation logs) is stored in the OS app-data directory, not inside the install bundle.
+Open the `.dmg` (or the `.app`) to run the packaged app. User data (SQLite DB via `DATABASE_PATH`, LLM config, conversation logs) is stored in the OS app-data directory, not inside the install bundle. Local web development uses Postgres via `.env` instead — see [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md).
 
 GitHub Actions release packaging can be added later on top of this same local build flow.
 
