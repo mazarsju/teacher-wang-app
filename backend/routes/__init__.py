@@ -4,6 +4,7 @@ from flask import Flask
 def register_routes(app: Flask) -> None:
     from backend.routes import (
         anki,
+        auth_me,
         bulk_characters,
         chat,
         challenges,
@@ -25,6 +26,7 @@ def register_routes(app: Flask) -> None:
     )
 
     app.register_blueprint(health.bp)
+    app.register_blueprint(auth_me.bp)
     app.register_blueprint(chat.bp)
     app.register_blueprint(challenges.bp)
     app.register_blueprint(llm_config.bp)

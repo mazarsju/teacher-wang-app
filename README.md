@@ -61,7 +61,7 @@ teacher-wang/
 │   ├── src/
 │   │   ├── App.tsx         # App shell and page routing
 │   │   ├── main.tsx        # React entry point
-│   │   ├── pages/          # Home, Knowledge base, Chat, Preferences
+│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences
 │   │   ├── components/
 │   │   ├── types/
 │   │   └── utils/
@@ -81,7 +81,9 @@ teacher-wang/
 │   ├── anki-connect-archi-decision.md
 │   ├── anki-sync-archi-decision.md
 │   ├── ai-agents-archi-decision.md
-│   └── postgres-archi-decision.md
+│   ├── postgres-archi-decision.md
+│   ├── auth-archi-decision.md
+│   └── data-isolation-archi-decision.md
 ├── agent.md
 └── README.md
 ```
@@ -94,6 +96,8 @@ Longer design notes live under `docs/`:
 - [Anki ↔ knowledge-base sync](docs/anki-sync-archi-decision.md) — push / pull orchestration, deck kinds, ignore lists
 - [Multi-agent chat](docs/ai-agents-archi-decision.md) — character, grammar teacher, and challenge judge collaboration
 - [PostgreSQL](docs/postgres-archi-decision.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
+- [Authentication & credentials](docs/auth-archi-decision.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
+- [Data isolation](docs/data-isolation-archi-decision.md) — `user_id` + RLS + shared read-only catalogs (Proposed; details TBD)
 
 Obsolete decisions are kept under [`docs/archived/`](docs/archived/) (see `agent.md`), for example [SQLite → PostgreSQL](docs/archived/sqlite-to-postgres-archi-decision.md).
 
@@ -342,6 +346,20 @@ Host the web app so learners can use it without a local install. Infrastructure 
 - [x] Separate frontend and backend container images (`frontend/Dockerfile`, `backend/Dockerfile`)
 - [x] Script to build `linux/arm64` images and push to ECR (`scripts/push-ecr.sh`)
 - [ ] Enable ECS in infra and wire LLM secrets / HTTPS
+
+### 6. Multi-user auth & data isolation
+
+Several learners can sign in; each owns private data, while shared catalogs stay read-only. Design notes: [auth](docs/auth-archi-decision.md), [data isolation](docs/data-isolation-archi-decision.md), infra [multi-user](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md).
+
+- [x] Provision Cognito User Pool (+ app client; optional Google IdP) in teacher-wang-infra and wire pool id / client id / region into ECS
+- [x] Login / sign-up UI (username + password; sign-up also collects email)
+- [x] Flask JWT verification (Cognito JWKS) + `GET /auth/me` probe (`backend/auth.py`)
+- [ ] Protect remaining API routes with `@require_auth` once login is wired end-to-end
+- [ ] Thin `users` / `profiles` table keyed by Cognito `sub`
+- [ ] Tag private tables with `user_id`, enforce filters in the app, and add PostgreSQL RLS
+- [ ] Move shared catalogs (e.g. HSK seeds) to `shared` / `shared_*` with app role SELECT-only
+- [ ] Google SSO via Cognito federated IdP (`TF_VAR_cognito_google_client_*` in infra)
+- [ ] Update [data-isolation-archi-decision.md](docs/data-isolation-archi-decision.md) with concrete schema, RLS, and migration details
 
 #### Push images to AWS ECR (from this Mac)
 
