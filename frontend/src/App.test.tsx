@@ -3,12 +3,26 @@ import userEvent from "@testing-library/user-event";
 import App from "./App";
 
 describe("App", () => {
-  it("renders the home page by default and switches tabs", async () => {
+  it("lands on the welcome auth screen first", () => {
+    render(<App />);
+
+    expect(
+      screen.getByText("Teacher Wang", { selector: ".welcome-auth-brand-mark" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  });
+
+  it("enters the app after login and switches tabs", async () => {
     const user = userEvent.setup();
 
     render(<App />);
 
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "secret");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
     expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Chat" }));
 

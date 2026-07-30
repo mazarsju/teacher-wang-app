@@ -23,7 +23,7 @@ This app is deployed as **two images** consumed by [teacher-wang-infra](https://
 
 ## Architecture decision documents
 
-Architecture decisions live under `docs/` as `*-archi-decision.md` files (for example AnkiConnect, Anki sync, multi-agent chat, and PostgreSQL). After any change that affects those areas—sync behavior, AnkiConnect responsibilities, chat agent collaboration, related APIs, database setup, or project structure—review the matching decision docs and update them so they stay accurate.
+Architecture decisions live under `docs/` as `*-archi-decision.md` files (for example AnkiConnect, Anki sync, multi-agent chat, PostgreSQL, authentication, and data isolation). After any change that affects those areas—sync behavior, AnkiConnect responsibilities, chat agent collaboration, related APIs, database setup, auth/credentials, multi-user data isolation, or project structure—review the matching decision docs and update them so they stay accurate.
 
 ### Archiving obsolete decisions
 
@@ -57,6 +57,8 @@ Current (active) decision docs:
 - `docs/anki-sync-archi-decision.md`
 - `docs/ai-agents-archi-decision.md`
 - `docs/postgres-archi-decision.md`
+- `docs/auth-archi-decision.md`
+- `docs/data-isolation-archi-decision.md`
 
 Archived decision docs (history only):
 

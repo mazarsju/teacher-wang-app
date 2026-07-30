@@ -5,6 +5,7 @@ import ChatPage from "./pages/ChatPage";
 import HomePage from "./pages/HomePage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
 import PreferencesPage from "./pages/PreferencesPage";
+import WelcomeAuthPage from "./pages/WelcomeAuthPage";
 
 const PAGES: Record<PageId, ComponentType> = {
   home: HomePage,
@@ -14,8 +15,15 @@ const PAGES: Record<PageId, ComponentType> = {
 };
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activePage, setActivePage] = useState<PageId>("home");
   const ActivePage = PAGES[activePage];
+
+  if (!isAuthenticated) {
+    return (
+      <WelcomeAuthPage onAuthenticated={() => setIsAuthenticated(true)} />
+    );
+  }
 
   return (
     <div className="app">
