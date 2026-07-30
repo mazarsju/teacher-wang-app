@@ -903,7 +903,9 @@
 <a name='L838'></a><a href='#L838'>838</a>
 <a name='L839'></a><a href='#L839'>839</a>
 <a name='L840'></a><a href='#L840'>840</a>
-<a name='L841'></a><a href='#L841'>841</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L841'></a><a href='#L841'>841</a>
+<a name='L842'></a><a href='#L842'>842</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1757,6 +1759,7 @@ import Table, { type TableColumn } from "../components/Table";
 import type { Character } from "../types/character";
 import type { Word } from "../types/word";
 import { fetchAnkiStatus, runAnkiQuickSync } from "../utils/anki/ankiApi";
+import { API_BASE } from "../utils/apiBase";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
@@ -1828,7 +1831,7 @@ function filterCharactersForView(
 &nbsp;
 async function fetchCharacters(limit?: number) {
   const query = limit == null ? "" : `?limit=${limit}`;
-  const response = await fetch(`/characters${query}`, { method: "GET" });
+  const response = await fetch(`${API_BASE}/characters${query}`, { method: "GET" });
 &nbsp;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!response.ok) {
 <span class="cstat-no" title="statement not covered" >    throw new Error("Failed to load characters.");</span>
@@ -1839,7 +1842,7 @@ async function fetchCharacters(limit?: number) {
 &nbsp;
 async function fetchWords(limit?: number) {
   const query = limit == null ? "" : `?limit=${limit}`;
-  const response = await fetch(`/words${query}`, { method: "GET" });
+  const response = await fetch(`${API_BASE}/words${query}`, { method: "GET" });
 &nbsp;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!response.ok) {
 <span class="cstat-no" title="statement not covered" >    throw new Error("Failed to load words.");</span>
@@ -2074,7 +2077,7 @@ export default function KnowledgeBasePage() {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(</span>
-        `/characters/${encodeURIComponent(character.char)}`,
+        `${API_BASE}/characters/${encodeURIComponent(character.char)}`,
         { method: "DELETE" },
       );
 &nbsp;
@@ -2104,7 +2107,7 @@ export default function KnowledgeBasePage() {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(</span>
-        `/words/${encodeURIComponent(word.word)}`,
+        `${API_BASE}/words/${encodeURIComponent(word.word)}`,
         { method: "DELETE" },
       );
 &nbsp;
@@ -2134,7 +2137,7 @@ export default function KnowledgeBasePage() {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(</span>
-        `/characters/${encodeURIComponent(character.char)}`,
+        `${API_BASE}/characters/${encodeURIComponent(character.char)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -2174,7 +2177,7 @@ export default function KnowledgeBasePage() {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(</span>
-        `/words/${encodeURIComponent(word.word)}`,
+        `${API_BASE}/words/${encodeURIComponent(word.word)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -2207,7 +2210,7 @@ export default function KnowledgeBasePage() {
 <span class="cstat-no" title="statement not covered" >    closeAddCharacterModal();</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const response = <span class="cstat-no" title="statement not covered" >await fetch("/characters", {</span>
+      const response = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/characters`, {</span>
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -2229,7 +2232,7 @@ export default function KnowledgeBasePage() {
 <span class="cstat-no" title="statement not covered" >    setIsAddWordModalOpen(false);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const response = <span class="cstat-no" title="statement not covered" >await fetch("/words", {</span>
+      const response = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/words`, {</span>
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2590,7 +2593,7 @@ export default function KnowledgeBasePage() {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-29T14:58:30.156Z
+                at 2026-07-30T12:08:48.299Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
