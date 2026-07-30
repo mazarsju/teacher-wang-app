@@ -1,3 +1,13 @@
+> **Archived — no longer current**
+>
+> | | |
+> | --- | --- |
+> | **Invalid from** | 2026-07-30 |
+> | **Why** | SQLite has been fully removed from the application, tests, and tooling. The project is PostgreSQL-only; the one-shot SQLite→Postgres import script and related helpers were deleted. |
+> | **Follow-up** | [PostgreSQL architecture](../postgres-archi-decision.md) |
+>
+> ---
+
 # SQLite → PostgreSQL (Alembic)
 
 ## Status

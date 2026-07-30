@@ -1,4 +1,4 @@
-"""Anki deck mapping status and SQLite-backed sync helpers (no AnkiConnect)."""
+"""Anki deck mapping status and Postgres-backed sync helpers (no AnkiConnect)."""
 
 from __future__ import annotations
 

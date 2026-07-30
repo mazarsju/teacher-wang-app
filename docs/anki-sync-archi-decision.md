@@ -73,7 +73,7 @@ Optional AnkiWeb sync runs after a successful push that added notes (and once af
 ### Status model
 
 * Per-deck status: `not_configured` | `not_synchronized` | `synchronized` (pending push, pending pull, or unsyncable writing chars keep a configured deck `not_synchronized`).
-* Backend status is DB-centric (Postgres locally; see [sqlite-to-postgres-archi-decision.md](./sqlite-to-postgres-archi-decision.md)); when AnkiConnect is reachable, the frontend may downgrade a “synchronized” deck if pull candidates exist.
+* Backend status is DB-centric (Postgres; see [postgres-archi-decision.md](./postgres-archi-decision.md)); when AnkiConnect is reachable, the frontend may downgrade a “synchronized” deck if pull candidates exist.
 * Overall Anki synchronization status becomes `synchronized` once **both** decks have been synchronized, and then stays sticky.
 
 ### Quick sync

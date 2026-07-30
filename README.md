@@ -34,7 +34,6 @@ teacher-wang/
 │   ├── database.py         # DB init, Alembic upgrade (Postgres)
 │   ├── alembic_runner.py   # Alembic Config helper (URL via attributes; safe for % in passwords)
 │   ├── db_config.py        # Resolve DATABASE_URL or ECS DB_* vars
-│   ├── sqlite_postgres_migrate.py  # Learner-data copy helpers (SQLite → Postgres)
 │   ├── extensions.py       # SQLAlchemy extension
 │   ├── migrations/         # Alembic revisions (Postgres schema)
 │   ├── anki_sync.py        # Anki deck mapping status and sync helpers
@@ -74,15 +73,15 @@ teacher-wang/
 │   ├── tsconfig.node.json
 │   └── vite.config.ts      # Dev server; proxies /api → Flask (strip prefix)
 ├── scripts/
-│   ├── push-ecr.sh         # Build/push arm64 images to AWS ECR
-│   └── migrate_sqlite_to_postgres.py  # One-shot learner data import into Postgres
+│   └── push-ecr.sh         # Build/push arm64 images to AWS ECR
 ├── docs/
+│   ├── archived/           # Superseded architecture decisions (history)
 │   ├── screenshots/        # UI screenshots used in this README
 │   ├── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
 │   ├── anki-connect-archi-decision.md
 │   ├── anki-sync-archi-decision.md
 │   ├── ai-agents-archi-decision.md
-│   └── sqlite-to-postgres-archi-decision.md
+│   └── postgres-archi-decision.md
 ├── agent.md
 └── README.md
 ```
@@ -94,7 +93,9 @@ Longer design notes live under `docs/`:
 - [AnkiConnect bridge](docs/anki-connect-archi-decision.md) — why the React client talks to local AnkiConnect instead of AnkiWeb
 - [Anki ↔ knowledge-base sync](docs/anki-sync-archi-decision.md) — push / pull orchestration, deck kinds, ignore lists
 - [Multi-agent chat](docs/ai-agents-archi-decision.md) — character, grammar teacher, and challenge judge collaboration
-- [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md) — Alembic migration plan and `DATABASE_URL` setup
+- [PostgreSQL](docs/postgres-archi-decision.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
+
+Obsolete decisions are kept under [`docs/archived/`](docs/archived/) (see `agent.md`), for example [SQLite → PostgreSQL](docs/archived/sqlite-to-postgres-archi-decision.md).
 
 ## Getting started
 
@@ -152,7 +153,7 @@ python3 -m pip install -r backend/requirements.txt
 python3 -m alembic upgrade head   # also runs automatically on app start
 ```
 
-Schema is managed with **Alembic** (`backend/migrations/`). See [SQLite → PostgreSQL](docs/sqlite-to-postgres-archi-decision.md) for the cutover notes.
+Schema is managed with **Alembic** (`backend/migrations/`). See [PostgreSQL](docs/postgres-archi-decision.md) for details.
 
 On first start the app seeds HSK content and default settings. Main tables:
 
@@ -167,12 +168,6 @@ On first start the app seeds HSK content and default settings. Main tables:
 | `settings` | `key` / `value` app settings (Anki mappings, HSK level, …) |
 | `ignore_vocab_card` / `ignore_writting_card` | Anki pull ignore lists |
 | `token_count` | LLM token usage events |
-
-To copy learner data from an old `teacher_wang.db` into Postgres:
-
-```bash
-python3 scripts/migrate_sqlite_to_postgres.py --sqlite backend/teacher_wang.db
-```
 
 You can preload characters and words with the bulk upload endpoint (see below), for example:
 
