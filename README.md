@@ -67,7 +67,7 @@ teacher-wang/
 │   │   ├── types/
 │   │   └── utils/
 │   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
-│   │       ├── anki/           # AnkiConnect client + sync orchestration
+│   │       ├── anki/           # AnkiConnect (localhost:8765) + /api/anki bookkeeping
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
 │   │       └── aiChat/         # Chat, LLM config, token usage
 │   ├── tsconfig.json
@@ -250,7 +250,7 @@ npm install
 npm run dev
 ```
 
-The app runs at `http://localhost:5173`. Vite proxies `/api/*` to the backend (stripping the `/api` prefix) during development.
+The app runs at `http://localhost:5173`. Vite proxies `/api/*` to the backend (stripping the `/api` prefix) during development. AnkiConnect stays on `http://127.0.0.1:8765` (browser → local Anki); Flask Anki bookkeeping uses `/api/anki/…`.
 
 #### Tests
 

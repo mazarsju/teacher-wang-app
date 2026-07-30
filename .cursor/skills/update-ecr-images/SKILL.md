@@ -13,6 +13,9 @@ Push **teacher-wang** container images to the ECR repos provisioned by the sibli
 **teacher-wang-infra** Terraform stack. Prefer the wrapper script below over
 re-typing README commands (quoting mistakes break ECR login).
 
+**ECS does not auto-load a new `:latest` image.** After push, the wrapper forces a
+new deployment so running tasks pull again.
+
 ## Layout assumptions
 
 | Path | Role |
@@ -22,7 +25,7 @@ re-typing README commands (quoting mistakes break ECR login).
 | `backend/Dockerfile` | Backend image (gunicorn `:5000`) |
 | `frontend/Dockerfile` | Frontend image (nginx `:80`) |
 | `scripts/push-ecr.sh` | `docker buildx … --push` for one or both images |
-| `.cursor/skills/update-ecr-images/scripts/push.sh` | Full login + push orchestration |
+| `.cursor/skills/update-ecr-images/scripts/push.sh` | Full login + push + ECS redeploy |
 
 Build context is always the **app repo root**. Platform must be **`linux/arm64`**
 (Graviton / Apple Silicon).
@@ -37,6 +40,7 @@ ECR image update:
 - [ ] teacher-wang-infra/config present
 - [ ] ECR login succeeded
 - [ ] push-ecr.sh finished for requested target
+- [ ] ECS force-new-deployment requested for matching service(s)
 - [ ] Report tags (:latest + git SHA) to the user
 ```
 
@@ -46,11 +50,13 @@ ECR image update:
 - AWS CLI + Terraform available.
 - Sibling checkout: `../teacher-wang-infra` with `config` filled from `config.example`.
 - ECR repos already created (`terraform apply` in infra at least once).
+- ECS services enabled (`enable_ecs = true`) so force-new-deployment has targets.
 
 ### 2. Run the wrapper (preferred)
 
 From the **app repo root**, with Shell permissions that can reach the Docker
-socket and the network (`all` / unrestricted as needed):
+socket and the network (`all` / unrestricted as needed). Force-new-deployment is a
+**prod write** — if Auto-review blocks it, ask the user to approve.
 
 ```bash
 .cursor/skills/update-ecr-images/scripts/push.sh           # both
@@ -59,6 +65,7 @@ socket and the network (`all` / unrestricted as needed):
 ```
 
 Expect several minutes on a cold build; warm builds often finish in ~20–60s.
+ECS rollout continues asynchronously after the script returns.
 
 ### 3. What the script does
 
@@ -75,30 +82,44 @@ Expect several minutes on a cold build; warm builds often finish in ~20–60s.
      | docker login --username AWS --password-stdin "$REGISTRY"
    ```
 5. Runs `./scripts/push-ecr.sh` from the app root (tags `:latest` and `:<git-sha>`).
+6. Forces a new ECS deployment for the matching service(s) (`all` → both):
+   ```bash
+   CLUSTER="$(terraform output -raw ecs_cluster_name)"          # teacher-wang-prod-ecs
+   BACKEND_SVC="$(terraform output -raw ecs_backend_service_name)"
+   FRONTEND_SVC="$(terraform output -raw ecs_frontend_service_name)"
+   aws ecs update-service --cluster "$CLUSTER" \
+     --service "$BACKEND_SVC" --force-new-deployment --region "$AWS_REGION"
+   # same for frontend when target is all|frontend
+   ```
 
 ### 4. Report back
 
-Tell the user which target was pushed and the git SHA tag. Do **not** paste AWS
-access keys, secret keys, or `docker login` passwords into the chat.
+Tell the user which target was pushed, the git SHA tag, and that ECS
+force-new-deployment was requested (rollout may still be in progress). Do **not**
+paste AWS access keys, secret keys, or `docker login` passwords into the chat.
 
 ## Pitfalls (learned from real runs)
 
 | Symptom | Cause / fix |
 | --- | --- |
 | `Cannot connect to the Docker daemon … docker.sock` | Docker Desktop not running → `open -a Docker`, wait, re-check `docker info` shows Server / Server Version |
+| Wrapper says daemon not up but `docker info` works | Do not use `docker info \| grep -q` under `pipefail` — grep exits early, docker gets SIGPIPE (141). Capture `docker info` then grep the string |
 | TLS error: cert valid for `*.dkr.ecr…` but **not** `"account.dkr.ecr…` | Registry host was wrapped in literal quotes → use `REGISTRY="${ECR_BACKEND%%/*}"` (no nested `\"…\"`) |
 | `Set ECR_BACKEND and ECR_FRONTEND` | Exports missing; always run the wrapper (or export after terraform outputs) |
 | Huge frontend build context (~100MB+) | Root `.dockerignore` must exclude `**/node_modules/` (frontend/.dockerignore is ignored when context is `.`) |
 | ECS tasks fail to start after push | Images must exist before / right after `enable_ecs = true`; platform must be `linux/arm64` |
+| New image in ECR but app unchanged | ECS does not watch `:latest`; need `--force-new-deployment` (wrapper step 6) |
 
 ## Manual README equivalent
 
 Only if the wrapper cannot run. Same steps as README **Push images to AWS ECR**:
 start Docker → source infra `config` → terraform outputs → ECR login →
-`./scripts/push-ecr.sh`.
+`./scripts/push-ecr.sh` → `aws ecs update-service … --force-new-deployment` for
+each updated service.
 
 ## Out of scope
 
 - Enabling ECS / ALB (`enable_ecs` in infra).
 - Applying Terraform or rotating AWS keys.
+- Waiting for ECS rollout to reach `COMPLETED` (optional follow-up; not required).
 - Pushing from CI (local Mac + Docker Desktop workflow only for now).

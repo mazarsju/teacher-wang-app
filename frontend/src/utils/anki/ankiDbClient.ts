@@ -1,3 +1,8 @@
+/**
+ * Flask Anki bookkeeping (knowledge-base DB / settings).
+ * These are NOT AnkiConnect calls — use API_BASE so cloud nginx can reach ECS.
+ * AnkiConnect note I/O lives in ankiConnect.ts → http://127.0.0.1:8765.
+ */
 import type {
   AnkiDeckKind,
   AnkiDeckMapping,
