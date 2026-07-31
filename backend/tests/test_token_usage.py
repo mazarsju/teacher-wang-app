@@ -116,6 +116,9 @@ class TestTokenUsage(PostgresTestCase):
         self.assertEqual(summary["total_tokens"], 134)
         # (0.00030 + 0.00090 + 0.00149) cents / 100 = 0.0000269 USD
         self.assertAlmostEqual(summary["total_cost_usd"], 0.0000269, places=10)
+        self.assertEqual(summary["plan"], "free")
+        self.assertEqual(summary["available_token"], 100_000)
+        self.assertEqual(summary["max_allowed_token"], 100_000)
 
 
 if __name__ == "__main__":

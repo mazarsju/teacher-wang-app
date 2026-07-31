@@ -244,8 +244,24 @@ def get_daily_usage(
 
 
 def get_token_usage_summary(user_id: str, days: int = TOKEN_HISTORY_DAYS) -> dict:
+    from backend.models import DEFAULT_USER_PLAN, User
+    from backend.settings import (
+        FREE_PLAN_MAX_ALLOWED_TOKEN,
+        get_available_token,
+    )
+
+    user = db.session.get(User, user_id)
+    plan = user.plan if user is not None else DEFAULT_USER_PLAN
+    available_token = get_available_token(user_id)
+    max_allowed_token = (
+        FREE_PLAN_MAX_ALLOWED_TOKEN if plan == DEFAULT_USER_PLAN else None
+    )
+
     return {
         "total_tokens": get_total_tokens(user_id),
         "total_cost_usd": get_total_cost_usd(user_id),
         "days": get_daily_usage(user_id, days),
+        "plan": plan,
+        "available_token": available_token,
+        "max_allowed_token": max_allowed_token,
     }

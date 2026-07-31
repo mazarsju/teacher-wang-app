@@ -19,6 +19,13 @@ SETTING_ANKI_MANDARIN_WRITTING_FIELDS = "anki_mandarin_writting_fields"
 SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED = (
     "anki_mandarin_writting_pull_ignored"
 )
+SETTING_AVAILABLE_TOKEN = "available_token"
+
+FREE_PLAN_MAX_ALLOWED_TOKEN = 100_000
+FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE = (
+    "Sorry, you've used up the tokens included with your free plan. "
+    "If you're enjoying chat, consider upgrading to a paid account!"
+)
 
 LEGACY_SETTING_MIGRATIONS: tuple[tuple[str, str], ...] = (
     ("anki_character_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
@@ -41,6 +48,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_ANKI_MANDARIN_WRITTING_MODEL: "",
     SETTING_ANKI_MANDARIN_WRITTING_FIELDS: "",
     SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED: "[]",
+    SETTING_AVAILABLE_TOKEN: str(FREE_PLAN_MAX_ALLOWED_TOKEN),
 }
 
 def get_setting(user_id: str, key: str, default: str = "") -> str:
@@ -109,3 +117,40 @@ def delete_setting(user_id: str, key: str, *, commit: bool = False) -> None:
         db.session.commit()
     else:
         db.session.flush()
+
+
+def get_available_token(user_id: str) -> int:
+    ensure_default_settings(user_id, commit=False)
+    raw = get_setting(
+        user_id,
+        SETTING_AVAILABLE_TOKEN,
+        str(FREE_PLAN_MAX_ALLOWED_TOKEN),
+    )
+    try:
+        return int(raw)
+    except ValueError:
+        return 0
+
+
+def assert_free_plan_has_tokens(user) -> None:
+    """Raise if a free-plan user has no tokens left for another LLM call."""
+    from backend.models import DEFAULT_USER_PLAN
+
+    if user.plan != DEFAULT_USER_PLAN:
+        return
+    if get_available_token(user.id) <= 0:
+        raise ValueError(FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE)
+
+
+def deduct_available_token(user_id: str, used: int, *, commit: bool = True) -> int:
+    """Subtract ``used`` from available_token. May go negative."""
+    if used <= 0:
+        return get_available_token(user_id)
+    remaining = get_available_token(user_id) - used
+    set_setting(
+        user_id,
+        SETTING_AVAILABLE_TOKEN,
+        str(remaining),
+        commit=commit,
+    )
+    return remaining

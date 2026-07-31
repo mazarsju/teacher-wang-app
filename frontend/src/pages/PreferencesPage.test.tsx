@@ -66,6 +66,9 @@ describe("PreferencesPage", () => {
             json: async () => ({
               total_tokens: 1250,
               total_cost_usd: 0.000435,
+              plan: "free",
+              available_token: 98750,
+              max_allowed_token: 100000,
               days: [
                 { date: "2026-07-18", tokens: 10 },
                 { date: "2026-07-19", tokens: 20 },
@@ -92,7 +95,7 @@ describe("PreferencesPage", () => {
     vi.clearAllMocks();
   });
 
-  it("shows total token usage and the 7-day chart", async () => {
+  it("shows total token usage, remaining tokens bar, and the 7-day chart", async () => {
     renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
     expect(
@@ -104,14 +107,18 @@ describe("PreferencesPage", () => {
     expect(screen.getByText("Total tokens used")).toBeInTheDocument();
     expect(
       screen.getByText((_, element) => {
-        const normalized =
-          element?.textContent?.replace(/\s+/g, " ").trim() ?? "";
         return (
-          normalized === "1,250 (roughly 0.000435$)" &&
+          element?.textContent?.trim() === "1,250" &&
           element?.classList.contains("preferences-token-total-value") === true
         );
       }),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/roughly/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Remaining tokens")).toBeInTheDocument();
+    expect(screen.getByText("98,750 / 100,000")).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: "Remaining free-plan tokens" }),
+    ).toHaveAttribute("aria-valuenow", "98750");
     expect(
       screen.getByRole("img", { name: "Token usage for the last 7 days" }),
     ).toBeInTheDocument();

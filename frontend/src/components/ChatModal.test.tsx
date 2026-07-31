@@ -305,6 +305,40 @@ describe("ChatModal", () => {
     expect(screen.getByLabelText("Message")).toHaveValue("Hello");
   });
 
+  it("shows a clear message when the free plan is out of tokens", async () => {
+    const exhaustedMessage =
+      "Sorry, you've used up the tokens included with your free plan. If you're enjoying chat, consider upgrading to a paid account!";
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [] }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({ error: exhaustedMessage }),
+        });
+      }),
+    );
+
+    const user = userEvent.setup();
+
+    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "你好");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText(exhaustedMessage)).toBeInTheDocument();
+  });
+
   it("opens a Teacher Wang correction chat from the grammar warning", async () => {
     const user = userEvent.setup();
     const xiaoMing: ChatCharacter = {

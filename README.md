@@ -46,7 +46,7 @@ teacher-wang/
 │   ├── challenge_progress.py
 │   ├── hsk.json            # Bundled HSK fallback if GitHub download fails
 │   ├── models.py           # Character, Word, HskWord, HskCharacter, and association tables
-│   ├── settings.py         # Key/value app settings (HSK level, Anki deck mappings)
+│   ├── settings.py         # Key/value app settings (HSK level, Anki mappings, available_token)
 │   ├── routes/             # One endpoint per file (Flask blueprints); HSK load helpers
 │   └── requirements.txt
 ├── alembic.ini             # Alembic config (URL overridden from .env)
@@ -72,7 +72,7 @@ teacher-wang/
 │   │       ├── auth/           # Cognito auth client + apiFetch
 │   │       ├── anki/           # AnkiConnect (localhost:8765) + /api/anki bookkeeping
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
-│   │       └── aiChat/         # Chat, LLM config, token usage
+│   │       └── aiChat/         # Chat and token usage APIs
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
 │   └── vite.config.ts      # Dev server; proxies /api → Flask (strip prefix)
@@ -87,7 +87,8 @@ teacher-wang/
 │   ├── ai-agents-archi-decision.md
 │   ├── postgres-archi-decision.md
 │   ├── auth-archi-decision.md
-│   └── data-isolation-archi-decision.md
+│   ├── data-isolation-archi-decision.md
+│   └── plan-management-archi-decision.md
 ├── agent.md
 └── README.md
 ```
@@ -102,6 +103,7 @@ Longer design notes live under `docs/`:
 - [PostgreSQL](docs/postgres-archi-decision.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
 - [Authentication & credentials](docs/auth-archi-decision.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
 - [Data isolation](docs/data-isolation-archi-decision.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
+- [Plan management](docs/plan-management-archi-decision.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
 
 Obsolete decisions are kept under [`docs/archived/`](docs/archived/) (see `agent.md`), for example [SQLite → PostgreSQL](docs/archived/sqlite-to-postgres-archi-decision.md).
 
@@ -173,9 +175,9 @@ Learner data is **private per user**: those tables start their primary key with 
 | `character` | private | PK `(user_id, char)`, `pinyin` (max 8 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
 | `words` | private | PK `(user_id, word)` (max 10 chars), `definition` (max 100 chars, nullable), `synchronized` (boolean, default false), `updated_at` (datetime) |
 | `character_word` | private | PK `(user_id, character_char, word)` — many-to-many link between `character` and `words` |
-| `settings` | private | PK `(user_id, key)`, `value` (Anki mappings, HSK level, …) |
+| `settings` | private | PK `(user_id, key)`, `value` (Anki mappings, HSK level, `available_token`, …) |
 | `ignore_vocab_card` / `ignore_writting_card` | private | PK `(user_id, writting)` / `(user_id, recto)` — Anki pull ignore lists |
-| `token_count` | private | PK `(user_id, recorded_at, type)`, `tokens`, `price` — LLM token usage events |
+| `token_count` | private | PK `(user_id, recorded_at, type)`, `tokens`, `price` — LLM usage history (not the free-plan remaining budget) |
 | `hsk_words` | shared | `word` (PK), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
 | `hsk_characters` | shared | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
 | `hsk_word_character` | shared | many-to-many link between `hsk_words` and `hsk_characters` |
@@ -202,6 +204,18 @@ curl -X POST -F "file=@db.txt" \
 
 Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are read from `.config.txt` first (if present), then from environment variables.
 
+#### Free-plan token budget
+
+Every user has `users.plan` (default `free`). Free accounts get a lifetime allowance of **100 000** LLM tokens stored as the per-user setting `available_token` (seeded on first login and whenever a returning user is missing the key).
+
+| Behavior | Free plan | Paid plan (`plan ≠ free`) |
+| --- | --- | --- |
+| Before each LLM call | Block if `available_token <= 0` (HTTP 400 with a clear upgrade hint) | No gate |
+| After each LLM call | Subtract input + output tokens (may briefly go negative) | No deduct |
+| Preferences | Progress bar: remaining vs 100 000 | No max / no bar |
+
+Historical usage still lives in `token_count` and is shown as the 7-day chart + total tokens used. Design notes: [plan management](docs/plan-management-archi-decision.md).
+
 #### AnkiConnect
 
 Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://git.sr.ht/~foosoft/anki-connect):
@@ -223,6 +237,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | --- | --- | --- |
 | `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) — the only public route |
 | `GET` | `/auth/me` | Current user (`username`, `email`, `plan`) from the `users` row |
+| `GET` | `/token-usage` | Token history (`total_tokens`, `days`, …) plus `plan`, `available_token`, and `max_allowed_token` (100000 on free, else `null`) |
 | `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
 | `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writting deck, deck type, and field mapping |
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
@@ -391,10 +406,12 @@ Keep the app feeling snappy and polished as datasets and features grow — fewer
 
 ### 8. Plan management
 
-Differentiate free and paid tiers so AI chat can scale without unbounded cost. The `users.plan` column already defaults to `free`.
+Differentiate free and paid tiers so AI chat can scale without unbounded cost. Design notes: [plan management](docs/plan-management-archi-decision.md).
 
-- [ ] Lock the chat conversation feature on the free plan
-- [ ] Add payment subscription (upgrade / renew / cancel)
+- [x] `users.plan` defaults to `free`; free accounts get a 100 000-token `available_token` budget
+- [x] Gate and deduct on every backend LLM invoke; chat surfaces a clear exhaustion message
+- [x] Preferences shows remaining tokens (progress bar); hide estimated $ cost
+- [ ] Add payment subscription (upgrade / renew / cancel) and paid-plan entitlements
 
 #### Push images to AWS ECR (from this Mac)
 

@@ -30,8 +30,8 @@ function formatTokenCount(value: number): string {
   return value.toLocaleString();
 }
 
-function formatCostUsd(value: number): string {
-  return Number(value).toPrecision(3);
+function clampToken(value: number, max: number): number {
+  return Math.min(max, Math.max(0, value));
 }
 
 function formatDeckStatus(status: AnkiDeckStatus): string {
@@ -115,6 +115,17 @@ export default function PreferencesPage() {
     ...(tokenUsage?.days.map((day) => day.tokens) ?? [0]),
   );
 
+  const remainingTokens =
+    tokenUsage !== null && tokenUsage.max_allowed_token !== null
+      ? clampToken(tokenUsage.available_token, tokenUsage.max_allowed_token)
+      : null;
+  const remainingPercent =
+    tokenUsage !== null &&
+    tokenUsage.max_allowed_token !== null &&
+    remainingTokens !== null
+      ? (remainingTokens / tokenUsage.max_allowed_token) * 100
+      : 0;
+
   const deckRows = ANKI_DECK_ORDER.map((kind) => ({
     kind,
     label: ANKI_DECK_LABELS[kind],
@@ -136,12 +147,38 @@ export default function PreferencesPage() {
             <span className="preferences-token-total-label">Total tokens used</span>
             <span className="preferences-token-total-value">
               {formatTokenCount(tokenUsage.total_tokens)}
-              <span className="preferences-token-total-cost">
-                {" "}
-                (roughly {formatCostUsd(tokenUsage.total_cost_usd)}$)
-              </span>
             </span>
           </p>
+
+          {tokenUsage.max_allowed_token !== null && remainingTokens !== null && (
+            <div
+              className="preferences-token-remaining"
+              aria-label="Remaining tokens"
+            >
+              <div className="preferences-token-remaining-header">
+                <span className="preferences-token-remaining-label">
+                  Remaining tokens
+                </span>
+                <span className="preferences-token-remaining-value">
+                  {formatTokenCount(remainingTokens)} /{" "}
+                  {formatTokenCount(tokenUsage.max_allowed_token)}
+                </span>
+              </div>
+              <div
+                className="preferences-token-remaining-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={tokenUsage.max_allowed_token}
+                aria-valuenow={remainingTokens}
+                aria-label="Remaining free-plan tokens"
+              >
+                <div
+                  className="preferences-token-remaining-fill"
+                  style={{ width: `${remainingPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           <div
             className="preferences-token-chart"

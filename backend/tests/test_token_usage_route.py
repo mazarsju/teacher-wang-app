@@ -25,6 +25,9 @@ class TestTokenUsageEndpoint(unittest.TestCase):
         self.mock_summary.return_value = {
             "total_tokens": 120,
             "total_cost_usd": 0.000435,
+            "plan": "free",
+            "available_token": 99880,
+            "max_allowed_token": 100000,
             "days": [{"date": "2026-07-24", "tokens": 40}],
         }
 
@@ -36,6 +39,9 @@ class TestTokenUsageEndpoint(unittest.TestCase):
             {
                 "total_tokens": 120,
                 "total_cost_usd": 0.000435,
+                "plan": "free",
+                "available_token": 99880,
+                "max_allowed_token": 100000,
                 "days": [{"date": "2026-07-24", "tokens": 40}],
             },
         )

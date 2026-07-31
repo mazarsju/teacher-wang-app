@@ -6,6 +6,10 @@ from flask import g
 
 from backend.auth import AuthError
 from backend.models import Setting, User
+from backend.settings import (
+    FREE_PLAN_MAX_ALLOWED_TOKEN,
+    SETTING_AVAILABLE_TOKEN,
+)
 from backend.user_context import (
     ID_TOKEN_HEADER,
     current_user,
@@ -42,6 +46,35 @@ class TestEnsureCurrentUser(PostgresTestCase):
             self.assertEqual(current_user().id, COGNITO_SUB)
 
         self.assertGreater(Setting.query.filter_by(user_id=COGNITO_SUB).count(), 0)
+        available = Setting.query.filter_by(
+            user_id=COGNITO_SUB, key=SETTING_AVAILABLE_TOKEN
+        ).first()
+        self.assertIsNotNone(available)
+        self.assertEqual(available.value, str(FREE_PLAN_MAX_ALLOWED_TOKEN))
+
+    def test_returning_user_gets_missing_available_token_seeded(self):
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            ensure_current_user()
+
+        Setting.query.filter_by(
+            user_id=COGNITO_SUB, key=SETTING_AVAILABLE_TOKEN
+        ).delete()
+        from backend.extensions import db
+
+        db.session.commit()
+
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            ensure_current_user()
+
+        available = Setting.query.filter_by(
+            user_id=COGNITO_SUB, key=SETTING_AVAILABLE_TOKEN
+        ).first()
+        self.assertIsNotNone(available)
+        self.assertEqual(available.value, str(FREE_PLAN_MAX_ALLOWED_TOKEN))
 
     def test_uses_email_from_verified_id_token(self):
         with self._request({ID_TOKEN_HEADER: "id.token.value"}):

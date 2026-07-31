@@ -176,8 +176,21 @@ def _tokens_from_response(response) -> LlmTokenUsage:
 
 
 def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
+    from backend.models import DEFAULT_USER_PLAN
+    from backend.settings import assert_free_plan_has_tokens, deduct_available_token
+    from backend.user_context import current_user
+
+    user = current_user()
+    assert_free_plan_has_tokens(user)
+
     response = get_llm().invoke(messages)
-    return _llm_response_text(response), _tokens_from_response(response)
+    text = _llm_response_text(response)
+    usage = _tokens_from_response(response)
+
+    if user.plan == DEFAULT_USER_PLAN and usage.total > 0:
+        deduct_available_token(user.id, usage.total, commit=True)
+
+    return text, usage
 
 
 def find_unknown_characters(

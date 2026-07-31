@@ -80,6 +80,8 @@ def ensure_current_user() -> User:
             user.email = email
         user.last_connexion = utcnow()
         db.session.commit()
+        # Seed any newly introduced default keys (e.g. available_token).
+        _ensure_user_defaults(user.id)
 
     g.current_user_id = user.id
     return user

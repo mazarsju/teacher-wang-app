@@ -23,7 +23,28 @@ TASKS = [
 ]
 
 
-class TestChallengeJudge(unittest.TestCase):
+class _FreePlanTokenMixin:
+    def setUp(self):
+        super().setUp()
+        self.current_user_patcher = patch(
+            "backend.user_context.current_user",
+            return_value=MagicMock(id="test-user", plan="free"),
+        )
+        self.assert_tokens_patcher = patch(
+            "backend.settings.assert_free_plan_has_tokens"
+        )
+        self.deduct_tokens_patcher = patch(
+            "backend.settings.deduct_available_token"
+        )
+        self.current_user_patcher.start()
+        self.assert_tokens_patcher.start()
+        self.deduct_tokens_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+        self.addCleanup(self.assert_tokens_patcher.stop)
+        self.addCleanup(self.deduct_tokens_patcher.stop)
+
+
+class TestChallengeJudge(_FreePlanTokenMixin, unittest.TestCase):
     @patch("backend.chat_service.get_llm")
     def test_judge_challenge_progress_returns_completed_task_ids(self, mock_get_llm):
         mock_llm = MagicMock()

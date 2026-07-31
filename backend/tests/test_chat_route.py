@@ -385,6 +385,27 @@ class TestChatEndpoint(unittest.TestCase):
             correction_thread_id=None,
         )
 
+    def test_chat_returns_free_plan_token_exhausted_message(self):
+        from backend.settings import FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
+
+        self.mock_generate.side_effect = ValueError(
+            FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "xiao-ming",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json(),
+            {"error": FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE},
+        )
+
     def test_chat_history_returns_saved_messages(self):
         self.mock_load.return_value = [
             {"role": "user", "content": "Hello"},

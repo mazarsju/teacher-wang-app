@@ -36,7 +36,7 @@ When touching backend code:
 
 ## Architecture decision documents
 
-Architecture decisions live under `docs/` as `*-archi-decision.md` files (for example AnkiConnect, Anki sync, multi-agent chat, PostgreSQL, authentication, and data isolation). After any change that affects those areas—sync behavior, AnkiConnect responsibilities, chat agent collaboration, related APIs, database setup, auth/credentials, multi-user data isolation, or project structure—review the matching decision docs and update them so they stay accurate.
+Architecture decisions live under `docs/` as `*-archi-decision.md` files (for example AnkiConnect, Anki sync, multi-agent chat, PostgreSQL, authentication, data isolation, and plan management). After any change that affects those areas—sync behavior, AnkiConnect responsibilities, chat agent collaboration, related APIs, database setup, auth/credentials, multi-user data isolation, plan / token budgets, or project structure—review the matching decision docs and update them so they stay accurate.
 
 ### Archiving obsolete decisions
 
@@ -72,6 +72,7 @@ Current (active) decision docs:
 - `docs/postgres-archi-decision.md`
 - `docs/auth-archi-decision.md`
 - `docs/data-isolation-archi-decision.md`
+- `docs/plan-management-archi-decision.md`
 
 Archived decision docs (history only):
 
