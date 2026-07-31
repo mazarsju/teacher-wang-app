@@ -268,3 +268,39 @@ export function WarningIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function ProfileIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  );
+}
+
+export function PowerIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3v9" />
+      <path d="M6.5 7.2a7.5 7.5 0 1 0 11 0" />
+    </svg>
+  );
+}

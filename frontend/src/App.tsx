@@ -6,7 +6,10 @@ import HomePage from "./pages/HomePage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
 import PreferencesPage from "./pages/PreferencesPage";
 import WelcomeAuthPage from "./pages/WelcomeAuthPage";
-import { hasStoredSession } from "./utils/auth/tokenStorage";
+import {
+  clearCognitoTokens,
+  hasStoredSession,
+} from "./utils/auth/tokenStorage";
 
 const PAGES: Record<PageId, ComponentType> = {
   home: HomePage,
@@ -22,6 +25,12 @@ export default function App() {
   const [activePage, setActivePage] = useState<PageId>("home");
   const ActivePage = PAGES[activePage];
 
+  function handleLogout() {
+    clearCognitoTokens();
+    setActivePage("home");
+    setIsAuthenticated(false);
+  }
+
   if (!isAuthenticated) {
     return (
       <WelcomeAuthPage onAuthenticated={() => setIsAuthenticated(true)} />
@@ -30,7 +39,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <Navbar activePage={activePage} onPageChange={setActivePage} />
+      <Navbar
+        activePage={activePage}
+        onPageChange={setActivePage}
+        onLogout={handleLogout}
+      />
       <main className="app-main">
         <ActivePage />
       </main>

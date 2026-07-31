@@ -6,6 +6,8 @@ import {
   InfoIcon,
   NotebookIcon,
   PenIcon,
+  PowerIcon,
+  ProfileIcon,
   SettingsIcon,
   SyncIcon,
   TrophyIcon,
@@ -32,6 +34,8 @@ describe("icons", () => {
     ["TrashIcon", TrashIcon],
     ["CloseIcon", CloseIcon],
     ["WarningIcon", WarningIcon],
+    ["ProfileIcon", ProfileIcon],
+    ["PowerIcon", PowerIcon],
   ])("renders %s as an accessible decorative svg", (_name, Icon) => {
     const { container } = render(<Icon className="navbar-icon" />);
 

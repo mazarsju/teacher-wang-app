@@ -4,6 +4,7 @@ import {
   NotebookIcon,
   SettingsIcon,
 } from "./icons";
+import ProfileMenu from "./ProfileMenu";
 
 export type PageId = "home" | "knowledge-base" | "chat" | "preferences";
 
@@ -23,30 +24,38 @@ const NAV_ITEMS: NavItem[] = [
 type NavbarProps = {
   activePage: PageId;
   onPageChange: (page: PageId) => void;
+  onLogout: () => void;
 };
 
-export default function Navbar({ activePage, onPageChange }: NavbarProps) {
+export default function Navbar({
+  activePage,
+  onPageChange,
+  onLogout,
+}: NavbarProps) {
   return (
     <nav className="navbar" aria-label="Main navigation">
-      <ul className="navbar-list">
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-          const isActive = activePage === id;
+      <div className="navbar-inner">
+        <ul className="navbar-list">
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+            const isActive = activePage === id;
 
-          return (
-            <li key={id}>
-              <button
-                type="button"
-                className={`navbar-tab${isActive ? " navbar-tab--active" : ""}`}
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => onPageChange(id)}
-              >
-                <Icon className="navbar-icon" />
-                <span>{label}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li key={id}>
+                <button
+                  type="button"
+                  className={`navbar-tab${isActive ? " navbar-tab--active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => onPageChange(id)}
+                >
+                  <Icon className="navbar-icon" />
+                  <span>{label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <ProfileMenu onLogout={onLogout} />
+      </div>
     </nav>
   );
 }
