@@ -2,6 +2,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
 import * as ankiApi from "../utils/anki/ankiApi";
+import * as charactersApi from "../utils/knowledgeBase/charactersApi";
+import * as hskLevelApi from "../utils/knowledgeBase/hskLevelApi";
+import * as wordsApi from "../utils/knowledgeBase/wordsApi";
 import type { AnkiStatus } from "../types/anki";
 import { renderWithStore } from "../test/renderWithStore";
 
@@ -17,11 +20,28 @@ vi.mock("../utils/anki/ankiApi", () => ({
   runAnkiQuickSync: vi.fn(),
 }));
 
+vi.mock("../utils/knowledgeBase/charactersApi", () => ({
+  fetchCharacters: vi.fn(),
+}));
+
+vi.mock("../utils/knowledgeBase/wordsApi", () => ({
+  fetchWords: vi.fn(),
+}));
+
+vi.mock("../utils/knowledgeBase/hskLevelApi", () => ({
+  fetchHskLevelStatus: vi.fn(),
+}));
+
 const fetchAnkiStatus = vi.mocked(ankiApi.fetchAnkiStatus);
 const fetchAnkiDecks = vi.mocked(ankiApi.fetchAnkiDecks);
 const fetchAnkiModels = vi.mocked(ankiApi.fetchAnkiModels);
 const fetchAnkiModelFields = vi.mocked(ankiApi.fetchAnkiModelFields);
 const setupAnkiDeck = vi.mocked(ankiApi.setupAnkiDeck);
+const fetchAnkiPendingSync = vi.mocked(ankiApi.fetchAnkiPendingSync);
+const runAnkiSync = vi.mocked(ankiApi.runAnkiSync);
+const fetchCharacters = vi.mocked(charactersApi.fetchCharacters);
+const fetchWords = vi.mocked(wordsApi.fetchWords);
+const fetchHskLevelStatus = vi.mocked(hskLevelApi.fetchHskLevelStatus);
 
 const disconnectedStatus: AnkiStatus = {
   connected: false,
@@ -55,6 +75,14 @@ const syncedState = {
 describe("PreferencesPage", () => {
   beforeEach(() => {
     fetchAnkiStatus.mockResolvedValue(disconnectedStatus);
+    fetchCharacters.mockResolvedValue([]);
+    fetchWords.mockResolvedValue([]);
+    fetchHskLevelStatus.mockResolvedValue({
+      level: 1,
+      known_characters: 0,
+      total_characters: 300,
+      remaining_characters: 300,
+    });
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo) => {
@@ -315,6 +343,97 @@ describe("PreferencesPage", () => {
         },
         create: false,
       });
+    });
+  });
+
+  it("refreshes Redux app data after an Anki pull", async () => {
+    const user = userEvent.setup();
+    const connectedStatus: AnkiStatus = {
+      connected: true,
+      synchronization_status: "not_synchronized",
+      pending_push_estimate: 0,
+      decks: {
+        mandarin_vocabulary: {
+          status: "not_synchronized",
+          deck_name: "Vocab",
+          model_name: "Vocab",
+          fields: {
+            writting: "writting",
+            pinyin: "pinyin",
+            definition: "definition",
+          },
+        },
+        mandarin_writting: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+        },
+      },
+    };
+    fetchAnkiStatus.mockResolvedValue(connectedStatus);
+    fetchAnkiPendingSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      count: 0,
+      cards: [],
+      unsyncable: [],
+      pull_count: 1,
+      pull_cards: [
+        {
+          id: "风",
+          writting: "风",
+          pinyin: "feng1",
+          definition: "wind",
+        },
+      ],
+      deck: connectedStatus.decks.mandarin_vocabulary,
+    });
+    runAnkiSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      action: "synchronize_all",
+      direction: "pull",
+      added: 1,
+      ignored: 0,
+      failed: 0,
+      deck: {
+        ...connectedStatus.decks.mandarin_vocabulary,
+        status: "synchronized",
+      },
+    });
+
+    renderWithStore(<PreferencesPage />, {
+      preloadedState: {
+        ...syncedState,
+        anki: { status: connectedStatus },
+      },
+    });
+
+    await screen.findByRole("heading", { name: "Anki synchronization" });
+    const vocabRow = screen.getByText("Mandarin vocabulary").closest("li");
+    expect(vocabRow).not.toBeNull();
+    await user.click(
+      within(vocabRow as HTMLElement).getByRole("button", { name: "Sync" }),
+    );
+
+    await screen.findByText("1 card to pull");
+    fetchCharacters.mockClear();
+    fetchWords.mockClear();
+    fetchHskLevelStatus.mockClear();
+
+    await user.click(screen.getByRole("button", { name: "Pull all from Anki" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(runAnkiSync).toHaveBeenCalledWith({
+        kind: "mandarin_vocabulary",
+        action: "synchronize_all",
+        direction: "pull",
+      });
+    });
+    await waitFor(() => {
+      expect(fetchCharacters).toHaveBeenCalled();
+      expect(fetchWords).toHaveBeenCalled();
+      expect(fetchHskLevelStatus).toHaveBeenCalled();
     });
   });
 });

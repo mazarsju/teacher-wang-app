@@ -25,7 +25,7 @@ type AnkiSyncModalProps = {
   isOpen: boolean;
   kind: AnkiDeckKind | null;
   onCancel: () => void;
-  onSynced: () => void;
+  onSynced: (direction: AnkiSyncDirection) => void;
 };
 
 function isVocabularyCard(
@@ -332,7 +332,7 @@ export default function AnkiSyncModal({
             : undefined,
       });
       setConfirmAction(null);
-      onSynced();
+      onSynced(confirmAction.direction);
     } catch (submitError: unknown) {
       setConfirmAction(null);
       setError(

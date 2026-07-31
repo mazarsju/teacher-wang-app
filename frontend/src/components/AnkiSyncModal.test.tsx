@@ -106,7 +106,7 @@ describe("AnkiSyncModal", () => {
         direction: "push",
       });
     });
-    expect(onSynced).toHaveBeenCalled();
+    expect(onSynced).toHaveBeenCalledWith("push");
   });
 
   it("runs pull all from Anki", async () => {
@@ -140,7 +140,7 @@ describe("AnkiSyncModal", () => {
         direction: "pull",
       });
     });
-    expect(onSynced).toHaveBeenCalled();
+    expect(onSynced).toHaveBeenCalledWith("pull");
   });
 
   it("runs partial push with selected cards", async () => {
@@ -180,7 +180,7 @@ describe("AnkiSyncModal", () => {
         selectedIds: ["水"],
       });
     });
-    expect(onSynced).toHaveBeenCalled();
+    expect(onSynced).toHaveBeenCalledWith("push");
   });
 
   it("shows writting unsyncable characters", async () => {

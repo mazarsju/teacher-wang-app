@@ -6,11 +6,13 @@ import { InfoIcon, SettingsIcon, SyncIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
+import { syncAppData } from "../store/thunks/syncAppData";
 import {
   ANKI_DECK_LABELS,
   ANKI_DECK_ORDER,
   type AnkiDeckKind,
   type AnkiDeckStatus,
+  type AnkiSyncDirection,
 } from "../types/anki";
 import type { TokenUsageSummary } from "../types/tokenUsage";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
@@ -105,8 +107,13 @@ export default function PreferencesPage() {
     await refreshAnkiStatus();
   }
 
-  async function handleSyncCompleted() {
+  async function handleSyncCompleted(direction: AnkiSyncDirection) {
     setSyncKind(null);
+    if (direction === "pull") {
+      // Pull mutates characters/words in Postgres — refresh Redux cache.
+      await dispatch(syncAppData()).unwrap();
+      return;
+    }
     await refreshAnkiStatus();
   }
 
@@ -304,7 +311,7 @@ export default function PreferencesPage() {
         isOpen={syncKind !== null}
         kind={syncKind}
         onCancel={() => setSyncKind(null)}
-        onSynced={() => void handleSyncCompleted()}
+        onSynced={(direction) => void handleSyncCompleted(direction)}
       />
     </Page>
   );
