@@ -39,25 +39,31 @@ export default function Navbar({
   return (
     <nav className="navbar" aria-label="Main navigation">
       <div className="navbar-inner">
-        <ul className="navbar-list">
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-            const isActive = activePage === id;
+        <div className="navbar-nav-group">
+          <div className="navbar-brand">
+            <span className="navbar-brand-glyph">学</span>
+            <span className="navbar-brand-text">Teacher Wang</span>
+          </div>
+          <ul className="navbar-list">
+            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+              const isActive = activePage === id;
 
-            return (
-              <li key={id}>
-                <button
-                  type="button"
-                  className={`navbar-tab${isActive ? " navbar-tab--active" : ""}`}
-                  aria-current={isActive ? "page" : undefined}
-                  onClick={() => onPageChange(id)}
-                >
-                  <Icon className="navbar-icon" />
-                  <span>{label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    className={`navbar-tab${isActive ? " navbar-tab--active" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => onPageChange(id)}
+                  >
+                    <Icon className="navbar-icon" />
+                    <span>{label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
         <ProfileMenu
           onLogout={onLogout}
           onSync={onSync}
