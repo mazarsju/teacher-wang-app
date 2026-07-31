@@ -5,28 +5,31 @@ from __future__ import annotations
 import json
 
 from backend.challenges import is_challenge_character
-from backend.conversation_logs import CONVERSATION_LOGS_DIR, VALID_CHARACTER_IDS
+from backend.conversation_log_storage import get_storage, object_key
+from backend.conversation_logs import VALID_CHARACTER_IDS
 
 
-def _progress_file(character_id: str):
+def progress_object_key(user_id: str, character_id: str) -> str:
     if character_id not in VALID_CHARACTER_IDS:
         raise ValueError("Invalid character_id")
     if not is_challenge_character(character_id):
         raise ValueError("Not a challenge character")
-    return CONVERSATION_LOGS_DIR / f"{character_id}.tasks.json"
+    if not isinstance(user_id, str) or user_id.strip() == "":
+        raise ValueError("Invalid user_id")
+    return object_key(user_id, f"{character_id}.tasks.json")
 
 
-def load_completed_task_ids(character_id: str) -> list[str]:
+def load_completed_task_ids(user_id: str, character_id: str) -> list[str]:
     if not is_challenge_character(character_id):
         return []
 
-    path = _progress_file(character_id)
-    if not path.is_file():
+    text = get_storage().read_text(progress_object_key(user_id, character_id))
+    if text is None:
         return []
 
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        payload = json.loads(text)
+    except json.JSONDecodeError:
         return []
 
     if not isinstance(payload, dict):
@@ -43,24 +46,24 @@ def load_completed_task_ids(character_id: str) -> list[str]:
     ]
 
 
-def save_completed_task_ids(character_id: str, completed_task_ids: list[str]) -> None:
+def save_completed_task_ids(
+    user_id: str,
+    character_id: str,
+    completed_task_ids: list[str],
+) -> None:
     if not is_challenge_character(character_id):
         return
 
     unique_ids = list(dict.fromkeys(completed_task_ids))
-    path = _progress_file(character_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    get_storage().write_text(
+        progress_object_key(user_id, character_id),
         json.dumps({"completed_task_ids": unique_ids}, ensure_ascii=False, indent=2)
         + "\n",
-        encoding="utf-8",
     )
 
 
-def clear_completed_task_ids(character_id: str) -> None:
+def clear_completed_task_ids(user_id: str, character_id: str) -> None:
     if not is_challenge_character(character_id):
         return
 
-    path = _progress_file(character_id)
-    if path.is_file():
-        path.unlink()
+    get_storage().delete(progress_object_key(user_id, character_id))

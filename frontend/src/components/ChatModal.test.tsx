@@ -19,7 +19,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/teacher-wang") && method === "GET") {
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({ messages: [] }),
@@ -65,7 +65,7 @@ describe("ChatModal", () => {
     expect(await screen.findByText("Hello")).toBeInTheDocument();
     expect(await screen.findByText("你好！")).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
-      "/api/chat/history/teacher-wang",
+      "/api/conversation-logs/teacher-wang",
       expect.objectContaining({ method: "GET" }),
     );
     expect(fetch).toHaveBeenCalledWith(
@@ -87,7 +87,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/teacher-wang") && method === "GET") {
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -128,7 +128,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/xiao-ming") && method === "GET") {
+        if (url.endsWith("/conversation-logs/xiao-ming") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -179,7 +179,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/teacher-wang") && method === "GET") {
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -191,7 +191,7 @@ describe("ChatModal", () => {
           });
         }
 
-        if (url.endsWith("/chat/history/teacher-wang") && method === "DELETE") {
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "DELETE") {
           return Promise.resolve({
             ok: true,
             json: async () => ({ message: "Chat history cleared" }),
@@ -216,7 +216,7 @@ describe("ChatModal", () => {
       ),
     ).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalledWith(
-      "/api/chat/history/teacher-wang",
+      "/api/conversation-logs/teacher-wang",
       expect.objectContaining({ method: "DELETE" }),
     );
 
@@ -226,7 +226,7 @@ describe("ChatModal", () => {
       await screen.findByText("Start a conversation with Teacher Wang."),
     ).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
-      "/api/chat/history/teacher-wang",
+      "/api/conversation-logs/teacher-wang",
       expect.objectContaining({ method: "DELETE" }),
     );
   });
@@ -239,7 +239,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/teacher-wang") && method === "GET") {
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -266,7 +266,7 @@ describe("ChatModal", () => {
 
     expect(screen.getByText("Earlier message")).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalledWith(
-      "/api/chat/history/teacher-wang",
+      "/api/conversation-logs/teacher-wang",
       expect.objectContaining({ method: "DELETE" }),
     );
   });
@@ -278,7 +278,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/teacher-wang") && method === "GET") {
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({ messages: [] }),
@@ -321,7 +321,7 @@ describe("ChatModal", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
 
-        if (url.endsWith("/chat/history/xiao-ming") && method === "GET") {
+        if (url.endsWith("/conversation-logs/xiao-ming") && method === "GET") {
           return Promise.resolve({
             ok: true,
             json: async () => ({ messages: [] }),
@@ -397,7 +397,7 @@ describe("ChatModal", () => {
         const method = init?.method ?? "GET";
 
         if (
-          url.endsWith("/chat/history/challenge-restaurant") &&
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
           method === "GET"
         ) {
           return Promise.resolve({
@@ -469,7 +469,7 @@ describe("ChatModal", () => {
         const method = init?.method ?? "GET";
 
         if (
-          url.endsWith("/chat/history/challenge-restaurant") &&
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
           method === "GET"
         ) {
           return Promise.resolve({
@@ -528,7 +528,7 @@ describe("ChatModal", () => {
         const method = init?.method ?? "GET";
 
         if (
-          url.endsWith("/chat/history/challenge-restaurant") &&
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
           method === "GET"
         ) {
           return Promise.resolve({
@@ -589,7 +589,7 @@ describe("ChatModal", () => {
         const method = init?.method ?? "GET";
 
         if (
-          url.endsWith("/chat/history/challenge-restaurant") &&
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
           method === "GET"
         ) {
           return Promise.resolve({

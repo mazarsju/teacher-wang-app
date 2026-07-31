@@ -115,7 +115,7 @@ describe("chatApi", () => {
 
     await expect(clearChatHistory("teacher-wang")).resolves.toBeUndefined();
     expect(fetch).toHaveBeenCalledWith(
-      "/api/chat/history/teacher-wang",
+      "/api/conversation-logs/teacher-wang",
       expect.objectContaining({ method: "DELETE" }),
     );
   });

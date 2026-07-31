@@ -104,7 +104,7 @@ Add the same `character_id` to `CHALLENGES` with **identical** task `id` / `labe
 ```
 
 The Challenge Judge runs automatically after each chat turn for ids in this map.
-Progress persists in `conversation_logs/<character_id>.tasks.json`.
+Progress persists alongside the chat log at `users/{cognito_sub}/<character_id>.tasks.json` (local `CONVERSATION_LOGS_DIR` or S3).
 A task is marked complete only when the learner attempts it in Chinese **and**
 the challenge agent accepts / cooperates; refusals do not count.
 

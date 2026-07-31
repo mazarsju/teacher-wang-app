@@ -42,6 +42,8 @@ teacher-wang/
 │   ├── chat_agents.py      # Chat character prompts
 │   ├── chat_service.py     # LLM chat reply generation
 │   ├── conversation_logs.py
+│   ├── conversation_log_storage.py  # Local / S3 adapters (users/{sub}/…)
+│   ├── challenge_progress.py
 │   ├── hsk.json            # Bundled HSK fallback if GitHub download fails
 │   ├── models.py           # Character, Word, HskWord, HskCharacter, and association tables
 │   ├── settings.py         # Key/value app settings (HSK level, Anki deck mappings)
@@ -234,8 +236,12 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
 | `POST` | `/anki/sync/mark-synchronized` | Mark words/characters synchronized after a frontend Anki push (or cancel) |
 | `POST` | `/anki/sync/pull-apply` | Import pull cards into the knowledge base and/or record ignore keys |
-| `POST` | `/chat` | Send a chat message to the selected AI character |
-| `GET` | `/chat/history/<character_id>` | Load persisted chat history for a character |
+| `POST` | `/chat` | Send a chat message to the selected AI character (persists to the user-scoped log store) |
+| `GET` | `/conversation-logs/<character_id>` | Load this user's chat transcript (and challenge task progress when applicable) |
+| `POST` | `/conversation-logs/<character_id>` | Create an empty conversation log (`409` if it already exists) |
+| `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
+| `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, and challenge progress |
+| `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
 | `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writting_known` |
@@ -372,6 +378,7 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 - [x] Hash-partition private tables on `user_id` (modulus 8) in Alembic
 - [x] Frontend sends `Authorization` + `X-Id-Token` on API calls (`frontend/src/utils/auth/apiFetch.ts`)
 - [x] Update [data-isolation-archi-decision.md](docs/data-isolation-archi-decision.md) with concrete schema and migration details
+- [x] Per-user conversation logs in S3 (`users/{sub}/…`) with `GET/POST/PATCH/DELETE /conversation-logs/<character_id>` (local filesystem for dev/tests)
 - [ ] Add PostgreSQL RLS as a backstop behind the app-level filters
 - [ ] Split `app` (SELECT on HSK, CRUD on private) and `migrator` DB roles
 - [ ] Enable Google IdP in Cognito (`TF_VAR_cognito_google_client_id` / `_secret` in infra; Google console redirect → Cognito `/oauth2/idpresponse`)

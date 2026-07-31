@@ -156,13 +156,23 @@ Revision `9c4b71e0a2d5` (after `376edc4d57aa`) **drops and recreates** the priva
 * Changing the partition modulus later requires a rewriting migration.
 * `email` is `NOT NULL UNIQUE`, so users authenticated without an ID token carry a `{sub}@users.local` placeholder until a request supplies a verified email.
 
+### Conversation logs (resolved)
+
+Chat transcripts and challenge task progress are **per Cognito user** (`sub`):
+
+| Environment | Backend | Layout |
+| --- | --- | --- |
+| Local / tests | Filesystem (`CONVERSATION_LOGS_BACKEND=local`, default) | `CONVERSATION_LOGS_DIR/users/{sub}/{character_id}.txt` (+ threads / `.tasks.json`) |
+| Prod (ECS) | S3 (`CONVERSATION_LOGS_BACKEND=s3`) | `s3://…/users/{sub}/{character_id}.txt` (+ threads / `.tasks.json`) |
+
+API: `GET/POST/PATCH/DELETE /conversation-logs/<character_id>` (and `POST /chat` for LLM turns). History is loaded when a chat opens; there is no process-wide transcript cache.
+
 ### Known gaps (not covered by this decision yet)
 
-State that lives outside Postgres is still **shared between all users**:
+State that lives outside Postgres and is still **shared between all users**:
 
 | What | Where | Note |
 | --- | --- | --- |
-| Conversation logs and challenge task progress | Server files under `CONVERSATION_LOGS_DIR` (`backend/conversation_logs.py`, `backend/challenge_progress.py`) | Keyed by `character_id` only; two users share one transcript |
 | Knowledge-base export | `backend/db_export.py` writes one file per deployment | Contents are user-scoped, the filename is not |
 | LLM API key / model | `.config.txt` (`backend/llm_config.py`) | Operator-level configuration, intentionally global for now |
 

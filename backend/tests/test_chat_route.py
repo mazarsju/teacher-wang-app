@@ -154,12 +154,14 @@ class TestChatEndpoint(unittest.TestCase):
             [{"role": "user", "content": "你好"}],
         )
         self.mock_append.assert_any_call(
+            TEST_USER_ID,
             "teacher-wang",
             "user",
             "你好",
             correction_thread_id=None,
         )
         self.mock_append.assert_any_call(
+            TEST_USER_ID,
             "teacher-wang",
             "assistant",
             "你好，很高兴认识你。",
@@ -224,16 +226,19 @@ class TestChatEndpoint(unittest.TestCase):
         )
         self.mock_grammar.assert_called_once_with(TEST_USER_ID, "我是很好")
         self.mock_create_thread.assert_called_once_with(
+            TEST_USER_ID,
             "xiao-ming",
             "Say 我很好 instead of 我是很好.",
         )
         self.mock_append.assert_any_call(
+            TEST_USER_ID,
             "xiao-ming",
             "user",
             "我是很好",
             correction_thread_id="thread123",
         )
         self.mock_append.assert_any_call(
+            TEST_USER_ID,
             "xiao-ming",
             "assistant",
             "我也很好！",
@@ -282,12 +287,14 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_grammar.assert_not_called()
         self.mock_append.assert_not_called()
         self.mock_append_thread.assert_any_call(
+            TEST_USER_ID,
             "xiao-ming",
             "thread123",
             "user",
             "Why?",
         )
         self.mock_append_thread.assert_any_call(
+            TEST_USER_ID,
             "xiao-ming",
             "thread123",
             "assistant",
@@ -371,6 +378,7 @@ class TestChatEndpoint(unittest.TestCase):
             {"error": "LLM_API_KEY must be set"},
         )
         self.mock_append.assert_called_once_with(
+            TEST_USER_ID,
             "xiao-ming",
             "user",
             "你好",
@@ -395,7 +403,7 @@ class TestChatEndpoint(unittest.TestCase):
                 ]
             },
         )
-        self.mock_load.assert_called_once_with("teacher-wang")
+        self.mock_load.assert_called_once_with(TEST_USER_ID, "teacher-wang")
 
     def test_challenge_chat_returns_completed_task_ids(self):
         self.mock_challenge_reply.return_value = MagicMock(
@@ -422,6 +430,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_challenge_reply.assert_called_once()
         self.mock_generate.assert_not_called()
         self.mock_save_tasks.assert_called_once_with(
+            TEST_USER_ID,
             "challenge-restaurant",
             ["call-waiter"],
         )
@@ -476,6 +485,7 @@ class TestChatEndpoint(unittest.TestCase):
             ],
         )
         self.mock_append.assert_any_call(
+            TEST_USER_ID,
             "challenge-restaurant",
             "assistant",
             "请先点菜。",
@@ -502,8 +512,11 @@ class TestChatEndpoint(unittest.TestCase):
         response = self.client.delete("/chat/history/challenge-restaurant")
 
         self.assertEqual(response.status_code, 200)
-        self.mock_clear.assert_called_once_with("challenge-restaurant")
-        self.mock_clear_tasks.assert_called_once_with("challenge-restaurant")
+        self.mock_clear.assert_called_once_with(TEST_USER_ID, "challenge-restaurant")
+        self.mock_clear_tasks.assert_called_once_with(
+            TEST_USER_ID,
+            "challenge-restaurant",
+        )
 
     def test_chat_history_rejects_invalid_character_id(self):
         response = self.client.get("/chat/history/unknown")
@@ -519,7 +532,7 @@ class TestChatEndpoint(unittest.TestCase):
             response.get_json(),
             {"message": "Chat history cleared"},
         )
-        self.mock_clear.assert_called_once_with("teacher-wang")
+        self.mock_clear.assert_called_once_with(TEST_USER_ID, "teacher-wang")
 
     def test_clear_chat_history_rejects_invalid_character_id(self):
         response = self.client.delete("/chat/history/unknown")

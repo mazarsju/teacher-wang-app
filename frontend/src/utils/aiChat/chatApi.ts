@@ -17,7 +17,7 @@ export async function fetchChatHistory(
   characterId: string,
 ): Promise<ChatHistoryResult> {
   const response = await apiFetch(
-    `${API_BASE}/chat/history/${encodeURIComponent(characterId)}`,
+    `${API_BASE}/conversation-logs/${encodeURIComponent(characterId)}`,
     { method: "GET" },
   );
 
@@ -68,7 +68,7 @@ export async function sendChatMessage(
 
 export async function clearChatHistory(characterId: string): Promise<void> {
   const response = await apiFetch(
-    `${API_BASE}/chat/history/${encodeURIComponent(characterId)}`,
+    `${API_BASE}/conversation-logs/${encodeURIComponent(characterId)}`,
     { method: "DELETE" },
   );
 

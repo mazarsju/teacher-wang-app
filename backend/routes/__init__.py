@@ -8,6 +8,7 @@ def register_routes(app: Flask) -> None:
         bulk_characters,
         chat,
         challenges,
+        conversation_logs,
         create_character,
         create_word,
         delete_character,
@@ -31,6 +32,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(health.bp)
     app.register_blueprint(auth_me.bp)
     app.register_blueprint(chat.bp)
+    app.register_blueprint(conversation_logs.bp)
     app.register_blueprint(challenges.bp)
     app.register_blueprint(llm_config.bp)
     app.register_blueprint(token_usage.bp)

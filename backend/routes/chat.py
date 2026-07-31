@@ -30,6 +30,13 @@ from backend.user_context import current_user_id
 bp = Blueprint("chat", __name__)
 
 
+def _history_payload(user_id: str, character_id: str) -> dict:
+    response: dict = {"messages": load_conversation(user_id, character_id)}
+    if is_challenge_character(character_id):
+        response["completed_task_ids"] = load_completed_task_ids(user_id, character_id)
+    return response
+
+
 def _normalize_messages(messages: list) -> tuple[list[dict[str, str]] | None, tuple | None]:
     if not isinstance(messages, list) or len(messages) == 0:
         return None, ({"error": "messages must be a non-empty array"}, 400)
@@ -99,8 +106,9 @@ def chat():
         if parent_character_id == TEACHER_CHARACTER_ID:
             return {"error": "parent_character_id cannot be Teacher Wang"}, 400
 
+        user_id = current_user_id()
         if not isinstance(thread_id, str) or not thread_exists(
-            parent_character_id, thread_id
+            user_id, parent_character_id, thread_id
         ):
             return {"error": "Invalid thread_id"}, 400
 
@@ -126,9 +134,10 @@ def _handle_thread_chat(
 
     try:
         if should_append_thread_user_message(
-            parent_character_id, thread_id, last_user_message
+            user_id, parent_character_id, thread_id, last_user_message
         ):
             append_thread_message(
+                user_id,
                 parent_character_id,
                 thread_id,
                 "user",
@@ -138,6 +147,7 @@ def _handle_thread_chat(
         reply = generate_chat_reply(user_id, character_id, normalized_messages)
         token_usage = token_usage + reply.token_usage
         append_thread_message(
+            user_id,
             parent_character_id,
             thread_id,
             "assistant",
@@ -187,6 +197,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
                 and correction.answer
             ):
                 correction_thread_id, thread_messages = create_correction_thread(
+                    user_id,
                     character_id,
                     correction.answer,
                 )
@@ -196,8 +207,9 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
                     "thread_messages": thread_messages,
                 }
 
-        if should_append_user_message(character_id, last_user_message):
+        if should_append_user_message(user_id, character_id, last_user_message):
             append_message(
+                user_id,
                 character_id,
                 "user",
                 last_user_message["content"],
@@ -216,13 +228,13 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             token_usage = token_usage + challenge_reply.token_usage
             reply_content = challenge_reply.content
             reply_unknown_characters = challenge_reply.unknown_characters
-            previously_completed = load_completed_task_ids(character_id)
+            previously_completed = load_completed_task_ids(user_id, character_id)
             completed_task_ids = list(
                 dict.fromkeys(
                     [*previously_completed, *challenge_reply.completed_task_ids]
                 )
             )
-            save_completed_task_ids(character_id, completed_task_ids)
+            save_completed_task_ids(user_id, character_id, completed_task_ids)
             if challenge_reply.judge_conversation:
                 judge_conversation = challenge_reply.judge_conversation
         else:
@@ -231,7 +243,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             reply_content = reply.content
             reply_unknown_characters = reply.unknown_characters
 
-        append_message(character_id, "assistant", reply_content)
+        append_message(user_id, character_id, "assistant", reply_content)
 
         record_token_usage(
             user_id,
@@ -267,10 +279,7 @@ def chat_history(character_id: str):
     if character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
 
-    response = {"messages": load_conversation(character_id)}
-    if is_challenge_character(character_id):
-        response["completed_task_ids"] = load_completed_task_ids(character_id)
-    return response, 200
+    return _history_payload(current_user_id(), character_id), 200
 
 
 @bp.delete("/chat/history/<character_id>")
@@ -278,7 +287,8 @@ def delete_chat_history(character_id: str):
     if character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
 
-    clear_conversation(character_id)
+    user_id = current_user_id()
+    clear_conversation(user_id, character_id)
     if is_challenge_character(character_id):
-        clear_completed_task_ids(character_id)
+        clear_completed_task_ids(user_id, character_id)
     return {"message": "Chat history cleared"}, 200
