@@ -2,41 +2,9 @@
 
 from __future__ import annotations
 
-import json
 import os
-import time
 from pathlib import Path
 from typing import Protocol
-
-# #region agent log
-_DEBUG_LOG_PATH = (
-    Path(__file__).resolve().parent.parent / ".cursor" / "debug-045eba.log"
-)
-
-
-def _agent_debug_log(
-    hypothesis_id: str,
-    location: str,
-    message: str,
-    data: dict | None = None,
-) -> None:
-    try:
-        payload = {
-            "sessionId": "045eba",
-            "runId": "pre-fix",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data or {},
-            "timestamp": int(time.time() * 1000),
-        }
-        with _DEBUG_LOG_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
-
-
-# #endregion
 
 CONVERSATION_LOGS_DIR = Path(
     os.environ.get(
@@ -161,65 +129,14 @@ class S3ConversationLogStorage:
         if resolved_region:
             kwargs["region_name"] = resolved_region
         self._client = boto3.client("s3", **kwargs)
-        # #region agent log
-        caller_arn = None
-        caller_error = None
-        try:
-            sts = boto3.client("sts", **kwargs)
-            caller_arn = sts.get_caller_identity().get("Arn")
-        except Exception as identity_error:
-            caller_error = type(identity_error).__name__
-        _agent_debug_log(
-            "A",
-            "conversation_log_storage.py:S3ConversationLogStorage.__init__",
-            "S3 storage initialized",
-            {
-                "bucket": self._bucket,
-                "region": resolved_region,
-                "callerArn": caller_arn,
-                "callerError": caller_error,
-                "backendEnv": os.environ.get("CONVERSATION_LOGS_BACKEND"),
-            },
-        )
-        # #endregion
 
     def read_text(self, key: str) -> str | None:
-        # #region agent log
-        _agent_debug_log(
-            "C",
-            "conversation_log_storage.py:S3ConversationLogStorage.read_text",
-            "GetObject attempt",
-            {"bucket": self._bucket, "key": key},
-        )
-        # #endregion
         try:
             response = self._client.get_object(Bucket=self._bucket, Key=key)
         except self._client.exceptions.NoSuchKey:
-            # #region agent log
-            _agent_debug_log(
-                "B",
-                "conversation_log_storage.py:S3ConversationLogStorage.read_text",
-                "GetObject NoSuchKey",
-                {"bucket": self._bucket, "key": key},
-            )
-            # #endregion
             return None
         except Exception as error:
             error_code = getattr(error, "response", {}).get("Error", {}).get("Code")
-            # #region agent log
-            _agent_debug_log(
-                "A",
-                "conversation_log_storage.py:S3ConversationLogStorage.read_text",
-                "GetObject failed",
-                {
-                    "bucket": self._bucket,
-                    "key": key,
-                    "errorCode": error_code,
-                    "errorType": type(error).__name__,
-                    "errorMessage": str(error)[:300],
-                },
-            )
-            # #endregion
             if error_code in {"NoSuchKey", "404", "NotFound"}:
                 return None
             if error_code in {"AccessDenied", "403"}:
@@ -232,14 +149,6 @@ class S3ConversationLogStorage:
                 ) from error
             raise
         body = response["Body"].read()
-        # #region agent log
-        _agent_debug_log(
-            "D",
-            "conversation_log_storage.py:S3ConversationLogStorage.read_text",
-            "GetObject succeeded",
-            {"bucket": self._bucket, "key": key, "bytes": len(body)},
-        )
-        # #endregion
         return body.decode("utf-8")
 
     def write_text(self, key: str, content: str) -> None:
@@ -301,20 +210,6 @@ def get_storage() -> ConversationLogStorage:
         return _storage
 
     backend = conversation_logs_backend()
-    # #region agent log
-    _agent_debug_log(
-        "E",
-        "conversation_log_storage.py:get_storage",
-        "Selecting conversation log backend",
-        {
-            "backend": backend,
-            "rawBackendEnv": os.environ.get("CONVERSATION_LOGS_BACKEND"),
-            "bucketEnvSet": bool(
-                os.environ.get("CONVERSATION_LOGS_S3_BUCKET", "").strip()
-            ),
-        },
-    )
-    # #endregion
     if backend == "s3":
         _storage = S3ConversationLogStorage()
     elif backend == "local":
