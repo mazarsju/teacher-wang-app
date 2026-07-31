@@ -114,12 +114,14 @@ class TestProtectedRoutes(unittest.TestCase):
     """``before_request`` guards every route except /health and OPTIONS."""
 
     def setUp(self):
+        # Anonymous client: must not inherit AuthenticatedClient from other tests.
+        app.test_client_class = None
         self.client = app.test_client()
 
     def test_auth_me_unauthorized_without_header(self):
         response = self.client.get("/auth/me")
         self.assertEqual(response.status_code, 401)
-        self.assertIn("error", response.get_json())
+        self.assertEqual(response.get_json(), {"error": "Missing Authorization header"})
 
     def test_domain_routes_unauthorized_without_header(self):
         for method, path in (
@@ -133,6 +135,23 @@ class TestProtectedRoutes(unittest.TestCase):
             with self.subTest(path=path):
                 response = getattr(self.client, method)(path)
                 self.assertEqual(response.status_code, 401)
+                self.assertEqual(
+                    response.get_json(),
+                    {"error": "Missing Authorization header"},
+                )
+
+    def test_token_without_cognito_config_returns_service_unavailable(self):
+        """A bearer token with Cognito unset is 503, not a silent 401."""
+        with patch("backend.auth.load_cognito_config", return_value=None):
+            response = self.client.get(
+                "/auth/me",
+                headers={"Authorization": "Bearer some.token.value"},
+            )
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(
+            response.get_json(),
+            {"error": "Cognito is not configured on this server"},
+        )
 
     def test_health_stays_public(self):
         with patch("backend.routes.health.db.session.execute"):

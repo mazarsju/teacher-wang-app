@@ -28,20 +28,24 @@ TEST_CLAIMS = {
 AUTH_HEADERS = {"Authorization": f"Bearer {TEST_ACCESS_TOKEN}"}
 
 
-class AuthenticatedClient(FlaskClient):
-    """Test client that sends a bearer token unless the test sets its own."""
+def authenticated_client(app: Flask) -> FlaskClient:
+    """Return a test client that sends a bearer token unless the test overrides it.
 
-    def open(self, *args, **kwargs):
+    Auth headers are bound to this client instance only — never via
+    ``app.test_client_class``, which would leak into later anonymous tests.
+    """
+    client = app.test_client()
+    original_open = client.open
+
+    def open_with_auth(*args, **kwargs):
         headers = Headers(kwargs.get("headers") or {})
         if "Authorization" not in headers:
             headers.set("Authorization", AUTH_HEADERS["Authorization"])
         kwargs["headers"] = headers
-        return super().open(*args, **kwargs)
+        return original_open(*args, **kwargs)
 
-
-def authenticated_client(app: Flask) -> FlaskClient:
-    app.test_client_class = AuthenticatedClient
-    return app.test_client()
+    client.open = open_with_auth  # type: ignore[method-assign]
+    return client
 
 
 def stub_current_user() -> None:
