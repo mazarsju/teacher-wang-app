@@ -75,6 +75,8 @@ ECS rollout continues asynchronously after the script returns.
    - `terraform output -raw aws_region`
    - `terraform output -raw ecr_backend_repository_url`
    - `terraform output -raw ecr_frontend_repository_url`
+   - Cognito (public): `cognito_user_pool_id`, `cognito_app_client_id`,
+     `cognito_issuer`, `cognito_domain` → exported as `COGNITO_*`
 4. Logs into ECR with:
    ```bash
    REGISTRY="${ECR_BACKEND%%/*}"
@@ -82,6 +84,8 @@ ECS rollout continues asynchronously after the script returns.
      | docker login --username AWS --password-stdin "$REGISTRY"
    ```
 5. Runs `./scripts/push-ecr.sh` from the app root (tags `:latest` and `:<git-sha>`).
+   Frontend image gets Cognito as Vite `--build-arg` (`VITE_COGNITO_*`). Backend
+   Cognito config still comes from the ECS task definition at runtime.
 6. Forces a new ECS deployment for the matching service(s) (`all` → both):
    ```bash
    CLUSTER="$(terraform output -raw ecs_cluster_name)"          # teacher-wang-prod-ecs
@@ -106,6 +110,7 @@ paste AWS access keys, secret keys, or `docker login` passwords into the chat.
 | Wrapper says daemon not up but `docker info` works | Do not use `docker info \| grep -q` under `pipefail` — grep exits early, docker gets SIGPIPE (141). Capture `docker info` then grep the string |
 | TLS error: cert valid for `*.dkr.ecr…` but **not** `"account.dkr.ecr…` | Registry host was wrapped in literal quotes → use `REGISTRY="${ECR_BACKEND%%/*}"` (no nested `\"…\"`) |
 | `Set ECR_BACKEND and ECR_FRONTEND` | Exports missing; always run the wrapper (or export after terraform outputs) |
+| `Set COGNITO_* from terraform outputs` | Frontend build needs pool/client ids; run the wrapper after Cognito is applied |
 | Huge frontend build context (~100MB+) | Root `.dockerignore` must exclude `**/node_modules/` (frontend/.dockerignore is ignored when context is `.`) |
 | ECS tasks fail to start after push | Images must exist before / right after `enable_ecs = true`; platform must be `linux/arm64` |
 | New image in ECR but app unchanged | ECS does not watch `:latest`; need `--force-new-deployment` (wrapper step 6) |

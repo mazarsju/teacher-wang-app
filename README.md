@@ -381,22 +381,28 @@ source ../../config
 export AWS_REGION="$(terraform output -raw aws_region)"
 export ECR_BACKEND="$(terraform output -raw ecr_backend_repository_url)"
 export ECR_FRONTEND="$(terraform output -raw ecr_frontend_repository_url)"
+export COGNITO_REGION="$AWS_REGION"
+export COGNITO_USER_POOL_ID="$(terraform output -raw cognito_user_pool_id)"
+export COGNITO_APP_CLIENT_ID="$(terraform output -raw cognito_app_client_id)"
+export COGNITO_ISSUER="$(terraform output -raw cognito_issuer)"
+export COGNITO_DOMAIN="$(terraform output -raw cognito_domain)"
 aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin "$(echo "$ECR_BACKEND" | cut -d/ -f1)"
 ```
 
-3. Then from **this repo** (teacher-wang-app):
+Prefer the skill wrapper (reads ECR + Cognito outputs for you):
+
+```bash
+# from teacher-wang-app
+.cursor/skills/update-ecr-images/scripts/push.sh
+```
+
+3. Then from **this repo** (teacher-wang-app), if not using the wrapper:
 
 ```bash
 ./scripts/push-ecr.sh           # both images
 ./scripts/push-ecr.sh backend   # backend only
 ./scripts/push-ecr.sh frontend  # frontend only
-```
-
-Or run the Cursor skill wrapper (login + push in one step):
-
-```bash
-.cursor/skills/update-ecr-images/scripts/push.sh
 ```
 
 Equivalent manual commands:
@@ -408,13 +414,19 @@ docker buildx build --platform linux/arm64 \
 
 docker buildx build --platform linux/arm64 \
   -t "$ECR_FRONTEND:latest" -t "$ECR_FRONTEND:$(git rev-parse --short HEAD)" \
-  -f frontend/Dockerfile --push .
+  -f frontend/Dockerfile \
+  --build-arg "VITE_COGNITO_REGION=$COGNITO_REGION" \
+  --build-arg "VITE_COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" \
+  --build-arg "VITE_COGNITO_APP_CLIENT_ID=$COGNITO_APP_CLIENT_ID" \
+  --build-arg "VITE_COGNITO_DOMAIN=$COGNITO_DOMAIN" \
+  --build-arg "VITE_COGNITO_ISSUER=$COGNITO_ISSUER" \
+  --push .
 ```
 
 | Image | Container port | ECS host port | Runtime notes |
 | --- | --- | --- | --- |
-| Backend | 5000 | 5000 | gunicorn; `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` (or `DATABASE_URL`); Docker `HEALTHCHECK` → `GET /health` (includes DB) |
-| Frontend | 80 | 8080 | nginx; proxies **`/api/*`** → `BACKEND_UPSTREAM/*` (browser uses `API_BASE = "/api"`); Docker `HEALTHCHECK` → `GET /health` (nginx only) |
+| Backend | 5000 | 5000 | gunicorn; `DB_*` + `COGNITO_*` from ECS task def; Docker `HEALTHCHECK` → `GET /health` (includes DB) |
+| Frontend | 80 | 8080 | nginx; proxies **`/api/*`** → `BACKEND_UPSTREAM/*`; Cognito public ids baked at build (`VITE_COGNITO_*`); Docker `HEALTHCHECK` → `GET /health` |
 
 Health endpoints:
 

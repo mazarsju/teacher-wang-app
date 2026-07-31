@@ -44,7 +44,19 @@ cd "$INFRA_ROOT/environments/prod"
 AWS_REGION="$(terraform output -raw aws_region)"
 ECR_BACKEND="$(terraform output -raw ecr_backend_repository_url)"
 ECR_FRONTEND="$(terraform output -raw ecr_frontend_repository_url)"
+
+# Public Cognito ids (from Terraform). Backend also gets these at runtime via the
+# ECS task definition; the frontend SPA needs them as Vite build-args.
+COGNITO_REGION="$AWS_REGION"
+COGNITO_USER_POOL_ID="$(terraform output -raw cognito_user_pool_id)"
+COGNITO_APP_CLIENT_ID="$(terraform output -raw cognito_app_client_id)"
+COGNITO_ISSUER="$(terraform output -raw cognito_issuer)"
+COGNITO_DOMAIN="$(terraform output -raw cognito_domain)"
+
 export AWS_REGION ECR_BACKEND ECR_FRONTEND
+export COGNITO_REGION COGNITO_USER_POOL_ID COGNITO_APP_CLIENT_ID COGNITO_ISSUER COGNITO_DOMAIN
+
+echo "Cognito pool=${COGNITO_USER_POOL_ID} client=${COGNITO_APP_CLIENT_ID} domain=${COGNITO_DOMAIN}"
 
 # Important: do not wrap the registry host in extra quotes (breaks TLS hostname).
 REGISTRY="${ECR_BACKEND%%/*}"
