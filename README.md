@@ -63,6 +63,8 @@ teacher-wang/
 │   │   ├── main.tsx        # React entry point
 │   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences
 │   │   ├── components/
+│   │   └── utils/          # API helpers, Anki sync, Cognito auth client
+│   │   ├── components/
 │   │   ├── types/
 │   │   └── utils/
 │   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
@@ -353,6 +355,7 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 
 - [x] Provision Cognito User Pool (+ app client; optional Google IdP) in teacher-wang-infra and wire pool id / client id / region into ECS
 - [x] Login / sign-up UI (username + password; sign-up also collects email)
+- [x] Cognito username/password sign-in + sign-up from the welcome screen (`frontend/src/utils/auth/`)
 - [x] Flask JWT verification (Cognito JWKS) + `GET /auth/me` probe (`backend/auth.py`)
 - [ ] Protect remaining API routes with `@require_auth` once login is wired end-to-end
 - [ ] Thin `users` / `profiles` table keyed by Cognito `sub`

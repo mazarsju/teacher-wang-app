@@ -1,8 +1,46 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WelcomeAuthPage from "./WelcomeAuthPage";
 
+const {
+  signInWithPassword,
+  signUpWithPassword,
+  confirmSignUpAndSignIn,
+} = vi.hoisted(() => ({
+  signInWithPassword: vi.fn(),
+  signUpWithPassword: vi.fn(),
+  confirmSignUpAndSignIn: vi.fn(),
+}));
+
+vi.mock("../utils/auth/cognitoAuth", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../utils/auth/cognitoAuth")>();
+  return {
+    ...actual,
+    signInWithPassword,
+    signUpWithPassword,
+    confirmSignUpAndSignIn,
+  };
+});
+
 describe("WelcomeAuthPage", () => {
+  beforeEach(() => {
+    signInWithPassword.mockReset();
+    signUpWithPassword.mockReset();
+    confirmSignUpAndSignIn.mockReset();
+    signInWithPassword.mockResolvedValue({
+      accessToken: "access",
+      idToken: "id",
+      refreshToken: "refresh",
+    });
+    signUpWithPassword.mockResolvedValue({ userConfirmed: true });
+    confirmSignUpAndSignIn.mockResolvedValue({
+      accessToken: "access",
+      idToken: "id",
+      refreshToken: "refresh",
+    });
+  });
+
   it("shows the brand, description, and login fields by default", () => {
     render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
 
@@ -39,19 +77,22 @@ describe("WelcomeAuthPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls onAuthenticated after a valid login submit", async () => {
+  it("calls Cognito sign-in then onAuthenticated after a valid login submit", async () => {
     const user = userEvent.setup();
     const onAuthenticated = vi.fn();
     render(<WelcomeAuthPage onAuthenticated={onAuthenticated} />);
 
     await user.type(screen.getByLabelText("Username"), "learner");
-    await user.type(screen.getByLabelText("Password"), "secret");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(onAuthenticated).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(signInWithPassword).toHaveBeenCalledWith("learner", "Secret123");
+      expect(onAuthenticated).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("calls onAuthenticated after a valid sign-up submit", async () => {
+  it("calls Cognito sign-up then signs in when the user is already confirmed", async () => {
     const user = userEvent.setup();
     const onAuthenticated = vi.fn();
     render(<WelcomeAuthPage onAuthenticated={onAuthenticated} />);
@@ -59,10 +100,71 @@ describe("WelcomeAuthPage", () => {
     await user.click(screen.getByRole("button", { name: "Sign up — it's free" }));
     await user.type(screen.getByLabelText("Username"), "learner");
     await user.type(screen.getByLabelText("Email"), "learner@example.com");
-    await user.type(screen.getByLabelText("Password"), "secret");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
-    expect(onAuthenticated).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(signUpWithPassword).toHaveBeenCalledWith(
+        "learner",
+        "learner@example.com",
+        "Secret123",
+      );
+      expect(signInWithPassword).toHaveBeenCalledWith("learner", "Secret123");
+      expect(onAuthenticated).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("asks for an email confirmation code when Cognito requires it", async () => {
+    const user = userEvent.setup();
+    const onAuthenticated = vi.fn();
+    signUpWithPassword.mockResolvedValueOnce({
+      userConfirmed: false,
+      codeDeliveryDestination: "l***@example.com",
+    });
+
+    render(<WelcomeAuthPage onAuthenticated={onAuthenticated} />);
+
+    await user.click(screen.getByRole("button", { name: "Sign up — it's free" }));
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Email"), "learner@example.com");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Confirm your email" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/We sent a code to l\*\*\*@example.com/i)).toBeInTheDocument();
+    expect(onAuthenticated).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("Confirmation code"), "123456");
+    await user.click(screen.getByRole("button", { name: "Confirm and log in" }));
+
+    await waitFor(() => {
+      expect(confirmSignUpAndSignIn).toHaveBeenCalledWith(
+        "learner",
+        "123456",
+        "Secret123",
+      );
+      expect(onAuthenticated).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("shows Cognito errors on failed login", async () => {
+    const user = userEvent.setup();
+    const { CognitoAuthError } = await import("../utils/auth/cognitoAuth");
+    signInWithPassword.mockRejectedValueOnce(
+      new CognitoAuthError("NotAuthorizedException", "Incorrect username or password."),
+    );
+
+    render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "wrong");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(
+      await screen.findByRole("alert"),
+    ).toHaveTextContent("Incorrect username or password.");
   });
 
   it("does not authenticate when required login fields are empty", async () => {
@@ -72,6 +174,7 @@ describe("WelcomeAuthPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
+    expect(signInWithPassword).not.toHaveBeenCalled();
     expect(onAuthenticated).not.toHaveBeenCalled();
   });
 

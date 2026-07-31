@@ -95,7 +95,8 @@ Browser
 ### Drawbacks / follow-ups
 
 * Cognito User Pool / app client / optional Google IdP are provisioned in **teacher-wang-infra**; Flask verifies access tokens via JWKS (`backend/auth.py`, probe route `GET /auth/me`).
-* Most domain routes are still open until login UI + route lockdown land.
-* Local and CI need Cognito env vars (or mocks) for protected routes — see `.env.example`.
+* The welcome screen signs in / signs up via Cognito `USER_PASSWORD_AUTH` / `SignUp` (`frontend/src/utils/auth/cognitoAuth.ts`); tokens live in `sessionStorage`.
+* Most domain routes are still open until route lockdown lands.
+* Local and CI need Cognito env vars (or mocks) for protected routes — see `.env.example` (`COGNITO_*` backend, `VITE_COGNITO_*` frontend).
 * Migration away from Cognito later is painful (hashes not exportable)—accept re-registration or a dual-run plan if that ever matters.
 * Auth alone does not isolate knowledge-base rows; implement [data isolation](data-isolation-archi-decision.md) with multi-user auth.

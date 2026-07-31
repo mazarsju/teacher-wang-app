@@ -2424,6 +2424,24 @@ body {
   color: var(--welcome-ink);
 }
 
+.welcome-auth-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #3d5c66;
+}
+
+.welcome-auth-error {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .welcome-auth-field {
   display: flex;
   flex-direction: column;
@@ -2468,6 +2486,11 @@ body {
 
 .welcome-auth-submit:hover {
   background: #154a59;
+}
+
+.welcome-auth-submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .welcome-auth-submit:active {

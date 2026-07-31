@@ -1,9 +1,15 @@
 /// <reference types="vitest/config" />
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const frontendDir = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
   plugins: [react()],
+  // Load VITE_* from the repo-root `.env` (alongside backend COGNITO_*).
+  envDir: path.resolve(frontendDir, ".."),
   test: {
     globals: true,
     environment: "jsdom",

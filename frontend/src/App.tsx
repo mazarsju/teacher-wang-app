@@ -6,6 +6,7 @@ import HomePage from "./pages/HomePage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
 import PreferencesPage from "./pages/PreferencesPage";
 import WelcomeAuthPage from "./pages/WelcomeAuthPage";
+import { hasStoredSession } from "./utils/auth/tokenStorage";
 
 const PAGES: Record<PageId, ComponentType> = {
   home: HomePage,
@@ -15,7 +16,9 @@ const PAGES: Record<PageId, ComponentType> = {
 };
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() =>
+    hasStoredSession(),
+  );
   const [activePage, setActivePage] = useState<PageId>("home");
   const ActivePage = PAGES[activePage];
 
