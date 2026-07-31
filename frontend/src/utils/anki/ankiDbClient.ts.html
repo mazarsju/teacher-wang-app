@@ -207,7 +207,8 @@
 <a name='L142'></a><a href='#L142'>142</a>
 <a name='L143'></a><a href='#L143'>143</a>
 <a name='L144'></a><a href='#L144'>144</a>
-<a name='L145'></a><a href='#L145'>145</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -240,17 +241,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -259,11 +261,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -365,6 +367,7 @@ import type {
   AnkiSyncResult,
 } from "../../types/anki";
 import { API_BASE } from "../apiBase";
+import { apiFetch } from "../auth/apiFetch";
 import { mappedNotesInDeck } from "./ankiConnect";
 import { readErrorMessage } from "./ankiHelpers";
 import type { SyncDataCharacter } from "./ankiPull";
@@ -388,7 +391,7 @@ export type BackendStatusResponse = {
 export async function fetchSyncData(
   kind: AnkiDeckKind,
 ): Promise&lt;SyncDataResponse&gt; {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE}/anki/sync/data/${encodeURIComponent(kind)}`,
     {
       method: "GET",
@@ -403,7 +406,7 @@ export async function fetchSyncData(
 }
 &nbsp;
 export async function fetchBackendAnkiStatus(): Promise&lt;BackendStatusResponse&gt; {
-  const response = await fetch(`${API_BASE}/anki/status`, { method: "GET" });
+  const response = await apiFetch(`${API_BASE}/anki/status`, { method: "GET" });
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!response.ok) {
 <span class="cstat-no" title="statement not covered" >    throw new Error("Failed to load Anki synchronization status.");</span>
   }
@@ -446,7 +449,7 @@ export async function <span class="fstat-no" title="function not covered" >fetch
 export async function markSynchronizedRequest(
   body: Record&lt;string, unknown&gt;,
 ): Promise&lt;AnkiSyncResult&gt; {
-  const response = await fetch(`${API_BASE}/anki/sync/mark-synchronized`, {
+  const response = await apiFetch(`${API_BASE}/anki/sync/mark-synchronized`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -462,7 +465,7 @@ export async function markSynchronizedRequest(
 export async function pullApplyRequest(
   body: Record&lt;string, unknown&gt;,
 ): Promise&lt;AnkiSyncResult&gt; {
-  const response = await fetch(`${API_BASE}/anki/sync/pull-apply`, {
+  const response = await apiFetch(`${API_BASE}/anki/sync/pull-apply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -481,7 +484,7 @@ export async function persistDeckSetup(body: {
   model_name: string;
   fields: Record&lt;string, string&gt;;
 }): Promise&lt;AnkiDeckSetupResult&gt; {
-  const response = await fetch(`${API_BASE}/anki/decks/setup`, {
+  const response = await apiFetch(`${API_BASE}/anki/decks/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -502,7 +505,7 @@ export async function persistDeckSetup(body: {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-30T12:08:48.299Z
+                at 2026-07-31T15:49:36.417Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
