@@ -64,17 +64,20 @@ describe("ChatModal", () => {
 
     expect(await screen.findByText("Hello")).toBeInTheDocument();
     expect(await screen.findByText("你好！")).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
-      method: "GET",
-    });
-    expect(fetch).toHaveBeenCalledWith("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        character_id: "teacher-wang",
-        messages: [{ role: "user", content: "Hello" }],
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/chat/history/teacher-wang",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/chat",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          character_id: "teacher-wang",
+          messages: [{ role: "user", content: "Hello" }],
+        }),
       }),
-    });
+    );
   });
 
   it("loads and displays saved chat history", async () => {
@@ -212,18 +215,20 @@ describe("ChatModal", () => {
         "Clear all chat history with Teacher Wang? This cannot be undone.",
       ),
     ).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
-      method: "DELETE",
-    });
+    expect(fetch).not.toHaveBeenCalledWith(
+      "/api/chat/history/teacher-wang",
+      expect.objectContaining({ method: "DELETE" }),
+    );
 
     await user.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(
       await screen.findByText("Start a conversation with Teacher Wang."),
     ).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
-      method: "DELETE",
-    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/chat/history/teacher-wang",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 
   it("keeps chat history when clear confirmation is cancelled", async () => {
@@ -260,9 +265,10 @@ describe("ChatModal", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.getByText("Earlier message")).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
-      method: "DELETE",
-    });
+    expect(fetch).not.toHaveBeenCalledWith(
+      "/api/chat/history/teacher-wang",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 
   it("shows an error when the chat request fails", async () => {

@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any
 
 import jwt
-from flask import g, jsonify, request
+from flask import g
 from jwt import PyJWKClient
 
 from backend.auth_config import CognitoConfig, load_cognito_config
-
-F = TypeVar("F", bound=Callable[..., Any])
 
 _jwks_clients: dict[str, PyJWKClient] = {}
 
@@ -40,11 +37,19 @@ def extract_bearer_token(authorization_header: str | None) -> str:
     return parts[1]
 
 
-def verify_access_token(token: str, config: CognitoConfig | None = None) -> dict[str, Any]:
-    """Validate a Cognito access token and return its claims."""
+def _require_config(config: CognitoConfig | None) -> CognitoConfig:
     cfg = config if config is not None else load_cognito_config()
     if cfg is None:
         raise AuthError("Cognito is not configured on this server", status_code=503)
+    return cfg
+
+
+def verify_access_token(
+    token: str,
+    config: CognitoConfig | None = None,
+) -> dict[str, Any]:
+    """Validate a Cognito access token and return its claims."""
+    cfg = _require_config(config)
 
     try:
         signing_key = _jwks_client(cfg).get_signing_key_from_jwt(token)
@@ -71,22 +76,30 @@ def verify_access_token(token: str, config: CognitoConfig | None = None) -> dict
     return claims
 
 
-def require_auth(view: F) -> F:
-    """Decorator: require a valid Cognito access token; store claims on flask.g."""
+def verify_id_token(
+    token: str,
+    config: CognitoConfig | None = None,
+) -> dict[str, Any]:
+    """Validate a Cognito ID token; used only to read verified profile claims."""
+    cfg = _require_config(config)
 
-    @wraps(view)
-    def wrapped(*args: Any, **kwargs: Any):
-        try:
-            token = extract_bearer_token(request.headers.get("Authorization"))
-            claims = verify_access_token(token)
-        except AuthError as exc:
-            return jsonify({"error": exc.message}), exc.status_code
+    try:
+        signing_key = _jwks_client(cfg).get_signing_key_from_jwt(token)
+        claims = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=cfg.issuer,
+            audience=cfg.app_client_id,
+            options={"require": ["exp", "iss", "sub", "aud", "token_use"]},
+        )
+    except jwt.PyJWTError as exc:
+        raise AuthError(f"Invalid ID token: {exc}") from exc
 
-        g.cognito_claims = claims
-        g.cognito_sub = claims["sub"]
-        return view(*args, **kwargs)
+    if claims.get("token_use") != "id":
+        raise AuthError("Token is not a Cognito ID token")
 
-    return wrapped  # type: ignore[return-value]
+    return claims
 
 
 def current_cognito_sub() -> str | None:

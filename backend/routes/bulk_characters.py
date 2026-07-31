@@ -5,6 +5,7 @@ from flask import Blueprint, request
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
 from backend.models import Character, Word, utcnow
+from backend.user_context import current_user_id
 
 bp = Blueprint("bulk_characters", __name__)
 
@@ -27,6 +28,7 @@ def bulk_characters():
         return {"error": "No file provided"}, 400
 
     file_content = uploaded_file.read().decode("utf-8")
+    user_id = current_user_id()
 
     lines = file_content.split("\n")
     for line in lines:
@@ -53,9 +55,10 @@ def bulk_characters():
         except ValueError as exc:
             return {"error": f"{exc} (error found in line: {line})"}, 400
 
-        char_record = Character.query.filter_by(char=char).first()
+        char_record = Character.query.filter_by(user_id=user_id, char=char).first()
         if char_record is None:
             char_kwargs = {
+                "user_id": user_id,
                 "char": char,
                 "pinyin": pinyin + tone,
                 "writting_known": writting_known,
@@ -68,9 +71,9 @@ def bulk_characters():
             char_record.updated_at = updated_at
 
         for word_str in word_strings:
-            word_record = Word.query.filter_by(word=word_str).first()
+            word_record = Word.query.filter_by(user_id=user_id, word=word_str).first()
             if word_record is None:
-                word_record = Word(word=word_str, definition="")
+                word_record = Word(user_id=user_id, word=word_str, definition="")
                 db.session.add(word_record)
 
             if word_record not in char_record.words:
@@ -80,6 +83,6 @@ def bulk_characters():
                 word_record.updated_at = now
 
     db.session.commit()
-    refresh_current_hsk_level()
+    refresh_current_hsk_level(user_id)
 
     return {"message": "File received"}, 200

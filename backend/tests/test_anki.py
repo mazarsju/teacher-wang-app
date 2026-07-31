@@ -8,12 +8,18 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 from postgres_test_case import PostgresTestCase  # noqa: E402
 
 
 class TestAnkiRoutes(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.status_patcher = patch("backend.routes.anki.anki_sync.get_anki_status")
         self.setup_patcher = patch("backend.routes.anki.anki_sync.setup_deck")
         self.sync_data_patcher = patch("backend.routes.anki.anki_sync.get_sync_data")
@@ -83,6 +89,7 @@ class TestAnkiRoutes(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.mock_setup.assert_called_once_with(
+            TEST_USER_ID,
             "mandarin_writting",
             "Characters",
             model_name="Basic",
@@ -132,7 +139,10 @@ class TestAnkiRoutes(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), self.mock_sync_data.return_value)
-        self.mock_sync_data.assert_called_once_with("mandarin_vocabulary")
+        self.mock_sync_data.assert_called_once_with(
+            TEST_USER_ID,
+            "mandarin_vocabulary",
+        )
 
     def test_deleted_anki_connect_proxy_routes_are_gone(self):
         self.assertEqual(self.client.get("/anki/decks").status_code, 404)
@@ -162,6 +172,7 @@ class TestAnkiRoutes(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.mock_mark.assert_called_once_with(
+            TEST_USER_ID,
             "mandarin_vocabulary",
             ["水"],
             action="partial",
@@ -231,12 +242,12 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.settings import ensure_default_settings
 
         super().setUp()
-        ensure_default_settings()
+        ensure_default_settings(self.user_id)
 
     def test_get_anki_status_defaults_to_not_configured(self):
         from backend.anki_sync import get_anki_status
 
-        status = get_anki_status()
+        status = get_anki_status(self.user_id)
 
         self.assertNotIn("connected", status)
         self.assertEqual(status["synchronization_status"], "not_synchronized")
@@ -258,6 +269,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         result = setup_deck(
+            self.user_id,
             "mandarin_writting",
             "Characters",
             model_name="Basic",
@@ -265,9 +277,15 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["status"], "synchronized")
-        self.assertEqual(get_setting(SETTING_ANKI_MANDARIN_WRITTING_DECK), "Characters")
-        self.assertEqual(get_setting(SETTING_ANKI_MANDARIN_WRITTING_MODEL), "Basic")
-        self.assertIn("recto", get_setting(SETTING_ANKI_MANDARIN_WRITTING_FIELDS))
+        self.assertEqual(
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITTING_DECK), "Characters"
+        )
+        self.assertEqual(
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITTING_MODEL), "Basic"
+        )
+        self.assertIn(
+            "recto", get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITTING_FIELDS)
+        )
 
     def test_setup_vocabulary_deck_persists_settings(self):
         from backend.anki_sync import setup_deck
@@ -279,6 +297,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         result = setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="VocabModel",
@@ -290,11 +309,17 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["status"], "synchronized")
-        self.assertEqual(get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_DECK), "Vocab")
         self.assertEqual(
-            get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_MODEL), "VocabModel"
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_VOCABULARY_DECK), "Vocab"
         )
-        self.assertIn("writting", get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS))
+        self.assertEqual(
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_VOCABULARY_MODEL),
+            "VocabModel",
+        )
+        self.assertIn(
+            "writting",
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS),
+        )
 
     def test_overall_status_promotes_when_both_decks_synchronized(self):
         from backend.anki_sync import (
@@ -305,6 +330,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.settings import SETTING_ANKI_SYNCHRONIZATION_STATUS, get_setting
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -314,18 +340,22 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 "definition": "Extra",
             },
         )
-        self.assertEqual(get_overall_anki_synchronization_status(), "not_synchronized")
+        self.assertEqual(
+            get_overall_anki_synchronization_status(self.user_id), "not_synchronized"
+        )
         setup_deck(
+            self.user_id,
             "mandarin_writting",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
         )
-        status = maybe_promote_overall_anki_synchronization()
+        status = maybe_promote_overall_anki_synchronization(self.user_id)
 
         self.assertEqual(status, "synchronized")
         self.assertEqual(
-            get_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS), "synchronized"
+            get_setting(self.user_id, SETTING_ANKI_SYNCHRONIZATION_STATUS),
+            "synchronized",
         )
 
     def test_overall_status_stays_synchronized_when_new_pending_cards_exist(self):
@@ -338,6 +368,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -348,16 +379,29 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             },
         )
         setup_deck(
+            self.user_id,
             "mandarin_writting",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
         )
-        set_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS, "synchronized", commit=True)
-        db.session.add(Word(word="火", definition="fire", synchronized=False))
+        set_setting(
+            self.user_id,
+            SETTING_ANKI_SYNCHRONIZATION_STATUS,
+            "synchronized",
+            commit=True,
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="火",
+                definition="fire",
+                synchronized=False,
+            )
+        )
         db.session.commit()
 
-        status = get_anki_status()
+        status = get_anki_status(self.user_id)
 
         self.assertEqual(status["synchronization_status"], "synchronized")
         self.assertEqual(status["pending_push_estimate"], 1)
@@ -371,6 +415,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.models import Character, Word
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -380,11 +425,25 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 "definition": "Extra",
             },
         )
-        db.session.add(Character(char="水", pinyin="shui3", writting_known=False))
-        db.session.add(Word(word="水", definition="water", synchronized=False))
+        db.session.add(
+            Character(
+                user_id=self.user_id,
+                char="水",
+                pinyin="shui3",
+                writting_known=False,
+            )
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="水",
+                definition="water",
+                synchronized=False,
+            )
+        )
         db.session.commit()
 
-        payload = get_sync_data("mandarin_vocabulary")
+        payload = get_sync_data(self.user_id, "mandarin_vocabulary")
 
         self.assertEqual(payload["kind"], "mandarin_vocabulary")
         self.assertEqual(len(payload["push_cards"]), 1)
@@ -398,6 +457,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.models import Word
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -407,11 +467,26 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 "definition": "Extra",
             },
         )
-        db.session.add(Word(word="水", definition="water", synchronized=False))
-        db.session.add(Word(word="火", definition="fire", synchronized=False))
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="水",
+                definition="water",
+                synchronized=False,
+            )
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="火",
+                definition="fire",
+                synchronized=False,
+            )
+        )
         db.session.commit()
 
         result = apply_push_completion(
+            self.user_id,
             "mandarin_vocabulary",
             "partial",
             succeeded_card_ids=["水"],
@@ -420,8 +495,12 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["ignored"], 1)
-        self.assertTrue(Word.query.filter_by(word="水").one().synchronized)
-        self.assertTrue(Word.query.filter_by(word="火").one().synchronized)
+        self.assertTrue(
+            Word.query.filter_by(user_id=self.user_id, word="水").one().synchronized
+        )
+        self.assertTrue(
+            Word.query.filter_by(user_id=self.user_id, word="火").one().synchronized
+        )
 
     def test_cancel_all_marks_words_synchronized(self):
         from backend.anki_sync import apply_push_completion, setup_deck
@@ -429,6 +508,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.models import Word
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -438,10 +518,18 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 "definition": "Extra",
             },
         )
-        db.session.add(Word(word="猫", definition="cat", synchronized=False))
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="猫",
+                definition="cat",
+                synchronized=False,
+            )
+        )
         db.session.commit()
 
         result = apply_push_completion(
+            self.user_id,
             "mandarin_vocabulary",
             "cancel_all",
             succeeded_card_ids=[],
@@ -449,13 +537,16 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["ignored"], 1)
-        self.assertTrue(Word.query.filter_by(word="猫").one().synchronized)
+        self.assertTrue(
+            Word.query.filter_by(user_id=self.user_id, word="猫").one().synchronized
+        )
 
     def test_pull_import_vocabulary_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.models import Character, Word
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -467,6 +558,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         result = apply_pull(
+            self.user_id,
             "mandarin_vocabulary",
             "synchronize_all",
             cards=[
@@ -482,16 +574,18 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["characters_added"], 1)
-        word = Word.query.filter_by(word="水").one()
+        word = Word.query.filter_by(user_id=self.user_id, word="水").one()
         self.assertTrue(word.synchronized)
         self.assertEqual(word.definition, "water")
-        self.assertTrue(Character.query.filter_by(char="水").one().synchronized)
+        character = Character.query.filter_by(user_id=self.user_id, char="水").one()
+        self.assertTrue(character.synchronized)
 
     def test_pull_ignore_vocabulary_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.models import IgnoreVocabCard
 
         setup_deck(
+            self.user_id,
             "mandarin_vocabulary",
             "Vocab",
             model_name="Basic",
@@ -503,6 +597,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         result = apply_pull(
+            self.user_id,
             "mandarin_vocabulary",
             "cancel_all",
             cards=[],
@@ -518,17 +613,25 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.models import Character
 
         setup_deck(
+            self.user_id,
             "mandarin_writting",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
         )
         db.session.add(
-            Character(char="水", pinyin="shui3", writting_known=False, synchronized=False)
+            Character(
+                user_id=self.user_id,
+                char="水",
+                pinyin="shui3",
+                writting_known=False,
+                synchronized=False,
+            )
         )
         db.session.commit()
 
         result = apply_pull(
+            self.user_id,
             "mandarin_writting",
             "synchronize_all",
             cards=[{"id": "水", "recto": "shui3", "verso": "水"}],
@@ -536,7 +639,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["added"], 1)
-        updated = Character.query.filter_by(char="水").one()
+        updated = Character.query.filter_by(user_id=self.user_id, char="水").one()
         self.assertTrue(updated.writting_known)
         self.assertTrue(updated.synchronized)
 
@@ -545,6 +648,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.models import IgnoreWrittingCard
 
         setup_deck(
+            self.user_id,
             "mandarin_writting",
             "Writing",
             model_name="Basic",
@@ -552,6 +656,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         result = apply_pull(
+            self.user_id,
             "mandarin_writting",
             "cancel_all",
             cards=[],
@@ -570,17 +675,24 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.models import Character
 
         setup_deck(
+            self.user_id,
             "mandarin_writting",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
         )
         db.session.add(
-            Character(char="孤", pinyin="gu1", writting_known=True, synchronized=False)
+            Character(
+                user_id=self.user_id,
+                char="孤",
+                pinyin="gu1",
+                writting_known=True,
+                synchronized=False,
+            )
         )
         db.session.commit()
 
-        payload = get_sync_data("mandarin_writting")
+        payload = get_sync_data(self.user_id, "mandarin_writting")
 
         self.assertEqual(payload["unsyncable"], ["孤"])
         self.assertEqual(payload["push_cards"], [])
@@ -590,11 +702,21 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         from backend.extensions import db
         from backend.models import Character, Word
 
-        db.session.add(Character(char="除", pinyin="chu2", writting_known=False))
-        db.session.add(Character(char="了", pinyin="le", writting_known=False))
-        db.session.add(Character(char="以", pinyin="yi3", writting_known=False))
-        db.session.add(Character(char="外", pinyin="wai4", writting_known=False))
-        word = Word(word="除了。。以外。。", definition="except", synchronized=False)
+        for char, pinyin in (("除", "chu2"), ("了", "le"), ("以", "yi3"), ("外", "wai4")):
+            db.session.add(
+                Character(
+                    user_id=self.user_id,
+                    char=char,
+                    pinyin=pinyin,
+                    writting_known=False,
+                )
+            )
+        word = Word(
+            user_id=self.user_id,
+            word="除了。。以外。。",
+            definition="except",
+            synchronized=False,
+        )
         db.session.add(word)
         db.session.commit()
 

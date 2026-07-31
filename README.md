@@ -99,7 +99,7 @@ Longer design notes live under `docs/`:
 - [Multi-agent chat](docs/ai-agents-archi-decision.md) — character, grammar teacher, and challenge judge collaboration
 - [PostgreSQL](docs/postgres-archi-decision.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
 - [Authentication & credentials](docs/auth-archi-decision.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
-- [Data isolation](docs/data-isolation-archi-decision.md) — `user_id` + RLS + shared read-only catalogs (Proposed; details TBD)
+- [Data isolation](docs/data-isolation-archi-decision.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
 
 Obsolete decisions are kept under [`docs/archived/`](docs/archived/) (see `agent.md`), for example [SQLite → PostgreSQL](docs/archived/sqlite-to-postgres-archi-decision.md).
 
@@ -161,24 +161,29 @@ python3 -m alembic upgrade head   # also runs automatically on app start
 
 Schema is managed with **Alembic** (`backend/migrations/`). See [PostgreSQL](docs/postgres-archi-decision.md) for details.
 
-On first start the app seeds HSK content and default settings. Main tables:
+On first start the app seeds the shared HSK content; each user's default settings are seeded on their first authenticated request.
 
-| Table | Columns |
-| --- | --- |
-| `character` | `char` (PK), `pinyin` (max 8 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
-| `words` | `word` (PK, max 10 chars), `definition` (max 100 chars, nullable), `synchronized` (boolean, default false), `updated_at` (datetime) |
-| `character_word` | many-to-many link between `character` and `words` |
-| `hsk_words` | `word` (PK), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
-| `hsk_characters` | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
-| `hsk_word_character` | many-to-many link between `hsk_words` and `hsk_characters` |
-| `settings` | `key` / `value` app settings (Anki mappings, HSK level, …) |
-| `ignore_vocab_card` / `ignore_writting_card` | Anki pull ignore lists |
-| `token_count` | LLM token usage events |
+Learner data is **private per user**: those tables start their primary key with `user_id` (the Cognito `sub`, FK → `users.id`) and are hash-partitioned on it (8 partitions). The HSK catalog is shared and unpartitioned. See [data isolation](docs/data-isolation-archi-decision.md).
 
-You can preload characters and words with the bulk upload endpoint (see below), for example:
+| Table | Scope | Columns |
+| --- | --- | --- |
+| `users` | — | `id` (PK, Cognito `sub`), `username` (unique), `email` (unique), `plan` (default `free`), `last_connexion` |
+| `character` | private | PK `(user_id, char)`, `pinyin` (max 8 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
+| `words` | private | PK `(user_id, word)` (max 10 chars), `definition` (max 100 chars, nullable), `synchronized` (boolean, default false), `updated_at` (datetime) |
+| `character_word` | private | PK `(user_id, character_char, word)` — many-to-many link between `character` and `words` |
+| `settings` | private | PK `(user_id, key)`, `value` (Anki mappings, HSK level, …) |
+| `ignore_vocab_card` / `ignore_writting_card` | private | PK `(user_id, writting)` / `(user_id, recto)` — Anki pull ignore lists |
+| `token_count` | private | PK `(user_id, recorded_at, type)`, `tokens`, `price` — LLM token usage events |
+| `hsk_words` | shared | `word` (PK), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
+| `hsk_characters` | shared | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
+| `hsk_word_character` | shared | many-to-many link between `hsk_words` and `hsk_characters` |
+
+You can preload your characters and words with the bulk upload endpoint (see below), for example:
 
 ```bash
-curl -X POST -F "file=@db.txt" http://127.0.0.1:5000/characters/bulk
+curl -X POST -F "file=@db.txt" \
+  -H "Authorization: Bearer $COGNITO_ACCESS_TOKEN" \
+  http://127.0.0.1:5000/characters/bulk
 ```
 
 #### LLM configuration
@@ -216,9 +221,12 @@ Architecture notes: [AnkiConnect bridge](docs/anki-connect-archi-decision.md), [
 
 #### API endpoints
 
+Every route below except `/health` requires `Authorization: Bearer <cognito_access_token>` (plus the optional `X-Id-Token` companion header) and only ever reads or writes the authenticated user's rows — see [data isolation](docs/data-isolation-archi-decision.md).
+
 | Method | Route | Description |
 | --- | --- | --- |
-| `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) |
+| `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) — the only public route |
+| `GET` | `/auth/me` | Current user (`username`, `email`, `plan`) from the `users` row |
 | `GET` | `/llm-config` | Read LLM API key and model from `.config.txt` |
 | `POST` | `/llm-config` | Update LLM API key and/or model in `.config.txt` |
 | `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
@@ -357,12 +365,15 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 - [x] Login / sign-up UI (username + password; sign-up also collects email)
 - [x] Cognito username/password sign-in + sign-up from the welcome screen (`frontend/src/utils/auth/`)
 - [x] Flask JWT verification (Cognito JWKS) + `GET /auth/me` probe (`backend/auth.py`)
-- [ ] Protect remaining API routes with `@require_auth` once login is wired end-to-end
-- [ ] Thin `users` / `profiles` table keyed by Cognito `sub`
-- [ ] Tag private tables with `user_id`, enforce filters in the app, and add PostgreSQL RLS
-- [ ] Move shared catalogs (e.g. HSK seeds) to `shared` / `shared_*` with app role SELECT-only
+- [x] Protect every API route (`before_request` hook; only `/health` and `OPTIONS` stay public)
+- [x] `users` table keyed by Cognito `sub`, upserted on each authenticated request (`backend/user_context.py`)
+- [x] Tag private tables with `user_id` (first PK column) and enforce filters in the app
+- [x] Hash-partition private tables on `user_id` (modulus 8) in Alembic
+- [x] Frontend sends `Authorization` + `X-Id-Token` on API calls (`frontend/src/utils/auth/apiFetch.ts`)
+- [x] Update [data-isolation-archi-decision.md](docs/data-isolation-archi-decision.md) with concrete schema and migration details
+- [ ] Add PostgreSQL RLS as a backstop behind the app-level filters
+- [ ] Split `app` (SELECT on HSK, CRUD on private) and `migrator` DB roles
 - [ ] Google SSO via Cognito federated IdP (`TF_VAR_cognito_google_client_*` in infra)
-- [ ] Update [data-isolation-archi-decision.md](docs/data-isolation-archi-decision.md) with concrete schema, RLS, and migration details
 
 #### Push images to AWS ECR (from this Mac)
 

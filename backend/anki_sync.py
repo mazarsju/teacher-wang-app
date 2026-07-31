@@ -13,11 +13,9 @@ from backend.settings import (
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
     SETTING_ANKI_MANDARIN_VOCABULARY_MODEL,
-    SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED,
     SETTING_ANKI_MANDARIN_WRITTING_DECK,
     SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
     SETTING_ANKI_MANDARIN_WRITTING_MODEL,
-    SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED,
     SETTING_ANKI_SYNCHRONIZATION_STATUS,
     get_setting,
     set_setting,
@@ -69,24 +67,40 @@ def _fields_complete(kind: DeckKind, fields: dict[str, str]) -> bool:
     return all(fields.get(key, "").strip() != "" for key in REQUIRED_FIELDS[kind])
 
 
-def _pending_vocabulary_words() -> list[Word]:
-    return Word.query.filter_by(synchronized=False).order_by(Word.word).all()
-
-
-def _pending_writting_characters() -> list[Character]:
+def _pending_vocabulary_words(user_id: str) -> list[Word]:
     return (
-        Character.query.filter_by(writting_known=True, synchronized=False)
+        Word.query.filter_by(user_id=user_id, synchronized=False)
+        .order_by(Word.word)
+        .all()
+    )
+
+
+def _pending_writting_characters(user_id: str) -> list[Character]:
+    return (
+        Character.query.filter_by(
+            user_id=user_id,
+            writting_known=True,
+            synchronized=False,
+        )
         .order_by(Character.char)
         .all()
     )
 
 
-def _vocabulary_card_pinyin(word_text: str) -> str:
+def _find_character(user_id: str, char: str) -> Character | None:
+    return Character.query.filter_by(user_id=user_id, char=char).first()
+
+
+def _find_word(user_id: str, word: str) -> Word | None:
+    return Word.query.filter_by(user_id=user_id, word=word).first()
+
+
+def _vocabulary_card_pinyin(user_id: str, word_text: str) -> str:
     """Build pinyin for a word, keeping unrecognized characters as-is."""
     pieces: list[str] = []
     last_was_pinyin = False
     for char in word_text:
-        character = Character.query.filter_by(char=char).first()
+        character = _find_character(user_id, char)
         if character is not None:
             if last_was_pinyin:
                 pieces.append(" ")
@@ -102,7 +116,7 @@ def vocabulary_card_from_word(word: Word) -> dict[str, str]:
     return {
         "id": word.word,
         "writting": word.word,
-        "pinyin": _vocabulary_card_pinyin(word.word),
+        "pinyin": _vocabulary_card_pinyin(word.user_id, word.word),
         "definition": word.definition or "",
     }
 
@@ -111,7 +125,7 @@ def _is_word_eligible_for_writting(word: Word) -> bool:
     if word.definition is None or word.definition.strip() == "":
         return False
     for char in word.word:
-        character = Character.query.filter_by(char=char).first()
+        character = _find_character(word.user_id, char)
         if character is None or not character.writting_known:
             return False
     return True
@@ -138,7 +152,7 @@ def writting_card_from_character(character: Character) -> dict[str, str] | None:
     if word is None:
         return None
     definition = (word.definition or "").strip()
-    pinyin = _vocabulary_card_pinyin(word.word)
+    pinyin = _vocabulary_card_pinyin(word.user_id, word.word)
     recto = f"{definition} ({pinyin})"
     return {
         "id": recto,
@@ -168,11 +182,12 @@ def _character_ids_from_writting_cards(cards: list[dict[str, Any]]) -> list[str]
     return ids
 
 
-def _pending_count_for_kind(kind: DeckKind) -> int:
+def _pending_count_for_kind(user_id: str, kind: DeckKind) -> int:
     if kind == "mandarin_vocabulary":
-        return Word.query.filter_by(synchronized=False).count()
+        return Word.query.filter_by(user_id=user_id, synchronized=False).count()
     if kind == "mandarin_writting":
         return Character.query.filter_by(
+            user_id=user_id,
             writting_known=True,
             synchronized=False,
         ).count()
@@ -180,6 +195,7 @@ def _pending_count_for_kind(kind: DeckKind) -> int:
 
 
 def deck_status_for_mapping(
+    user_id: str,
     deck_name: str,
     model_name: str,
     fields: dict[str, str],
@@ -196,7 +212,9 @@ def deck_status_for_mapping(
     ):
         return "not_configured"
     pending_push = (
-        push_count if push_count is not None else _pending_count_for_kind(kind)
+        push_count
+        if push_count is not None
+        else _pending_count_for_kind(user_id, kind)
     )
     if pending_push > 0 or unsyncable_count > 0:
         return "not_synchronized"
@@ -219,20 +237,23 @@ def status_from_sync_counts(
     return "synchronized"
 
 
-def get_overall_anki_synchronization_status() -> OverallAnkiSynchronizationStatus:
-    raw = get_setting(SETTING_ANKI_SYNCHRONIZATION_STATUS, "not_synchronized")
+def get_overall_anki_synchronization_status(
+    user_id: str,
+) -> OverallAnkiSynchronizationStatus:
+    raw = get_setting(user_id, SETTING_ANKI_SYNCHRONIZATION_STATUS, "not_synchronized")
     if raw == "synchronized":
         return "synchronized"
     return "not_synchronized"
 
 
-def pending_anki_push_estimate() -> int:
-    return _pending_count_for_kind("mandarin_vocabulary") + _pending_count_for_kind(
-        "mandarin_writting"
-    )
+def pending_anki_push_estimate(user_id: str) -> int:
+    return _pending_count_for_kind(
+        user_id, "mandarin_vocabulary"
+    ) + _pending_count_for_kind(user_id, "mandarin_writting")
 
 
 def maybe_promote_overall_anki_synchronization(
+    user_id: str,
     *,
     vocabulary_status: DeckStatus | None = None,
     writting_status: DeckStatus | None = None,
@@ -241,19 +262,20 @@ def maybe_promote_overall_anki_synchronization(
 
     Sticky: after the first complete synchronization it stays synchronized.
     """
-    current = get_overall_anki_synchronization_status()
+    current = get_overall_anki_synchronization_status(user_id)
     if current == "synchronized":
         return current
 
     vocab_status = vocabulary_status
     if vocab_status is None:
-        vocab_status = get_deck_mapping("mandarin_vocabulary")["status"]
+        vocab_status = get_deck_mapping(user_id, "mandarin_vocabulary")["status"]
     write_status = writting_status
     if write_status is None:
-        write_status = get_deck_mapping("mandarin_writting")["status"]
+        write_status = get_deck_mapping(user_id, "mandarin_writting")["status"]
 
     if vocab_status == "synchronized" and write_status == "synchronized":
         set_setting(
+            user_id,
             SETTING_ANKI_SYNCHRONIZATION_STATUS,
             "synchronized",
             commit=True,
@@ -262,69 +284,54 @@ def maybe_promote_overall_anki_synchronization(
     return current
 
 
-def _parse_string_list_setting(raw: str) -> list[str]:
-    if raw.strip() == "":
-        return []
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(data, list):
-        return []
-    return [str(item) for item in data if isinstance(item, str) and item.strip() != ""]
-
-
-def _migrate_pull_ignored_settings_to_tables() -> None:
-    """One-time copy of legacy JSON ignore settings into ignore_* tables."""
-    vocab_raw = get_setting(SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED, "[]")
-    for writting in _parse_string_list_setting(vocab_raw):
-        if IgnoreVocabCard.query.filter_by(writting=writting).first() is None:
-            db.session.add(IgnoreVocabCard(writting=writting))
-    writting_raw = get_setting(SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED, "[]")
-    for recto in _parse_string_list_setting(writting_raw):
-        if IgnoreWrittingCard.query.filter_by(recto=recto).first() is None:
-            db.session.add(IgnoreWrittingCard(recto=recto))
-    db.session.commit()
-
-
-def _get_vocabulary_pull_ignored() -> set[str]:
+def _get_vocabulary_pull_ignored(user_id: str) -> set[str]:
     return {
         row.writting
-        for row in IgnoreVocabCard.query.with_entities(IgnoreVocabCard.writting).all()
+        for row in IgnoreVocabCard.query.filter_by(user_id=user_id)
+        .with_entities(IgnoreVocabCard.writting)
+        .all()
     }
 
 
-def _add_vocabulary_pull_ignored(writtings: list[str]) -> int:
+def _add_vocabulary_pull_ignored(user_id: str, writtings: list[str]) -> int:
     added = 0
     for writting in writtings:
         key = writting.strip()
         if key == "":
             continue
-        if IgnoreVocabCard.query.filter_by(writting=key).first() is not None:
+        if (
+            IgnoreVocabCard.query.filter_by(user_id=user_id, writting=key).first()
+            is not None
+        ):
             continue
-        db.session.add(IgnoreVocabCard(writting=key))
+        db.session.add(IgnoreVocabCard(user_id=user_id, writting=key))
         added += 1
     if added:
         db.session.commit()
     return added
 
 
-def _get_writting_pull_ignored() -> set[str]:
+def _get_writting_pull_ignored(user_id: str) -> set[str]:
     return {
         row.recto
-        for row in IgnoreWrittingCard.query.with_entities(IgnoreWrittingCard.recto).all()
+        for row in IgnoreWrittingCard.query.filter_by(user_id=user_id)
+        .with_entities(IgnoreWrittingCard.recto)
+        .all()
     }
 
 
-def _add_writting_pull_ignored(rectos: list[str]) -> int:
+def _add_writting_pull_ignored(user_id: str, rectos: list[str]) -> int:
     added = 0
     for recto in rectos:
         key = recto.strip()
         if key == "":
             continue
-        if IgnoreWrittingCard.query.filter_by(recto=key).first() is not None:
+        if (
+            IgnoreWrittingCard.query.filter_by(user_id=user_id, recto=key).first()
+            is not None
+        ):
             continue
-        db.session.add(IgnoreWrittingCard(recto=key))
+        db.session.add(IgnoreWrittingCard(user_id=user_id, recto=key))
         added += 1
     if added:
         db.session.commit()
@@ -362,6 +369,7 @@ def _resolved_char_pinyin(
 
 
 def _ensure_characters_from_pinyin(
+    user_id: str,
     word_text: str,
     pinyin_field: str,
     guesses: dict[str, str] | None = None,
@@ -370,13 +378,14 @@ def _ensure_characters_from_pinyin(
     created: list[str] = []
     now = utcnow()
     for char, card_pinyin in _pair_writting_with_pinyin_tokens(word_text, pinyin_field):
-        if Character.query.filter_by(char=char).first() is not None:
+        if _find_character(user_id, char) is not None:
             continue
         pinyin = _resolved_char_pinyin(card_pinyin, char, guess_map)
         if pinyin is None:
             continue
         db.session.add(
             Character(
+                user_id=user_id,
                 char=char,
                 pinyin=pinyin,
                 writting_known=False,
@@ -390,6 +399,7 @@ def _ensure_characters_from_pinyin(
 
 
 def _import_vocabulary_card(
+    user_id: str,
     card: dict[str, Any],
     guesses: dict[str, str] | None = None,
 ) -> tuple[bool, int]:
@@ -397,13 +407,14 @@ def _import_vocabulary_card(
     han_chars = [char for char in word_text if is_han_character(char)]
     if word_text == "" or not han_chars or len(word_text) > 10:
         return False, 0
-    if Word.query.filter_by(word=word_text).first() is not None:
+    if _find_word(user_id, word_text) is not None:
         return False, 0
 
     definition = str(card.get("definition") or "").strip()[:100]
     pinyin_field = str(card.get("pinyin") or "")
     pinyin_blank = pinyin_field.strip() == ""
     created_chars = _ensure_characters_from_pinyin(
+        user_id,
         word_text,
         pinyin_field,
         guesses,
@@ -412,12 +423,11 @@ def _import_vocabulary_card(
     missing = [
         char
         for char in word_text
-        if is_han_character(char)
-        and Character.query.filter_by(char=char).first() is None
+        if is_han_character(char) and _find_character(user_id, char) is None
     ]
     if missing and not pinyin_blank:
         for char in created_chars:
-            record = Character.query.filter_by(char=char).first()
+            record = _find_character(user_id, char)
             if record is not None:
                 db.session.delete(record)
         db.session.commit()
@@ -425,6 +435,7 @@ def _import_vocabulary_card(
 
     now = utcnow()
     word_record = Word(
+        user_id=user_id,
         word=word_text,
         definition=definition or None,
         synchronized=True,
@@ -434,7 +445,7 @@ def _import_vocabulary_card(
     for char in word_text:
         if not is_han_character(char):
             continue
-        char_record = Character.query.filter_by(char=char).first()
+        char_record = _find_character(user_id, char)
         if char_record is None:
             continue
         if word_record not in char_record.words:
@@ -444,11 +455,11 @@ def _import_vocabulary_card(
     return True, len(created_chars)
 
 
-def _import_writting_pull_card(card: dict[str, Any]) -> bool:
+def _import_writting_pull_card(user_id: str, card: dict[str, Any]) -> bool:
     char = str(card.get("id") or card.get("verso") or "").strip()
     if char == "" or not is_han_character(char):
         return False
-    record = Character.query.filter_by(char=char).first()
+    record = _find_character(user_id, char)
     if record is None:
         return False
     now = utcnow()
@@ -459,12 +470,12 @@ def _import_writting_pull_card(card: dict[str, Any]) -> bool:
     return True
 
 
-def _mark_words_synchronized(word_ids: list[str]) -> int:
+def _mark_words_synchronized(user_id: str, word_ids: list[str]) -> int:
     if not word_ids:
         return 0
     updated = 0
     for word_id in word_ids:
-        word = Word.query.filter_by(word=word_id).first()
+        word = _find_word(user_id, word_id)
         if word is None or word.synchronized:
             continue
         word.synchronized = True
@@ -473,12 +484,12 @@ def _mark_words_synchronized(word_ids: list[str]) -> int:
     return updated
 
 
-def _mark_characters_synchronized(char_ids: list[str]) -> int:
+def _mark_characters_synchronized(user_id: str, char_ids: list[str]) -> int:
     if not char_ids:
         return 0
     updated = 0
     for char_id in char_ids:
-        character = Character.query.filter_by(char=char_id).first()
+        character = _find_character(user_id, char_id)
         if character is None or character.synchronized:
             continue
         character.synchronized = True
@@ -487,10 +498,10 @@ def _mark_characters_synchronized(char_ids: list[str]) -> int:
     return updated
 
 
-def mark_synchronized(kind: DeckKind, ids: list[str]) -> int:
+def mark_synchronized(user_id: str, kind: DeckKind, ids: list[str]) -> int:
     if kind == "mandarin_vocabulary":
-        return _mark_words_synchronized(ids)
-    return _mark_characters_synchronized(ids)
+        return _mark_words_synchronized(user_id, ids)
+    return _mark_characters_synchronized(user_id, ids)
 
 
 def _sync_mark_ids_for_cards(
@@ -502,29 +513,36 @@ def _sync_mark_ids_for_cards(
     return _character_ids_from_writting_cards(cards)
 
 
-def get_deck_mapping(kind: DeckKind) -> dict[str, Any]:
-    deck_name = get_setting(DECK_SETTING_KEYS[kind], "")
-    model_name = get_setting(MODEL_SETTING_KEYS[kind], "")
-    fields = _parse_fields(get_setting(FIELDS_SETTING_KEYS[kind], ""))
+def get_deck_mapping(user_id: str, kind: DeckKind) -> dict[str, Any]:
+    deck_name = get_setting(user_id, DECK_SETTING_KEYS[kind], "")
+    model_name = get_setting(user_id, MODEL_SETTING_KEYS[kind], "")
+    fields = _parse_fields(get_setting(user_id, FIELDS_SETTING_KEYS[kind], ""))
     return {
-        "status": deck_status_for_mapping(deck_name, model_name, fields, kind),
+        "status": deck_status_for_mapping(
+            user_id,
+            deck_name,
+            model_name,
+            fields,
+            kind,
+        ),
         "deck_name": deck_name,
         "model_name": model_name,
         "fields": fields,
     }
 
 
-def get_anki_status() -> dict[str, Any]:
+def get_anki_status(user_id: str) -> dict[str, Any]:
     """DB-only status. Frontend sets ``connected`` via AnkiConnect."""
-    vocabulary = get_deck_mapping("mandarin_vocabulary")
-    writting = get_deck_mapping("mandarin_writting")
+    vocabulary = get_deck_mapping(user_id, "mandarin_vocabulary")
+    writting = get_deck_mapping(user_id, "mandarin_writting")
     synchronization_status = maybe_promote_overall_anki_synchronization(
+        user_id,
         vocabulary_status=vocabulary["status"],
         writting_status=writting["status"],
     )
     return {
         "synchronization_status": synchronization_status,
-        "pending_push_estimate": pending_anki_push_estimate(),
+        "pending_push_estimate": pending_anki_push_estimate(user_id),
         "decks": {
             "mandarin_vocabulary": vocabulary,
             "mandarin_writting": writting,
@@ -553,6 +571,7 @@ def validate_fields(kind: DeckKind, fields: dict[str, str]) -> dict[str, str]:
 
 
 def setup_deck(
+    user_id: str,
     kind: DeckKind,
     deck_name: str,
     *,
@@ -569,42 +588,61 @@ def setup_deck(
 
     cleaned_fields = validate_fields(kind, fields)
 
-    set_setting(DECK_SETTING_KEYS[kind], trimmed_deck, commit=False)
-    set_setting(MODEL_SETTING_KEYS[kind], trimmed_model, commit=False)
+    set_setting(user_id, DECK_SETTING_KEYS[kind], trimmed_deck, commit=False)
+    set_setting(user_id, MODEL_SETTING_KEYS[kind], trimmed_model, commit=False)
     set_setting(
+        user_id,
         FIELDS_SETTING_KEYS[kind],
         json.dumps(cleaned_fields, ensure_ascii=False),
         commit=True,
     )
-    return get_deck_mapping(kind)
+    return get_deck_mapping(user_id, kind)
 
 
-def _vocabulary_push_payload(mapping: dict[str, Any]) -> dict[str, Any]:
-    cards = [vocabulary_card_from_word(word) for word in _pending_vocabulary_words()]
+def _local_words(user_id: str) -> list[str]:
+    return [
+        row.word
+        for row in Word.query.filter_by(user_id=user_id)
+        .with_entities(Word.word)
+        .all()
+    ]
+
+
+def _local_characters(user_id: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "char": row.char,
+            "pinyin": row.pinyin,
+            "writting_known": bool(row.writting_known),
+            "synchronized": bool(row.synchronized),
+        }
+        for row in Character.query.filter_by(user_id=user_id)
+        .order_by(Character.char)
+        .all()
+    ]
+
+
+def _vocabulary_push_payload(user_id: str, mapping: dict[str, Any]) -> dict[str, Any]:
+    cards = [
+        vocabulary_card_from_word(word)
+        for word in _pending_vocabulary_words(user_id)
+    ]
     return {
         "kind": "mandarin_vocabulary",
         "push_cards": cards,
         "unsyncable": [],
-        "local_words": [row.word for row in Word.query.with_entities(Word.word).all()],
-        "characters": [
-            {
-                "char": row.char,
-                "pinyin": row.pinyin,
-                "writting_known": bool(row.writting_known),
-                "synchronized": bool(row.synchronized),
-            }
-            for row in Character.query.order_by(Character.char).all()
-        ],
-        "ignore_keys": sorted(_get_vocabulary_pull_ignored()),
+        "local_words": _local_words(user_id),
+        "characters": _local_characters(user_id),
+        "ignore_keys": sorted(_get_vocabulary_pull_ignored(user_id)),
         "deck": mapping,
     }
 
 
-def _writting_push_payload(mapping: dict[str, Any]) -> dict[str, Any]:
+def _writting_push_payload(user_id: str, mapping: dict[str, Any]) -> dict[str, Any]:
     cards: list[dict[str, str]] = []
     unsyncable: list[str] = []
     seen_rectos: set[str] = set()
-    for character in _pending_writting_characters():
+    for character in _pending_writting_characters(user_id):
         card = writting_card_from_character(character)
         if card is None:
             unsyncable.append(character.char)
@@ -618,34 +656,27 @@ def _writting_push_payload(mapping: dict[str, Any]) -> dict[str, Any]:
         "kind": "mandarin_writting",
         "push_cards": cards,
         "unsyncable": unsyncable,
-        "local_words": [row.word for row in Word.query.with_entities(Word.word).all()],
-        "characters": [
-            {
-                "char": row.char,
-                "pinyin": row.pinyin,
-                "writting_known": bool(row.writting_known),
-                "synchronized": bool(row.synchronized),
-            }
-            for row in Character.query.order_by(Character.char).all()
-        ],
-        "ignore_keys": sorted(_get_writting_pull_ignored()),
+        "local_words": _local_words(user_id),
+        "characters": _local_characters(user_id),
+        "ignore_keys": sorted(_get_writting_pull_ignored(user_id)),
         "deck": mapping,
     }
 
 
-def get_sync_data(kind: DeckKind) -> dict[str, Any]:
-    mapping = get_deck_mapping(kind)
+def get_sync_data(user_id: str, kind: DeckKind) -> dict[str, Any]:
+    mapping = get_deck_mapping(user_id, kind)
     if mapping["status"] == "not_configured":
         raise ValueError(f'Deck kind "{kind}" is not configured.')
 
     if kind == "mandarin_vocabulary":
-        return _vocabulary_push_payload(mapping)
+        return _vocabulary_push_payload(user_id, mapping)
     if kind == "mandarin_writting":
-        return _writting_push_payload(mapping)
+        return _writting_push_payload(user_id, mapping)
     raise ValueError(f'Unsupported deck kind "{kind}"')
 
 
 def _finalize_deck_result(
+    user_id: str,
     *,
     kind: DeckKind,
     action: SyncAction,
@@ -656,11 +687,12 @@ def _finalize_deck_result(
     characters_added: int = 0,
     pull_count: int | None = None,
 ) -> dict[str, Any]:
-    deck = get_deck_mapping(kind)
+    deck = get_deck_mapping(user_id, kind)
     if pull_count is not None:
         deck = {
             **deck,
             "status": deck_status_for_mapping(
+                user_id,
                 deck["deck_name"],
                 deck["model_name"],
                 deck["fields"],
@@ -669,6 +701,7 @@ def _finalize_deck_result(
             ),
         }
     maybe_promote_overall_anki_synchronization(
+        user_id,
         vocabulary_status=deck["status"] if kind == "mandarin_vocabulary" else None,
         writting_status=deck["status"] if kind == "mandarin_writting" else None,
     )
@@ -687,14 +720,16 @@ def _finalize_deck_result(
 
 
 def mark_synchronized_result(
+    user_id: str,
     kind: DeckKind,
     ids: list[str],
     *,
     action: SyncAction = "partial",
     pull_count: int | None = None,
 ) -> dict[str, Any]:
-    ignored = mark_synchronized(kind, ids)
+    ignored = mark_synchronized(user_id, kind, ids)
     return _finalize_deck_result(
+        user_id,
         kind=kind,
         action=action,
         direction="push",
@@ -706,6 +741,7 @@ def mark_synchronized_result(
 
 
 def apply_push_completion(
+    user_id: str,
     kind: DeckKind,
     action: SyncAction,
     *,
@@ -716,15 +752,16 @@ def apply_push_completion(
 ) -> dict[str, Any]:
     """Mark cards synchronized after a frontend Anki push (or cancel)."""
     if kind == "mandarin_vocabulary":
-        added = _mark_words_synchronized(succeeded_card_ids)
-        ignored = _mark_words_synchronized(ignore_ids)
+        added = _mark_words_synchronized(user_id, succeeded_card_ids)
+        ignored = _mark_words_synchronized(user_id, ignore_ids)
     else:
         # Writing cards: ids may be rectos for success list; ignore_ids are char ids.
         # succeeded_card_ids for writing are character ids derived by the frontend.
-        added = _mark_characters_synchronized(succeeded_card_ids)
-        ignored = _mark_characters_synchronized(ignore_ids)
+        added = _mark_characters_synchronized(user_id, succeeded_card_ids)
+        ignored = _mark_characters_synchronized(user_id, ignore_ids)
 
     return _finalize_deck_result(
+        user_id,
         kind=kind,
         action=action,
         direction="push",
@@ -736,6 +773,7 @@ def apply_push_completion(
 
 
 def apply_pull(
+    user_id: str,
     kind: DeckKind,
     action: SyncAction,
     *,
@@ -751,20 +789,24 @@ def apply_pull(
 
     if kind == "mandarin_vocabulary":
         for card in cards:
-            word_created, chars_created = _import_vocabulary_card(card, guesses)
+            word_created, chars_created = _import_vocabulary_card(
+                user_id,
+                card,
+                guesses,
+            )
             if word_created:
                 imported += 1
                 characters_added += chars_created
             else:
                 failed += 1
-        ignored = _add_vocabulary_pull_ignored(ignore_keys)
+        ignored = _add_vocabulary_pull_ignored(user_id, ignore_keys)
     elif kind == "mandarin_writting":
         for card in cards:
-            if _import_writting_pull_card(card):
+            if _import_writting_pull_card(user_id, card):
                 imported += 1
             else:
                 failed += 1
-        ignored = _add_writting_pull_ignored(ignore_keys)
+        ignored = _add_writting_pull_ignored(user_id, ignore_keys)
     else:
         raise ValueError(f'Unsupported deck kind "{kind}"')
 
@@ -772,6 +814,7 @@ def apply_pull(
         raise ValueError(f"Failed to import {failed} card(s) from Anki.")
 
     return _finalize_deck_result(
+        user_id,
         kind=kind,
         action=action,
         direction="pull",

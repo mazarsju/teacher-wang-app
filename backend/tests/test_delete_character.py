@@ -8,11 +8,17 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 
 
 class TestDeleteCharacterEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.session_patcher = patch("backend.routes.delete_character.db.session")
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)
@@ -41,11 +47,14 @@ class TestDeleteCharacterEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"message": "Character deleted"})
-        self.mock_character_cls.query.filter_by.assert_called_once_with(char="爱")
+        self.mock_character_cls.query.filter_by.assert_called_once_with(
+            user_id=TEST_USER_ID,
+            char="爱",
+        )
         char_record.words.clear.assert_called_once_with()
         self.mock_session.delete.assert_called_once_with(char_record)
         self.mock_session.commit.assert_called_once()
-        self.mock_refresh.assert_called_once_with()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_delete_missing_character_returns_not_found(self):
         self.mock_character_cls.query.filter_by.return_value.first.return_value = None

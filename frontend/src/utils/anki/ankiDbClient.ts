@@ -12,6 +12,7 @@ import type {
   AnkiSyncResult,
 } from "../../types/anki";
 import { API_BASE } from "../apiBase";
+import { apiFetch } from "../auth/apiFetch";
 import { mappedNotesInDeck } from "./ankiConnect";
 import { readErrorMessage } from "./ankiHelpers";
 import type { SyncDataCharacter } from "./ankiPull";
@@ -35,7 +36,7 @@ export type BackendStatusResponse = {
 export async function fetchSyncData(
   kind: AnkiDeckKind,
 ): Promise<SyncDataResponse> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE}/anki/sync/data/${encodeURIComponent(kind)}`,
     {
       method: "GET",
@@ -50,7 +51,7 @@ export async function fetchSyncData(
 }
 
 export async function fetchBackendAnkiStatus(): Promise<BackendStatusResponse> {
-  const response = await fetch(`${API_BASE}/anki/status`, { method: "GET" });
+  const response = await apiFetch(`${API_BASE}/anki/status`, { method: "GET" });
   if (!response.ok) {
     throw new Error("Failed to load Anki synchronization status.");
   }
@@ -93,7 +94,7 @@ export async function fetchMappedNotes(
 export async function markSynchronizedRequest(
   body: Record<string, unknown>,
 ): Promise<AnkiSyncResult> {
-  const response = await fetch(`${API_BASE}/anki/sync/mark-synchronized`, {
+  const response = await apiFetch(`${API_BASE}/anki/sync/mark-synchronized`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -109,7 +110,7 @@ export async function markSynchronizedRequest(
 export async function pullApplyRequest(
   body: Record<string, unknown>,
 ): Promise<AnkiSyncResult> {
-  const response = await fetch(`${API_BASE}/anki/sync/pull-apply`, {
+  const response = await apiFetch(`${API_BASE}/anki/sync/pull-apply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -128,7 +129,7 @@ export async function persistDeckSetup(body: {
   model_name: string;
   fields: Record<string, string>;
 }): Promise<AnkiDeckSetupResult> {
-  const response = await fetch(`${API_BASE}/anki/decks/setup`, {
+  const response = await apiFetch(`${API_BASE}/anki/decks/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

@@ -183,13 +183,21 @@ def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
 def find_unknown_characters(
     text: str,
     known_characters: set[str] | None = None,
+    *,
+    user_id: str | None = None,
 ) -> list[str]:
     """Return Han characters in ``text`` that are not in the learner's vocabulary."""
     if known_characters is None:
-        known_characters = {row.char for row in Character.query.all()}
+        if user_id is None:
+            raise ValueError("user_id is required to read the learner's characters")
+        known_characters = _known_characters(user_id)
 
     unknown = extract_han_characters(text) - known_characters
     return sorted(unknown)
+
+
+def _known_characters(user_id: str) -> set[str]:
+    return {row.char for row in Character.query.filter_by(user_id=user_id).all()}
 
 
 def _rephrase_instruction(unknown_characters: list[str]) -> str:
@@ -248,7 +256,7 @@ def _extract_json_object(text: str) -> dict:
     return parsed
 
 
-def check_user_grammar(user_message: str) -> GrammarCorrection:
+def check_user_grammar(user_id: str, user_message: str) -> GrammarCorrection:
     """Ask Teacher Wang whether the learner's message is grammatically correct."""
     content = user_message.strip()
     if content == "":
@@ -257,7 +265,7 @@ def check_user_grammar(user_message: str) -> GrammarCorrection:
     messages = [
         SystemMessage(
             content=(
-                f"{get_system_prompt(TEACHER_CHARACTER_ID)} "
+                f"{get_system_prompt(user_id, TEACHER_CHARACTER_ID)} "
                 f"{GRAMMAR_CHECK_INSTRUCTION}"
             )
         ),
@@ -390,6 +398,7 @@ def judge_challenge_progress(
 
 
 def generate_chat_reply(
+    user_id: str,
     character_id: str,
     messages: list[dict[str, str]],
     *,
@@ -404,7 +413,9 @@ def generate_chat_reply(
             "previous_assistant_reply and revision_instruction must be provided together"
         )
 
-    langchain_messages = [SystemMessage(content=get_system_prompt(character_id))]
+    langchain_messages = [
+        SystemMessage(content=get_system_prompt(user_id, character_id))
+    ]
 
     for message in messages:
         role = message["role"]
@@ -442,7 +453,7 @@ def generate_chat_reply(
             token_usage=token_usage,
         )
 
-    known_characters = {row.char for row in Character.query.all()}
+    known_characters = _known_characters(user_id)
     attempts: list[tuple[str, list[str]]] = []
 
     while True:
@@ -473,12 +484,13 @@ def generate_chat_reply(
 
 
 def generate_challenge_reply(
+    user_id: str,
     character_id: str,
     messages: list[dict[str, str]],
     tasks: list[dict[str, str]],
 ) -> ChallengeReplyResult:
     """Generate a challenge reply, allowing one coherence revision from the judge."""
-    reply = generate_chat_reply(character_id, messages)
+    reply = generate_chat_reply(user_id, character_id, messages)
     token_usage = reply.token_usage
     judge_conversation: list[dict[str, str]] = []
 
@@ -501,6 +513,7 @@ def generate_challenge_reply(
         )
 
         revised = generate_chat_reply(
+            user_id,
             character_id,
             messages,
             previous_assistant_reply=refused_reply,

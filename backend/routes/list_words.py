@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 
 from backend.models import Word
+from backend.user_context import current_user_id
 
 bp = Blueprint("list_words", __name__)
 
@@ -25,7 +26,7 @@ def list_words():
     except ValueError as exc:
         return {"error": str(exc)}, 400
 
-    query = Word.query.order_by(Word.word)
+    query = Word.query.filter_by(user_id=current_user_id()).order_by(Word.word)
     if limit is not None:
         query = query.limit(limit)
     word_list = query.all()

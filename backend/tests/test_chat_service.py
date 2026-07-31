@@ -38,7 +38,7 @@ class TestGenerateChatReply(unittest.TestCase):
     def test_generate_chat_reply_returns_assistant_message(
         self, mock_get_llm, _mock_speaking_level, mock_character_cls
     ):
-        mock_character_cls.query.all.return_value = [
+        mock_character_cls.query.filter_by.return_value.all.return_value = [
             MagicMock(char="你"),
             MagicMock(char="好"),
         ]
@@ -47,6 +47,7 @@ class TestGenerateChatReply(unittest.TestCase):
         mock_get_llm.return_value = mock_llm
 
         reply = generate_chat_reply(
+            "test-user",
             "teacher-wang",
             [{"role": "user", "content": "你好"}],
         )
@@ -70,7 +71,7 @@ class TestGenerateChatReply(unittest.TestCase):
     def test_rephrases_when_reply_contains_unknown_characters(
         self, mock_get_llm, _mock_speaking_level, mock_character_cls
     ):
-        mock_character_cls.query.all.return_value = [
+        mock_character_cls.query.filter_by.return_value.all.return_value = [
             MagicMock(char="你"),
             MagicMock(char="好"),
         ]
@@ -88,6 +89,7 @@ class TestGenerateChatReply(unittest.TestCase):
         mock_get_llm.return_value = mock_llm
 
         reply = generate_chat_reply(
+            "test-user",
             "xiao-ming",
             [{"role": "user", "content": "你好"}],
         )
@@ -115,6 +117,7 @@ class TestGenerateChatReply(unittest.TestCase):
         mock_get_llm.return_value = mock_llm
 
         reply = generate_chat_reply(
+            "test-user",
             "teacher-wang",
             [{"role": "user", "content": "你好"}],
         )
@@ -131,7 +134,7 @@ class TestGenerateChatReply(unittest.TestCase):
     def test_ships_reply_with_fewest_unknowns_after_failed_rephrases(
         self, mock_get_llm, _mock_speaking_level, mock_character_cls
     ):
-        mock_character_cls.query.all.return_value = [
+        mock_character_cls.query.filter_by.return_value.all.return_value = [
             MagicMock(char="你"),
             MagicMock(char="好"),
         ]
@@ -145,6 +148,7 @@ class TestGenerateChatReply(unittest.TestCase):
         mock_get_llm.return_value = mock_llm
 
         reply = generate_chat_reply(
+            "test-user",
             "xiao-ming",
             [{"role": "user", "content": "你好"}],
         )
@@ -165,12 +169,17 @@ class TestGenerateChatReply(unittest.TestCase):
 
     def test_generate_chat_reply_rejects_unknown_character(self):
         with self.assertRaises(ValueError):
-            generate_chat_reply("unknown", [{"role": "user", "content": "你好"}])
+            generate_chat_reply(
+                "test-user",
+                "unknown",
+                [{"role": "user", "content": "你好"}],
+            )
 
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=1)
     def test_generate_chat_reply_requires_user_message_last(self, _mock_speaking_level):
         with self.assertRaises(ValueError):
             generate_chat_reply(
+                "test-user",
                 "xiao-ming",
                 [{"role": "assistant", "content": "你好"}],
             )
@@ -184,7 +193,7 @@ class TestCheckUserGrammar(unittest.TestCase):
         mock_llm.invoke.return_value = MagicMock(content='{"correct": true}')
         mock_get_llm.return_value = mock_llm
 
-        result = check_user_grammar("你好")
+        result = check_user_grammar("test-user", "你好")
 
         self.assertEqual(result, GrammarCorrection(correct=True))
         invoked_messages = mock_llm.invoke.call_args.args[0]
@@ -205,7 +214,7 @@ class TestCheckUserGrammar(unittest.TestCase):
         )
         mock_get_llm.return_value = mock_llm
 
-        result = check_user_grammar("我是很好")
+        result = check_user_grammar("test-user", "我是很好")
 
         self.assertEqual(
             result,

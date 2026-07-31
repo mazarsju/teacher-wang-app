@@ -12,11 +12,17 @@ database_module.configure_database = MagicMock()
 sys.modules.pop("backend.app", None)
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 
 
 class TestBulkCharactersEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.session_patcher = patch("backend.routes.bulk_characters.db.session")
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)
@@ -139,7 +145,10 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"message": "File received"})
 
-        self.mock_character_cls.query.filter_by.assert_called_once_with(char="X")
+        self.mock_character_cls.query.filter_by.assert_called_once_with(
+            user_id=TEST_USER_ID,
+            char="X",
+        )
         self.mock_character_cls.assert_called_once()
         create_kwargs = self.mock_character_cls.call_args.kwargs
         self.assertEqual(create_kwargs["char"], "X")
@@ -150,17 +159,31 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
             "2026-07-12T12:00:00+00:00",
         )
 
-        self.mock_word_cls.query.filter_by.assert_any_call(word="word1")
-        self.mock_word_cls.query.filter_by.assert_any_call(word="word2")
-        self.mock_word_cls.assert_any_call(word="word1", definition="")
-        self.mock_word_cls.assert_any_call(word="word2", definition="")
+        self.mock_word_cls.query.filter_by.assert_any_call(
+            user_id=TEST_USER_ID,
+            word="word1",
+        )
+        self.mock_word_cls.query.filter_by.assert_any_call(
+            user_id=TEST_USER_ID,
+            word="word2",
+        )
+        self.mock_word_cls.assert_any_call(
+            user_id=TEST_USER_ID,
+            word="word1",
+            definition="",
+        )
+        self.mock_word_cls.assert_any_call(
+            user_id=TEST_USER_ID,
+            word="word2",
+            definition="",
+        )
 
         char_record = created_characters[0]
         self.assertEqual(len(char_record.words), 2)
 
         self.assertEqual(self.mock_session.add.call_count, 3)
         self.mock_session.commit.assert_called_once()
-        self.mock_refresh.assert_called_once_with()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_legacy_five_column_format_still_works(self):
         created_characters = []
@@ -196,13 +219,14 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.mock_character_cls.assert_called_once_with(
+            user_id=TEST_USER_ID,
             char="X",
             pinyin="pinyin3",
             writting_known=True,
         )
         self.assertEqual(len(created_characters[0].words), 2)
         self.mock_session.commit.assert_called_once()
-        self.mock_refresh.assert_called_once_with()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
 
 if __name__ == "__main__":

@@ -61,9 +61,9 @@ class TestTokenUsage(PostgresTestCase):
         self.assertEqual(compute_price_cents(1_000, 0.15), Decimal("0.01500"))
 
     def test_record_token_usage_persists_input_and_output_rows_with_price(self):
-        rows = record_token_usage(input_tokens=1000, output_tokens=500)
+        rows = record_token_usage(self.user_id, input_tokens=1000, output_tokens=500)
         self.assertEqual(len(rows), 2)
-        self.assertEqual(get_total_tokens(), 1500)
+        self.assertEqual(get_total_tokens(self.user_id), 1500)
         self.assertEqual(TokenCount.query.count(), 2)
 
         by_type = {row.type: row for row in TokenCount.query.all()}
@@ -72,13 +72,14 @@ class TestTokenUsage(PostgresTestCase):
         self.assertEqual(by_type[TOKEN_TYPE_OUTPUT].price, Decimal("0.03000"))
 
     def test_record_token_usage_ignores_zero(self):
-        self.assertEqual(record_token_usage(0, 0), [])
+        self.assertEqual(record_token_usage(self.user_id, 0, 0), [])
         self.assertEqual(TokenCount.query.count(), 0)
 
     def test_daily_usage_fills_last_seven_days(self):
         now = datetime.now(timezone.utc)
         db.session.add(
             TokenCount(
+                user_id=self.user_id,
                 recorded_at=now - timedelta(days=1),
                 type=TOKEN_TYPE_INPUT,
                 tokens=20,
@@ -87,6 +88,7 @@ class TestTokenUsage(PostgresTestCase):
         )
         db.session.add(
             TokenCount(
+                user_id=self.user_id,
                 recorded_at=now,
                 type=TOKEN_TYPE_OUTPUT,
                 tokens=15,
@@ -95,6 +97,7 @@ class TestTokenUsage(PostgresTestCase):
         )
         db.session.add(
             TokenCount(
+                user_id=self.user_id,
                 recorded_at=now - timedelta(days=8),
                 type=TOKEN_TYPE_INPUT,
                 tokens=99,
@@ -103,13 +106,13 @@ class TestTokenUsage(PostgresTestCase):
         )
         db.session.commit()
 
-        days = get_daily_usage(7)
+        days = get_daily_usage(self.user_id, 7)
         self.assertEqual(len(days), 7)
         self.assertEqual(days[-1]["tokens"], 15)
         self.assertEqual(days[-2]["tokens"], 20)
         self.assertEqual(sum(day["tokens"] for day in days), 35)
 
-        summary = get_token_usage_summary()
+        summary = get_token_usage_summary(self.user_id)
         self.assertEqual(summary["total_tokens"], 134)
         # (0.00030 + 0.00090 + 0.00149) cents / 100 = 0.0000269 USD
         self.assertAlmostEqual(summary["total_cost_usd"], 0.0000269, places=10)

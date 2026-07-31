@@ -8,12 +8,14 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 from backend.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV  # noqa: E402
 
 
 class TestLlmConfigEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.read_patcher = patch("backend.routes.llm_config.read_llm_config")
         self.write_patcher = patch("backend.routes.llm_config.write_llm_config")
         self.reset_patcher = patch("backend.routes.llm_config.reset_llm_cache")

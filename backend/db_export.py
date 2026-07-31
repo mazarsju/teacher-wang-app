@@ -38,8 +38,12 @@ def serialize_database(characters: list[Character]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def export_database_to_file(path: Path | None = None) -> Path:
+def export_database_to_file(user_id: str, path: Path | None = None) -> Path:
     export_path = path or DB_EXPORT_PATH
-    characters = Character.query.order_by(Character.pinyin, Character.char).all()
+    characters = (
+        Character.query.filter_by(user_id=user_id)
+        .order_by(Character.pinyin, Character.char)
+        .all()
+    )
     export_path.write_text(serialize_database(characters), encoding="utf-8")
     return export_path

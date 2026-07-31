@@ -1,4 +1,5 @@
 import { API_BASE } from "../apiBase";
+import { apiFetch } from "../auth/apiFetch";
 
 export type HskLevelStatus = {
   current_level: number | null;
@@ -11,7 +12,7 @@ export type HskLevelStatus = {
 };
 
 export async function fetchHskLevelStatus(): Promise<HskLevelStatus> {
-  const response = await fetch(`${API_BASE}/hsk-level`, { method: "GET" });
+  const response = await apiFetch(`${API_BASE}/hsk-level`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load HSK level.");

@@ -21,6 +21,19 @@ This app is deployed as **two images** consumed by [teacher-wang-infra](https://
 - Both images define a Docker `HEALTHCHECK` against `GET /health` (backend includes a Postgres `SELECT 1`; frontend is nginx-only and is not under `/api`).
 - Push helper: `./scripts/push-ecr.sh` (requires `ECR_BACKEND` / `ECR_FRONTEND` from infra Terraform outputs).
 
+## Multi-user data isolation
+
+The API is multi-tenant: `users.id` is the Cognito `sub`, and every private table starts its primary key with `user_id` (`character`, `words`, `character_word`, `settings`, `ignore_vocab_card`, `ignore_writting_card`, `token_count`). The HSK tables are shared and carry no `user_id`. Full rationale: `docs/data-isolation-archi-decision.md`.
+
+When touching backend code:
+
+- A `before_request` hook in `backend/user_context.py` authenticates every route except `OPTIONS` and `/health`, and resolves the tenant. Do not add per-route auth decorators.
+- Read the tenant with `current_user_id()`; never re-parse JWT claims in a view.
+- Every query on a private table must filter by `user_id`, every insert must set it, and updates/deletes must match on it. There is no RLS backstop yet, so a missing filter is a real data leak.
+- Service functions take `user_id` as their first argument rather than reaching into `flask.g`, so they stay testable outside a request.
+- New private tables need `user_id` in the primary key plus `PARTITION BY HASH (user_id)` with `MODULUS 8` in raw SQL inside the Alembic revision — the SQLAlchemy models stay partition-agnostic.
+- Frontend calls to the Flask API go through `frontend/src/utils/auth/apiFetch.ts` so they carry the Cognito headers.
+
 ## Architecture decision documents
 
 Architecture decisions live under `docs/` as `*-archi-decision.md` files (for example AnkiConnect, Anki sync, multi-agent chat, PostgreSQL, authentication, and data isolation). After any change that affects those areas—sync behavior, AnkiConnect responsibilities, chat agent collaboration, related APIs, database setup, auth/credentials, multi-user data isolation, or project structure—review the matching decision docs and update them so they stay accurate.

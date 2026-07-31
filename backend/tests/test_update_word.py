@@ -8,11 +8,13 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 
 
 class TestUpdateWordEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.session_patcher = patch("backend.routes.update_word.db.session")
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)

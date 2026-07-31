@@ -3,6 +3,7 @@ from flask import Blueprint, request
 from backend.chinese_validation import is_han_text
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
+from backend.user_context import current_user_id
 
 bp = Blueprint("create_word", __name__)
 
@@ -37,10 +38,11 @@ def create_word():
     if not is_han_text(word_text):
         return {"error": "word must contain only Chinese characters"}, 400
 
+    user_id = current_user_id()
     missing_characters = [
         character
         for character in word_text
-        if Character.query.filter_by(char=character).first() is None
+        if Character.query.filter_by(user_id=user_id, char=character).first() is None
     ]
     if missing_characters:
         return {
@@ -49,15 +51,22 @@ def create_word():
             )
         }, 400
 
-    if Word.query.filter_by(word=word_text).first() is not None:
+    if Word.query.filter_by(user_id=user_id, word=word_text).first() is not None:
         return {"error": "Word already exists"}, 409
 
-    word_record = Word(word=word_text, definition=definition_text or None)
+    word_record = Word(
+        user_id=user_id,
+        word=word_text,
+        definition=definition_text or None,
+    )
     db.session.add(word_record)
 
     now = utcnow()
     for character in word_text:
-        char_record = Character.query.filter_by(char=character).first()
+        char_record = Character.query.filter_by(
+            user_id=user_id,
+            char=character,
+        ).first()
         if char_record is None:
             continue
 

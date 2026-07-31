@@ -200,14 +200,16 @@ describe("PreferencesPage", () => {
       ).toBeInTheDocument();
     });
 
-    expect(fetch).toHaveBeenCalledWith("/api/llm-config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        LLM_API_KEY: "new-key",
-        LLM_MODEL: "gpt-4o",
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/llm-config",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          LLM_API_KEY: "new-key",
+          LLM_MODEL: "gpt-4o",
+        }),
       }),
-    });
+    );
     expect(screen.getByLabelText("LLM API key")).toHaveValue("new-key");
     expect(screen.getByLabelText("LLM model")).toHaveValue("gpt-4o");
   });

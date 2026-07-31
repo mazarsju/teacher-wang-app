@@ -2,13 +2,14 @@ from flask import Blueprint, request
 
 from backend.extensions import db
 from backend.models import Word, utcnow
+from backend.user_context import current_user_id
 
 bp = Blueprint("update_word", __name__)
 
 
 @bp.patch("/words/<path:word>")
 def update_word(word: str):
-    word_record = Word.query.filter_by(word=word).first()
+    word_record = Word.query.filter_by(user_id=current_user_id(), word=word).first()
     if word_record is None:
         return {"error": "Word not found"}, 404
 

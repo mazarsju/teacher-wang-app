@@ -2,10 +2,9 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import patch
 
-from backend.database import _ensure_hsk_content_loaded, _ensure_settings
+from backend.database import _ensure_hsk_content_loaded
 from backend.extensions import db
-from backend.models import HskWord, Setting
-from backend.settings import SETTING_LEVEL, set_setting
+from backend.models import HskWord
 from postgres_test_case import PostgresTestCase
 
 
@@ -24,23 +23,6 @@ class TestEnsureHskContentLoaded(PostgresTestCase):
             _ensure_hsk_content_loaded()
 
         mock_load.assert_not_called()
-
-
-class TestEnsureSettings(PostgresTestCase):
-    def test_refreshes_level_when_missing(self):
-        with patch("backend.hsk_level.refresh_current_hsk_level") as mock_refresh:
-            _ensure_settings()
-
-        mock_refresh.assert_called_once_with(commit=True)
-        self.assertIsNotNone(db.session.get(Setting, SETTING_LEVEL))
-
-    def test_skips_refresh_when_level_exists(self):
-        set_setting(SETTING_LEVEL, "2", commit=True)
-
-        with patch("backend.hsk_level.refresh_current_hsk_level") as mock_refresh:
-            _ensure_settings()
-
-        mock_refresh.assert_not_called()
 
 
 if __name__ == "__main__":

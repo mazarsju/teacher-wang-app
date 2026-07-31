@@ -87,11 +87,11 @@ def get_character(character_id: str) -> dict:
     return character
 
 
-def get_system_prompt(character_id: str) -> str:
+def get_system_prompt(user_id: str, character_id: str) -> str:
     from backend.hsk_level import get_chat_speaking_hsk_level
 
     character = get_character(character_id)
-    speaking_level = get_chat_speaking_hsk_level()
+    speaking_level = get_chat_speaking_hsk_level(user_id)
     return (
         f"{character['system_prompt']} The Chinese you use should be "
         f"understandable by an HSK {speaking_level} level student."

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bootstrap  # noqa: F401
 import unittest
 from unittest import mock
 

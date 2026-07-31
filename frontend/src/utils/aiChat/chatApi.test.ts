@@ -88,16 +88,18 @@ describe("chatApi", () => {
       },
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        character_id: "teacher-wang",
-        messages: [{ role: "user", content: "Why?" }],
-        parent_character_id: "xiao-ming",
-        thread_id: "thread123",
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/chat",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          character_id: "teacher-wang",
+          messages: [{ role: "user", content: "Why?" }],
+          parent_character_id: "xiao-ming",
+          thread_id: "thread123",
+        }),
       }),
-    });
+    );
   });
 
   it("clears chat history", async () => {
@@ -112,8 +114,9 @@ describe("chatApi", () => {
     );
 
     await expect(clearChatHistory("teacher-wang")).resolves.toBeUndefined();
-    expect(fetch).toHaveBeenCalledWith("/api/chat/history/teacher-wang", {
-      method: "DELETE",
-    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/chat/history/teacher-wang",
+      expect.objectContaining({ method: "DELETE" }),
+    );
   });
 });

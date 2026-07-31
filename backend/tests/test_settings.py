@@ -1,46 +1,36 @@
 import bootstrap  # noqa: F401
 import unittest
-from datetime import datetime, timedelta, timezone
 
-from backend.database import _migrate_settings_token_keys_to_token_count
-from backend.extensions import db
-from backend.models import Setting, TokenCount
-from backend.settings import SETTING_LEVEL, ensure_default_settings, get_setting
-from postgres_test_case import PostgresTestCase
+from backend.models import Setting
+from backend.settings import (
+    SETTING_LEVEL,
+    ensure_default_settings,
+    get_setting,
+    set_setting,
+)
+from postgres_test_case import PostgresTestCase, create_test_user
 
 
 class TestSettings(PostgresTestCase):
     def test_ensure_default_settings_creates_level_and_anki_decks(self):
-        ensure_default_settings()
+        ensure_default_settings(self.user_id)
         self.assertEqual(Setting.query.count(), 10)
-        self.assertEqual(get_setting(SETTING_LEVEL), "")
-        self.assertEqual(get_setting("anki_synchronization_status"), "not_synchronized")
-        self.assertEqual(get_setting("anki_mandarin_vocabulary_deck"), "")
-        self.assertEqual(get_setting("anki_mandarin_writting_deck"), "")
-
-    def test_migrate_legacy_token_settings_into_token_count(self):
-        now = datetime.now(timezone.utc)
-        recent = (now - timedelta(hours=1)).isoformat()
-        db.session.add(Setting(key="total_tk", value="30"))
-        db.session.add(
-            Setting(
-                key="tk_events",
-                value=f'[{{"ts":"{recent}","tokens":30}}]',
-            )
+        self.assertEqual(get_setting(self.user_id, SETTING_LEVEL), "")
+        self.assertEqual(
+            get_setting(self.user_id, "anki_synchronization_status"),
+            "not_synchronized",
         )
-        db.session.add(Setting(key="tk_today", value="30"))
-        db.session.add(Setting(key="tk_7_days", value="30"))
-        db.session.commit()
+        self.assertEqual(get_setting(self.user_id, "anki_mandarin_vocabulary_deck"), "")
+        self.assertEqual(get_setting(self.user_id, "anki_mandarin_writting_deck"), "")
 
-        _migrate_settings_token_keys_to_token_count()
+    def test_settings_are_isolated_per_user(self):
+        other = create_test_user("other-user", "other", "other@example.com")
+        set_setting(self.user_id, SETTING_LEVEL, "3", commit=True)
+        set_setting(other.id, SETTING_LEVEL, "5", commit=True)
 
-        self.assertEqual(TokenCount.query.count(), 1)
-        row = TokenCount.query.first()
-        self.assertEqual(row.tokens, 30)
-        self.assertEqual(row.type, "input")
-        self.assertEqual(row.price, 0)
-        self.assertIsNone(db.session.get(Setting, "tk_events"))
-        self.assertIsNone(db.session.get(Setting, "total_tk"))
+        self.assertEqual(get_setting(self.user_id, SETTING_LEVEL), "3")
+        self.assertEqual(get_setting(other.id, SETTING_LEVEL), "5")
+        self.assertEqual(get_setting("unknown-user", SETTING_LEVEL, "none"), "none")
 
 
 if __name__ == "__main__":

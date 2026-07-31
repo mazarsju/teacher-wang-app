@@ -4,6 +4,7 @@ from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
 from backend.models import Character
+from backend.user_context import current_user_id
 
 bp = Blueprint("create_character", __name__)
 
@@ -37,17 +38,22 @@ def create_character():
     if not is_han_character(char_value):
         return {"error": "char must be a single Chinese character"}, 400
 
-    if Character.query.filter_by(char=char_value).first() is not None:
+    user_id = current_user_id()
+    if (
+        Character.query.filter_by(user_id=user_id, char=char_value).first()
+        is not None
+    ):
         return {"error": "Character already exists"}, 409
 
     char_record = Character(
+        user_id=user_id,
         char=char_value,
         pinyin=pinyin.strip(),
         writting_known=writting_known,
     )
     db.session.add(char_record)
     db.session.commit()
-    refresh_current_hsk_level()
+    refresh_current_hsk_level(user_id)
 
     return {
         "char": char_record.char,

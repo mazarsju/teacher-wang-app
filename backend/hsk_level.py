@@ -57,10 +57,20 @@ def _is_level_complete(
 def get_hsk_level_status(
     known_characters: set[str] | None = None,
     vocabulary: list[HskVocabularyEntry] | None = None,
+    *,
+    user_id: str | None = None,
 ) -> HskLevelStatus:
-    """Return Home-page HSK progress from known characters and HSK vocabulary."""
+    """Return Home-page HSK progress from known characters and HSK vocabulary.
+
+    ``user_id`` is required unless ``known_characters`` is supplied: the
+    learner's vocabulary is private, the HSK reference data is shared.
+    """
     if known_characters is None:
-        known_characters = {row.char for row in Character.query.all()}
+        if user_id is None:
+            raise ValueError("user_id is required to read the learner's characters")
+        known_characters = {
+            row.char for row in Character.query.filter_by(user_id=user_id).all()
+        }
     if vocabulary is None:
         vocabulary = list(HskCharacter.query.all())
 
@@ -110,20 +120,26 @@ def get_hsk_level_status(
 def compute_current_hsk_level(
     known_characters: set[str] | None = None,
     vocabulary: list[HskVocabularyEntry] | None = None,
+    *,
+    user_id: str | None = None,
 ) -> int | None:
     """Return the highest completed HSK level, or None if HSK 1 is incomplete."""
-    return get_hsk_level_status(known_characters, vocabulary)["current_level"]
+    return get_hsk_level_status(
+        known_characters,
+        vocabulary,
+        user_id=user_id,
+    )["current_level"]
 
 
-def refresh_current_hsk_level(*, commit: bool = True) -> int | None:
-    """Recompute HSK level from vocabulary and persist it in settings."""
-    level = compute_current_hsk_level()
-    set_level(level, commit=commit)
+def refresh_current_hsk_level(user_id: str, *, commit: bool = True) -> int | None:
+    """Recompute the learner's HSK level and persist it in their settings."""
+    level = compute_current_hsk_level(user_id=user_id)
+    set_level(user_id, level, commit=commit)
     return level
 
 
-def get_stored_current_hsk_level() -> int | None:
-    return get_level()
+def get_stored_current_hsk_level(user_id: str) -> int | None:
+    return get_level(user_id)
 
 
 def speaking_hsk_level_from_current(current_level: int | None) -> int:
@@ -133,5 +149,5 @@ def speaking_hsk_level_from_current(current_level: int | None) -> int:
     return min(current_level + 1, HSK_MAX_LEVEL)
 
 
-def get_chat_speaking_hsk_level() -> int:
-    return speaking_hsk_level_from_current(get_stored_current_hsk_level())
+def get_chat_speaking_hsk_level(user_id: str) -> int:
+    return speaking_hsk_level_from_current(get_stored_current_hsk_level(user_id))

@@ -1,8 +1,9 @@
 import type { ChallengeProgressSummary } from "../../types/challenge";
 import { API_BASE } from "../apiBase";
+import { apiFetch } from "../auth/apiFetch";
 
 export async function fetchChallengesProgress(): Promise<ChallengeProgressSummary> {
-  const response = await fetch(`${API_BASE}/challenges/progress`, {
+  const response = await apiFetch(`${API_BASE}/challenges/progress`, {
     method: "GET",
   });
 

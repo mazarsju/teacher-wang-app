@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 
 from backend import anki_sync
+from backend.user_context import current_user_id
 
 bp = Blueprint("anki", __name__)
 
@@ -10,7 +11,7 @@ VALID_SYNC_ACTIONS = frozenset({"synchronize_all", "cancel_all", "partial"})
 
 @bp.get("/anki/status")
 def get_anki_status():
-    return anki_sync.get_anki_status(), 200
+    return anki_sync.get_anki_status(current_user_id()), 200
 
 
 @bp.post("/anki/decks/setup")
@@ -41,6 +42,7 @@ def setup_anki_deck():
 
     try:
         deck = anki_sync.setup_deck(
+            current_user_id(),
             kind,
             deck_name,
             model_name=model_name,
@@ -58,7 +60,7 @@ def get_sync_data(kind: str):
         return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
 
     try:
-        payload = anki_sync.get_sync_data(kind)
+        payload = anki_sync.get_sync_data(current_user_id(), kind)
     except ValueError as exc:
         return {"error": str(exc)}, 400
 
@@ -116,6 +118,7 @@ def mark_synchronized():
             return {"error": "ignore_ids must be an array of strings"}, 400
         try:
             result = anki_sync.apply_push_completion(
+                current_user_id(),
                 kind,
                 action,
                 succeeded_card_ids=succeeded_ids,
@@ -135,6 +138,7 @@ def mark_synchronized():
 
     try:
         result = anki_sync.mark_synchronized_result(
+            current_user_id(),
             kind,
             ids,
             action=action,
@@ -195,6 +199,7 @@ def pull_apply():
 
     try:
         result = anki_sync.apply_pull(
+            current_user_id(),
             kind,
             action,
             cards=cards,

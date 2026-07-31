@@ -2,7 +2,6 @@ from sqlalchemy.dialects.postgresql import insert
 
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
-from backend.hsk_level import refresh_current_hsk_level
 from backend.models import HskCharacter, HskWord, hsk_word_character
 from backend.routes.hsk_source import load_complete_hsk_entries, words_by_new_level
 
@@ -14,6 +13,9 @@ def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
     Words and characters use INSERT … ON CONFLICT DO NOTHING so the first
     (lowest) level wins.
     Returns the number of words processed per level.
+
+    HSK content is shared by every user; per-user HSK levels are recomputed
+    when that user's own characters change.
     """
     if entries is None:
         entries = load_complete_hsk_entries()
@@ -52,7 +54,6 @@ def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
         db.session.commit()
         processed_by_level[f"hsk-{level}"] = len(words)
 
-    refresh_current_hsk_level()
     return processed_by_level
 
 

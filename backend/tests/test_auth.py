@@ -12,6 +12,12 @@ import backend.database as database_module
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
+from auth_stub import (  # noqa: E402
+    TEST_CLAIMS,
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 from backend.app import app  # noqa: E402
 from backend.auth import AuthError, extract_bearer_token, verify_access_token
 from backend.auth_config import CognitoConfig
@@ -104,7 +110,9 @@ class TestAuthHelpers(unittest.TestCase):
                 verify_access_token(token, config=config)
 
 
-class TestAuthMeRoute(unittest.TestCase):
+class TestProtectedRoutes(unittest.TestCase):
+    """``before_request`` guards every route except /health and OPTIONS."""
+
     def setUp(self):
         self.client = app.test_client()
 
@@ -113,27 +121,53 @@ class TestAuthMeRoute(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertIn("error", response.get_json())
 
-    def test_auth_me_ok_with_valid_token(self):
-        claims = {
-            "sub": "user-sub-1",
-            "username": "alice",
-            "token_use": "access",
-            "client_id": "client123",
-        }
-        with patch("backend.auth.verify_access_token", return_value=claims):
-            response = self.client.get(
-                "/auth/me",
-                headers={"Authorization": "Bearer fake.token.value"},
-            )
+    def test_domain_routes_unauthorized_without_header(self):
+        for method, path in (
+            ("get", "/characters"),
+            ("get", "/words"),
+            ("get", "/hsk-level"),
+            ("get", "/token-usage"),
+            ("get", "/anki/status"),
+            ("post", "/database/export"),
+        ):
+            with self.subTest(path=path):
+                response = getattr(self.client, method)(path)
+                self.assertEqual(response.status_code, 401)
+
+    def test_health_stays_public(self):
+        with patch("backend.routes.health.db.session.execute"):
+            response = self.client.get("/health")
+        self.assertEqual(response.status_code, 200)
+
+
+class TestAuthMeRoute(unittest.TestCase):
+    def setUp(self):
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
+
+        self.user_patcher = patch("backend.routes.auth_me.current_user")
+        self.mock_current_user = self.user_patcher.start()
+        self.addCleanup(self.user_patcher.stop)
+        self.mock_current_user.return_value = MagicMock(
+            id=TEST_USER_ID,
+            username="alice",
+            email="alice@example.com",
+            plan="free",
+        )
+
+    def test_auth_me_returns_user_row_and_token_claims(self):
+        response = self.client.get("/auth/me")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.get_json(),
             {
-                "sub": "user-sub-1",
+                "sub": TEST_USER_ID,
                 "username": "alice",
-                "token_use": "access",
-                "client_id": "client123",
+                "email": "alice@example.com",
+                "plan": "free",
+                "token_use": TEST_CLAIMS["token_use"],
+                "client_id": TEST_CLAIMS["client_id"],
             },
         )
 

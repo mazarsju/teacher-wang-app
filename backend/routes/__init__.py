@@ -24,6 +24,9 @@ def register_routes(app: Flask) -> None:
         update_character,
         update_word,
     )
+    from backend.user_context import register_user_context
+
+    register_user_context(app)
 
     app.register_blueprint(health.bp)
     app.register_blueprint(auth_me.bp)

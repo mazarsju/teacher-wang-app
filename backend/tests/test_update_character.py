@@ -8,11 +8,17 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 
 
 class TestUpdateCharacterEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.session_patcher = patch("backend.routes.update_character.db.session")
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)
@@ -67,7 +73,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
         self.assertEqual(char_record.pinyin, "ai")
         self.assertTrue(char_record.writting_known)
         self.mock_session.commit.assert_called_once()
-        self.mock_refresh.assert_called_once_with()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_update_missing_character_returns_not_found(self):
         self.mock_character_cls.query.filter_by.return_value.first.return_value = None

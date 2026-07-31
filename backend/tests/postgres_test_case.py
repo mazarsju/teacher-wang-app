@@ -13,8 +13,14 @@ from backend.extensions import db
 
 _SCHEMA_READY = False
 
+TEST_USER_ID = "test-user"
+TEST_USERNAME = "test"
+TEST_EMAIL = "test@example.com"
+
 # Keep in sync with backend.models metadata (quote reserved names).
+# users comes first: every private table references it.
 _TRUNCATE_TABLES = (
+    "users",
     "character_word",
     "hsk_word_character",
     '"character"',
@@ -35,8 +41,33 @@ def truncate_all_tables() -> None:
     db.session.commit()
 
 
+def create_test_user(
+    user_id: str = TEST_USER_ID,
+    username: str = TEST_USERNAME,
+    email: str = TEST_EMAIL,
+):
+    """Insert a ``users`` row so private-table fixtures satisfy their FK."""
+    from backend.models import User, utcnow
+
+    user = User(
+        id=user_id,
+        username=username,
+        email=email,
+        last_connexion=utcnow(),
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
 class PostgresTestCase(unittest.TestCase):
-    """Flask app bound to ``TEST_DATABASE_URL`` with a clean schema each test."""
+    """Flask app bound to ``TEST_DATABASE_URL`` with a clean schema each test.
+
+    Every test starts with one ``users`` row (``TEST_USER_ID``); private-table
+    fixtures must set ``user_id`` to it.
+    """
+
+    user_id = TEST_USER_ID
 
     def setUp(self) -> None:
         global _SCHEMA_READY
@@ -55,6 +86,7 @@ class PostgresTestCase(unittest.TestCase):
             _SCHEMA_READY = True
 
         truncate_all_tables()
+        self.user = create_test_user(self.user_id)
 
     def tearDown(self) -> None:
         db.session.remove()

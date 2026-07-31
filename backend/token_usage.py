@@ -95,17 +95,19 @@ def _price_for_tokens(tokens: int, token_type: str, model_name: str | None = Non
     return compute_price_cents(tokens, rate)
 
 
-def _next_available_timestamp(recorded_at: datetime) -> datetime:
+def _next_available_timestamp(user_id: str, recorded_at: datetime) -> datetime:
     candidate = recorded_at
     while (
-        db.session.get(TokenCount, (candidate, TOKEN_TYPE_INPUT)) is not None
-        or db.session.get(TokenCount, (candidate, TOKEN_TYPE_OUTPUT)) is not None
+        db.session.get(TokenCount, (user_id, candidate, TOKEN_TYPE_INPUT)) is not None
+        or db.session.get(TokenCount, (user_id, candidate, TOKEN_TYPE_OUTPUT))
+        is not None
     ):
         candidate = candidate + timedelta(microseconds=1)
     return candidate
 
 
 def _add_token_row(
+    user_id: str,
     recorded_at: datetime,
     token_type: str,
     tokens: int,
@@ -119,6 +121,7 @@ def _add_token_row(
 
     price = _price_for_tokens(tokens, token_type, model_name=model_name)
     row = TokenCount(
+        user_id=user_id,
         recorded_at=recorded_at,
         type=token_type,
         tokens=tokens,
@@ -129,6 +132,7 @@ def _add_token_row(
 
 
 def record_token_usage(
+    user_id: str,
     input_tokens: int = 0,
     output_tokens: int = 0,
     *,
@@ -143,10 +147,11 @@ def record_token_usage(
     if input_tokens == 0 and output_tokens == 0:
         return rows
 
-    recorded_at = _next_available_timestamp(utcnow())
+    recorded_at = _next_available_timestamp(user_id, utcnow())
     if input_tokens > 0:
         rows.append(
             _add_token_row(
+                user_id,
                 recorded_at,
                 TOKEN_TYPE_INPUT,
                 input_tokens,
@@ -156,6 +161,7 @@ def record_token_usage(
     if output_tokens > 0:
         rows.append(
             _add_token_row(
+                user_id,
                 recorded_at,
                 TOKEN_TYPE_OUTPUT,
                 output_tokens,
@@ -170,19 +176,27 @@ def record_token_usage(
     return rows
 
 
-def get_total_tokens() -> int:
-    total = db.session.query(func.coalesce(func.sum(TokenCount.tokens), 0)).scalar()
+def get_total_tokens(user_id: str) -> int:
+    total = (
+        db.session.query(func.coalesce(func.sum(TokenCount.tokens), 0))
+        .filter(TokenCount.user_id == user_id)
+        .scalar()
+    )
     return int(total or 0)
 
 
-def get_total_price_cents() -> Decimal:
-    total = db.session.query(func.coalesce(func.sum(TokenCount.price), 0)).scalar()
+def get_total_price_cents(user_id: str) -> Decimal:
+    total = (
+        db.session.query(func.coalesce(func.sum(TokenCount.price), 0))
+        .filter(TokenCount.user_id == user_id)
+        .scalar()
+    )
     return Decimal(str(total or 0))
 
 
-def get_total_cost_usd() -> float:
+def get_total_cost_usd(user_id: str) -> float:
     """Total recorded cost in USD (price column is stored in cents)."""
-    return float(get_total_price_cents() / USD_TO_CENTS)
+    return float(get_total_price_cents(user_id) / USD_TO_CENTS)
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -191,7 +205,10 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def get_daily_usage(days: int = TOKEN_HISTORY_DAYS) -> list[dict[str, int | str]]:
+def get_daily_usage(
+    user_id: str,
+    days: int = TOKEN_HISTORY_DAYS,
+) -> list[dict[str, int | str]]:
     """Return one entry per calendar day for the last ``days`` days (UTC)."""
     if days < 1:
         raise ValueError("days must be at least 1")
@@ -201,7 +218,10 @@ def get_daily_usage(days: int = TOKEN_HISTORY_DAYS) -> list[dict[str, int | str]
     start_at = datetime.combine(start_day, datetime.min.time(), tzinfo=timezone.utc)
 
     rows = (
-        TokenCount.query.filter(TokenCount.recorded_at >= start_at)
+        TokenCount.query.filter(
+            TokenCount.user_id == user_id,
+            TokenCount.recorded_at >= start_at,
+        )
         .order_by(TokenCount.recorded_at.asc())
         .all()
     )
@@ -223,9 +243,9 @@ def get_daily_usage(days: int = TOKEN_HISTORY_DAYS) -> list[dict[str, int | str]
     ]
 
 
-def get_token_usage_summary(days: int = TOKEN_HISTORY_DAYS) -> dict:
+def get_token_usage_summary(user_id: str, days: int = TOKEN_HISTORY_DAYS) -> dict:
     return {
-        "total_tokens": get_total_tokens(),
-        "total_cost_usd": get_total_cost_usd(),
-        "days": get_daily_usage(days),
+        "total_tokens": get_total_tokens(user_id),
+        "total_cost_usd": get_total_cost_usd(user_id),
+        "days": get_daily_usage(user_id, days),
     }

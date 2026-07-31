@@ -140,6 +140,7 @@ class TestGenerateChallengeReply(unittest.TestCase):
         )
 
         result = generate_challenge_reply(
+            "test-user",
             "challenge-restaurant",
             [{"role": "user", "content": "服务员！"}],
             TASKS,
@@ -188,6 +189,7 @@ class TestGenerateChallengeReply(unittest.TestCase):
         ]
 
         result = generate_challenge_reply(
+            "test-user",
             "challenge-restaurant",
             [{"role": "user", "content": "买单"}],
             TASKS,
@@ -246,6 +248,7 @@ class TestGenerateChallengeReply(unittest.TestCase):
         ]
 
         result = generate_challenge_reply(
+            "test-user",
             "challenge-restaurant",
             [{"role": "user", "content": "服务员"}],
             TASKS,

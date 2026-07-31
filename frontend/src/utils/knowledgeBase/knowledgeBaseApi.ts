@@ -1,7 +1,8 @@
 import { API_BASE } from "../apiBase";
+import { apiFetch } from "../auth/apiFetch";
 
 export async function exportDatabase() {
-  const response = await fetch(`${API_BASE}/database/export`, {
+  const response = await apiFetch(`${API_BASE}/database/export`, {
     method: "POST",
   });
 
@@ -16,7 +17,7 @@ export async function importDatabase(file: File) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE}/characters/bulk`, {
+  const response = await apiFetch(`${API_BASE}/characters/bulk`, {
     method: "POST",
     body: formData,
   });

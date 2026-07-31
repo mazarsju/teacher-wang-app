@@ -48,16 +48,15 @@ Credentials must not live as reversible secrets in application tables. Infra and
 ### Application user row (Postgres)
 
 * Cognito is the source of truth for **credentials**.
-* On first successful authenticated request (or after sign-up confirmation), ensure a thin `users` / `profiles` row with at least:
-  * `cognito_sub` (unique, stable subject from the JWT)
-  * `username` and `email` (mirrored for app queries / display)
-* Domain ownership and RLS use this identity (internal user UUID and/or `cognito_sub`) as described in the data-isolation decision—not in this document.
+* On every successful authenticated request, `ensure_current_user()` upserts the `users` row keyed by the Cognito `sub`, mirroring `username` and `email` for app queries and display, and refreshing `last_connexion`.
+* The `sub` **is** the tenant id: there is no separate internal user UUID. Domain ownership is described in the data-isolation decision—not in this document.
 
 ### API protection (Flask)
 
-* Protected routes require an `Authorization: Bearer <access_token>` JWT.
-* Flask verifies the token against the User Pool JWKS (issuer, audience/client id, expiry, signature). Invalid or missing tokens → `401`.
-* Handlers resolve the current user from `sub` (and the Postgres app user row) before touching domain data.
+* A `before_request` hook protects **every** route. Only `OPTIONS` (CORS preflight) and `GET /health` are public.
+* Protected routes require an `Authorization: Bearer <access_token>` JWT. Flask verifies it against the User Pool JWKS (issuer, audience/client id, expiry, signature). Invalid or missing tokens → `401`.
+* Clients may also send the ID token in an `X-Id-Token` header. When present it is verified (`token_use=id`, `aud=client_id`) and its `email` claim is mirrored into the `users` row.
+* The tenant is resolved before the view runs, so handlers read it from `current_user_id()` instead of re-parsing claims.
 
 ### Interaction overview
 
@@ -70,18 +69,18 @@ Browser
   │                                 JWT tokens
   │                                      │
   └─ API calls + Bearer JWT ────────────► Flask
-                                           │
+     (+ optional X-Id-Token)               │
                            verify JWT (JWKS)│
+                        ensure_current_user │
                                            ▼
                                       Postgres (RDS)
-                                 profiles + domain data
+                                  users + domain data
                            (see data-isolation decision)
 ```
 
 ## Out of scope (remaining)
 
-* Protecting all domain API routes with `@require_auth` (probe only: `GET /auth/me`).
-* Per-user row ownership, RLS, partitioning, and shared catalogs — [data-isolation-archi-decision.md](data-isolation-archi-decision.md).
+* PostgreSQL RLS as a backstop behind the app-level `user_id` filters — [data-isolation-archi-decision.md](data-isolation-archi-decision.md).
 * Enabling Google IdP (infra supports it when `TF_VAR_cognito_google_client_*` are set).
 
 ## Consequences
@@ -94,9 +93,9 @@ Browser
 
 ### Drawbacks / follow-ups
 
-* Cognito User Pool / app client / optional Google IdP are provisioned in **teacher-wang-infra**; Flask verifies access tokens via JWKS (`backend/auth.py`, probe route `GET /auth/me`).
-* The welcome screen signs in / signs up via Cognito `USER_PASSWORD_AUTH` / `SignUp` (`frontend/src/utils/auth/cognitoAuth.ts`); tokens live in `sessionStorage`.
-* Most domain routes are still open until route lockdown lands.
-* Local and CI need Cognito env vars (or mocks) for protected routes — see `.env.example` (`COGNITO_*` backend, `VITE_COGNITO_*` frontend).
+* Cognito User Pool / app client / optional Google IdP are provisioned in **teacher-wang-infra**; Flask verifies access tokens via JWKS (`backend/auth.py`) and resolves the tenant in `backend/user_context.py`.
+* The welcome screen signs in / signs up via Cognito `USER_PASSWORD_AUTH` / `SignUp` (`frontend/src/utils/auth/cognitoAuth.ts`); tokens live in `sessionStorage` and are attached by `frontend/src/utils/auth/apiFetch.ts`.
+* Every request now pays a JWKS-cached signature check plus one `users` upsert; a busy session writes `last_connexion` on each call.
+* Local and CI need Cognito env vars (or mocks) for protected routes — see `.env.example` (`COGNITO_*` backend, `VITE_COGNITO_*` frontend). Route unit tests stub verification through `backend/tests/auth_stub.py`.
 * Migration away from Cognito later is painful (hashes not exportable)—accept re-registration or a dual-run plan if that ever matters.
-* Auth alone does not isolate knowledge-base rows; implement [data isolation](data-isolation-archi-decision.md) with multi-user auth.
+* Auth alone does not isolate knowledge-base rows; the row-level scoping lives in [data isolation](data-isolation-archi-decision.md).

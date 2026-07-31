@@ -8,11 +8,17 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 
 
 class TestChatEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.generate_patcher = patch("backend.routes.chat.generate_chat_reply")
         self.mock_generate = self.generate_patcher.start()
         self.addCleanup(self.generate_patcher.stop)
@@ -143,6 +149,7 @@ class TestChatEndpoint(unittest.TestCase):
             },
         )
         self.mock_generate.assert_called_once_with(
+            TEST_USER_ID,
             "teacher-wang",
             [{"role": "user", "content": "你好"}],
         )
@@ -160,6 +167,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_grammar.assert_not_called()
         self.mock_create_thread.assert_not_called()
         self.mock_record_tokens.assert_called_once_with(
+            TEST_USER_ID,
             input_tokens=30,
             output_tokens=12,
         )
@@ -214,7 +222,7 @@ class TestChatEndpoint(unittest.TestCase):
                 "tokens": {"input": 70, "output": 35, "total": 105},
             },
         )
-        self.mock_grammar.assert_called_once_with("我是很好")
+        self.mock_grammar.assert_called_once_with(TEST_USER_ID, "我是很好")
         self.mock_create_thread.assert_called_once_with(
             "xiao-ming",
             "Say 我很好 instead of 我是很好.",
@@ -232,6 +240,7 @@ class TestChatEndpoint(unittest.TestCase):
         )
         self.assertEqual(self.mock_append.call_count, 2)
         self.mock_record_tokens.assert_called_once_with(
+            TEST_USER_ID,
             input_tokens=70,
             output_tokens=35,
         )
@@ -285,6 +294,7 @@ class TestChatEndpoint(unittest.TestCase):
             "Because 是 is not used that way.",
         )
         self.mock_record_tokens.assert_called_once_with(
+            TEST_USER_ID,
             input_tokens=20,
             output_tokens=13,
         )
@@ -416,6 +426,7 @@ class TestChatEndpoint(unittest.TestCase):
             ["call-waiter"],
         )
         self.mock_record_tokens.assert_called_once_with(
+            TEST_USER_ID,
             input_tokens=35,
             output_tokens=15,
         )

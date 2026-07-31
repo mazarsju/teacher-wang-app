@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 
 from backend.models import Character
+from backend.user_context import current_user_id
 
 bp = Blueprint("list_characters", __name__)
 
@@ -25,7 +26,9 @@ def list_characters():
     except ValueError as exc:
         return {"error": str(exc)}, 400
 
-    query = Character.query.order_by(Character.pinyin)
+    query = Character.query.filter_by(user_id=current_user_id()).order_by(
+        Character.pinyin
+    )
     if limit is not None:
         query = query.limit(limit)
     character_list = query.all()

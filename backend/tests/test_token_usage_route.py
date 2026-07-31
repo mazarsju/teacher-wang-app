@@ -8,11 +8,13 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 
 
 class TestTokenUsageEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.summary_patcher = patch(
             "backend.routes.token_usage.get_token_usage_summary"
         )

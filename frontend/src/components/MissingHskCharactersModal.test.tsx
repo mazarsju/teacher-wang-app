@@ -42,7 +42,7 @@ describe("MissingHskCharactersModal", () => {
     });
     expect(fetch).toHaveBeenCalledWith(
       "/api/hsk-characters/%E7%88%B1/words?level=1",
-      { method: "GET" },
+      expect.objectContaining({ method: "GET" }),
     );
   });
 });

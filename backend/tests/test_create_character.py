@@ -8,11 +8,17 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 
 
 class TestCreateCharacterEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.session_patcher = patch("backend.routes.create_character.db.session")
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)
@@ -58,13 +64,14 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
             },
         )
         self.mock_character_cls.assert_called_once_with(
+            user_id=TEST_USER_ID,
             char="爱",
             pinyin="ai",
             writting_known=True,
         )
         self.mock_session.add.assert_called_once()
         self.mock_session.commit.assert_called_once()
-        self.mock_refresh.assert_called_once_with()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_create_existing_character_returns_conflict(self):
         self.mock_character_cls.query.filter_by.return_value.first.return_value = (

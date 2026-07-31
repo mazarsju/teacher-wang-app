@@ -3,13 +3,15 @@ from flask import Blueprint, request
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
 from backend.models import Character, utcnow
+from backend.user_context import current_user_id
 
 bp = Blueprint("update_character", __name__)
 
 
 @bp.patch("/characters/<path:char>")
 def update_character(char: str):
-    char_record = Character.query.filter_by(char=char).first()
+    user_id = current_user_id()
+    char_record = Character.query.filter_by(user_id=user_id, char=char).first()
     if char_record is None:
         return {"error": "Character not found"}, 404
 
@@ -36,7 +38,7 @@ def update_character(char: str):
     char_record.writting_known = writting_known
     char_record.updated_at = utcnow()
     db.session.commit()
-    refresh_current_hsk_level()
+    refresh_current_hsk_level(user_id)
 
     return {
         "char": char_record.char,

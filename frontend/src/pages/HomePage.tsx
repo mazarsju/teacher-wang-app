@@ -5,13 +5,14 @@ import Page from "../components/Page";
 import type { Character } from "../types/character";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
 import { API_BASE } from "../utils/apiBase";
+import { apiFetch } from "../utils/auth/apiFetch";
 import {
   fetchHskLevelStatus,
   type HskLevelStatus,
 } from "../utils/knowledgeBase/hskLevelApi";
 
 async function fetchCharacters() {
-  const response = await fetch(`${API_BASE}/characters`, { method: "GET" });
+  const response = await apiFetch(`${API_BASE}/characters`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load characters.");

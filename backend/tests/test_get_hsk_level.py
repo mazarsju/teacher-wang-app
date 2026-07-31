@@ -8,11 +8,17 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import (  # noqa: E402
+    TEST_USER_ID,
+    authenticated_client,
+    patch_request_auth,
+)
 
 
 class TestGetHskLevelEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.status_patcher = patch("backend.routes.get_hsk_level.get_hsk_level_status")
         self.mock_status = self.status_patcher.start()
         self.addCleanup(self.status_patcher.stop)
@@ -32,7 +38,7 @@ class TestGetHskLevelEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), self.mock_status.return_value)
-        self.mock_status.assert_called_once_with()
+        self.mock_status.assert_called_once_with(user_id=TEST_USER_ID)
 
 
 if __name__ == "__main__":

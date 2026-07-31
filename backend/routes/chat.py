@@ -25,6 +25,7 @@ from backend.conversation_logs import (
     thread_exists,
 )
 from backend.token_usage import record_token_usage
+from backend.user_context import current_user_id
 
 bp = Blueprint("chat", __name__)
 
@@ -121,6 +122,7 @@ def _handle_thread_chat(
 ):
     last_user_message = normalized_messages[-1]
     token_usage = LlmTokenUsage()
+    user_id = current_user_id()
 
     try:
         if should_append_thread_user_message(
@@ -133,7 +135,7 @@ def _handle_thread_chat(
                 last_user_message["content"],
             )
 
-        reply = generate_chat_reply(character_id, normalized_messages)
+        reply = generate_chat_reply(user_id, character_id, normalized_messages)
         token_usage = token_usage + reply.token_usage
         append_thread_message(
             parent_character_id,
@@ -142,6 +144,7 @@ def _handle_thread_chat(
             reply.content,
         )
         record_token_usage(
+            user_id,
             input_tokens=token_usage.input_tokens,
             output_tokens=token_usage.output_tokens,
         )
@@ -168,6 +171,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
     token_usage = LlmTokenUsage()
     completed_task_ids: list[str] | None = None
     judge_conversation: list[dict[str, str]] | None = None
+    user_id = current_user_id()
 
     try:
         correction = None
@@ -175,7 +179,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         correction_thread_id = None
 
         if character_id != TEACHER_CHARACTER_ID:
-            correction = check_user_grammar(last_user_message["content"])
+            correction = check_user_grammar(user_id, last_user_message["content"])
             token_usage = token_usage + correction.token_usage
             if (
                 correction is not None
@@ -204,6 +208,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             challenge = get_challenge(character_id)
             assert challenge is not None
             challenge_reply = generate_challenge_reply(
+                user_id,
                 character_id,
                 normalized_messages,
                 challenge["tasks"],
@@ -221,7 +226,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             if challenge_reply.judge_conversation:
                 judge_conversation = challenge_reply.judge_conversation
         else:
-            reply = generate_chat_reply(character_id, normalized_messages)
+            reply = generate_chat_reply(user_id, character_id, normalized_messages)
             token_usage = token_usage + reply.token_usage
             reply_content = reply.content
             reply_unknown_characters = reply.unknown_characters
@@ -229,6 +234,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         append_message(character_id, "assistant", reply_content)
 
         record_token_usage(
+            user_id,
             input_tokens=token_usage.input_tokens,
             output_tokens=token_usage.output_tokens,
         )

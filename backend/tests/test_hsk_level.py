@@ -14,7 +14,7 @@ from backend.hsk_level import (
 )
 from backend.models import Character, HskCharacter
 from backend.settings import SETTING_LEVEL, get_setting
-from postgres_test_case import PostgresTestCase
+from postgres_test_case import PostgresTestCase, create_test_user
 
 VOCABULARY = [
     SimpleNamespace(character="爱", level=1, frequency=30),
@@ -114,16 +114,42 @@ class TestHskLevel(PostgresTestCase):
     def test_refresh_persists_current_level(self):
         for char in ("爱", "好", "八"):
             db.session.add(HskCharacter(character=char, level=1, frequency=1))
-            db.session.add(Character(char=char, pinyin="x", writting_known=True))
+            db.session.add(
+                Character(
+                    user_id=self.user_id,
+                    char=char,
+                    pinyin="x",
+                    writting_known=True,
+                )
+            )
         db.session.add(HskCharacter(character="学", level=2, frequency=1))
         db.session.add(HskCharacter(character="习", level=2, frequency=2))
         db.session.commit()
 
-        level = refresh_current_hsk_level()
+        level = refresh_current_hsk_level(self.user_id)
 
         self.assertEqual(level, 1)
-        self.assertEqual(get_setting(SETTING_LEVEL), "1")
-        self.assertEqual(get_chat_speaking_hsk_level(), 2)
+        self.assertEqual(get_setting(self.user_id, SETTING_LEVEL), "1")
+        self.assertEqual(get_chat_speaking_hsk_level(self.user_id), 2)
+
+    def test_level_only_counts_the_requesting_user_characters(self):
+        other = create_test_user("other-user", "other", "other@example.com")
+        for char in ("爱", "好", "八"):
+            db.session.add(HskCharacter(character=char, level=1, frequency=1))
+            db.session.add(
+                Character(
+                    user_id=other.id,
+                    char=char,
+                    pinyin="x",
+                    writting_known=True,
+                )
+            )
+        db.session.add(HskCharacter(character="学", level=2, frequency=1))
+        db.session.add(HskCharacter(character="习", level=2, frequency=2))
+        db.session.commit()
+
+        self.assertIsNone(refresh_current_hsk_level(self.user_id))
+        self.assertEqual(refresh_current_hsk_level(other.id), 1)
 
 
 if __name__ == "__main__":

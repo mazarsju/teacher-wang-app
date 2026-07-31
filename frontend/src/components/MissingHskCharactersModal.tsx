@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/apiBase";
+import { apiFetch } from "../utils/auth/apiFetch";
 
 type HskWordEntry = {
   word: string;
@@ -18,7 +19,7 @@ async function fetchHskCharacterWords(
   character: string,
   level: number,
 ): Promise<HskWordEntry[]> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE}/hsk-characters/${encodeURIComponent(character)}/words?level=${level}`,
     { method: "GET" },
   );

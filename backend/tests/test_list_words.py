@@ -8,15 +8,18 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 
 
 class TestListWordsEndpoint(unittest.TestCase):
     def setUp(self):
-        self.client = app.test_client()
+        patch_request_auth(self)
+        self.client = authenticated_client(app)
         self.word_patcher = patch("backend.routes.list_words.Word")
         self.mock_word_cls = self.word_patcher.start()
         self.addCleanup(self.word_patcher.stop)
         self.mock_word_cls.reset_mock()
+        self.scoped_query = self.mock_word_cls.query.filter_by.return_value
 
     def test_list_words_returns_all_records(self):
         updated_at = "2026-07-12T12:00:00+00:00"
@@ -32,7 +35,7 @@ class TestListWordsEndpoint(unittest.TestCase):
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
             characters=[MagicMock(char="爱")],
         )
-        self.mock_word_cls.query.order_by.return_value.all.return_value = [
+        self.scoped_query.order_by.return_value.all.return_value = [
             first,
             second,
         ]
@@ -57,7 +60,7 @@ class TestListWordsEndpoint(unittest.TestCase):
                 },
             ],
         )
-        self.mock_word_cls.query.order_by.assert_called_once()
+        self.scoped_query.order_by.assert_called_once()
 
     def test_list_words_respects_limit(self):
         updated_at = "2026-07-12T12:00:00+00:00"
@@ -71,7 +74,7 @@ class TestListWordsEndpoint(unittest.TestCase):
         limited_query.all.return_value = [first]
         ordered_query = MagicMock()
         ordered_query.limit.return_value = limited_query
-        self.mock_word_cls.query.order_by.return_value = ordered_query
+        self.scoped_query.order_by.return_value = ordered_query
 
         response = self.client.get("/words?limit=1")
 
