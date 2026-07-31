@@ -2584,6 +2584,68 @@ body {
   transform: translateY(1px);
 }
 
+.welcome-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.15rem 0;
+  color: #7a939c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.welcome-auth-divider::before,
+.welcome-auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #c5d5da;
+}
+
+.welcome-auth-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #b7c9ce;
+  border-radius: 0.55rem;
+  background: #ffffff;
+  color: var(--welcome-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.welcome-auth-google:hover {
+  background: #f4f8f8;
+  border-color: #8eacb4;
+}
+
+.welcome-auth-google:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.welcome-auth-google-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+.welcome-auth-oauth-status {
+  margin: 0;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--welcome-mist);
+  font-size: 1.05rem;
+}
+
 .welcome-auth-switch {
   margin: 0.25rem 0 0;
   text-align: center;

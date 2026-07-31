@@ -41,9 +41,9 @@ Credentials must not live as reversible secrets in application tables. Infra and
 
 * Sign-up collects **username**, **email**, and **password**. Cognito enforces uniqueness for username (and email as configured).
 * Log-in uses **username + password** against the User Pool.
-* **Google SSO** is a **federated identity provider** on the same pool (provisioned in Terraform in teacher-wang-infra)—not a second custom OAuth stack in Flask.
-* The client obtains Cognito tokens (Amplify Auth, Cognito SDK, or Hosted UI). Exact UI library choice is left to implementation.
-* Cognito password hashes are **not exportable**; treat Cognito as the durable IdP.
+* **Google SSO** uses the Cognito **Hosted UI** authorize endpoint with `identity_provider=Google` (authorization code + PKCE). The SPA redirects to Cognito, Google signs the user in, Cognito returns to the app origin with a `code`, and the client exchanges it at `/oauth2/token` (`frontend/src/utils/auth/cognitoOAuth.ts`). The welcome screen exposes **Continue with Google**.
+* **Google IdP** must be enabled in teacher-wang-infra (`TF_VAR_cognito_google_client_*`); until then Cognito will reject the Google provider on authorize.
+* The client also supports Cognito tokens via Amplify Auth / Hosted UI for other flows. Exact UI chrome beyond the welcome screen is left to product polish.
 
 ### Application user row (Postgres)
 

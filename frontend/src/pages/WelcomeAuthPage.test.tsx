@@ -6,10 +6,14 @@ const {
   signInWithPassword,
   signUpWithPassword,
   confirmSignUpAndSignIn,
+  startGoogleSignIn,
+  completeOAuthRedirectIfPresent,
 } = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
   signUpWithPassword: vi.fn(),
   confirmSignUpAndSignIn: vi.fn(),
+  startGoogleSignIn: vi.fn(),
+  completeOAuthRedirectIfPresent: vi.fn(),
 }));
 
 vi.mock("../utils/auth/cognitoAuth", async (importOriginal) => {
@@ -23,11 +27,20 @@ vi.mock("../utils/auth/cognitoAuth", async (importOriginal) => {
   };
 });
 
+vi.mock("../utils/auth/cognitoOAuth", () => ({
+  startGoogleSignIn,
+  completeOAuthRedirectIfPresent,
+}));
+
 describe("WelcomeAuthPage", () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
     signUpWithPassword.mockReset();
     confirmSignUpAndSignIn.mockReset();
+    startGoogleSignIn.mockReset();
+    completeOAuthRedirectIfPresent.mockReset();
+    completeOAuthRedirectIfPresent.mockResolvedValue(null);
+    startGoogleSignIn.mockResolvedValue(undefined);
     signInWithPassword.mockResolvedValue({
       accessToken: "access",
       idToken: "id",
@@ -41,7 +54,7 @@ describe("WelcomeAuthPage", () => {
     });
   });
 
-  it("shows the brand, description, and login fields by default", () => {
+  it("shows the brand, description, login fields, and Google SSO by default", async () => {
     render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
 
     expect(
@@ -56,8 +69,38 @@ describe("WelcomeAuthPage", () => {
     expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
     expect(
+      await screen.findByRole("button", { name: "Continue with Google" }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("button", { name: "Sign up — it's free" }),
     ).toBeInTheDocument();
+  });
+
+  it("starts Cognito Google SSO when Continue with Google is clicked", async () => {
+    const user = userEvent.setup();
+    render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Continue with Google" }),
+    );
+
+    expect(startGoogleSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("completes an OAuth redirect and authenticates", async () => {
+    const onAuthenticated = vi.fn();
+    completeOAuthRedirectIfPresent.mockResolvedValueOnce({
+      accessToken: "access",
+      idToken: "id",
+      refreshToken: "refresh",
+    });
+
+    render(<WelcomeAuthPage onAuthenticated={onAuthenticated} />);
+
+    await waitFor(() => {
+      expect(completeOAuthRedirectIfPresent).toHaveBeenCalled();
+      expect(onAuthenticated).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("switches to sign-up mode with email and free account messaging", async () => {
@@ -74,6 +117,9 @@ describe("WelcomeAuthPage", () => {
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Create account" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with Google" }),
     ).toBeInTheDocument();
   });
 
@@ -135,6 +181,9 @@ describe("WelcomeAuthPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/We sent a code to l\*\*\*@example.com/i)).toBeInTheDocument();
     expect(onAuthenticated).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Continue with Google" }),
+    ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Confirmation code"), "123456");
     await user.click(screen.getByRole("button", { name: "Confirm and log in" }));

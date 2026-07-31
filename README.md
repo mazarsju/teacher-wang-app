@@ -364,6 +364,7 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 - [x] Provision Cognito User Pool (+ app client; optional Google IdP) in teacher-wang-infra and wire pool id / client id / region into ECS
 - [x] Login / sign-up UI (username + password; sign-up also collects email)
 - [x] Cognito username/password sign-in + sign-up from the welcome screen (`frontend/src/utils/auth/`)
+- [x] Google SSO button on welcome screen (Cognito Hosted UI authorize + PKCE code exchange)
 - [x] Flask JWT verification (Cognito JWKS) + `GET /auth/me` probe (`backend/auth.py`)
 - [x] Protect every API route (`before_request` hook; only `/health` and `OPTIONS` stay public)
 - [x] `users` table keyed by Cognito `sub`, upserted on each authenticated request (`backend/user_context.py`)
@@ -373,7 +374,7 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 - [x] Update [data-isolation-archi-decision.md](docs/data-isolation-archi-decision.md) with concrete schema and migration details
 - [ ] Add PostgreSQL RLS as a backstop behind the app-level filters
 - [ ] Split `app` (SELECT on HSK, CRUD on private) and `migrator` DB roles
-- [ ] Google SSO via Cognito federated IdP (`TF_VAR_cognito_google_client_*` in infra)
+- [ ] Enable Google IdP in Cognito (`TF_VAR_cognito_google_client_id` / `_secret` in infra; Google console redirect → Cognito `/oauth2/idpresponse`)
 
 #### Push images to AWS ECR (from this Mac)
 

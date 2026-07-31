@@ -1,10 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   CognitoAuthError,
   confirmSignUpAndSignIn,
   signInWithPassword,
   signUpWithPassword,
 } from "../utils/auth/cognitoAuth";
+import {
+  completeOAuthRedirectIfPresent,
+  startGoogleSignIn,
+} from "../utils/auth/cognitoOAuth";
 
 export type WelcomeAuthMode = "login" | "signup" | "confirm";
 
@@ -22,6 +26,33 @@ function authErrorMessage(error: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+function GoogleMark() {
+  return (
+    <svg
+      className="welcome-auth-google-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      />
+    </svg>
+  );
+}
+
 export default function WelcomeAuthPage({
   onAuthenticated,
 }: WelcomeAuthPageProps) {
@@ -33,9 +64,43 @@ export default function WelcomeAuthPage({
   const [codeHint, setCodeHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isHandlingOAuth, setIsHandlingOAuth] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.has("code") || params.has("error");
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const tokens = await completeOAuthRedirectIfPresent();
+        if (cancelled) {
+          return;
+        }
+        if (tokens !== null) {
+          onAuthenticated();
+          return;
+        }
+      } catch (oauthError: unknown) {
+        if (!cancelled) {
+          setError(authErrorMessage(oauthError));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsHandlingOAuth(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [onAuthenticated]);
 
   const isSignup = mode === "signup";
   const isConfirm = mode === "confirm";
+  const showGoogle = !isConfirm;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,6 +158,17 @@ export default function WelcomeAuthPage({
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await startGoogleSignIn();
+    } catch (googleError: unknown) {
+      setError(authErrorMessage(googleError));
+      setIsSubmitting(false);
+    }
+  }
+
   function switchToLogin() {
     setMode("login");
     setError(null);
@@ -118,6 +194,21 @@ export default function WelcomeAuthPage({
     : isSignup
       ? "Create account"
       : "Log in";
+
+  if (isHandlingOAuth) {
+    return (
+      <div className="welcome-auth">
+        <div className="welcome-auth-atmosphere" aria-hidden="true">
+          <span className="welcome-auth-glyph">学</span>
+        </div>
+        <div className="welcome-auth-content">
+          <p className="welcome-auth-oauth-status" role="status">
+            Finishing Google sign-in…
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="welcome-auth">
@@ -217,6 +308,25 @@ export default function WelcomeAuthPage({
           >
             {isSubmitting ? "Please wait…" : submitLabel}
           </button>
+
+          {showGoogle ? (
+            <>
+              <div className="welcome-auth-divider" aria-hidden="true">
+                <span>or</span>
+              </div>
+              <button
+                type="button"
+                className="welcome-auth-google"
+                onClick={() => {
+                  void handleGoogleSignIn();
+                }}
+                disabled={isSubmitting}
+              >
+                <GoogleMark />
+                <span>Continue with Google</span>
+              </button>
+            </>
+          ) : null}
 
           {isConfirm ? (
             <p className="welcome-auth-switch">
