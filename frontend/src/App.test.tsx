@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
+import { renderWithStore } from "./test/renderWithStore";
 
 const {
   signInWithPassword,
@@ -31,6 +32,83 @@ vi.mock("./utils/auth/tokenStorage", async (importOriginal) => {
   };
 });
 
+function stubAuthenticatedApis() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo) => {
+      const url = String(input);
+
+      if (url.includes("/characters")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        });
+      }
+
+      if (url.includes("/words")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        });
+      }
+
+      if (url.includes("/llm-config")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            LLM_API_KEY: "",
+            LLM_MODEL: "",
+          }),
+        });
+      }
+
+      if (url.includes("/hsk-level")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            current_level: null,
+            next_level: 1,
+            characters_to_next_level: 1,
+            progress_to_next_level: 0,
+            missing_characters: [],
+            max_level: 7,
+            completion_ratio: 0.85,
+          }),
+        });
+      }
+
+      if (url.includes("/anki/status")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            synchronization_status: "not_synchronized",
+            pending_push_estimate: 0,
+            decks: {
+              mandarin_vocabulary: {
+                status: "not_configured",
+                deck_name: "",
+                model_name: "",
+                fields: {},
+              },
+              mandarin_writting: {
+                status: "not_configured",
+                deck_name: "",
+                model_name: "",
+                fields: {},
+              },
+            },
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      });
+    }),
+  );
+}
+
 describe("App", () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
@@ -42,10 +120,15 @@ describe("App", () => {
       idToken: "id",
       refreshToken: "refresh",
     });
+    stubAuthenticatedApis();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("lands on the welcome auth screen first", () => {
-    render(<App />);
+    renderWithStore(<App />);
 
     expect(
       screen.getByText("Teacher Wang", { selector: ".welcome-auth-brand-mark" }),
@@ -56,7 +139,7 @@ describe("App", () => {
   it("enters the app after Cognito login and switches tabs", async () => {
     const user = userEvent.setup();
 
-    render(<App />);
+    renderWithStore(<App />);
 
     await user.type(screen.getByLabelText("Username"), "learner");
     await user.type(screen.getByLabelText("Password"), "Secret123");
@@ -79,7 +162,7 @@ describe("App", () => {
   it("logs out from the profile menu and returns to welcome auth", async () => {
     const user = userEvent.setup();
 
-    render(<App />);
+    renderWithStore(<App />);
 
     await user.type(screen.getByLabelText("Username"), "learner");
     await user.type(screen.getByLabelText("Password"), "Secret123");
@@ -95,5 +178,32 @@ describe("App", () => {
       screen.getByText("Teacher Wang", { selector: ".welcome-auth-brand-mark" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  });
+
+  it("refreshes the store from the profile Synchro action", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    const fetchMock = vi.mocked(fetch);
+    const callsBeforeSync = fetchMock.mock.calls.length;
+
+    await user.click(screen.getByRole("button", { name: "Profile menu" }));
+    await user.click(screen.getByRole("menuitem", { name: /Synchro/i }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBeforeSync);
+    });
+
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes("/characters"))).toBe(true);
+    expect(urls.some((url) => url.includes("/words"))).toBe(true);
+    expect(urls.some((url) => url.includes("/llm-config"))).toBe(true);
   });
 });

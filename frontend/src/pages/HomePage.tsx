@@ -1,65 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import MissingHskCharactersModal from "../components/MissingHskCharactersModal";
 import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
-import type { Character } from "../types/character";
+import { useAppSelector } from "../store/hooks";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
-import { API_BASE } from "../utils/apiBase";
-import { apiFetch } from "../utils/auth/apiFetch";
-import {
-  fetchHskLevelStatus,
-  type HskLevelStatus,
-} from "../utils/knowledgeBase/hskLevelApi";
-
-async function fetchCharacters() {
-  const response = await apiFetch(`${API_BASE}/characters`, { method: "GET" });
-
-  if (!response.ok) {
-    throw new Error("Failed to load characters.");
-  }
-
-  return (await response.json()) as Character[];
-}
 
 export default function HomePage() {
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [hskLevelStatus, setHskLevelStatus] = useState<HskLevelStatus | null>(
-    null,
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const characters = useAppSelector((state) => state.characters.items);
+  const hskLevelStatus = useAppSelector((state) => state.hsk.status);
+  const syncStatus = useAppSelector((state) => state.sync.status);
+  const syncError = useAppSelector((state) => state.sync.error);
+  const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
   const [isMissingModalOpen, setIsMissingModalOpen] = useState(false);
   const [isHskInfoOpen, setIsHskInfoOpen] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    void Promise.all([fetchCharacters(), fetchHskLevelStatus()])
-      .then(([loadedCharacters, loadedHskLevelStatus]) => {
-        if (isMounted) {
-          setCharacters(loadedCharacters);
-          setHskLevelStatus(loadedHskLevelStatus);
-        }
-      })
-      .catch((fetchError: unknown) => {
-        if (isMounted) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : "Failed to load progress.",
-          );
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const hasSyncedData = lastSyncedAt !== null;
+  const isLoading =
+    !hasSyncedData && (syncStatus === "idle" || syncStatus === "loading");
+  const error = !hasSyncedData ? syncError : null;
 
   const recognizedCount = characters.length;
   const writtingCount = useMemo(

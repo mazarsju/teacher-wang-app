@@ -19,7 +19,7 @@ An app to learn Mandarin.
 This project was intentionally developed using Cursor AI and coding agents. My objective was not only to build an AI product, but also to explore modern AI-assisted software engineering workflows.
 
 - **Backend:** Python, Flask, SQLAlchemy, PostgreSQL (Alembic)
-- **Frontend:** React, TypeScript, Vite
+- **Frontend:** React, TypeScript, Vite, Redux Toolkit
 - **AI:** LangChain (`langchain-core`, `langchain-openai`), OpenAI-compatible chat models via `ChatOpenAI`
 
 ## Project structure
@@ -61,15 +61,15 @@ teacher-wang/
 │   ├── public/
 │   │   └── anki-connect/   # Illustrative AnkiConnect setup guide images
 │   ├── src/
-│   │   ├── App.tsx         # App shell and page routing
-│   │   ├── main.tsx        # React entry point
+│   │   ├── App.tsx         # App shell, auth gate, login/logout sync triggers
+│   │   ├── main.tsx        # React entry + Redux Provider
+│   │   ├── store/          # Redux Toolkit store (characters, words, settings, HSK, Anki)
 │   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences
-│   │   ├── components/
-│   │   └── utils/          # API helpers, Anki sync, Cognito auth client
-│   │   ├── components/
+│   │   ├── components/     # Navbar, ProfileMenu (Synchro / Log out), modals, …
 │   │   ├── types/
 │   │   └── utils/
 │   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
+│   │       ├── auth/           # Cognito auth client + apiFetch
 │   │       ├── anki/           # AnkiConnect (localhost:8765) + /api/anki bookkeeping
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
 │   │       └── aiChat/         # Chat, LLM config, token usage
@@ -267,6 +267,20 @@ npm run dev
 
 The app runs at `http://localhost:5173`. Vite proxies `/api/*` to the backend (stripping the `/api` prefix) during development. AnkiConnect stays on `http://127.0.0.1:8765` (browser → local Anki); Flask Anki bookkeeping uses `/api/anki/…`.
 
+#### Client state (Redux Toolkit)
+
+Important learner data is kept in a Redux store so navigating between tabs does not re-hit the API for the same payload. On **login** (and when restoring an existing session), and when the user clicks **Synchro** in the profile menu (above Log out), the app refreshes:
+
+| Slice | Source |
+| --- | --- |
+| Characters | `GET /characters` |
+| Words | `GET /words` |
+| Settings (LLM config) | `GET /llm-config` |
+| HSK level | `GET /hsk-level` |
+| Anki status | `GET /anki/status` (+ local AnkiConnect when available) |
+
+Home, Knowledge base, and Preferences read from that store. Mutations (add / edit / delete) update the store after a successful API call. Logout clears the store. Chat transcripts, token-usage charts, and other ephemeral UI state are not cached this way.
+
 #### Tests
 
 From the `frontend/` directory:
@@ -367,21 +381,29 @@ Host the web app so learners can use it without a local install. Infrastructure 
 
 Several learners can sign in; each owns private data, while shared catalogs stay read-only. Design notes: [auth](docs/auth-archi-decision.md), [data isolation](docs/data-isolation-archi-decision.md), infra [multi-user](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md).
 
-- [x] Provision Cognito User Pool (+ app client; optional Google IdP) in teacher-wang-infra and wire pool id / client id / region into ECS
-- [x] Login / sign-up UI (username + password; sign-up also collects email)
-- [x] Cognito username/password sign-in + sign-up from the welcome screen (`frontend/src/utils/auth/`)
-- [x] Google SSO button on welcome screen (Cognito Hosted UI authorize + PKCE code exchange)
-- [x] Flask JWT verification (Cognito JWKS) + `GET /auth/me` probe (`backend/auth.py`)
-- [x] Protect every API route (`before_request` hook; only `/health` and `OPTIONS` stay public)
-- [x] `users` table keyed by Cognito `sub`, upserted on each authenticated request (`backend/user_context.py`)
-- [x] Tag private tables with `user_id` (first PK column) and enforce filters in the app
-- [x] Hash-partition private tables on `user_id` (modulus 8) in Alembic
-- [x] Frontend sends `Authorization` + `X-Id-Token` on API calls (`frontend/src/utils/auth/apiFetch.ts`)
-- [x] Update [data-isolation-archi-decision.md](docs/data-isolation-archi-decision.md) with concrete schema and migration details
-- [x] Per-user conversation logs in S3 (`users/{sub}/…`) with `GET/POST/PATCH/DELETE /conversation-logs/<character_id>` (local filesystem for dev/tests)
-- [ ] Add PostgreSQL RLS as a backstop behind the app-level filters
-- [ ] Split `app` (SELECT on HSK, CRUD on private) and `migrator` DB roles
-- [ ] Enable Google IdP in Cognito (`TF_VAR_cognito_google_client_id` / `_secret` in infra; Google console redirect → Cognito `/oauth2/idpresponse`)
+- [x] Cognito User Pool in infra (app client; optional Google IdP) wired into ECS
+- [x] Welcome auth UI — username/password login & sign-up, plus Google SSO (Hosted UI + PKCE)
+- [x] Flask JWT verification on every route; `users` table keyed by Cognito `sub`
+- [x] Per-user private tables (`user_id` in PK, hash-partitioned) with shared HSK catalog
+- [x] Frontend attaches Cognito tokens on API calls; per-user conversation logs (S3 / local)
+- [ ] PostgreSQL RLS as a backstop behind app-level filters
+- [ ] Split `app` and `migrator` DB roles
+- [ ] Enable Google IdP in Cognito (infra secrets + Google console redirect)
+
+### 7. Improve UX/UI
+
+Keep the app feeling snappy and polished as datasets and features grow — fewer round-trips, clearer feedback, smoother navigation, and a more cohesive look.
+
+- [x] Cache core learner data in Redux so tab switches do not re-fetch (refresh on login / profile **Synchro**)
+- [ ] Avatar design improvement
+- [ ] General webapp design improvement
+
+### 8. Plan management
+
+Differentiate free and paid tiers so AI chat can scale without unbounded cost. The `users.plan` column already defaults to `free`.
+
+- [ ] Lock the chat conversation feature on the free plan
+- [ ] Add payment subscription (upgrade / renew / cancel)
 
 #### Push images to AWS ECR (from this Mac)
 

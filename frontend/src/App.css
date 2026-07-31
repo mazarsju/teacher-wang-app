@@ -105,9 +105,14 @@ body {
   text-align: left;
 }
 
-.profile-menu-item:hover {
+.profile-menu-item:hover:not(:disabled) {
   background: #f3f4f6;
   color: #111827;
+}
+
+.profile-menu-item:disabled {
+  opacity: 0.65;
+  cursor: wait;
 }
 
 .profile-menu-item-icon {

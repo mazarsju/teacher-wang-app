@@ -25,12 +25,16 @@ type NavbarProps = {
   activePage: PageId;
   onPageChange: (page: PageId) => void;
   onLogout: () => void;
+  onSync: () => void;
+  isSyncing?: boolean;
 };
 
 export default function Navbar({
   activePage,
   onPageChange,
   onLogout,
+  onSync,
+  isSyncing = false,
 }: NavbarProps) {
   return (
     <nav className="navbar" aria-label="Main navigation">
@@ -54,7 +58,11 @@ export default function Navbar({
             );
           })}
         </ul>
-        <ProfileMenu onLogout={onLogout} />
+        <ProfileMenu
+          onLogout={onLogout}
+          onSync={onSync}
+          isSyncing={isSyncing}
+        />
       </div>
     </nav>
   );

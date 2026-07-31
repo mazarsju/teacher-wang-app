@@ -1,11 +1,17 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { PowerIcon, ProfileIcon } from "./icons";
+import { PowerIcon, ProfileIcon, SyncIcon } from "./icons";
 
 type ProfileMenuProps = {
   onLogout: () => void;
+  onSync: () => void;
+  isSyncing?: boolean;
 };
 
-export default function ProfileMenu({ onLogout }: ProfileMenuProps) {
+export default function ProfileMenu({
+  onLogout,
+  onSync,
+  isSyncing = false,
+}: ProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -59,6 +65,18 @@ export default function ProfileMenu({ onLogout }: ProfileMenuProps) {
           role="menu"
           aria-label="Profile"
         >
+          <button
+            type="button"
+            className="profile-menu-item"
+            role="menuitem"
+            disabled={isSyncing}
+            onClick={() => {
+              onSync();
+            }}
+          >
+            <SyncIcon className="profile-menu-item-icon" />
+            <span>{isSyncing ? "Syncing..." : "Synchro"}</span>
+          </button>
           <button
             type="button"
             className="profile-menu-item"

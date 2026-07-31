@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import AddWordModal, { type WordFormValues } from "../components/AddWordModal";
 import CharacterFormModal, {
   type CharacterFormValues,
@@ -11,11 +11,27 @@ import PinyinGridView from "../components/PinyinGridView";
 import Table, { type TableColumn } from "../components/Table";
 import type { Character } from "../types/character";
 import type { Word } from "../types/word";
-import { fetchAnkiStatus, runAnkiQuickSync } from "../utils/anki/ankiApi";
-import { API_BASE } from "../utils/apiBase";
-import { apiFetch } from "../utils/auth/apiFetch";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setAnkiStatus } from "../store/slices/ankiSlice";
+import {
+  removeCharacter,
+  upsertCharacter,
+} from "../store/slices/charactersSlice";
+import { removeWord, upsertWord } from "../store/slices/wordsSlice";
+import { syncAppData } from "../store/thunks/syncAppData";
+import { runAnkiQuickSync } from "../utils/anki/ankiApi";
+import {
+  createCharacter,
+  deleteCharacter,
+  updateCharacter,
+} from "../utils/knowledgeBase/charactersApi";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import {
+  createWord,
+  deleteWord,
+  updateWord,
+} from "../utils/knowledgeBase/wordsApi";
 import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
 
 const CHARACTER_COLUMNS: TableColumn<Character>[] = [
@@ -83,36 +99,18 @@ function filterCharactersForView(
   );
 }
 
-async function fetchCharacters(limit?: number) {
-  const query = limit == null ? "" : `?limit=${limit}`;
-  const response = await apiFetch(`${API_BASE}/characters${query}`, { method: "GET" });
-
-  if (!response.ok) {
-    throw new Error("Failed to load characters.");
-  }
-
-  return (await response.json()) as Character[];
-}
-
-async function fetchWords(limit?: number) {
-  const query = limit == null ? "" : `?limit=${limit}`;
-  const response = await apiFetch(`${API_BASE}/words${query}`, { method: "GET" });
-
-  if (!response.ok) {
-    throw new Error("Failed to load words.");
-  }
-
-  return (await response.json()) as Word[];
-}
-
-const INITIAL_PREVIEW_LIMIT = 10;
-
 type KnowledgeBaseMode = "view" | "edit";
 
 export default function KnowledgeBasePage() {
+  const dispatch = useAppDispatch();
+  const characters = useAppSelector((state) => state.characters.items);
+  const words = useAppSelector((state) => state.words.items);
+  const ankiStatus = useAppSelector((state) => state.anki.status);
+  const syncStatus = useAppSelector((state) => state.sync.status);
+  const syncError = useAppSelector((state) => state.sync.error);
+  const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
+
   const [pageMode, setPageMode] = useState<KnowledgeBaseMode>("edit");
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [words, setWords] = useState<Word[]>([]);
   const [showWritingKnown, setShowWritingKnown] = useState(true);
   const [showWritingUnknown, setShowWritingUnknown] = useState(true);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
@@ -127,17 +125,21 @@ export default function KnowledgeBasePage() {
   const [isAddCharacterModalOpen, setIsAddCharacterModalOpen] = useState(false);
   const [isAddWordModalOpen, setIsAddWordModalOpen] = useState(false);
   const [prefilledCharForAdd, setPrefilledCharForAdd] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [ankiOverallSynchronized, setAnkiOverallSynchronized] = useState(false);
-  const [pendingAnkiPushEstimate, setPendingAnkiPushEstimate] = useState(0);
   const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const loadGenerationRef = useRef(0);
+
+  const hasSyncedData = lastSyncedAt !== null;
+  const isLoading =
+    !hasSyncedData && (syncStatus === "idle" || syncStatus === "loading");
+  const error = mutationError ?? (!hasSyncedData ? syncError : null);
+  const ankiOverallSynchronized =
+    ankiStatus.synchronization_status === "synchronized";
+  const pendingAnkiPushEstimate = ankiStatus.pending_push_estimate;
 
   const knownCharacters = useMemo(
     () => characters.map((character) => character.char),
@@ -182,79 +184,6 @@ export default function KnowledgeBasePage() {
   const showAnkiSyncBanner =
     ankiOverallSynchronized && pendingAnkiPushEstimate > 0;
 
-  const refreshAnkiSyncBanner = useCallback(async () => {
-    try {
-      const status = await fetchAnkiStatus();
-      setAnkiOverallSynchronized(status.synchronization_status === "synchronized");
-      setPendingAnkiPushEstimate(status.pending_push_estimate);
-    } catch {
-      // Banner is optional; keep the knowledge base usable if Anki status fails.
-    }
-  }, []);
-
-  const loadKnowledgeBase = useCallback(
-    async (options?: { progressive?: boolean }) => {
-      const generation = ++loadGenerationRef.current;
-      setError(null);
-
-      try {
-        if (options?.progressive) {
-          const [previewCharacters, previewWords] = await Promise.all([
-            fetchCharacters(INITIAL_PREVIEW_LIMIT),
-            fetchWords(INITIAL_PREVIEW_LIMIT),
-          ]);
-          if (generation !== loadGenerationRef.current) {
-            return;
-          }
-          setCharacters(previewCharacters);
-          setWords(previewWords);
-          setIsLoading(false);
-          void refreshAnkiSyncBanner();
-
-          const [charactersData, wordsData] = await Promise.all([
-            fetchCharacters(),
-            fetchWords(),
-          ]);
-          if (generation !== loadGenerationRef.current) {
-            return;
-          }
-          setCharacters(charactersData);
-          setWords(wordsData);
-          return;
-        }
-
-        const [charactersData, wordsData] = await Promise.all([
-          fetchCharacters(),
-          fetchWords(),
-        ]);
-        if (generation !== loadGenerationRef.current) {
-          return;
-        }
-        setCharacters(charactersData);
-        setWords(wordsData);
-        await refreshAnkiSyncBanner();
-      } catch (loadError) {
-        if (generation !== loadGenerationRef.current) {
-          return;
-        }
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Failed to load knowledge base.",
-        );
-      } finally {
-        if (generation === loadGenerationRef.current) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [refreshAnkiSyncBanner],
-  );
-
-  useEffect(() => {
-    void loadKnowledgeBase({ progressive: true });
-  }, [loadKnowledgeBase]);
-
   const openAddCharacterModal = useCallback((prefilledChar = "") => {
     setPrefilledCharForAdd(prefilledChar);
     setIsAddCharacterModalOpen(true);
@@ -285,7 +214,7 @@ export default function KnowledgeBasePage() {
       await exportDatabase();
       setStatusMessage('The database has been saved in the "db.txt" file.');
     } catch (exportError) {
-      setError(
+      setMutationError(
         exportError instanceof Error
           ? exportError.message
           : "Failed to export database.",
@@ -308,10 +237,10 @@ export default function KnowledgeBasePage() {
 
     try {
       await importDatabase(file);
-      await loadKnowledgeBase();
+      await dispatch(syncAppData()).unwrap();
       setStatusMessage("The database has been imported successfully.");
     } catch (importError) {
-      setError(
+      setMutationError(
         importError instanceof Error
           ? importError.message
           : "Failed to import database.",
@@ -330,20 +259,10 @@ export default function KnowledgeBasePage() {
     setCharacterToDelete(null);
 
     try {
-      const response = await apiFetch(
-        `${API_BASE}/characters/${encodeURIComponent(character.char)}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete character.");
-      }
-
-      setCharacters((currentCharacters) =>
-        currentCharacters.filter((item) => item.char !== character.char),
-      );
+      await deleteCharacter(character.char);
+      dispatch(removeCharacter(character.char));
     } catch (deleteError) {
-      setError(
+      setMutationError(
         deleteError instanceof Error
           ? deleteError.message
           : "Failed to delete character.",
@@ -360,20 +279,10 @@ export default function KnowledgeBasePage() {
     setWordToDelete(null);
 
     try {
-      const response = await apiFetch(
-        `${API_BASE}/words/${encodeURIComponent(word.word)}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete word.");
-      }
-
-      setWords((currentWords) =>
-        currentWords.filter((item) => item.word !== word.word),
-      );
+      await deleteWord(word.word);
+      dispatch(removeWord(word.word));
     } catch (deleteError) {
-      setError(
+      setMutationError(
         deleteError instanceof Error
           ? deleteError.message
           : "Failed to delete word.",
@@ -390,30 +299,13 @@ export default function KnowledgeBasePage() {
     setCharacterToEdit(null);
 
     try {
-      const response = await apiFetch(
-        `${API_BASE}/characters/${encodeURIComponent(character.char)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pinyin: values.pinyin,
-            writting_known: values.writting_known,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update character.");
-      }
-
-      const updatedCharacter = (await response.json()) as Character;
-      setCharacters((currentCharacters) =>
-        currentCharacters.map((item) =>
-          item.char === updatedCharacter.char ? updatedCharacter : item,
-        ),
-      );
+      const updatedCharacter = await updateCharacter(character.char, {
+        pinyin: values.pinyin,
+        writting_known: values.writting_known,
+      });
+      dispatch(upsertCharacter(updatedCharacter));
     } catch (updateError) {
-      setError(
+      setMutationError(
         updateError instanceof Error
           ? updateError.message
           : "Failed to update character.",
@@ -430,29 +322,12 @@ export default function KnowledgeBasePage() {
     setWordToEdit(null);
 
     try {
-      const response = await apiFetch(
-        `${API_BASE}/words/${encodeURIComponent(word.word)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            definition: values.definition,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update word.");
-      }
-
-      const updatedWord = (await response.json()) as Word;
-      setWords((currentWords) =>
-        currentWords.map((item) =>
-          item.word === updatedWord.word ? updatedWord : item,
-        ),
-      );
+      const updatedWord = await updateWord(word.word, {
+        definition: values.definition,
+      });
+      dispatch(upsertWord(updatedWord));
     } catch (updateError) {
-      setError(
+      setMutationError(
         updateError instanceof Error
           ? updateError.message
           : "Failed to update word.",
@@ -464,19 +339,10 @@ export default function KnowledgeBasePage() {
     closeAddCharacterModal();
 
     try {
-      const response = await apiFetch(`${API_BASE}/characters`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add character.");
-      }
-
-      await loadKnowledgeBase();
+      const createdCharacter = await createCharacter(values);
+      dispatch(upsertCharacter(createdCharacter));
     } catch (addError) {
-      setError(
+      setMutationError(
         addError instanceof Error ? addError.message : "Failed to add character.",
       );
     }
@@ -486,28 +352,13 @@ export default function KnowledgeBasePage() {
     setIsAddWordModalOpen(false);
 
     try {
-      const response = await apiFetch(`${API_BASE}/words`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          word: values.word,
-          definition: values.definition || null,
-        }),
+      const createdWord = await createWord({
+        word: values.word,
+        definition: values.definition || null,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to add word.");
-      }
-
-      const createdWord = (await response.json()) as Word;
-      setWords((currentWords) =>
-        [...currentWords, createdWord].sort((left, right) =>
-          left.word.localeCompare(right.word),
-        ),
-      );
-      await refreshAnkiSyncBanner();
+      dispatch(upsertWord(createdWord));
     } catch (addWordError) {
-      setError(
+      setMutationError(
         addWordError instanceof Error
           ? addWordError.message
           : "Failed to add word.",
@@ -520,14 +371,22 @@ export default function KnowledgeBasePage() {
     setIsQuickSyncing(true);
     try {
       const result = await runAnkiQuickSync();
-      setAnkiOverallSynchronized(
-        result.synchronization_status === "synchronized",
+      dispatch(
+        setAnkiStatus({
+          ...ankiStatus,
+          synchronization_status: result.synchronization_status,
+          pending_push_estimate: result.pending_push_estimate,
+          decks: {
+            ...ankiStatus.decks,
+            mandarin_vocabulary: result.mandarin_vocabulary.deck,
+            mandarin_writting: result.mandarin_writting.deck,
+          },
+        }),
       );
-      setPendingAnkiPushEstimate(result.pending_push_estimate);
-    } catch (syncError) {
+    } catch (syncErrorValue) {
       setQuickSyncError(
-        syncError instanceof Error
-          ? syncError.message
+        syncErrorValue instanceof Error
+          ? syncErrorValue.message
           : "Failed to quick-synchronize with Anki.",
       );
     } finally {

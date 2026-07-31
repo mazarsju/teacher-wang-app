@@ -4,43 +4,20 @@ import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
 import { InfoIcon, SettingsIcon, SyncIcon } from "../components/icons";
 import Page from "../components/Page";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setAnkiStatus } from "../store/slices/ankiSlice";
+import { setLlmConfig } from "../store/slices/settingsSlice";
 import {
   ANKI_DECK_LABELS,
   ANKI_DECK_ORDER,
   type AnkiDeckKind,
   type AnkiDeckStatus,
-  type AnkiStatus,
 } from "../types/anki";
 import type { LlmConfig } from "../types/llmConfig";
 import type { TokenUsageSummary } from "../types/tokenUsage";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
-import { fetchLlmConfig, saveLlmConfig } from "../utils/aiChat/llmConfigApi";
+import { saveLlmConfig } from "../utils/aiChat/llmConfigApi";
 import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
-
-const emptyLlmConfig: LlmConfig = {
-  LLM_API_KEY: "",
-  LLM_MODEL: "",
-};
-
-const emptyAnkiStatus: AnkiStatus = {
-  connected: false,
-  synchronization_status: "not_synchronized",
-  pending_push_estimate: 0,
-  decks: {
-    mandarin_vocabulary: {
-      status: "not_configured",
-      deck_name: "",
-      model_name: "",
-      fields: {},
-    },
-    mandarin_writting: {
-      status: "not_configured",
-      deck_name: "",
-      model_name: "",
-      fields: {},
-    },
-  },
-};
 
 function formatDayLabel(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
@@ -72,56 +49,67 @@ function formatDeckStatus(status: AnkiDeckStatus): string {
 }
 
 export default function PreferencesPage() {
-  const [llmConfig, setLlmConfig] = useState<LlmConfig>(emptyLlmConfig);
+  const dispatch = useAppDispatch();
+  const storedLlmConfig = useAppSelector((state) => state.settings.llmConfig);
+  const ankiStatus = useAppSelector((state) => state.anki.status);
+  const syncStatus = useAppSelector((state) => state.sync.status);
+  const syncError = useAppSelector((state) => state.sync.error);
+  const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
+
+  const [draftLlmConfig, setDraftLlmConfig] = useState<LlmConfig>(storedLlmConfig);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageSummary | null>(null);
-  const [ankiStatus, setAnkiStatus] = useState<AnkiStatus>(emptyAnkiStatus);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isTokenUsageLoading, setIsTokenUsageLoading] = useState(true);
+  const [extrasError, setExtrasError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [setupKind, setSetupKind] = useState<AnkiDeckKind | null>(null);
   const [syncKind, setSyncKind] = useState<AnkiDeckKind | null>(null);
 
-  const loadPreferences = useCallback(async () => {
-    setError(null);
+  useEffect(() => {
+    setDraftLlmConfig(storedLlmConfig);
+  }, [storedLlmConfig]);
+
+  const loadTokenUsage = useCallback(async () => {
+    setExtrasError(null);
 
     try {
-      const [config, usage, anki] = await Promise.all([
-        fetchLlmConfig(),
-        fetchTokenUsage(),
-        fetchAnkiStatus(),
-      ]);
-      setLlmConfig(config);
+      const usage = await fetchTokenUsage();
       setTokenUsage(usage);
-      setAnkiStatus(anki);
     } catch (loadError) {
-      setError(
+      setExtrasError(
         loadError instanceof Error
           ? loadError.message
           : "Failed to load preferences.",
       );
     } finally {
-      setIsLoading(false);
+      setIsTokenUsageLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadPreferences();
-  }, [loadPreferences]);
+    void loadTokenUsage();
+  }, [loadTokenUsage]);
+
+  const hasSyncedSettings = lastSyncedAt !== null;
+  const isLoading =
+    (!hasSyncedSettings &&
+      (syncStatus === "idle" || syncStatus === "loading")) ||
+    isTokenUsageLoading;
+  const error = extrasError ?? (!hasSyncedSettings ? syncError : null);
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
-    setError(null);
+    setExtrasError(null);
     setSaveMessage(null);
 
     try {
-      const savedConfig = await saveLlmConfig(llmConfig);
-      setLlmConfig(savedConfig);
+      const savedConfig = await saveLlmConfig(draftLlmConfig);
+      dispatch(setLlmConfig(savedConfig));
       setSaveMessage("LLM configuration saved.");
     } catch (saveError) {
-      setError(
+      setExtrasError(
         saveError instanceof Error
           ? saveError.message
           : "Failed to save LLM configuration.",
@@ -131,13 +119,12 @@ export default function PreferencesPage() {
     }
   }
 
-  async function handleDeckConfigured() {
-    setSetupKind(null);
+  async function refreshAnkiStatus() {
     try {
       const anki = await fetchAnkiStatus();
-      setAnkiStatus(anki);
+      dispatch(setAnkiStatus(anki));
     } catch (refreshError) {
-      setError(
+      setExtrasError(
         refreshError instanceof Error
           ? refreshError.message
           : "Failed to refresh Anki status.",
@@ -145,18 +132,14 @@ export default function PreferencesPage() {
     }
   }
 
+  async function handleDeckConfigured() {
+    setSetupKind(null);
+    await refreshAnkiStatus();
+  }
+
   async function handleSyncCompleted() {
     setSyncKind(null);
-    try {
-      const anki = await fetchAnkiStatus();
-      setAnkiStatus(anki);
-    } catch (refreshError) {
-      setError(
-        refreshError instanceof Error
-          ? refreshError.message
-          : "Failed to refresh Anki status.",
-      );
-    }
+    await refreshAnkiStatus();
   }
 
   const maxDailyTokens = Math.max(
@@ -187,10 +170,10 @@ export default function PreferencesPage() {
               <span className="preferences-field-label">LLM API key</span>
               <input
                 type="password"
-                value={llmConfig.LLM_API_KEY}
+                value={draftLlmConfig.LLM_API_KEY}
                 autoComplete="off"
                 onChange={(event) =>
-                  setLlmConfig((current) => ({
+                  setDraftLlmConfig((current) => ({
                     ...current,
                     LLM_API_KEY: event.target.value,
                   }))
@@ -201,10 +184,10 @@ export default function PreferencesPage() {
               <span className="preferences-field-label">LLM model</span>
               <input
                 type="text"
-                value={llmConfig.LLM_MODEL}
+                value={draftLlmConfig.LLM_MODEL}
                 placeholder="gpt-4o-mini"
                 onChange={(event) =>
-                  setLlmConfig((current) => ({
+                  setDraftLlmConfig((current) => ({
                     ...current,
                     LLM_MODEL: event.target.value,
                   }))
@@ -348,11 +331,9 @@ export default function PreferencesPage() {
         isOpen={isGuideOpen}
         onClose={() => {
           setIsGuideOpen(false);
-          void fetchAnkiStatus()
-            .then(setAnkiStatus)
-            .catch(() => {
-              /* keep previous status if refresh fails */
-            });
+          void refreshAnkiStatus().catch(() => {
+            /* keep previous status if refresh fails */
+          });
         }}
       />
       <AnkiDeckSetupModal

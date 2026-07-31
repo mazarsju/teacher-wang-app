@@ -4,7 +4,14 @@ import Navbar from "./Navbar";
 
 describe("Navbar", () => {
   it("renders all navigation tabs", () => {
-    render(<Navbar activePage="home" onPageChange={() => {}} onLogout={() => {}} />);
+    render(
+      <Navbar
+        activePage="home"
+        onPageChange={() => {}}
+        onLogout={() => {}}
+        onSync={() => {}}
+      />,
+    );
 
     expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(
@@ -23,7 +30,14 @@ describe("Navbar", () => {
     const user = userEvent.setup();
     const onPageChange = vi.fn();
 
-    render(<Navbar activePage="home" onPageChange={onPageChange} onLogout={() => {}} />);
+    render(
+      <Navbar
+        activePage="home"
+        onPageChange={onPageChange}
+        onLogout={() => {}}
+        onSync={() => {}}
+      />,
+    );
 
     expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute(
       "aria-current",

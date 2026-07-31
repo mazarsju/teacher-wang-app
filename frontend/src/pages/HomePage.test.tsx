@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderWithStore } from "../test/renderWithStore";
 import HomePage from "./HomePage";
 
 const characters = [
@@ -27,46 +28,22 @@ const hskLevelStatus = {
   completion_ratio: 0.85,
 };
 
+const syncedState = {
+  characters: { items: characters },
+  hsk: { status: hskLevelStatus },
+  sync: {
+    status: "succeeded" as const,
+    error: null,
+    lastSyncedAt: "2026-07-31T00:00:00.000Z",
+  },
+};
+
 describe("HomePage", () => {
-  beforeEach(() => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo) => {
-        const url = String(input);
-
-        if (url.endsWith("/characters")) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => characters,
-          });
-        }
-
-        if (url.endsWith("/hsk-level")) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => hskLevelStatus,
-          });
-        }
-
-        return Promise.resolve({
-          ok: false,
-          json: async () => ({}),
-        });
-      }),
-    );
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("renders character metrics and HSK level", async () => {
-    render(<HomePage />);
+  it("renders character metrics and HSK level from the store", () => {
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
 
     expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
-    expect(screen.getByText("Loading your progress...")).toBeInTheDocument();
-
-    expect(await screen.findByText("Your HSK journey starts here")).toBeInTheDocument();
+    expect(screen.getByText("Your HSK journey starts here")).toBeInTheDocument();
     expect(screen.getByText("1 character to reach HSK 1")).toBeInTheDocument();
     expect(screen.getByLabelText("HSK level")).toBeInTheDocument();
     expect(
@@ -78,9 +55,8 @@ describe("HomePage", () => {
 
   it("explains how the HSK level is estimated", async () => {
     const user = userEvent.setup();
-    render(<HomePage />);
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
 
-    await screen.findByText("Your HSK journey starts here");
     await user.click(
       screen.getByRole("button", { name: "How HSK level is estimated" }),
     );
@@ -100,9 +76,8 @@ describe("HomePage", () => {
 
   it("opens the missing characters list from the banner", async () => {
     const user = userEvent.setup();
-    render(<HomePage />);
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
 
-    await screen.findByText("Your HSK journey starts here");
     await user.click(screen.getByRole("button", { name: "Missing characters" }));
 
     expect(
@@ -112,17 +87,15 @@ describe("HomePage", () => {
   });
 
   it("shows an error when progress fails to load", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve({
-          ok: false,
-          json: async () => ({}),
-        }),
-      ),
-    );
-
-    render(<HomePage />);
+    renderWithStore(<HomePage />, {
+      preloadedState: {
+        sync: {
+          status: "failed",
+          error: "Failed to load characters.",
+          lastSyncedAt: null,
+        },
+      },
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/Failed to load/)).toBeInTheDocument();

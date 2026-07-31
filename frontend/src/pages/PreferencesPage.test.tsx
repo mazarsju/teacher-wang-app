@@ -1,8 +1,9 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
 import * as ankiApi from "../utils/anki/ankiApi";
 import type { AnkiStatus } from "../types/anki";
+import { renderWithStore } from "../test/renderWithStore";
 
 vi.mock("../utils/anki/ankiApi", () => ({
   fetchAnkiStatus: vi.fn(),
@@ -39,6 +40,21 @@ const disconnectedStatus: AnkiStatus = {
       model_name: "",
       fields: {},
     },
+  },
+};
+
+const syncedSettingsState = {
+  settings: {
+    llmConfig: {
+      LLM_API_KEY: "existing-key",
+      LLM_MODEL: "gpt-4o-mini",
+    },
+  },
+  anki: { status: disconnectedStatus },
+  sync: {
+    status: "succeeded" as const,
+    error: null,
+    lastSyncedAt: "2026-07-31T00:00:00.000Z",
   },
 };
 
@@ -104,7 +120,7 @@ describe("PreferencesPage", () => {
   });
 
   it("loads and displays the LLM configuration fields", async () => {
-    render(<PreferencesPage />);
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
 
     expect(
       screen.getByRole("heading", { name: "Preferences" }),
@@ -117,7 +133,7 @@ describe("PreferencesPage", () => {
   });
 
   it("shows total token usage and the 7-day chart", async () => {
-    render(<PreferencesPage />);
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
 
     expect(
       await screen.findByRole("heading", { name: "Token usage" }),
@@ -139,7 +155,7 @@ describe("PreferencesPage", () => {
   });
 
   it("shows Anki synchronization with disconnected warning", async () => {
-    render(<PreferencesPage />);
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
 
     expect(
       await screen.findByRole("heading", { name: "Anki synchronization" }),
@@ -164,7 +180,7 @@ describe("PreferencesPage", () => {
 
   it("opens the AnkiConnect guide from the info button", async () => {
     const user = userEvent.setup();
-    render(<PreferencesPage />);
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
 
     await screen.findByRole("heading", { name: "Anki synchronization" });
     await user.click(
@@ -183,7 +199,7 @@ describe("PreferencesPage", () => {
   it("saves the LLM configuration through the API", async () => {
     const user = userEvent.setup();
 
-    render(<PreferencesPage />);
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
     await screen.findByLabelText("LLM API key");
 
     await user.clear(screen.getByLabelText("LLM API key"));
@@ -256,7 +272,32 @@ describe("PreferencesPage", () => {
       },
     });
 
-    render(<PreferencesPage />);
+    renderWithStore(<PreferencesPage />, {
+      preloadedState: {
+        ...syncedSettingsState,
+        anki: {
+          status: {
+            connected: true,
+            synchronization_status: "not_synchronized",
+            pending_push_estimate: 0,
+            decks: {
+              mandarin_writting: {
+                status: "not_synchronized",
+                deck_name: "Characters",
+                model_name: "Basic",
+                fields: { recto: "Front", verso: "Back" },
+              },
+              mandarin_vocabulary: {
+                status: "not_configured",
+                deck_name: "",
+                model_name: "",
+                fields: {},
+              },
+            },
+          },
+        },
+      },
+    });
     await screen.findByRole("heading", { name: "Anki synchronization" });
 
     expect(screen.queryByText(/Start the Anki app/)).not.toBeInTheDocument();

@@ -27,6 +27,26 @@ export type AnkiStatus = {
   decks: Record<AnkiDeckKind, AnkiDeckMapping>;
 };
 
+export const emptyAnkiStatus: AnkiStatus = {
+  connected: false,
+  synchronization_status: "not_synchronized",
+  pending_push_estimate: 0,
+  decks: {
+    mandarin_vocabulary: {
+      status: "not_configured",
+      deck_name: "",
+      model_name: "",
+      fields: {},
+    },
+    mandarin_writting: {
+      status: "not_configured",
+      deck_name: "",
+      model_name: "",
+      fields: {},
+    },
+  },
+};
+
 export type AnkiDeckSetupResult = {
   kind: AnkiDeckKind;
   deck: AnkiDeckMapping;

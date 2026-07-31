@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import KnowledgeBasePage from "./KnowledgeBasePage";
 import * as ankiApi from "../utils/anki/ankiApi";
 import type { AnkiStatus } from "../types/anki";
+import { renderWithStore } from "../test/renderWithStore";
 
 vi.mock("../utils/anki/ankiApi", () => ({
   fetchAnkiStatus: vi.fn(),
@@ -62,6 +63,32 @@ const words = [
   },
 ];
 
+const syncedState = {
+  characters: { items: characters },
+  words: { items: words },
+  settings: {
+    llmConfig: { LLM_API_KEY: "", LLM_MODEL: "" },
+  },
+  hsk: {
+    status: {
+      current_level: null,
+      next_level: 1,
+      characters_to_next_level: 1,
+      progress_to_next_level: 0,
+      missing_characters: [],
+      max_level: 7,
+      completion_ratio: 0.85,
+    },
+  },
+  anki: { status: defaultAnkiStatus },
+  sync: {
+    status: "succeeded" as const,
+    error: null,
+    lastSyncedAt: "2026-07-31T00:00:00.000Z",
+  },
+};
+
+
 function matchesApiPath(url: string, path: string) {
   const expected = path.startsWith("/api/") ? path : `/api${path}`;
   try {
@@ -111,7 +138,7 @@ describe("KnowledgeBasePage", () => {
   });
 
   it("starts in edit mode with words before characters", async () => {
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
 
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
     expect(await screen.findByPlaceholderText("Search words...")).toBeInTheDocument();
@@ -128,7 +155,7 @@ describe("KnowledgeBasePage", () => {
   it("switches between edit and view modes", async () => {
     const user = userEvent.setup();
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
 
     expect(await screen.findByPlaceholderText("Search characters...")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
@@ -145,61 +172,8 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
   });
 
-  it("loads a preview first then refreshes with the full knowledge base", async () => {
-    const fetchMock = vi.mocked(fetch);
-    const previewCharacters = characters.slice(0, 1);
-    const previewWords = words.slice(0, 1);
-
-    fetchMock.mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input);
-
-      if (matchesApiPath(url, "/characters")) {
-        const limited = url.includes("limit=10");
-        return Promise.resolve({
-          ok: true,
-          json: async () => (limited ? previewCharacters : characters),
-        });
-      }
-
-      if (matchesApiPath(url, "/words")) {
-        const limited = url.includes("limit=10");
-        return Promise.resolve({
-          ok: true,
-          json: async () => (limited ? previewWords : words),
-        });
-      }
-
-      return Promise.resolve({
-        ok: false,
-        json: async () => ({}),
-      });
-    });
-
-    render(<KnowledgeBasePage />);
-
-    expect(await screen.findByRole("cell", { name: "爱" })).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(screen.getByRole("cell", { name: "好" })).toBeInTheDocument();
-      expect(screen.getByRole("cell", { name: "爱好" })).toBeInTheDocument();
-    });
-
-    const characterCalls = fetchMock.mock.calls.filter((call) =>
-      matchesApiPath(String(call[0]), "/characters"),
-    );
-    const wordCalls = fetchMock.mock.calls.filter((call) =>
-      matchesApiPath(String(call[0]), "/words"),
-    );
-    expect(characterCalls.some((call) => String(call[0]).includes("limit=10"))).toBe(
-      true,
-    );
-    expect(wordCalls.some((call) => String(call[0]).includes("limit=10"))).toBe(true);
-    expect(characterCalls.some((call) => !String(call[0]).includes("?"))).toBe(true);
-    expect(wordCalls.some((call) => !String(call[0]).includes("?"))).toBe(true);
-  });
-
   it("loads and displays characters and words in edit mode", async () => {
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
 
     expect(await screen.findByRole("cell", { name: "爱" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "唉" })).toBeInTheDocument();
@@ -212,7 +186,7 @@ describe("KnowledgeBasePage", () => {
   it("filters characters by search query", async () => {
     const user = userEvent.setup();
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await screen.findByRole("cell", { name: "爱" });
 
     await user.type(screen.getByPlaceholderText("Search characters..."), "zz");
@@ -228,7 +202,7 @@ describe("KnowledgeBasePage", () => {
   it("filters words by search query", async () => {
     const user = userEvent.setup();
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await screen.findByRole("cell", { name: "爱好" });
 
     await user.type(screen.getByPlaceholderText("Search words..."), "zz");
@@ -244,7 +218,7 @@ describe("KnowledgeBasePage", () => {
   it("shows view mode toggles for writing known and not known", async () => {
     const user = userEvent.setup();
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await enterViewMode(user);
 
     expect(
@@ -258,7 +232,7 @@ describe("KnowledgeBasePage", () => {
   it("hides characters based on the view mode toggles", async () => {
     const user = userEvent.setup();
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await enterViewMode(user);
 
     expect(
@@ -294,7 +268,7 @@ describe("KnowledgeBasePage", () => {
   it("opens the associated words modal when clicking a linked character", async () => {
     const user = userEvent.setup();
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await enterViewMode(user);
 
     await user.click(
@@ -368,10 +342,39 @@ describe("KnowledgeBasePage", () => {
       };
     });
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, {
+      preloadedState: {
+        ...syncedState,
+        anki: {
+          status: {
+            connected: true,
+            synchronization_status: "synchronized",
+            pending_push_estimate: 2,
+            decks: {
+              mandarin_vocabulary: {
+                status: "not_synchronized",
+                deck_name: "Vocab",
+                model_name: "Vocab",
+                fields: {
+                  writting: "writting",
+                  pinyin: "pinyin",
+                  definition: "definition",
+                },
+              },
+              mandarin_writting: {
+                status: "synchronized",
+                deck_name: "Writting",
+                model_name: "Basic",
+                fields: { recto: "Front", verso: "Back" },
+              },
+            },
+          },
+        },
+      },
+    });
 
     expect(
-      await screen.findByText(
+      screen.getByText(
         "2 cards need to be added in Anki for synchronization.",
       ),
     ).toBeInTheDocument();
@@ -391,7 +394,7 @@ describe("KnowledgeBasePage", () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await screen.findByRole("button", { name: "Export" });
 
     fetchMock.mockImplementation((input: RequestInfo | URL) => {
@@ -440,7 +443,7 @@ describe("KnowledgeBasePage", () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
 
-    render(<KnowledgeBasePage />);
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await screen.findByRole("button", { name: "Import" });
 
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
@@ -464,6 +467,52 @@ describe("KnowledgeBasePage", () => {
         return Promise.resolve({
           ok: true,
           json: async () => words,
+        });
+      }
+
+      if (url.includes("/llm-config")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ LLM_API_KEY: "", LLM_MODEL: "" }),
+        });
+      }
+
+      if (url.includes("/hsk-level")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            current_level: null,
+            next_level: 1,
+            characters_to_next_level: 1,
+            progress_to_next_level: 0,
+            missing_characters: [],
+            max_level: 7,
+            completion_ratio: 0.85,
+          }),
+        });
+      }
+
+      if (url.includes("/anki/status")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            synchronization_status: "not_synchronized",
+            pending_push_estimate: 0,
+            decks: {
+              mandarin_vocabulary: {
+                status: "not_configured",
+                deck_name: "",
+                model_name: "",
+                fields: {},
+              },
+              mandarin_writting: {
+                status: "not_configured",
+                deck_name: "",
+                model_name: "",
+                fields: {},
+              },
+            },
+          }),
         });
       }
 
