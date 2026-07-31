@@ -38,7 +38,7 @@ teacher-wang/
 │   ├── migrations/         # Alembic revisions (Postgres schema)
 │   ├── anki_sync.py        # Anki deck mapping status and sync helpers
 │   ├── llm.py              # LangChain LLM integration (get_llm)
-│   ├── llm_config.py       # Local/dev read of .config.txt (never exposed via API)
+│   ├── llm_config.py       # Resolve LLM settings from .config.txt / env (never via API)
 │   ├── chat_agents.py      # Chat character prompts
 │   ├── chat_service.py     # LLM chat reply generation
 │   ├── conversation_logs.py

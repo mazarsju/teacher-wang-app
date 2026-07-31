@@ -27,11 +27,11 @@ class TestGetLlm(unittest.TestCase):
         get_llm.cache_clear()
 
     @patch("backend.llm.ChatOpenAI")
-    def test_get_llm_reads_values_from_config_file(self, mock_chat_openai):
+    def test_get_llm_reads_values_from_config(self, mock_chat_openai):
         mock_instance = MagicMock()
         mock_chat_openai.return_value = mock_instance
         self.mock_read_config.return_value = {
-            LLM_API_KEY_ENV: "file-key",
+            LLM_API_KEY_ENV: "test-key",
             LLM_MODEL_ENV: "gpt-4o-mini",
         }
 
@@ -39,25 +39,7 @@ class TestGetLlm(unittest.TestCase):
 
         self.assertIs(result, mock_instance)
         mock_chat_openai.assert_called_once_with(
-            api_key="file-key",
-            model="gpt-4o-mini",
-        )
-
-    @patch("backend.llm.ChatOpenAI")
-    def test_get_llm_falls_back_to_environment_variables(self, mock_chat_openai):
-        mock_instance = MagicMock()
-        mock_chat_openai.return_value = mock_instance
-
-        with patch.dict(
-            os.environ,
-            {LLM_API_KEY_ENV: "env-key", LLM_MODEL_ENV: "gpt-4o-mini"},
-            clear=False,
-        ):
-            result = get_llm()
-
-        self.assertIs(result, mock_instance)
-        mock_chat_openai.assert_called_once_with(
-            api_key="env-key",
+            api_key="test-key",
             model="gpt-4o-mini",
         )
 

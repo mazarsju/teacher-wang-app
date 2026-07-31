@@ -20,12 +20,19 @@ class TestLlmConfigFile(unittest.TestCase):
             self.config_path,
         )
         self.path_patcher.start()
+        self.env_patcher = patch.dict(
+            os.environ,
+            {LLM_API_KEY_ENV: "", LLM_MODEL_ENV: ""},
+            clear=False,
+        )
+        self.env_patcher.start()
 
     def tearDown(self):
+        self.env_patcher.stop()
         self.path_patcher.stop()
         self.temp_dir.cleanup()
 
-    def test_read_llm_config_returns_empty_values_when_file_missing(self):
+    def test_read_llm_config_returns_empty_values_when_file_and_env_missing(self):
         self.assertEqual(
             read_llm_config(),
             {
@@ -47,6 +54,39 @@ class TestLlmConfigFile(unittest.TestCase):
                 LLM_MODEL_ENV: "gpt-4o-mini",
             },
         )
+
+    def test_read_llm_config_falls_back_to_environment_variables(self):
+        with patch.dict(
+            os.environ,
+            {LLM_API_KEY_ENV: "env-key", LLM_MODEL_ENV: "gpt-4o"},
+            clear=False,
+        ):
+            self.assertEqual(
+                read_llm_config(),
+                {
+                    LLM_API_KEY_ENV: "env-key",
+                    LLM_MODEL_ENV: "gpt-4o",
+                },
+            )
+
+    def test_read_llm_config_prefers_file_over_environment(self):
+        self.config_path.write_text(
+            "LLM_API_KEY=file-key\nLLM_MODEL=gpt-4o-mini\n",
+            encoding="utf-8",
+        )
+
+        with patch.dict(
+            os.environ,
+            {LLM_API_KEY_ENV: "env-key", LLM_MODEL_ENV: "gpt-4o"},
+            clear=False,
+        ):
+            self.assertEqual(
+                read_llm_config(),
+                {
+                    LLM_API_KEY_ENV: "file-key",
+                    LLM_MODEL_ENV: "gpt-4o-mini",
+                },
+            )
 
 
 if __name__ == "__main__":

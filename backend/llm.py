@@ -1,4 +1,3 @@
-import os
 from functools import lru_cache
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -11,13 +10,9 @@ LLM_MODEL_ENV = "LLM_MODEL"
 def _get_config_value(name: str) -> str:
     from backend.llm_config import read_llm_config
 
-    file_value = read_llm_config().get(name, "").strip()
-    if file_value:
-        return file_value
-
-    env_value = os.environ.get(name, "").strip()
-    if env_value:
-        return env_value
+    value = read_llm_config().get(name, "").strip()
+    if value:
+        return value
 
     raise ValueError(
         f"{name} must be set as an environment variable "

@@ -26,9 +26,11 @@ def _parse_config_line(line: str) -> tuple[str, str] | None:
 
 
 def read_llm_config() -> dict[str, str]:
-    """Read operator LLM settings from `.config.txt` (local/dev only).
+    """Resolve operator LLM settings for backend use only.
 
-    Production sets ``LLM_API_KEY`` / ``LLM_MODEL`` via infrastructure secrets.
+    Precedence: non-empty ``.config.txt`` values (local/dev convenience), then
+    ``LLM_API_KEY`` / ``LLM_MODEL`` environment variables (ECS / Secrets Manager).
+
     These values must never be exposed through the API or UI.
     """
     config = {
@@ -36,13 +38,15 @@ def read_llm_config() -> dict[str, str]:
         LLM_MODEL_ENV: "",
     }
 
-    if not CONFIG_PATH.is_file():
-        return config
+    if CONFIG_PATH.is_file():
+        for line in CONFIG_PATH.read_text(encoding="utf-8").splitlines():
+            parsed = _parse_config_line(line)
+            if parsed is not None:
+                key, value = parsed
+                config[key] = value
 
-    for line in CONFIG_PATH.read_text(encoding="utf-8").splitlines():
-        parsed = _parse_config_line(line)
-        if parsed is not None:
-            key, value = parsed
-            config[key] = value
+    for key in (LLM_API_KEY_ENV, LLM_MODEL_ENV):
+        if not config[key].strip():
+            config[key] = os.environ.get(key, "").strip()
 
     return config
