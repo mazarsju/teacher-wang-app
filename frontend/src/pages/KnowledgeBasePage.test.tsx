@@ -66,9 +66,6 @@ const words = [
 const syncedState = {
   characters: { items: characters },
   words: { items: words },
-  settings: {
-    llmConfig: { LLM_API_KEY: "", LLM_MODEL: "" },
-  },
   hsk: {
     status: {
       current_level: null,
@@ -467,13 +464,6 @@ describe("KnowledgeBasePage", () => {
         return Promise.resolve({
           ok: true,
           json: async () => words,
-        });
-      }
-
-      if (url.includes("/llm-config")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ LLM_API_KEY: "", LLM_MODEL: "" }),
         });
       }
 

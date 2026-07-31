@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
@@ -6,17 +6,14 @@ import { InfoIcon, SettingsIcon, SyncIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
-import { setLlmConfig } from "../store/slices/settingsSlice";
 import {
   ANKI_DECK_LABELS,
   ANKI_DECK_ORDER,
   type AnkiDeckKind,
   type AnkiDeckStatus,
 } from "../types/anki";
-import type { LlmConfig } from "../types/llmConfig";
 import type { TokenUsageSummary } from "../types/tokenUsage";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
-import { saveLlmConfig } from "../utils/aiChat/llmConfigApi";
 import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
 
 function formatDayLabel(isoDate: string): string {
@@ -50,25 +47,17 @@ function formatDeckStatus(status: AnkiDeckStatus): string {
 
 export default function PreferencesPage() {
   const dispatch = useAppDispatch();
-  const storedLlmConfig = useAppSelector((state) => state.settings.llmConfig);
   const ankiStatus = useAppSelector((state) => state.anki.status);
   const syncStatus = useAppSelector((state) => state.sync.status);
   const syncError = useAppSelector((state) => state.sync.error);
   const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
 
-  const [draftLlmConfig, setDraftLlmConfig] = useState<LlmConfig>(storedLlmConfig);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageSummary | null>(null);
   const [isTokenUsageLoading, setIsTokenUsageLoading] = useState(true);
   const [extrasError, setExtrasError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [setupKind, setSetupKind] = useState<AnkiDeckKind | null>(null);
   const [syncKind, setSyncKind] = useState<AnkiDeckKind | null>(null);
-
-  useEffect(() => {
-    setDraftLlmConfig(storedLlmConfig);
-  }, [storedLlmConfig]);
 
   const loadTokenUsage = useCallback(async () => {
     setExtrasError(null);
@@ -91,33 +80,12 @@ export default function PreferencesPage() {
     void loadTokenUsage();
   }, [loadTokenUsage]);
 
-  const hasSyncedSettings = lastSyncedAt !== null;
+  const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
-    (!hasSyncedSettings &&
+    (!hasSyncedData &&
       (syncStatus === "idle" || syncStatus === "loading")) ||
     isTokenUsageLoading;
-  const error = extrasError ?? (!hasSyncedSettings ? syncError : null);
-
-  async function handleSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSaving(true);
-    setExtrasError(null);
-    setSaveMessage(null);
-
-    try {
-      const savedConfig = await saveLlmConfig(draftLlmConfig);
-      dispatch(setLlmConfig(savedConfig));
-      setSaveMessage("LLM configuration saved.");
-    } catch (saveError) {
-      setExtrasError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Failed to save LLM configuration.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  }
+  const error = extrasError ?? (!hasSyncedData ? syncError : null);
 
   async function refreshAnkiStatus() {
     try {
@@ -154,56 +122,8 @@ export default function PreferencesPage() {
 
   return (
     <Page title="Preferences">
-      <section className="preferences-section">
-        <h2 className="preferences-section-title">LLM configuration</h2>
-        <p className="preferences-section-description">
-          Configure the API key and model used by the chat features.
-        </p>
-
-        {isLoading && <p>Loading preferences...</p>}
-        {error && <p className="table-error">{error}</p>}
-        {saveMessage && <p className="preferences-save-message">{saveMessage}</p>}
-
-        {!isLoading && (
-          <form className="preferences-form" onSubmit={(event) => void handleSave(event)}>
-            <label className="preferences-field">
-              <span className="preferences-field-label">LLM API key</span>
-              <input
-                type="password"
-                value={draftLlmConfig.LLM_API_KEY}
-                autoComplete="off"
-                onChange={(event) =>
-                  setDraftLlmConfig((current) => ({
-                    ...current,
-                    LLM_API_KEY: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="preferences-field">
-              <span className="preferences-field-label">LLM model</span>
-              <input
-                type="text"
-                value={draftLlmConfig.LLM_MODEL}
-                placeholder="gpt-4o-mini"
-                onChange={(event) =>
-                  setDraftLlmConfig((current) => ({
-                    ...current,
-                    LLM_MODEL: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <button
-              type="submit"
-              className="page-add-button"
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save LLM configuration"}
-            </button>
-          </form>
-        )}
-      </section>
+      {isLoading && <p>Loading preferences...</p>}
+      {error && <p className="table-error">{error}</p>}
 
       {!isLoading && tokenUsage && (
         <section className="preferences-section preferences-section--usage">

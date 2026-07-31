@@ -38,7 +38,7 @@ teacher-wang/
 │   ├── migrations/         # Alembic revisions (Postgres schema)
 │   ├── anki_sync.py        # Anki deck mapping status and sync helpers
 │   ├── llm.py              # LangChain LLM integration (get_llm)
-│   ├── llm_config.py       # Read/write LLM settings in .config.txt
+│   ├── llm_config.py       # Local/dev read of .config.txt (never exposed via API)
 │   ├── chat_agents.py      # Chat character prompts
 │   ├── chat_service.py     # LLM chat reply generation
 │   ├── conversation_logs.py
@@ -63,7 +63,7 @@ teacher-wang/
 │   ├── src/
 │   │   ├── App.tsx         # App shell, auth gate, login/logout sync triggers
 │   │   ├── main.tsx        # React entry + Redux Provider
-│   │   ├── store/          # Redux Toolkit store (characters, words, settings, HSK, Anki)
+│   │   ├── store/          # Redux Toolkit store (characters, words, HSK, Anki)
 │   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences
 │   │   ├── components/     # Navbar, ProfileMenu (Synchro / Log out), modals, …
 │   │   ├── types/
@@ -188,25 +188,19 @@ curl -X POST -F "file=@db.txt" \
   http://127.0.0.1:5000/characters/bulk
 ```
 
-#### LLM configuration
+#### LLM configuration (operators only — never exposed to users)
 
-LLM settings are stored in `.config.txt` at the project root (gitignored). Values can also be provided through environment variables as a fallback.
+**Rule:** `LLM_API_KEY` and `LLM_MODEL` are infrastructure / operator secrets. They must **never** be readable or writable through the API or the frontend UI. There is no `/llm-config` endpoint.
 
 | Key / variable | Description |
 | --- | --- |
 | `LLM_API_KEY` | API key for the LLM provider |
 | `LLM_MODEL` | Model name to use (for example `gpt-4o-mini`) |
 
-Use `backend.llm.get_llm()` to obtain a cached chat model instance. Configuration is read from `.config.txt` first, then from environment variables.
+- **Production / ECS:** set these as task-definition secrets / environment variables in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra).
+- **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/llm_config.py` as a convenience fallback).
 
-Example:
-
-```bash
-curl http://127.0.0.1:5000/llm-config
-curl -X POST http://127.0.0.1:5000/llm-config \
-  -H "Content-Type: application/json" \
-  -d '{"LLM_API_KEY":"your-api-key","LLM_MODEL":"gpt-4o-mini"}'
-```
+Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are read from `.config.txt` first (if present), then from environment variables.
 
 #### AnkiConnect
 
@@ -229,8 +223,6 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | --- | --- | --- |
 | `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) — the only public route |
 | `GET` | `/auth/me` | Current user (`username`, `email`, `plan`) from the `users` row |
-| `GET` | `/llm-config` | Read LLM API key and model from `.config.txt` |
-| `POST` | `/llm-config` | Update LLM API key and/or model in `.config.txt` |
 | `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
 | `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writting deck, deck type, and field mapping |
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
@@ -275,11 +267,10 @@ Important learner data is kept in a Redux store so navigating between tabs does 
 | --- | --- |
 | Characters | `GET /characters` |
 | Words | `GET /words` |
-| Settings (LLM config) | `GET /llm-config` |
 | HSK level | `GET /hsk-level` |
 | Anki status | `GET /anki/status` (+ local AnkiConnect when available) |
 
-Home, Knowledge base, and Preferences read from that store. Mutations (add / edit / delete) update the store after a successful API call. Logout clears the store. Chat transcripts, token-usage charts, and other ephemeral UI state are not cached this way.
+Home, Knowledge base, and Preferences read from that store. Mutations (add / edit / delete) update the store after a successful API call. Logout clears the store. Chat transcripts, token-usage charts, and other ephemeral UI state are not cached this way. LLM credentials are never stored in Redux (see [LLM configuration](#llm-configuration-operators-only--never-exposed-to-users)).
 
 #### Tests
 
@@ -318,8 +309,8 @@ Browse every character you know, grouped by pinyin, for a motivating snapshot of
 
 ### Practice your skills with AI agents
 
-After connecting the application with your favourite LLM, discuss with predefined
-chat agents to practice your level.
+Discuss with predefined chat agents to practice your level (LLM access is
+configured by the operator in infrastructure, not in the app UI).
 
 ![Preferences](docs/screenshots/06-preferences.png)
 

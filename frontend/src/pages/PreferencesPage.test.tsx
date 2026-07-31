@@ -43,13 +43,7 @@ const disconnectedStatus: AnkiStatus = {
   },
 };
 
-const syncedSettingsState = {
-  settings: {
-    llmConfig: {
-      LLM_API_KEY: "existing-key",
-      LLM_MODEL: "gpt-4o-mini",
-    },
-  },
+const syncedState = {
   anki: { status: disconnectedStatus },
   sync: {
     status: "succeeded" as const,
@@ -63,21 +57,10 @@ describe("PreferencesPage", () => {
     fetchAnkiStatus.mockResolvedValue(disconnectedStatus);
     vi.stubGlobal(
       "fetch",
-      vi.fn((input: RequestInfo, init?: RequestInit) => {
+      vi.fn((input: RequestInfo) => {
         const url = String(input);
-        const method = init?.method ?? "GET";
 
-        if (url.endsWith("/llm-config") && method === "GET") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              LLM_API_KEY: "existing-key",
-              LLM_MODEL: "gpt-4o-mini",
-            }),
-          });
-        }
-
-        if (url.endsWith("/token-usage") && method === "GET") {
+        if (url.endsWith("/token-usage")) {
           return Promise.resolve({
             ok: true,
             json: async () => ({
@@ -96,16 +79,6 @@ describe("PreferencesPage", () => {
           });
         }
 
-        if (url.endsWith("/llm-config") && method === "POST") {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              LLM_API_KEY: "new-key",
-              LLM_MODEL: "gpt-4o",
-            }),
-          });
-        }
-
         return Promise.resolve({
           ok: false,
           json: async () => ({}),
@@ -119,22 +92,12 @@ describe("PreferencesPage", () => {
     vi.clearAllMocks();
   });
 
-  it("loads and displays the LLM configuration fields", async () => {
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
+  it("shows total token usage and the 7-day chart", async () => {
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
     expect(
       screen.getByRole("heading", { name: "Preferences" }),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole("heading", { name: "LLM configuration" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("LLM API key")).toHaveValue("existing-key");
-    expect(screen.getByLabelText("LLM model")).toHaveValue("gpt-4o-mini");
-  });
-
-  it("shows total token usage and the 7-day chart", async () => {
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
-
     expect(
       await screen.findByRole("heading", { name: "Token usage" }),
     ).toBeInTheDocument();
@@ -155,7 +118,7 @@ describe("PreferencesPage", () => {
   });
 
   it("shows Anki synchronization with disconnected warning", async () => {
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
     expect(
       await screen.findByRole("heading", { name: "Anki synchronization" }),
@@ -180,7 +143,7 @@ describe("PreferencesPage", () => {
 
   it("opens the AnkiConnect guide from the info button", async () => {
     const user = userEvent.setup();
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
     await screen.findByRole("heading", { name: "Anki synchronization" });
     await user.click(
@@ -196,38 +159,15 @@ describe("PreferencesPage", () => {
     expect(screen.getByText(/webCorsOriginList/)).toBeInTheDocument();
   });
 
-  it("saves the LLM configuration through the API", async () => {
-    const user = userEvent.setup();
+  it("does not expose LLM configuration controls", async () => {
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedSettingsState });
-    await screen.findByLabelText("LLM API key");
-
-    await user.clear(screen.getByLabelText("LLM API key"));
-    await user.type(screen.getByLabelText("LLM API key"), "new-key");
-    await user.clear(screen.getByLabelText("LLM model"));
-    await user.type(screen.getByLabelText("LLM model"), "gpt-4o");
-    await user.click(
-      screen.getByRole("button", { name: "Save LLM configuration" }),
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("LLM configuration saved."),
-      ).toBeInTheDocument();
-    });
-
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/llm-config",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({
-          LLM_API_KEY: "new-key",
-          LLM_MODEL: "gpt-4o",
-        }),
-      }),
-    );
-    expect(screen.getByLabelText("LLM API key")).toHaveValue("new-key");
-    expect(screen.getByLabelText("LLM model")).toHaveValue("gpt-4o");
+    await screen.findByRole("heading", { name: "Token usage" });
+    expect(
+      screen.queryByRole("heading", { name: "LLM configuration" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("LLM API key")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("LLM model")).not.toBeInTheDocument();
   });
 
   it("allows deck setup with field mapping when AnkiConnect is connected", async () => {
@@ -274,7 +214,7 @@ describe("PreferencesPage", () => {
 
     renderWithStore(<PreferencesPage />, {
       preloadedState: {
-        ...syncedSettingsState,
+        ...syncedState,
         anki: {
           status: {
             connected: true,

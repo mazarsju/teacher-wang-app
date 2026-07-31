@@ -20,7 +20,6 @@ def register_routes(app: Flask) -> None:
         list_hsk_character_words,
         list_hsk_characters,
         list_words,
-        llm_config,
         token_usage,
         update_character,
         update_word,
@@ -34,7 +33,6 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(chat.bp)
     app.register_blueprint(conversation_logs.bp)
     app.register_blueprint(challenges.bp)
-    app.register_blueprint(llm_config.bp)
     app.register_blueprint(token_usage.bp)
     app.register_blueprint(anki.bp)
     app.register_blueprint(list_characters.bp)

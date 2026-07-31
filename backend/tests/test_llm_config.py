@@ -1,16 +1,14 @@
-import bootstrap  # noqa: F401
+import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import backend.database as database_module
-
-database_module.init_db = MagicMock()
-database_module.configure_database = MagicMock()
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from backend.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV  # noqa: E402
-from backend.llm_config import read_llm_config, write_llm_config  # noqa: E402
+from backend.llm_config import read_llm_config  # noqa: E402
 
 
 class TestLlmConfigFile(unittest.TestCase):
@@ -22,8 +20,10 @@ class TestLlmConfigFile(unittest.TestCase):
             self.config_path,
         )
         self.path_patcher.start()
-        self.addCleanup(self.path_patcher.stop)
-        self.addCleanup(self.temp_dir.cleanup)
+
+    def tearDown(self):
+        self.path_patcher.stop()
+        self.temp_dir.cleanup()
 
     def test_read_llm_config_returns_empty_values_when_file_missing(self):
         self.assertEqual(
@@ -34,31 +34,17 @@ class TestLlmConfigFile(unittest.TestCase):
             },
         )
 
-    def test_write_and_read_llm_config(self):
-        write_llm_config(api_key="secret-key", model="gpt-4o-mini")
+    def test_read_llm_config_parses_file(self):
+        self.config_path.write_text(
+            "LLM_API_KEY=secret-key\nLLM_MODEL=gpt-4o-mini\n",
+            encoding="utf-8",
+        )
 
         self.assertEqual(
             read_llm_config(),
             {
                 LLM_API_KEY_ENV: "secret-key",
                 LLM_MODEL_ENV: "gpt-4o-mini",
-            },
-        )
-        self.assertEqual(
-            self.config_path.read_text(encoding="utf-8"),
-            "LLM_API_KEY=secret-key\nLLM_MODEL=gpt-4o-mini\n",
-        )
-
-    def test_write_llm_config_updates_only_provided_values(self):
-        write_llm_config(api_key="secret-key", model="gpt-4o-mini")
-
-        write_llm_config(model="gpt-4o")
-
-        self.assertEqual(
-            read_llm_config(),
-            {
-                LLM_API_KEY_ENV: "secret-key",
-                LLM_MODEL_ENV: "gpt-4o",
             },
         )
 

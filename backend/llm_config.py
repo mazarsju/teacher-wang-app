@@ -26,6 +26,11 @@ def _parse_config_line(line: str) -> tuple[str, str] | None:
 
 
 def read_llm_config() -> dict[str, str]:
+    """Read operator LLM settings from `.config.txt` (local/dev only).
+
+    Production sets ``LLM_API_KEY`` / ``LLM_MODEL`` via infrastructure secrets.
+    These values must never be exposed through the API or UI.
+    """
     config = {
         LLM_API_KEY_ENV: "",
         LLM_MODEL_ENV: "",
@@ -39,31 +44,5 @@ def read_llm_config() -> dict[str, str]:
         if parsed is not None:
             key, value = parsed
             config[key] = value
-
-    return config
-
-
-def write_llm_config(
-    api_key: str | None = None,
-    model: str | None = None,
-) -> dict[str, str]:
-    config = read_llm_config()
-
-    if api_key is not None:
-        config[LLM_API_KEY_ENV] = api_key.strip()
-
-    if model is not None:
-        config[LLM_MODEL_ENV] = model.strip()
-
-    CONFIG_PATH.write_text(
-        "\n".join(
-            [
-                f"{LLM_API_KEY_ENV}={config[LLM_API_KEY_ENV]}",
-                f"{LLM_MODEL_ENV}={config[LLM_MODEL_ENV]}",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
 
     return config

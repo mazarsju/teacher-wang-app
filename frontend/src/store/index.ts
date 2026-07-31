@@ -2,14 +2,12 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import ankiReducer from "./slices/ankiSlice";
 import charactersReducer from "./slices/charactersSlice";
 import hskReducer from "./slices/hskSlice";
-import settingsReducer from "./slices/settingsSlice";
 import syncReducer from "./slices/syncSlice";
 import wordsReducer from "./slices/wordsSlice";
 
 const rootReducer = combineReducers({
   characters: charactersReducer,
   words: wordsReducer,
-  settings: settingsReducer,
   hsk: hskReducer,
   anki: ankiReducer,
   sync: syncReducer,

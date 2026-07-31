@@ -94,7 +94,7 @@ Confirm all six files above were written. Spot-check:
 - Knowledge base view shows the pinyin grid and a **Modify** button
 - Knowledge base edit shows character/word tables and a **View** button
 - Chat Waiter challenge shows the chat modal for the Waiter (tasks panel visible)
-- Preferences shows LLM configuration (API key may be masked)
+- Preferences shows token usage and/or Anki synchronization (no LLM credentials UI)
 
 ### 6. Update README.md Feature section
 

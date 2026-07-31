@@ -19,7 +19,10 @@ def _get_config_value(name: str) -> str:
     if env_value:
         return env_value
 
-    raise ValueError(f"{name} must be set in .config.txt or as an environment variable")
+    raise ValueError(
+        f"{name} must be set as an environment variable "
+        "(or in .config.txt for local development)"
+    )
 
 
 @lru_cache(maxsize=1)
@@ -28,7 +31,3 @@ def get_llm() -> BaseChatModel:
     model = _get_config_value(LLM_MODEL_ENV)
 
     return ChatOpenAI(api_key=api_key, model=model)
-
-
-def reset_llm_cache() -> None:
-    get_llm.cache_clear()

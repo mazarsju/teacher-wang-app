@@ -174,6 +174,6 @@ State that lives outside Postgres and is still **shared between all users**:
 | What | Where | Note |
 | --- | --- | --- |
 | Knowledge-base export | `backend/db_export.py` writes one file per deployment | Contents are user-scoped, the filename is not |
-| LLM API key / model | `.config.txt` (`backend/llm_config.py`) | Operator-level configuration, intentionally global for now |
+| LLM API key / model | ECS secrets / env (local: `.config.txt`) | Operator-level only — never exposed via API or UI |
 
-These need either a `user_id` path segment (files) or a move into a private table before the app is opened to real multi-user traffic.
+Knowledge-base export still needs either a `user_id` path segment or a move into a private table before the app is opened to real multi-user traffic.

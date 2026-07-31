@@ -52,16 +52,6 @@ function stubAuthenticatedApis() {
         });
       }
 
-      if (url.includes("/llm-config")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            LLM_API_KEY: "",
-            LLM_MODEL: "",
-          }),
-        });
-      }
-
       if (url.includes("/hsk-level")) {
         return Promise.resolve({
           ok: true,
@@ -204,6 +194,6 @@ describe("App", () => {
     const urls = fetchMock.mock.calls.map((call) => String(call[0]));
     expect(urls.some((url) => url.includes("/characters"))).toBe(true);
     expect(urls.some((url) => url.includes("/words"))).toBe(true);
-    expect(urls.some((url) => url.includes("/llm-config"))).toBe(true);
+    expect(urls.some((url) => url.includes("/hsk-level"))).toBe(true);
   });
 });
