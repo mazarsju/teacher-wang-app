@@ -32,18 +32,18 @@ Derive:
 
 ## Mandatory agent behavior (every challenge)
 
-Bake **all** of the following into the system prompt (adapt names/situations; keep the rules):
+Shared Mandarin / `[[...]]` / progression rules live in
+`backend/challenge_prompts.py` (`build_challenge_system_prompt`). **Do not**
+paste those paragraphs into each new challenge — fill a `ChallengeScenario`
+instead; the builder injects:
 
 - Speak **only Chinese** (except English stage-direction blocks inside `[[...]]`).
-- Answer **only** the learner’s questions / turns. Do **not** keep the conversation going when not needed (no unsolicited follow-up questions).
-- Actions must follow a **logical progression**. If the learner asks for something out of order, refuse or show that you do not understand (in Chinese), and do not accept the out-of-order request.
+- Answer **only** the learner’s questions / turns (no unsolicited follow-ups).
+- Strict ordered progression; refuse out-of-order requests in Chinese.
 - Situations use **double square brackets** only:
   - Simple situation: `[[<situation>]]`
-  - When the agent leaves / steps away, use this form and nothing else:
-    `[[<agent leaves>]][[<next action most likely to happen>]]<next Chinese sentence>`
-  - The next Chinese sentence is **plain text after** the two `[[...]]` blocks — **not** wrapped in `[[...]]`.
-  - Example shape: `[[The waiter leaves]][[The waiter comes back with the ordered meal]]您的菜来了。`
-- Never use single brackets `[...]` for situations.
+  - Leave form: `[[<agent leaves>]][[<next action>]]<plain Chinese sentence>`
+  - Never single brackets `[...]` for situations.
 
 The frontend finds every `[[...]]` anywhere in an assistant message and renders
 each as an italic stage line (plain text outside brackets still shows as a
@@ -55,7 +55,8 @@ Copy and track:
 
 ```
 Challenge Progress:
-- [ ] Backend chat agent in chat_agents.py
+- [ ] Scenario config in challenge_prompts.py (+ CHALLENGE_SCENARIOS map)
+- [ ] Backend chat agent in chat_agents.py (uses builder output)
 - [ ] Backend tasks in challenges.py (same ids/labels as frontend)
 - [ ] Frontend challenge in data/challenges.ts + CHALLENGES array
 - [ ] Avatar variant (reuse or add SVG + type unions)
@@ -63,29 +64,63 @@ Challenge Progress:
 - [ ] Remind user to restart backend
 ```
 
-## Step 1 — Backend chat agent
+## Step 1 — Backend challenge prompt + chat agent
+
+### 1a. Scenario config
+
+File: `backend/challenge_prompts.py`
+
+Add a `ChallengeScenario` (and `ChallengeGate`) with only the **scenario-specific**
+fields — role, initial situation, gate, ordered steps, optional mid-flow tips,
+leave label/example. Append it to `CHALLENGE_SCENARIOS`.
+
+```python
+"<CONST>": ChallengeScenario(
+    english_name="a <role>",
+    chinese_name="<中文名>",
+    role_summary="You work at … and help the learner practice …",
+    initial_situation="The learner has just …",
+    gate=ChallengeGate(
+        wait_bracket="The <agent> needs to be …",
+        trigger_examples="你好, …",
+        trigger_description="greeted you",
+        post_contact_action="welcome them",
+        greeting_example="您好，…",
+        first_step_never_out_of_order="Greeting you is never out of order …",
+    ),
+    steps=(
+        "the learner must first … (see First contact);",
+        "then …;",
+        # ...
+    ),
+    out_of_order_examples="… before …",
+    mid_flow_tips=("When they …, respond with …",),  # optional
+    leave_agent_label="The <agent> leaves",
+    leave_example="[[The <agent> leaves]][[…]]……。",
+),
+```
+
+Shared style / Mandarin-only / `[[...]]` / leave-form rules are injected by
+`build_challenge_system_prompt` — do not duplicate them.
+
+### 1b. Register the chat character
 
 File: `backend/chat_agents.py`
-
-Add an entry to `CHAT_CHARACTERS` keyed by `character_id`:
 
 ```python
 "<character_id>": {
     "name": "<English name>",
     "chinese_name": "<中文名>",
     "retry_unknown_characters": True,
-    "system_prompt": (
-        "You are <English name> (<中文名>) ..."
-        # Include: role, setting, initial situation,
-        # strict ordered progression from the user's rules,
-        # speak only Chinese, do not keep asking follow-ups,
-        # refuse / not-understand out-of-order requests,
-        # [[situation]] and leave form [[...]][[...]] followed by plain Chinese.
+    "system_prompt": build_challenge_system_prompt(
+        CHALLENGE_SCENARIOS["<character_id>"]
     ),
 },
 ```
 
-`VALID_CHARACTER_IDS` is derived from `CHAT_CHARACTERS` — no separate allow-list edit.
+Import `CHALLENGE_SCENARIOS` / `build_challenge_system_prompt` if not already
+imported. `VALID_CHARACTER_IDS` is derived from `CHAT_CHARACTERS` — no separate
+allow-list edit.
 
 ## Step 2 — Backend challenge tasks (for the judge)
 
@@ -176,7 +211,8 @@ Restaurant waiter (`challenge-restaurant`):
 - Person: Waiter / 服务员
 - Progression: call waiter → order → eat → pay (refuse out-of-order)
 - Leave form: `[[The waiter leaves]][[...next action...]]您的菜来了。`
-- Files touched originally: `chat_agents.py`, `challenges.py`, `frontend/src/data/challenges.ts`, avatar `waiter`
+- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register),
+  `challenges.py`, `frontend/src/data/challenges.ts`, avatar `waiter`
 
 ## Done criteria
 
