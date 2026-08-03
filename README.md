@@ -398,11 +398,11 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 
 ### 7. Improve UX/UI
 
-Keep the app feeling snappy and polished as datasets and features grow — fewer round-trips, clearer feedback, smoother navigation, and a more cohesive look.
+Keep the app feeling snappy and polished as datasets and features grow — clearer feedback, smoother navigation, and a more cohesive look.
 
 - [x] Cache core learner data in Redux so tab switches do not re-fetch (refresh on login / profile **Synchro**)
 - [ ] Avatar design improvement
-- [ ] General webapp design improvement
+- [x] General webapp design improvement
 
 ### 8. Plan management
 
@@ -412,6 +412,50 @@ Differentiate free and paid tiers so AI chat can scale without unbounded cost. D
 - [x] Gate and deduct on every backend LLM invoke; chat surfaces a clear exhaustion message
 - [x] Preferences shows remaining tokens (progress bar); hide estimated $ cost
 - [ ] Add payment subscription (upgrade / renew / cancel) and paid-plan entitlements
+
+### 9. Multi-language management
+
+The app UI and explanations are English-only today. Learners should be able to pick another base language (still learning Mandarin) so prompts, corrections, and labels match how they think.
+
+- [ ] Preferences: choose UI / explanation language (start with a small set beyond English)
+- [ ] Localize static UI strings for the selected language
+- [ ] Adapt AI system prompts and grammar explanations to the learner’s base language
+
+### 10. Grammar learning
+
+Dedicated grammar path by HSK level, with exercises and a loop back into chat so theory sticks through real use.
+
+- [ ] Grammar section in the app, chapters grouped by HSK level
+- [ ] Mostly hardcoded exercises per chapter (fill-in, reorder, choose the correct pattern, …)
+- [ ] A few AI-assisted exercise types (e.g. generate variants, open-ended production with feedback)
+- [ ] Mark a grammar structure as validated when the learner uses it correctly in AI chat
+- [ ] Persist grammar mistakes spotted in chat conversations
+- [ ] Infer current weaknesses from stored mistakes and surface personalized exercises
+
+### 11. Gamification
+
+Light rewards so progress feels visible without turning the app into a points grind.
+
+- [ ] Badge / reward catalog tied to meaningful actions (e.g. first chat, challenge completed, grammar chapter cleared, streak)
+- [ ] Award and display badges on the profile / home progress area
+- [ ] Notifications or toasts when a new badge is unlocked
+
+### 12. Peer chat (real persons)
+
+Let learners practice with each other, not only with AI agents — with clear presence, consent, and safety controls.
+
+- [ ] Show who is currently online at a similar HSK / knowledge level
+- [ ] Opt-in “available to talk” status (visible to eligible peers)
+- [ ] 1:1 chat sessions between two learners
+- [ ] Block a user so they can no longer contact you
+
+### 13. Interactive games with Xiao Ming
+
+Short playful games in chat to reinforce vocabulary and comprehension alongside free conversation.
+
+- [ ] “Who am I thinking about?” — Xiao Ming thinks of a person/character; learner asks yes/no (or constrained) questions
+- [ ] “Who am I?” — learner or Xiao Ming takes a role; the other guesses from clues in Chinese
+- [ ] Game session UI in chat (rules, turn state, win/lose) without leaving the conversation flow
 
 #### Push images to AWS ECR (from this Mac)
 
