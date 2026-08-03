@@ -5,7 +5,16 @@
     "level": ["newest-1", "new-1", "old-1"],
     "frequency": 50,
     "pos": ["v"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "愛",
+        "transcriptions": {
+          "pinyin": "ài",
+          "numeric": "ai4"
+        },
+        "meanings": ["to love", "affection", "to be fond of", "to like"]
+      }
+    ]
   },
   {
     "simplified": "爱好",
@@ -13,7 +22,16 @@
     "level": ["new-1"],
     "frequency": 100,
     "pos": ["n"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "愛好",
+        "transcriptions": {
+          "pinyin": "ài hào",
+          "numeric": "ai4 hao4"
+        },
+        "meanings": ["to like", "to take pleasure in", "keen on", "fond of", "interest", "hobby", "appetite"]
+      }
+    ]
   },
   {
     "simplified": "啊",
@@ -21,7 +39,32 @@
     "level": ["newest-2", "new-2", "old-3"],
     "frequency": 47,
     "pos": ["y"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "啊",
+        "transcriptions": {
+          "pinyin": "ā",
+          "numeric": "a1"
+        },
+        "meanings": ["interjection of surprise", "Ah!", "Oh!"]
+      },
+      {
+        "traditional": "啊",
+        "transcriptions": {
+          "pinyin": "á",
+          "numeric": "a2"
+        },
+        "meanings": ["interjection expressing doubt", "Eh?", "what?"]
+      },
+      {
+        "traditional": "啊",
+        "transcriptions": {
+          "pinyin": "a",
+          "numeric": "a5"
+        },
+        "meanings": ["modal particle ending sentence"]
+      }
+    ]
   },
   {
     "simplified": "阿姨",
@@ -29,7 +72,21 @@
     "level": ["newest-3", "new-4", "old-3"],
     "frequency": 4355,
     "pos": ["n"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "阿姨",
+        "transcriptions": {
+          "pinyin": "ā yí",
+          "numeric": "a1 yi2"
+        },
+        "meanings": [
+          "maternal aunt",
+          "step-mother",
+          "childcare worker",
+          "nursemaid"
+        ]
+      }
+    ]
   },
   {
     "simplified": "呵",
@@ -37,7 +94,16 @@
     "level": ["newest-7", "old-6"],
     "frequency": 5230,
     "pos": ["y"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "呵",
+        "transcriptions": {
+          "pinyin": "hē",
+          "numeric": "he1"
+        },
+        "meanings": ["expel breath", "my goodness"]
+      }
+    ]
   },
   {
     "simplified": "呵护",
@@ -45,7 +111,16 @@
     "level": ["newest-7", "new-7"],
     "frequency": 13381,
     "pos": ["v"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "呵護",
+        "transcriptions": {
+          "pinyin": "hē hù",
+          "numeric": "he1 hu4"
+        },
+        "meanings": ["to bless", "to cherish", "to take good care of", "to conserve"]
+      }
+    ]
   },
   {
     "simplified": "阿拉伯语",
@@ -53,6 +128,81 @@
     "level": ["new-7"],
     "frequency": 27202,
     "pos": ["nz"],
-    "forms": []
+    "forms": [
+      {
+        "traditional": "阿拉伯語",
+        "transcriptions": {
+          "pinyin": "Ā lā bó yǔ",
+          "numeric": "A1 la1 bo2 yu3"
+        },
+        "meanings": ["Arabic (language)"]
+      }
+    ]
+  },
+  {
+    "simplified": "离",
+    "radical": "禸",
+    "level": ["newest-2", "new-2", "old-2"],
+    "frequency": 912,
+    "pos": ["v", "p"],
+    "forms": [
+      {
+        "traditional": "离",
+        "transcriptions": {
+          "pinyin": "chī",
+          "numeric": "chi1"
+        },
+        "meanings": ["mythical beast (archaic)"]
+      },
+      {
+        "traditional": "離",
+        "transcriptions": {
+          "pinyin": "Lí",
+          "numeric": "Li2"
+        },
+        "meanings": ["surname Li"]
+      },
+      {
+        "traditional": "離",
+        "transcriptions": {
+          "pinyin": "lí",
+          "numeric": "li2"
+        },
+        "meanings": [
+          "to leave",
+          "to part from",
+          "to be away from",
+          "(in giving distances) from"
+        ]
+      }
+    ]
+  },
+  {
+    "simplified": "上",
+    "radical": "一",
+    "level": ["newest-1", "new-1", "old-1"],
+    "frequency": 29,
+    "pos": ["f"],
+    "forms": [
+      {
+        "traditional": "上",
+        "transcriptions": {
+          "pinyin": "shǎng",
+          "numeric": "shang3"
+        },
+        "meanings": ["used in 上声"]
+      },
+      {
+        "traditional": "上",
+        "transcriptions": {
+          "pinyin": "shàng",
+          "numeric": "shang4"
+        },
+        "meanings": [
+          "(bound form) up; upper; above; previous",
+          "to climb; to get onto; to go up"
+        ]
+      }
+    ]
   }
 ]

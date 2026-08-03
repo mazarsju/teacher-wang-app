@@ -23,8 +23,22 @@ class TestListHskCharacterWordsEndpoint(unittest.TestCase):
         self.mock_hsk_cls.reset_mock()
 
     def test_list_hsk_character_words_returns_sorted_words(self):
-        first = MagicMock(word="爱好", level=1, frequency=20)
-        second = MagicMock(word="爱", level=1, frequency=10)
+        first = MagicMock(
+            id="爱好|ai4 hao4",
+            word="爱好",
+            level=1,
+            frequency=20,
+            pinyin="ai4 hao4",
+            definition="hobby",
+        )
+        second = MagicMock(
+            id="爱|ai4",
+            word="爱",
+            level=1,
+            frequency=10,
+            pinyin="ai4",
+            definition="to love",
+        )
         entry = MagicMock()
         entry.words = [first, second]
         self.mock_hsk_cls.query.filter_by.return_value.first.return_value = entry
@@ -35,16 +49,51 @@ class TestListHskCharacterWordsEndpoint(unittest.TestCase):
         self.assertEqual(
             response.get_json(),
             [
-                {"word": "爱", "level": 1, "frequency": 10},
-                {"word": "爱好", "level": 1, "frequency": 20},
+                {
+                    "id": "爱|ai4",
+                    "word": "爱",
+                    "level": 1,
+                    "frequency": 10,
+                    "pinyin": "ai4",
+                    "definition": "to love",
+                },
+                {
+                    "id": "爱好|ai4 hao4",
+                    "word": "爱好",
+                    "level": 1,
+                    "frequency": 20,
+                    "pinyin": "ai4 hao4",
+                    "definition": "hobby",
+                },
             ],
         )
         self.mock_hsk_cls.query.filter_by.assert_called_once_with(character="爱")
 
     def test_list_hsk_character_words_filters_by_max_level(self):
-        first = MagicMock(word="爱好", level=1, frequency=20)
-        second = MagicMock(word="可爱", level=2, frequency=30)
-        third = MagicMock(word="爱情", level=4, frequency=40)
+        first = MagicMock(
+            id="爱好|ai4 hao4",
+            word="爱好",
+            level=1,
+            frequency=20,
+            pinyin="ai4 hao4",
+            definition="hobby",
+        )
+        second = MagicMock(
+            id="可爱|ke3 ai4",
+            word="可爱",
+            level=2,
+            frequency=30,
+            pinyin="ke3 ai4",
+            definition="cute",
+        )
+        third = MagicMock(
+            id="爱情|ai4 qing2",
+            word="爱情",
+            level=4,
+            frequency=40,
+            pinyin="ai4 qing2",
+            definition="love",
+        )
         entry = MagicMock()
         entry.words = [first, second, third]
         self.mock_hsk_cls.query.filter_by.return_value.first.return_value = entry
@@ -55,8 +104,22 @@ class TestListHskCharacterWordsEndpoint(unittest.TestCase):
         self.assertEqual(
             response.get_json(),
             [
-                {"word": "爱好", "level": 1, "frequency": 20},
-                {"word": "可爱", "level": 2, "frequency": 30},
+                {
+                    "id": "爱好|ai4 hao4",
+                    "word": "爱好",
+                    "level": 1,
+                    "frequency": 20,
+                    "pinyin": "ai4 hao4",
+                    "definition": "hobby",
+                },
+                {
+                    "id": "可爱|ke3 ai4",
+                    "word": "可爱",
+                    "level": 2,
+                    "frequency": 30,
+                    "pinyin": "ke3 ai4",
+                    "definition": "cute",
+                },
             ],
         )
 

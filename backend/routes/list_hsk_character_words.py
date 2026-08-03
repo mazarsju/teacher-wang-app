@@ -16,12 +16,15 @@ def list_hsk_character_words(character: str):
     if level is not None:
         words = [word for word in words if word.level <= level]
 
-    words = sorted(words, key=lambda word: (word.frequency, word.word))
+    words = sorted(words, key=lambda word: (word.frequency, word.word, word.pinyin))
     return [
         {
+            "id": word.id,
             "word": word.word,
             "level": word.level,
             "frequency": word.frequency,
+            "pinyin": word.pinyin,
+            "definition": word.definition,
         }
         for word in words
     ], 200

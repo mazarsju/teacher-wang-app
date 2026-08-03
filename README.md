@@ -178,9 +178,9 @@ Learner data is **private per user**: those tables start their primary key with 
 | `settings` | private | PK `(user_id, key)`, `value` (Anki mappings, HSK level, `available_token`, …) |
 | `ignore_vocab_card` / `ignore_writting_card` | private | PK `(user_id, writting)` / `(user_id, recto)` — Anki pull ignore lists |
 | `token_count` | private | PK `(user_id, recorded_at, type)`, `tokens`, `price` — LLM usage history (not the free-plan remaining budget) |
-| `hsk_words` | shared | `word` (PK), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
+| `hsk_words` | shared | `id` (PK, `word\|pinyin`), `word`, `level` (HSK 3.0 1–7), `frequency`, `pinyin`, `definition` (meanings joined with ` | `) |
 | `hsk_characters` | shared | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
-| `hsk_word_character` | shared | many-to-many link between `hsk_words` and `hsk_characters` |
+| `hsk_word_character` | shared | many-to-many link between `hsk_words.id` and `hsk_characters` |
 
 You can preload your characters and words with the bulk upload endpoint (see below), for example:
 

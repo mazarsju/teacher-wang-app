@@ -58,7 +58,7 @@ character_word = Table(
 hsk_word_character = Table(
     "hsk_word_character",
     db.Model.metadata,
-    Column("word", String(32), ForeignKey("hsk_words.word"), primary_key=True),
+    Column("word_id", String(128), ForeignKey("hsk_words.id"), primary_key=True),
     Column(
         "character",
         String(1),
@@ -130,9 +130,13 @@ class Word(db.Model):
 class HskWord(db.Model):
     __tablename__ = "hsk_words"
 
-    word = db.Column(String(32), primary_key=True)
+    # Composite of word + "|" + pinyin (one row per reading/form).
+    id = db.Column(String(128), primary_key=True)
+    word = db.Column(String(32), nullable=False, index=True)
     level = db.Column(Integer, nullable=False)
     frequency = db.Column(Integer, nullable=False)
+    pinyin = db.Column(String(64), nullable=False, default="")
+    definition = db.Column(String(512), nullable=False, default="")
 
     characters = db.relationship(
         "HskCharacter",

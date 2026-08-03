@@ -3,9 +3,12 @@ import { API_BASE } from "../utils/apiBase";
 import { apiFetch } from "../utils/auth/apiFetch";
 
 type HskWordEntry = {
+  id: string;
   word: string;
   level: number;
   frequency: number;
+  pinyin: string;
+  definition: string;
 };
 
 type MissingHskCharactersModalProps = {
@@ -173,7 +176,10 @@ export default function MissingHskCharactersModal({
               {!isLoadingWords && !wordsError && words.length > 0 && (
                 <ul className="character-words-modal-list">
                   {words.map((entry) => (
-                    <li key={entry.word}>{entry.word}</li>
+                    <li key={entry.id}>
+                      {entry.word}
+                      {entry.pinyin ? ` (${entry.pinyin})` : ""}
+                    </li>
                   ))}
                 </ul>
               )}
