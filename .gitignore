@@ -7,3 +7,4 @@ __pycache__/
 conversation_logs/
 .cursor/skills/update-app-screenshots/scripts/node_modules/
 build/
+avatar.svg

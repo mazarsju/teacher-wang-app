@@ -5,7 +5,7 @@ export type ChatCharacter = {
   name: string;
   chineseName: string;
   description: string;
-  avatarVariant: "teacher" | "friend" | "waiter";
+  avatarVariant: "teacher" | "friend" | "waiter" | "shop-assistant";
 };
 
 type ChatCharacterCardProps = {

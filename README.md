@@ -401,7 +401,7 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 Keep the app feeling snappy and polished as datasets and features grow — clearer feedback, smoother navigation, and a more cohesive look.
 
 - [x] Cache core learner data in Redux so tab switches do not re-fetch (refresh on login / profile **Synchro**)
-- [ ] Avatar design improvement
+- [x] Avatar design improvement
 - [x] General webapp design improvement
 
 ### 8. Plan management
