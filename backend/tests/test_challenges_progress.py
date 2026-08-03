@@ -23,11 +23,13 @@ class TestChallengesProgress(unittest.TestCase):
 
     def test_challenge_not_completed_by_default(self):
         self.assertFalse(is_challenge_completed(TEST_USER, "challenge-restaurant"))
+        self.assertFalse(is_challenge_completed(TEST_USER, "challenge-shop"))
         self.assertEqual(
             get_challenges_progress(TEST_USER),
             {
                 "challenges": [
                     {"id": "challenge-restaurant", "completed": False},
+                    {"id": "challenge-shop", "completed": False},
                 ]
             },
         )
@@ -44,6 +46,29 @@ class TestChallengesProgress(unittest.TestCase):
             {
                 "challenges": [
                     {"id": "challenge-restaurant", "completed": True},
+                    {"id": "challenge-shop", "completed": False},
+                ]
+            },
+        )
+
+    def test_shop_challenge_completed_when_all_tasks_done(self):
+        save_completed_task_ids(
+            TEST_USER,
+            "challenge-shop",
+            [
+                "greet-assistant",
+                "ask-price",
+                "ask-different-size",
+                "pay-item",
+            ],
+        )
+        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-shop"))
+        self.assertEqual(
+            get_challenges_progress(TEST_USER),
+            {
+                "challenges": [
+                    {"id": "challenge-restaurant", "completed": False},
+                    {"id": "challenge-shop", "completed": True},
                 ]
             },
         )

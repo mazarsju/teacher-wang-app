@@ -15,6 +15,7 @@ describe("ChatPage", () => {
             json: async () => ({
               challenges: [
                 { id: "challenge-restaurant", completed: false },
+                { id: "challenge-shop", completed: false },
               ],
             }),
           });
@@ -66,6 +67,13 @@ describe("ChatPage", () => {
     expect(
       screen.getByText("Talk with the waiter and order a meal"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Shop Assistant/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("(售货员)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Buy a shirt and practice shopping vocabulary"),
+    ).toBeInTheDocument();
   });
 
   it("marks completed challenges on the card", async () => {
@@ -80,6 +88,7 @@ describe("ChatPage", () => {
             json: async () => ({
               challenges: [
                 { id: "challenge-restaurant", completed: true },
+                { id: "challenge-shop", completed: false },
               ],
             }),
           });
@@ -137,6 +146,30 @@ describe("ChatPage", () => {
     expect(screen.getByLabelText("Call the waiter")).not.toBeChecked();
   });
 
+  it("opens the shop challenge chat modal with tasks", async () => {
+    const user = userEvent.setup();
+
+    render(<ChatPage />);
+
+    await user.click(screen.getByRole("button", { name: /Shop Assistant/ }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Shop Assistant \(售货员\)/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Shop Assistant — tasks" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Greet the shop assistant")).toBeDisabled();
+    expect(
+      screen.getByLabelText("Ask the price of a shirt"),
+    ).toBeDisabled();
+    expect(
+      screen.getByLabelText("Ask for a different size"),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("Pay for the item")).toBeDisabled();
+  });
+
   it("closes the chat modal", async () => {
     const user = userEvent.setup();
 
@@ -165,6 +198,7 @@ describe("ChatPage", () => {
                 id: "challenge-restaurant",
                 completed: callCount > 1,
               },
+              { id: "challenge-shop", completed: false },
             ],
           }),
         });

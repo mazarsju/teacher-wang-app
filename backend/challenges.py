@@ -13,6 +13,18 @@ CHALLENGES = {
             {"id": "pay-bill", "label": "Pay the bill"},
         ],
     },
+    "challenge-shop": {
+        "title": "Shop Assistant",
+        "tasks": [
+            {"id": "greet-assistant", "label": "Greet the shop assistant"},
+            {"id": "ask-price", "label": "Ask the price of a shirt"},
+            {
+                "id": "ask-different-size",
+                "label": "Ask for a different size",
+            },
+            {"id": "pay-item", "label": "Pay for the item"},
+        ],
+    },
 }
 
 
