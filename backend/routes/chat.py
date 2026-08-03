@@ -193,7 +193,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             token_usage = token_usage + correction.token_usage
             if (
                 correction is not None
-                and not correction.correct
+                and correction.needs_explanation
                 and correction.answer
             ):
                 correction_thread_id, thread_messages = create_correction_thread(
@@ -214,6 +214,9 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
                 "user",
                 last_user_message["content"],
                 correction_thread_id=correction_thread_id,
+                correction_severity=(
+                    correction.severity if correction is not None else None
+                ),
             )
 
         if is_challenge_character(character_id):

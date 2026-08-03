@@ -79,6 +79,7 @@ class TestConversationLogs(unittest.TestCase):
             "user",
             "我是很好",
             correction_thread_id=thread_id,
+            correction_severity="incorrect",
         )
         append_message(TEST_USER, "xiao-ming", "assistant", "我也很好！")
 
@@ -87,6 +88,7 @@ class TestConversationLogs(unittest.TestCase):
         self.assertEqual(loaded[0]["content"], "我是很好")
         self.assertEqual(loaded[0]["correctionThreadId"], thread_id)
         self.assertEqual(loaded[0]["correctionThread"], thread_messages)
+        self.assertEqual(loaded[0]["correctionSeverity"], "incorrect")
         self.assertEqual(
             loaded[0]["correctionAnswer"],
             "Say 我很好 instead of 我是很好.",
@@ -157,7 +159,9 @@ class TestConversationLogs(unittest.TestCase):
         )
         rewritten = log_file.read_text(encoding="utf-8")
         self.assertIn(f"correction-thread: {thread_id}", rewritten)
+        self.assertIn("correction-severity: incorrect", rewritten)
         self.assertNotIn("correction: ", rewritten)
+        self.assertEqual(loaded[0]["correctionSeverity"], "incorrect")
 
     def test_append_message_rejects_thread_on_assistant(self):
         with self.assertRaisesRegex(

@@ -16,6 +16,9 @@ import {
   TrashIcon,
   CloseIcon,
   WarningIcon,
+  CheckIcon,
+  IncorrectIcon,
+  QuestionIcon,
 } from "./icons";
 
 describe("icons", () => {
@@ -34,6 +37,9 @@ describe("icons", () => {
     ["TrashIcon", TrashIcon],
     ["CloseIcon", CloseIcon],
     ["WarningIcon", WarningIcon],
+    ["CheckIcon", CheckIcon],
+    ["IncorrectIcon", IncorrectIcon],
+    ["QuestionIcon", QuestionIcon],
     ["ProfileIcon", ProfileIcon],
     ["PowerIcon", PowerIcon],
   ])("renders %s as an accessible decorative svg", (_name, Icon) => {

@@ -3,10 +3,22 @@ import type { ChatCharacter } from "./ChatCharacterCard";
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import ChallengeConfetti from "./ChallengeConfetti";
 import ConfirmModal from "./ConfirmModal";
-import { CloseIcon, TrashIcon, TrophyIcon, WarningIcon } from "./icons";
+import {
+  CheckIcon,
+  CloseIcon,
+  IncorrectIcon,
+  QuestionIcon,
+  TrashIcon,
+  TrophyIcon,
+  WarningIcon,
+} from "./icons";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import type { ChallengeTask } from "../types/challenge";
-import type { ChatMessage, ChatThreadContext } from "../types/chat";
+import type {
+  ChatMessage,
+  ChatThreadContext,
+  GrammarSeverity,
+} from "../types/chat";
 import {
   clearChatHistory,
   fetchChatHistory,
@@ -18,6 +30,7 @@ type CorrectionThreadState = {
   messageIndex: number;
   threadId: string;
   messages: ChatMessage[];
+  severity: GrammarSeverity;
 };
 
 type ChatModalProps = {
@@ -31,7 +44,29 @@ type ChatModalProps = {
   onThreadMessagesChange?: (messages: ChatMessage[]) => void;
   tasks?: ChallengeTask[];
   challengeTitle?: string;
+  grammarSeverity?: GrammarSeverity;
 };
+
+const GRAMMAR_SEVERITY_LABELS: Record<GrammarSeverity, string> = {
+  none: "Correct",
+  minor: "Minor mistake",
+  awkward: "Awkward wording",
+  incorrect: "Incorrect",
+};
+
+function resolveCorrectionSeverity(
+  message: ChatMessage,
+): GrammarSeverity | null {
+  if (message.correctionSeverity) {
+    return message.correctionSeverity;
+  }
+
+  if (hasCorrectionThread(message)) {
+    return "incorrect";
+  }
+
+  return null;
+}
 
 function hasCorrectionThread(message: ChatMessage): boolean {
   return Boolean(
@@ -64,6 +99,7 @@ export default function ChatModal({
   onThreadMessagesChange,
   tasks,
   challengeTitle,
+  grammarSeverity,
 }: ChatModalProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -194,26 +230,37 @@ export default function ChatModal({
           return [...nextMessages, response.message];
         }
 
+        const correction = response.correction;
         const withCorrection =
-          response.correction &&
-          response.correction.correct === false &&
-          response.correction.answer
-            ? nextMessages.map((entry, index) =>
-                index === nextMessages.length - 1 && entry.role === "user"
-                  ? {
-                      ...entry,
-                      correctionAnswer: response.correction?.answer,
-                      correctionThreadId: response.correction?.thread_id,
-                      correctionThread:
-                        response.correction?.thread_messages ?? [
-                          {
-                            role: "assistant" as const,
-                            content: response.correction?.answer ?? "",
-                          },
-                        ],
-                    }
-                  : entry,
-              )
+          correction != null
+            ? nextMessages.map((entry, index) => {
+                if (index !== nextMessages.length - 1 || entry.role !== "user") {
+                  return entry;
+                }
+
+                const severity = correction.severity;
+                const updated: ChatMessage = {
+                  ...entry,
+                  correctionSeverity: severity,
+                };
+
+                if (
+                  severity !== "none" &&
+                  correction.answer &&
+                  (correction.thread_id || correction.thread_messages)
+                ) {
+                  updated.correctionAnswer = correction.answer;
+                  updated.correctionThreadId = correction.thread_id;
+                  updated.correctionThread = correction.thread_messages ?? [
+                    {
+                      role: "assistant" as const,
+                      content: correction.answer,
+                    },
+                  ];
+                }
+
+                return updated;
+              })
             : nextMessages;
 
         return [...withCorrection, response.message];
@@ -263,6 +310,11 @@ export default function ChatModal({
   }
 
   function openCorrectionThread(messageIndex: number, chatMessage: ChatMessage) {
+    const severity = resolveCorrectionSeverity(chatMessage);
+    if (severity === null || severity === "none") {
+      return;
+    }
+
     const threadMessages = getCorrectionThreadMessages(chatMessage);
     if (threadMessages.length === 0) {
       return;
@@ -279,8 +331,58 @@ export default function ChatModal({
       messageIndex,
       threadId: chatMessage.correctionThreadId,
       messages: threadMessages,
+      severity,
     });
   }
+
+  function renderGrammarSeverityBadge(
+    messageIndex: number,
+    chatMessage: ChatMessage,
+  ) {
+    const severity = resolveCorrectionSeverity(chatMessage);
+    if (severity === null) {
+      return null;
+    }
+
+    const iconClassName = "chat-message-severity-icon";
+    const label = GRAMMAR_SEVERITY_LABELS[severity];
+
+    if (severity === "none") {
+      return (
+        <span
+          className="chat-message-severity-badge chat-message-severity-badge--none"
+          aria-label={label}
+          title={label}
+        >
+          <CheckIcon className={iconClassName} />
+        </span>
+      );
+    }
+
+    const Icon =
+      severity === "minor"
+        ? WarningIcon
+        : severity === "awkward"
+          ? QuestionIcon
+          : IncorrectIcon;
+
+    return (
+      <button
+        type="button"
+        className={`chat-message-severity-badge chat-message-severity-badge--${severity}`}
+        aria-label={`Open grammar note (${label}) with Teacher Wang`}
+        title={`${label} — ask Teacher Wang`}
+        onClick={() => openCorrectionThread(messageIndex, chatMessage)}
+      >
+        <Icon className={iconClassName} />
+      </button>
+    );
+  }
+
+  const titleSeverityLabel =
+    grammarSeverity && grammarSeverity !== "none"
+      ? GRAMMAR_SEVERITY_LABELS[grammarSeverity]
+      : null;
 
   return (
     <>
@@ -310,6 +412,12 @@ export default function ChatModal({
                   <span className="chat-modal-participant-chinese-name">
                     ({character.chineseName})
                   </span>
+                  {titleSeverityLabel && (
+                    <span className="chat-modal-participant-severity">
+                      {" "}
+                      — {titleSeverityLabel}
+                    </span>
+                  )}
                 </h2>
               </div>
             </div>
@@ -444,19 +552,7 @@ export default function ChatModal({
                         }
                       >
                         {chatMessage.role === "user" &&
-                          hasCorrectionThread(chatMessage) && (
-                            <button
-                              type="button"
-                              className="chat-message-warning-button"
-                              aria-label="Open grammar correction with Teacher Wang"
-                              title="Grammar issue — ask Teacher Wang"
-                              onClick={() =>
-                                openCorrectionThread(index, chatMessage)
-                              }
-                            >
-                              <WarningIcon className="chat-message-warning-icon" />
-                            </button>
-                          )}
+                          renderGrammarSeverityBadge(index, chatMessage)}
                         <div
                           className={
                             chatMessage.role === "user"
@@ -541,6 +637,7 @@ export default function ChatModal({
           loadHistory={false}
           stacked
           allowClearHistory={false}
+          grammarSeverity={activeCorrection.severity}
           thread={{
             parentCharacterId: character.id,
             threadId: activeCorrection.threadId,

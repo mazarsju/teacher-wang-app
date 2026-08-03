@@ -1604,8 +1604,8 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   gap: 0.2rem;
 }
 
-.chat-message-warning-button,
-.page-content .chat-message-warning-button {
+.chat-message-severity-badge,
+.page-content .chat-message-severity-badge {
   position: absolute;
   top: 0;
   left: 0;
@@ -1623,30 +1623,74 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   margin: 0;
   padding: 0;
   aspect-ratio: 1 / 1;
-  border: 1.5px solid #f59e0b;
+  border: 1.5px solid transparent;
   border-radius: 9999px;
-  background: #fffbeb;
-  color: #d97706;
   font-size: inherit;
   line-height: 0;
-  cursor: pointer;
   /* Mostly outside the bubble; slight overlap only on the top-left corner */
   transform: translate(-50%, -55%);
   box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
 }
 
-.chat-message-warning-button:hover,
-.page-content .chat-message-warning-button:hover {
+button.chat-message-severity-badge {
+  cursor: pointer;
+}
+
+.chat-message-severity-badge--none {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.chat-message-severity-badge--minor {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.chat-message-severity-badge--minor:hover,
+.page-content .chat-message-severity-badge--minor:hover {
   background: #fef3c7;
   border-color: #d97706;
   color: #b45309;
 }
 
-.chat-message-warning-icon {
+.chat-message-severity-badge--awkward {
+  border-color: #f59e0b;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.chat-message-severity-badge--awkward:hover,
+.page-content .chat-message-severity-badge--awkward:hover {
+  background: #ffedd5;
+  border-color: #ea580c;
+  color: #c2410c;
+}
+
+.chat-message-severity-badge--incorrect {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.chat-message-severity-badge--incorrect:hover,
+.page-content .chat-message-severity-badge--incorrect:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+
+.chat-message-severity-icon {
   width: 0.95rem;
   height: 0.95rem;
   display: block;
   flex-shrink: 0;
+}
+
+.chat-modal-participant-severity {
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .chat-modal-typing-indicator {

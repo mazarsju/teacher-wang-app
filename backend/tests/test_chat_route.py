@@ -116,10 +116,11 @@ class TestChatEndpoint(unittest.TestCase):
             token_usage=MagicMock(input_tokens=0, output_tokens=0),
         )
         self.mock_grammar.return_value = MagicMock(
-            correct=True,
+            severity="none",
             answer=None,
+            needs_explanation=False,
             token_usage=MagicMock(input_tokens=0, output_tokens=0),
-            to_dict=MagicMock(return_value={"correct": True}),
+            to_dict=MagicMock(return_value={"severity": "none"}),
         )
 
     def test_chat_returns_assistant_message(self):
@@ -159,6 +160,7 @@ class TestChatEndpoint(unittest.TestCase):
             "user",
             "你好",
             correction_thread_id=None,
+            correction_severity=None,
         )
         self.mock_append.assert_any_call(
             TEST_USER_ID,
@@ -181,12 +183,13 @@ class TestChatEndpoint(unittest.TestCase):
             token_usage=MagicMock(input_tokens=50, output_tokens=30),
         )
         self.mock_grammar.return_value = MagicMock(
-            correct=False,
+            severity="incorrect",
             answer="Say 我很好 instead of 我是很好.",
+            needs_explanation=True,
             token_usage=MagicMock(input_tokens=20, output_tokens=5),
             to_dict=MagicMock(
                 return_value={
-                    "correct": False,
+                    "severity": "incorrect",
                     "answer": "Say 我很好 instead of 我是很好.",
                 }
             ),
@@ -216,7 +219,7 @@ class TestChatEndpoint(unittest.TestCase):
                     "content": "我也很好！",
                 },
                 "correction": {
-                    "correct": False,
+                    "severity": "incorrect",
                     "answer": "Say 我很好 instead of 我是很好.",
                     "thread_id": "thread123",
                     "thread_messages": thread_messages,
@@ -236,6 +239,7 @@ class TestChatEndpoint(unittest.TestCase):
             "user",
             "我是很好",
             correction_thread_id="thread123",
+            correction_severity="incorrect",
         )
         self.mock_append.assert_any_call(
             TEST_USER_ID,
@@ -383,6 +387,7 @@ class TestChatEndpoint(unittest.TestCase):
             "user",
             "你好",
             correction_thread_id=None,
+            correction_severity="none",
         )
 
     def test_chat_returns_free_plan_token_exhausted_message(self):

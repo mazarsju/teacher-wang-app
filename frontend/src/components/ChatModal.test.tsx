@@ -138,6 +138,7 @@ describe("ChatModal", () => {
                   content: "我是很好",
                   correctionAnswer: "Say 我很好 instead of 我是很好.",
                   correctionThreadId: "thread123",
+                  correctionSeverity: "incorrect",
                   correctionThread: [
                     {
                       role: "assistant",
@@ -163,9 +164,12 @@ describe("ChatModal", () => {
     expect(await screen.findByText("我是很好")).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", {
-        name: "Open grammar correction with Teacher Wang",
+        name: "Open grammar note (Incorrect) with Teacher Wang",
       }),
     );
+    expect(
+      screen.getByRole("heading", { name: /Incorrect/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Say 我很好 instead of 我是很好."),
     ).toBeInTheDocument();
@@ -371,7 +375,7 @@ describe("ChatModal", () => {
                 content: "我也很好！",
               },
               correction: {
-                correct: false,
+                severity: "incorrect",
                 answer: "Say 我很好 instead of 我是很好.",
                 thread_id: "thread123",
                 thread_messages: [
@@ -402,12 +406,15 @@ describe("ChatModal", () => {
 
     await user.click(
       screen.getByRole("button", {
-        name: "Open grammar correction with Teacher Wang",
+        name: "Open grammar note (Incorrect) with Teacher Wang",
       }),
     );
 
     expect(
       screen.getByRole("heading", { name: /Teacher Wang/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Incorrect/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Say 我很好 instead of 我是很好."),

@@ -12,12 +12,20 @@ from backend.models import Character
 VALID_ROLES = {"user", "assistant"}
 MAX_REPHRASE_ATTEMPTS = 3
 TEACHER_CHARACTER_ID = "teacher-wang"
+GRAMMAR_SEVERITIES = frozenset({"none", "minor", "awkward", "incorrect"})
 GRAMMAR_CHECK_INSTRUCTION = (
-    "Check whether the learner's Chinese message is grammatically correct. "
+    "Check the learner's Chinese message and assign a grammar severity. "
     "Reply with ONLY a JSON object and no other text. "
-    'If the grammar is correct, respond exactly: {"correct": true}. '
-    "If the grammar is incorrect, respond exactly: "
-    '{"correct": false, "answer": "<brief correction and explanation>"}.'
+    "Choose exactly one severity: "
+    '"none" (the sentence is grammatically correct), '
+    '"minor" (a small pedantic nitpick only a picky teacher would mention), '
+    '"awkward" (not strictly ungrammatical, but the word choice is strange, '
+    "misleading, or likely not what the learner meant), "
+    '"incorrect" (the sentence is grammatically wrong). '
+    'If severity is "none", respond exactly: {"severity": "none"}. '
+    "Otherwise respond exactly: "
+    '{"severity": "<minor|awkward|incorrect>", '
+    '"answer": "<brief correction and explanation>"}.'
 )
 
 
@@ -53,13 +61,17 @@ class ChatReplyResult:
 
 @dataclass(frozen=True)
 class GrammarCorrection:
-    correct: bool
+    severity: str
     answer: str | None = None
     token_usage: LlmTokenUsage = LlmTokenUsage()
 
+    @property
+    def needs_explanation(self) -> bool:
+        return self.severity != "none"
+
     def to_dict(self) -> dict:
-        payload: dict = {"correct": self.correct}
-        if not self.correct and self.answer is not None:
+        payload: dict = {"severity": self.severity}
+        if self.needs_explanation and self.answer is not None:
             payload["answer"] = self.answer
         return payload
 
@@ -270,7 +282,7 @@ def _extract_json_object(text: str) -> dict:
 
 
 def check_user_grammar(user_id: str, user_message: str) -> GrammarCorrection:
-    """Ask Teacher Wang whether the learner's message is grammatically correct."""
+    """Ask Teacher Wang to rate the learner's message grammar severity."""
     content = user_message.strip()
     if content == "":
         raise ValueError("Message content must be a non-empty string")
@@ -287,21 +299,25 @@ def check_user_grammar(user_id: str, user_message: str) -> GrammarCorrection:
     raw, token_usage = _invoke_llm(messages)
     parsed = _extract_json_object(raw)
 
-    correct = parsed.get("correct")
-    if not isinstance(correct, bool):
-        raise ValueError("Grammar check response must include boolean 'correct'")
+    severity = parsed.get("severity")
+    if not isinstance(severity, str) or severity not in GRAMMAR_SEVERITIES:
+        raise ValueError(
+            "Grammar check response must include severity "
+            "('none', 'minor', 'awkward', or 'incorrect')"
+        )
 
-    if correct:
-        return GrammarCorrection(correct=True, token_usage=token_usage)
+    if severity == "none":
+        return GrammarCorrection(severity="none", token_usage=token_usage)
 
     answer = parsed.get("answer")
     if not isinstance(answer, str) or answer.strip() == "":
         raise ValueError(
-            "Grammar check response must include non-empty 'answer' when incorrect"
+            "Grammar check response must include non-empty 'answer' "
+            f"when severity is '{severity}'"
         )
 
     return GrammarCorrection(
-        correct=False,
+        severity=severity,
         answer=answer.strip(),
         token_usage=token_usage,
     )

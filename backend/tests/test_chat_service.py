@@ -209,14 +209,16 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
 class TestCheckUserGrammar(_FreePlanTokenMixin, unittest.TestCase):
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=2)
     @patch("backend.chat_service.get_llm")
-    def test_check_user_grammar_returns_correct(self, mock_get_llm, _mock_level):
+    def test_check_user_grammar_returns_none_when_correct(
+        self, mock_get_llm, _mock_level
+    ):
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content='{"correct": true}')
+        mock_llm.invoke.return_value = MagicMock(content='{"severity": "none"}')
         mock_get_llm.return_value = mock_llm
 
         result = check_user_grammar("test-user", "你好")
 
-        self.assertEqual(result, GrammarCorrection(correct=True))
+        self.assertEqual(result, GrammarCorrection(severity="none"))
         invoked_messages = mock_llm.invoke.call_args.args[0]
         self.assertIn("Teacher Wang", invoked_messages[0].content)
         self.assertIn("JSON object", invoked_messages[0].content)
@@ -230,7 +232,8 @@ class TestCheckUserGrammar(_FreePlanTokenMixin, unittest.TestCase):
         mock_llm = MagicMock()
         mock_llm.invoke.return_value = MagicMock(
             content=(
-                '```json\n{"correct": false, "answer": "Use 我很好 instead."}\n```'
+                '```json\n{"severity": "incorrect", '
+                '"answer": "Use 我很好 instead."}\n```'
             )
         )
         mock_get_llm.return_value = mock_llm
@@ -239,11 +242,13 @@ class TestCheckUserGrammar(_FreePlanTokenMixin, unittest.TestCase):
 
         self.assertEqual(
             result,
-            GrammarCorrection(correct=False, answer="Use 我很好 instead."),
+            GrammarCorrection(
+                severity="incorrect", answer="Use 我很好 instead."
+            ),
         )
         self.assertEqual(
             result.to_dict(),
-            {"correct": False, "answer": "Use 我很好 instead."},
+            {"severity": "incorrect", "answer": "Use 我很好 instead."},
         )
 
 

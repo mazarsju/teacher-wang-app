@@ -12,6 +12,10 @@ AGENT_PREFIX = "agent: "
 # Legacy single-line correction answer (pre-thread format).
 CORRECTION_PREFIX = "correction: "
 CORRECTION_THREAD_PREFIX = "correction-thread: "
+CORRECTION_SEVERITY_PREFIX = "correction-severity: "
+VALID_CORRECTION_SEVERITIES = frozenset(
+    {"none", "minor", "awkward", "incorrect"}
+)
 
 
 def _unescape_content(content: str) -> str:
@@ -181,6 +185,13 @@ def load_conversation(user_id: str, character_id: str) -> list[dict]:
         if line.strip() == "":
             continue
 
+        if line.startswith(CORRECTION_SEVERITY_PREFIX):
+            if messages and messages[-1]["role"] == "user":
+                severity = line[len(CORRECTION_SEVERITY_PREFIX) :].strip()
+                if severity in VALID_CORRECTION_SEVERITIES:
+                    messages[-1]["correctionSeverity"] = severity
+            continue
+
         if line.startswith(CORRECTION_THREAD_PREFIX):
             if messages and messages[-1]["role"] == "user":
                 thread_id = line[len(CORRECTION_THREAD_PREFIX) :].strip()
@@ -198,6 +209,7 @@ def load_conversation(user_id: str, character_id: str) -> list[dict]:
                 messages[-1]["correctionThreadId"] = thread_id
                 messages[-1]["correctionThread"] = thread_messages
                 messages[-1]["correctionAnswer"] = answer
+                messages[-1].setdefault("correctionSeverity", "incorrect")
                 needs_rewrite = True
             continue
 
@@ -222,6 +234,7 @@ def _attach_thread(
     message["correctionThread"] = thread_messages
     if thread_messages and thread_messages[0]["role"] == "assistant":
         message["correctionAnswer"] = thread_messages[0]["content"]
+    message.setdefault("correctionSeverity", "incorrect")
 
 
 def _rewrite_conversation(
@@ -235,9 +248,16 @@ def _rewrite_conversation(
         role = message["role"]
         content = message["content"]
         lines.append(_format_line(role, content))
-        thread_id = message.get("correctionThreadId")
-        if role == "user" and isinstance(thread_id, str) and thread_id:
-            lines.append(f"{CORRECTION_THREAD_PREFIX}{thread_id}")
+        if role == "user":
+            severity = message.get("correctionSeverity")
+            if (
+                isinstance(severity, str)
+                and severity in VALID_CORRECTION_SEVERITIES
+            ):
+                lines.append(f"{CORRECTION_SEVERITY_PREFIX}{severity}")
+            thread_id = message.get("correctionThreadId")
+            if isinstance(thread_id, str) and thread_id:
+                lines.append(f"{CORRECTION_THREAD_PREFIX}{thread_id}")
 
     get_storage().write_text(
         log_object_key(user_id, character_id),
@@ -270,6 +290,13 @@ def replace_conversation(
         if not isinstance(content, str):
             raise ValueError("Each message content must be a string")
         entry: dict = {"role": role, "content": content}
+        severity = message.get("correctionSeverity")
+        if (
+            role == "user"
+            and isinstance(severity, str)
+            and severity in VALID_CORRECTION_SEVERITIES
+        ):
+            entry["correctionSeverity"] = severity
         thread_id = message.get("correctionThreadId")
         if role == "user" and isinstance(thread_id, str) and thread_id.strip():
             if not _is_valid_thread_id(thread_id):
@@ -298,6 +325,7 @@ def append_message(
     content: str,
     *,
     correction_thread_id: str | None = None,
+    correction_severity: str | None = None,
 ) -> None:
     if role not in {"user", "assistant"}:
         raise ValueError("Invalid message role")
@@ -305,15 +333,26 @@ def append_message(
     if correction_thread_id is not None and role != "user":
         raise ValueError("Only user messages can link a correction thread")
 
+    if correction_severity is not None and role != "user":
+        raise ValueError("Only user messages can include a correction severity")
+
     if correction_thread_id is not None and not _is_valid_thread_id(
         correction_thread_id
     ):
         raise ValueError("Invalid thread_id")
 
+    if (
+        correction_severity is not None
+        and correction_severity not in VALID_CORRECTION_SEVERITIES
+    ):
+        raise ValueError("Invalid correction severity")
+
     key = log_object_key(user_id, character_id)
     storage = get_storage()
     existing = storage.read_text(key) or ""
     addition = _format_line(role, content) + "\n"
+    if correction_severity is not None:
+        addition += f"{CORRECTION_SEVERITY_PREFIX}{correction_severity}\n"
     if correction_thread_id is not None:
         addition += f"{CORRECTION_THREAD_PREFIX}{correction_thread_id}\n"
     storage.write_text(key, existing + addition)

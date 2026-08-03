@@ -24,7 +24,16 @@ Teacher Wang itself does not run the unknown-character retry loop (`retry_unknow
 
 ### Teacher agent (grammar)
 
-For every non–Teacher Wang conversation, Teacher Wang silently reviews the learner’s latest Chinese message. If the grammar is wrong, a short correction is returned and opened in a side thread so the learner can ask follow-up questions without leaving the main chat.
+For every non–Teacher Wang conversation, Teacher Wang silently reviews the learner’s latest Chinese message and assigns a **severity**:
+
+| Severity | Meaning |
+| --- | --- |
+| `none` | Grammatically correct |
+| `minor` | Pedantic nitpick a picky teacher might mention |
+| `awkward` | Not strictly ungrammatical, but wording is strange or misleading |
+| `incorrect` | Grammatically wrong |
+
+The API returns `{"severity": "…"}` (plus `answer` when severity is not `none`). The UI shows a badge on the user message for every level: a non-clickable green check for `none`, and clickable orange/red icons for `minor` / `awkward` / `incorrect`. Opening a note starts a Teacher Wang side thread with the short correction so the learner can ask follow-up questions without leaving the main chat. Severity is also stored on the conversation log so badges survive history reload.
 
 ### Challenge judge
 
@@ -43,8 +52,11 @@ User
  │  Chinese message
  ├──────────────────────────────► Teacher agent (grammar)
  │                                      │
+ │                                      ├──► severity badge (always)
+ │                                      │    none | minor | awkward | incorrect
+ │                                      │
  │                                      └──► correction thread
- │                                           (only if grammar is wrong)
+ │                                           (only if severity ≠ none)
  │
  │  same message (main chat)
  └──────────────────────────────► Character agent (role-play)
@@ -79,14 +91,14 @@ User
 * Separating grammar, role-play, and challenge judging keeps prompts focused and easier to evolve.
 * Vocabulary retries happen inside the character loop so the learner still gets one reply, not a cascade of UI steps.
 * The judge may revise the character once, then yields, so challenges cannot soft-lock on endless incoherence loops.
-* Grammar corrections live in a side thread so practice flow is not interrupted by every mistake.
+* Grammar feedback uses severity levels so minor nits and awkward wording are distinct from hard errors; only non-`none` severities open a side thread, so practice flow is not interrupted by every note.
 
 ## Consequences
 
 ### Advantages
 
 * Challenge scenarios stay rule-aware without stuffing every constraint into one giant system prompt.
-* Learners see corrections without losing the main conversation.
+* Learners see a severity badge on each message and can open corrections without losing the main conversation.
 * Unknown-vocabulary pressure is soft: best-effort rephrase, then best remaining attempt.
 
 ### Drawbacks

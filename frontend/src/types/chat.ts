@@ -4,6 +4,7 @@ export type ChatMessage = {
   correctionAnswer?: string;
   correctionThreadId?: string;
   correctionThread?: ChatMessage[];
+  correctionSeverity?: GrammarSeverity;
 };
 
 export type ChatRequest = {
@@ -13,8 +14,10 @@ export type ChatRequest = {
   thread_id?: string;
 };
 
+export type GrammarSeverity = "none" | "minor" | "awkward" | "incorrect";
+
 export type GrammarCorrection = {
-  correct: boolean;
+  severity: GrammarSeverity;
   answer?: string;
   thread_id?: string;
   thread_messages?: ChatMessage[];
