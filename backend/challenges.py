@@ -13,6 +13,27 @@ CHALLENGES = {
             {"id": "pay-bill", "label": "Pay the bill"},
         ],
     },
+    "challenge-taxi": {
+        "title": "Taxi Driver",
+        "tasks": [
+            {"id": "hail-taxi", "label": "Hail the taxi"},
+            {"id": "give-destination", "label": "Tell the driver your destination"},
+            {"id": "ask-fare", "label": "Ask how much the ride costs"},
+            {"id": "pay-fare", "label": "Pay for the ride"},
+        ],
+    },
+    "challenge-hotel": {
+        "title": "Hotel Receptionist",
+        "tasks": [
+            {"id": "greet-receptionist", "label": "Greet the receptionist"},
+            {"id": "check-in", "label": "Check in to your room"},
+            {
+                "id": "ask-breakfast",
+                "label": "Ask what time breakfast starts",
+            },
+            {"id": "check-out", "label": "Check out of the hotel"},
+        ],
+    },
     "challenge-shop": {
         "title": "Shop Assistant",
         "tasks": [

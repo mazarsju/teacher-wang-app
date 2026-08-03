@@ -1,12 +1,16 @@
 import teacherAvatar from "../assets/avatars/teacher.svg";
 import friendAvatar from "../assets/avatars/friend.svg";
 import waiterAvatar from "../assets/avatars/waiter.svg";
+import taxiDriverAvatar from "../assets/avatars/taxi-driver.svg";
+import hotelReceptionistAvatar from "../assets/avatars/hotel-receptionist.svg";
 import shopAssistantAvatar from "../assets/avatars/shop-assistant.svg";
 
 type ChatCharacterAvatarVariant =
   | "teacher"
   | "friend"
   | "waiter"
+  | "taxi-driver"
+  | "hotel-receptionist"
   | "shop-assistant";
 
 type ChatCharacterAvatarProps = {
@@ -18,6 +22,8 @@ const AVATAR_BY_VARIANT: Record<ChatCharacterAvatarVariant, string> = {
   teacher: teacherAvatar,
   friend: friendAvatar,
   waiter: waiterAvatar,
+  "taxi-driver": taxiDriverAvatar,
+  "hotel-receptionist": hotelReceptionistAvatar,
   "shop-assistant": shopAssistantAvatar,
 };
 

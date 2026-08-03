@@ -2,6 +2,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatPage from "./ChatPage";
 
+const DEFAULT_PROGRESS = [
+  { id: "challenge-restaurant", completed: false },
+  { id: "challenge-taxi", completed: false },
+  { id: "challenge-hotel", completed: false },
+  { id: "challenge-shop", completed: false },
+];
+
 describe("ChatPage", () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -13,10 +20,7 @@ describe("ChatPage", () => {
           return Promise.resolve({
             ok: true,
             json: async () => ({
-              challenges: [
-                { id: "challenge-restaurant", completed: false },
-                { id: "challenge-shop", completed: false },
-              ],
+              challenges: DEFAULT_PROGRESS,
             }),
           });
         }
@@ -54,21 +58,47 @@ describe("ChatPage", () => {
     expect(screen.getByText("Your native Chinese friend")).toBeInTheDocument();
   });
 
-  it("renders the Challenges section", () => {
+  it("renders the Challenges section in order", () => {
     render(<ChatPage />);
 
     expect(
       screen.getByRole("heading", { name: "Challenges" }),
     ).toBeInTheDocument();
-    expect(
+
+    const challengeButtons = [
       screen.getByRole("button", { name: /Waiter/ }),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: /Taxi Driver/ }),
+      screen.getByRole("button", { name: /Hotel Receptionist/ }),
+      screen.getByRole("button", { name: /Shop Assistant/ }),
+    ];
+    const positions = challengeButtons.map((button) =>
+      button.compareDocumentPosition(challengeButtons[0]),
+    );
+    expect(positions[0]).toBe(0);
+    expect(
+      challengeButtons[0].compareDocumentPosition(challengeButtons[1]) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      challengeButtons[1].compareDocumentPosition(challengeButtons[2]) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      challengeButtons[2].compareDocumentPosition(challengeButtons[3]) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
     expect(screen.getByText("(服务员)")).toBeInTheDocument();
     expect(
       screen.getByText("Talk with the waiter and order a meal"),
     ).toBeInTheDocument();
+    expect(screen.getByText("(出租车司机)")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Shop Assistant/ }),
+      screen.getByText("Take a taxi and tell the driver where to go"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("(前台)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Check in at a hotel and ask about breakfast"),
     ).toBeInTheDocument();
     expect(screen.getByText("(售货员)")).toBeInTheDocument();
     expect(
@@ -88,6 +118,8 @@ describe("ChatPage", () => {
             json: async () => ({
               challenges: [
                 { id: "challenge-restaurant", completed: true },
+                { id: "challenge-taxi", completed: false },
+                { id: "challenge-hotel", completed: false },
                 { id: "challenge-shop", completed: false },
               ],
             }),
@@ -146,6 +178,56 @@ describe("ChatPage", () => {
     expect(screen.getByLabelText("Call the waiter")).not.toBeChecked();
   });
 
+  it("opens the taxi challenge chat modal with tasks", async () => {
+    const user = userEvent.setup();
+
+    render(<ChatPage />);
+
+    await user.click(screen.getByRole("button", { name: /Taxi Driver/ }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Taxi Driver \(出租车司机\)/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Taxi Driver — tasks" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Hail the taxi")).toBeDisabled();
+    expect(
+      screen.getByLabelText("Tell the driver your destination"),
+    ).toBeDisabled();
+    expect(
+      screen.getByLabelText("Ask how much the ride costs"),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("Pay for the ride")).toBeDisabled();
+  });
+
+  it("opens the hotel challenge chat modal with tasks", async () => {
+    const user = userEvent.setup();
+
+    render(<ChatPage />);
+
+    await user.click(
+      screen.getByRole("button", { name: /Hotel Receptionist/ }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: /Hotel Receptionist \(前台\)/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Hotel Receptionist — tasks" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Greet the receptionist")).toBeDisabled();
+    expect(screen.getByLabelText("Check in to your room")).toBeDisabled();
+    expect(
+      screen.getByLabelText("Ask what time breakfast starts"),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("Check out of the hotel")).toBeDisabled();
+  });
+
   it("opens the shop challenge chat modal with tasks", async () => {
     const user = userEvent.setup();
 
@@ -198,6 +280,8 @@ describe("ChatPage", () => {
                 id: "challenge-restaurant",
                 completed: callCount > 1,
               },
+              { id: "challenge-taxi", completed: false },
+              { id: "challenge-hotel", completed: false },
               { id: "challenge-shop", completed: false },
             ],
           }),

@@ -109,13 +109,17 @@ No dedicated age param. Approximate with:
 
 ### Clothes / gesture
 
+**Default: no gesture.** Always set `gestureProbability=0` unless the user
+explicitly requests a gesture, pose, or hand prop. Do not add waves / OK /
+phone hands from soft cues like “friendly”.
+
 | User says | Prefer |
 | --- | --- |
 | holding phone | `gestureVariant=handPhone`, `gestureProbability=100` |
 | waving | `waveLongArm` / `waveLongArms` |
 | pointing | `point` / `pointLongArm` |
 | OK hand | `ok` / `okLongArm` |
-| no props / arms | `gestureProbability=0` |
+| (unspecified) / no props | `gestureProbability=0` |
 | graphic tee | set `clothesGraphicProbability=100` + graphic variant |
 
 ## Circular background post-process

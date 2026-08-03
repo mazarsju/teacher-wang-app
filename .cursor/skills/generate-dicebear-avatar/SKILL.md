@@ -43,7 +43,7 @@ Extract intents such as:
 | Hair | short, long, hat, sparse, styled (never bald — see hard rule) |
 | Glasses | round, rectangular, sunglasses, none |
 | Beard | goatee, Ho Chi Minh, full beard, mustache, none |
-| Clothes / gesture | hoodie, phone, wave, point |
+| Clothes / gesture | hoodie; gesture **only if user asks** (phone, wave, point) |
 | Background color | explicit hex / named color → circle fill; else random pastel |
 
 **Hard rule — always include hair:**
@@ -61,6 +61,14 @@ Extract intents such as:
   land on a banned variant, set an explicit allowed `mouthVariant` /
   `eyesVariant` (do not leave those to chance when the brief needs a clear
   expression).
+
+**Hard rule — no gesture unless asked:**
+
+- Default: set `gestureProbability=0` on every avatar.
+- Only set a `gestureVariant` / `gestureProbability=100` when the user
+  **explicitly** asks for a gesture, pose, or prop (e.g. “waving”, “holding a
+  phone”, “OK hand”). Do not infer gestures from vibe words like “friendly” or
+  “sympathique”.
 
 **Style limitations (tell the user briefly when relevant):**
 
@@ -84,18 +92,21 @@ Rules:
 1. Set `seed` from the character name/role (kebab-case or quoted phrase). Same
    seed + options → same avatar.
 2. **Always** set `hairProbability=100` and pick a `hairVariant` (see hard rule).
-3. For each other feature the user **wants**: set `*Probability=100` and pick a
+3. **Always** set `gestureProbability=0` unless the user explicitly asks for a
+   gesture (see hard rule).
+4. For each other feature the user **wants**: set `*Probability=100` and pick a
    `*Variant`.
-4. For each feature the user **rejects** (“no beard”, “no glasses”): set that
+5. For each feature the user **rejects** (“no beard”, “no glasses”): set that
    feature’s `*Probability=0`. Do **not** apply this to hair.
-5. Leave unspecified non-hair features unset so the seed can vary them —
+6. Leave unspecified non-hair features unset so the seed can vary them —
    **except** when a strong character brief implies them (e.g. “old wise man
    with beard and glasses” → force beard + glasses on). Hair is never left to
-   chance alone without an explicit variant when the brief is specific.
-6. Prefer curated mappings in [reference.md](reference.md). If still unsure,
+   chance alone without an explicit variant when the brief is specific. Gesture
+   is never inferred — only explicit requests.
+7. Prefer curated mappings in [reference.md](reference.md). If still unsure,
    download 2–4 candidate PNG previews, inspect with the Read tool, pick the
    best variant, then download the final SVG.
-7. Full option enums: [options.json](options.json) or
+8. Full option enums: [options.json](options.json) or
    `https://api.dicebear.com/10.x/notionists/options.json`.
 
 ### 3. Download + circular background (required)

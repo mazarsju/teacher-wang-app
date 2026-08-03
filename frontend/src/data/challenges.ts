@@ -19,6 +19,44 @@ export const RESTAURANT_CHALLENGE: Challenge = {
   ],
 };
 
+export const TAXI_CHALLENGE: Challenge = {
+  id: "challenge-taxi",
+  title: "Taxi Driver",
+  description: "Take a taxi and tell the driver where to go",
+  character: {
+    id: "challenge-taxi",
+    name: "Taxi Driver",
+    chineseName: "出租车司机",
+    description: "Take a taxi and tell the driver where to go",
+    avatarVariant: "taxi-driver",
+  },
+  tasks: [
+    { id: "hail-taxi", label: "Hail the taxi" },
+    { id: "give-destination", label: "Tell the driver your destination" },
+    { id: "ask-fare", label: "Ask how much the ride costs" },
+    { id: "pay-fare", label: "Pay for the ride" },
+  ],
+};
+
+export const HOTEL_CHALLENGE: Challenge = {
+  id: "challenge-hotel",
+  title: "Hotel Receptionist",
+  description: "Check in at a hotel and ask about breakfast",
+  character: {
+    id: "challenge-hotel",
+    name: "Hotel Receptionist",
+    chineseName: "前台",
+    description: "Check in at a hotel and ask about breakfast",
+    avatarVariant: "hotel-receptionist",
+  },
+  tasks: [
+    { id: "greet-receptionist", label: "Greet the receptionist" },
+    { id: "check-in", label: "Check in to your room" },
+    { id: "ask-breakfast", label: "Ask what time breakfast starts" },
+    { id: "check-out", label: "Check out of the hotel" },
+  ],
+};
+
 export const SHOP_CHALLENGE: Challenge = {
   id: "challenge-shop",
   title: "Shop Assistant",
@@ -38,4 +76,9 @@ export const SHOP_CHALLENGE: Challenge = {
   ],
 };
 
-export const CHALLENGES: Challenge[] = [RESTAURANT_CHALLENGE, SHOP_CHALLENGE];
+export const CHALLENGES: Challenge[] = [
+  RESTAURANT_CHALLENGE,
+  TAXI_CHALLENGE,
+  HOTEL_CHALLENGE,
+  SHOP_CHALLENGE,
+];
