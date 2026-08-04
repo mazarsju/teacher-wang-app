@@ -1,6 +1,8 @@
 from flask import Blueprint
-
-from backend.db_export import DB_EXPORT_FILENAME, export_database_to_file
+import io
+import zipfile
+from flask import send_file
+from backend.db_export import get_export_database_content
 from backend.user_context import current_user_id
 
 bp = Blueprint("export_database", __name__)
@@ -8,8 +10,18 @@ bp = Blueprint("export_database", __name__)
 
 @bp.post("/database/export")
 def export_database():
-    export_database_to_file(current_user_id())
-    return {
-        "message": f"Database exported to {DB_EXPORT_FILENAME}",
-        "filename": DB_EXPORT_FILENAME,
-    }, 200
+    content = get_export_database_content(current_user_id())
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr("teacher-wang-export.txt", content)
+
+    zip_buffer.seek(0)
+
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="teacher-wang-export.zip",
+    )
