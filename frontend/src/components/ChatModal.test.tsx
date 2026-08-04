@@ -59,11 +59,14 @@ describe("ChatModal", () => {
       await screen.findByText("Start a conversation with Teacher Wang."),
     ).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText("Message"), "Hello");
+    const input = screen.getByLabelText("Message");
+    await user.type(input, "Hello");
     await user.click(screen.getByRole("button", { name: "Send" }));
 
+    expect(input).toHaveFocus();
     expect(await screen.findByText("Hello")).toBeInTheDocument();
     expect(await screen.findByText("你好！")).toBeInTheDocument();
+    expect(input).toHaveFocus();
     expect(fetch).toHaveBeenCalledWith(
       "/api/conversation-logs/teacher-wang",
       expect.objectContaining({ method: "GET" }),

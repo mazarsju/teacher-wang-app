@@ -115,6 +115,7 @@ export default function ChatModal({
   );
   const [showConfetti, setShowConfetti] = useState(false);
   const wasChallengeCompleteRef = useRef(false);
+  const messageInputRef = useRef<HTMLInputElement>(null);
 
   const isChallengeComplete = Boolean(
     tasks &&
@@ -199,6 +200,10 @@ export default function ChatModal({
 
   const activeCharacter = character;
 
+  function focusMessageInput() {
+    messageInputRef.current?.focus();
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedMessage = message.trim();
@@ -218,6 +223,7 @@ export default function ChatModal({
     setMessage("");
     setError(null);
     setIsSending(true);
+    focusMessageInput();
 
     try {
       const response = await sendChatMessage(
@@ -281,6 +287,7 @@ export default function ChatModal({
       );
     } finally {
       setIsSending(false);
+      focusMessageInput();
     }
   }
 
@@ -599,11 +606,12 @@ export default function ChatModal({
               </label>
               <div className="chat-modal-composer-row">
                 <input
+                  ref={messageInputRef}
                   id={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
                   type="text"
                   value={message}
                   placeholder="Type your message..."
-                  disabled={isSending || isClearing}
+                  disabled={isClearing}
                   onChange={(event) => setMessage(event.target.value)}
                 />
                 <button
