@@ -54,32 +54,19 @@ def create_word():
     if Word.query.filter_by(user_id=user_id, word=word_text).first() is not None:
         return {"error": "Word already exists"}, 409
 
+    now = utcnow()
     word_record = Word(
         user_id=user_id,
         word=word_text,
         definition=definition_text or None,
+        updated_at=now,
     )
     db.session.add(word_record)
-
-    now = utcnow()
-    for character in word_text:
-        char_record = Character.query.filter_by(
-            user_id=user_id,
-            char=character,
-        ).first()
-        if char_record is None:
-            continue
-
-        if word_record not in char_record.words:
-            char_record.words.append(word_record)
-            char_record.updated_at = now
-
-    word_record.updated_at = now
     db.session.commit()
 
     return {
         "word": word_record.word,
         "definition": word_record.definition,
         "updated_at": word_record.updated_at.isoformat(),
-        "characters": [character for character in word_text],
+        "characters": list(word_text),
     }, 201

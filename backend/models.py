@@ -1,16 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    ForeignKeyConstraint,
-    Integer,
-    Numeric,
-    String,
-    Table,
-)
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, Table
 
 from backend.extensions import db
 
@@ -31,28 +21,20 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(String, primary_key=True)
+    shortid = db.Column(
+        Numeric,
+        nullable=False,
+        unique=True,
+        server_default=db.text("nextval('users_shortid_seq')"),
+    )
     username = db.Column(String, nullable=False, unique=True)
     email = db.Column(String, nullable=False, unique=True)
     plan = db.Column(String, nullable=False, default=DEFAULT_USER_PLAN)
     last_connexion = db.Column(
-        DateTime(timezone=True),
+        db.DateTime(timezone=True),
         nullable=False,
         default=utcnow,
     )
-
-
-character_word = Table(
-    "character_word",
-    db.Model.metadata,
-    Column("user_id", String, ForeignKey("users.id"), primary_key=True),
-    Column("character_char", String, primary_key=True),
-    Column("word", String(10), primary_key=True),
-    ForeignKeyConstraint(
-        ["user_id", "character_char"],
-        ["character.user_id", "character.char"],
-    ),
-    ForeignKeyConstraint(["user_id", "word"], ["words.user_id", "words.word"]),
-)
 
 
 hsk_word_character = Table(
@@ -71,59 +53,31 @@ hsk_word_character = Table(
 class Character(db.Model):
     __tablename__ = "character"
 
-    user_id = db.Column(String, ForeignKey("users.id"), primary_key=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     char = db.Column(String, primary_key=True)
     pinyin = db.Column(String(8), nullable=False)
-    writting_known = db.Column(Boolean, nullable=False, default=False)
-    synchronized = db.Column(Boolean, nullable=False, default=False)
+    writting_known = db.Column(db.Boolean, nullable=False, default=False)
+    synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
-        DateTime(timezone=True),
+        db.DateTime(timezone=True),
         nullable=False,
         default=utcnow,
         onupdate=utcnow,
-    )
-
-    words = db.relationship(
-        "Word",
-        secondary=character_word,
-        primaryjoin=(
-            "and_(Character.user_id == character_word.c.user_id, "
-            "Character.char == character_word.c.character_char)"
-        ),
-        secondaryjoin=(
-            "and_(Word.user_id == character_word.c.user_id, "
-            "Word.word == character_word.c.word)"
-        ),
-        back_populates="characters",
     )
 
 
 class Word(db.Model):
     __tablename__ = "words"
 
-    user_id = db.Column(String, ForeignKey("users.id"), primary_key=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     word = db.Column(String(10), primary_key=True)
     definition = db.Column(String(100), nullable=True)
-    synchronized = db.Column(Boolean, nullable=False, default=False)
+    synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
-        DateTime(timezone=True),
+        db.DateTime(timezone=True),
         nullable=False,
         default=utcnow,
         onupdate=utcnow,
-    )
-
-    characters = db.relationship(
-        "Character",
-        secondary=character_word,
-        primaryjoin=(
-            "and_(Word.user_id == character_word.c.user_id, "
-            "Word.word == character_word.c.word)"
-        ),
-        secondaryjoin=(
-            "and_(Character.user_id == character_word.c.user_id, "
-            "Character.char == character_word.c.character_char)"
-        ),
-        back_populates="words",
     )
 
 
@@ -164,7 +118,7 @@ class Setting(db.Model):
 
     __tablename__ = "settings"
 
-    user_id = db.Column(String, ForeignKey("users.id"), primary_key=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     key = db.Column(String(64), primary_key=True)
     value = db.Column(String, nullable=False, default="")
 
@@ -174,7 +128,7 @@ class IgnoreVocabCard(db.Model):
 
     __tablename__ = "ignore_vocab_card"
 
-    user_id = db.Column(String, ForeignKey("users.id"), primary_key=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     writting = db.Column(String, primary_key=True)
 
 
@@ -183,7 +137,7 @@ class IgnoreWrittingCard(db.Model):
 
     __tablename__ = "ignore_writting_card"
 
-    user_id = db.Column(String, ForeignKey("users.id"), primary_key=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     recto = db.Column(String, primary_key=True)
 
 
@@ -192,9 +146,9 @@ class TokenCount(db.Model):
 
     __tablename__ = "token_count"
 
-    user_id = db.Column(String, ForeignKey("users.id"), primary_key=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     recorded_at = db.Column(
-        DateTime(timezone=True),
+        db.DateTime(timezone=True),
         primary_key=True,
         nullable=False,
         default=utcnow,

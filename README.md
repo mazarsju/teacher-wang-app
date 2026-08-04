@@ -220,12 +220,12 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
 | `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writting_known` |
-| `DELETE` | `/characters/<char>` | Delete a character and its `character_word` links |
+| `DELETE` | `/characters/<char>` | Delete a character |
 | `POST` | `/characters/bulk` | Upload a `.txt` file (`multipart/form-data`, field name `file`) |
 | `GET` | `/words` | List all words |
-| `POST` | `/words` | Create a new word and link it to existing characters |
+| `POST` | `/words` | Create a new word (characters in the word must already exist) |
 | `PATCH` | `/words/<word>` | Update a word's `definition` |
-| `DELETE` | `/words/<word>` | Delete a word and its `character_word` links |
+| `DELETE` | `/words/<word>` | Delete a word |
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |

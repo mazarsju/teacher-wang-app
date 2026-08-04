@@ -21,7 +21,6 @@ TEST_EMAIL = "test@example.com"
 # users comes first: every private table references it.
 _TRUNCATE_TABLES = (
     "users",
-    "character_word",
     "hsk_word_character",
     '"character"',
     "words",
@@ -63,11 +62,11 @@ def create_test_user(
 class PostgresTestCase(unittest.TestCase):
     """Flask app bound to ``TEST_DATABASE_URL`` with a clean schema each test.
 
-    Every test starts with one ``users`` row (``TEST_USER_ID``); private-table
-    fixtures must set ``user_id`` to it.
+    Every test starts with one ``users`` row (``TEST_USER_ID`` Cognito sub).
+    Private-table fixtures must set ``user_id`` to ``self.user_id`` (shortid).
     """
 
-    user_id = TEST_USER_ID
+    cognito_sub = TEST_USER_ID
 
     def setUp(self) -> None:
         global _SCHEMA_READY
@@ -86,7 +85,8 @@ class PostgresTestCase(unittest.TestCase):
             _SCHEMA_READY = True
 
         truncate_all_tables()
-        self.user = create_test_user(self.user_id)
+        self.user = create_test_user(self.cognito_sub)
+        self.user_id = self.user.shortid
 
     def tearDown(self) -> None:
         db.session.remove()

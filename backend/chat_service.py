@@ -200,7 +200,7 @@ def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
     usage = _tokens_from_response(response)
 
     if user.plan == DEFAULT_USER_PLAN and usage.total > 0:
-        deduct_available_token(user.id, usage.total, commit=True)
+        deduct_available_token(user.shortid, usage.total, commit=True)
 
     return text, usage
 

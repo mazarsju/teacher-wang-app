@@ -118,7 +118,6 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
             record.pinyin = kwargs["pinyin"]
             record.writting_known = kwargs["writting_known"]
             record.updated_at = kwargs.get("updated_at")
-            record.words = []
             created_characters.append(record)
             return record
 
@@ -178,8 +177,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
             definition="",
         )
 
-        char_record = created_characters[0]
-        self.assertEqual(len(char_record.words), 2)
+        self.assertEqual(len(created_characters), 1)
 
         self.assertEqual(self.mock_session.add.call_count, 3)
         self.mock_session.commit.assert_called_once()
@@ -193,7 +191,6 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
             record.char = kwargs["char"]
             record.pinyin = kwargs["pinyin"]
             record.writting_known = kwargs["writting_known"]
-            record.words = []
             created_characters.append(record)
             return record
 
@@ -224,7 +221,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
             pinyin="pinyin3",
             writting_known=True,
         )
-        self.assertEqual(len(created_characters[0].words), 2)
+        self.assertEqual(len(created_characters), 1)
         self.mock_session.commit.assert_called_once()
         self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 

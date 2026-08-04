@@ -45,8 +45,8 @@ class TestCreateWordEndpoint(unittest.TestCase):
     def test_create_word_adds_record_and_links(self):
         updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
         char_records = {
-            "爱": MagicMock(words=[]),
-            "好": MagicMock(words=[]),
+            "爱": MagicMock(),
+            "好": MagicMock(),
         }
 
         def mock_filter_by(**kwargs):
@@ -74,10 +74,9 @@ class TestCreateWordEndpoint(unittest.TestCase):
             user_id=TEST_USER_ID,
             word="爱好",
             definition="hobby",
+            updated_at=updated_at,
         )
         self.mock_session.add.assert_called_once()
-        self.assertEqual(len(char_records["爱"].words), 1)
-        self.assertEqual(len(char_records["好"].words), 1)
         self.mock_session.commit.assert_called_once()
 
     def test_create_word_with_missing_character_returns_error(self):

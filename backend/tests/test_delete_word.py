@@ -44,7 +44,6 @@ class TestDeleteWordEndpoint(unittest.TestCase):
             user_id=TEST_USER_ID,
             word="爱好",
         )
-        word_record.characters.clear.assert_called_once_with()
         self.mock_session.delete.assert_called_once_with(word_record)
         self.mock_session.commit.assert_called_once()
 

@@ -15,7 +15,6 @@ def delete_character(char: str):
     if char_record is None:
         return {"error": "Character not found"}, 404
 
-    char_record.words.clear()
     db.session.delete(char_record)
     db.session.commit()
     refresh_current_hsk_level(user_id)

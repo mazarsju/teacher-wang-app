@@ -138,7 +138,7 @@ class TestHskLevel(PostgresTestCase):
             db.session.add(HskCharacter(character=char, level=1, frequency=1))
             db.session.add(
                 Character(
-                    user_id=other.id,
+                    user_id=other.shortid,
                     char=char,
                     pinyin="x",
                     writting_known=True,
@@ -149,7 +149,7 @@ class TestHskLevel(PostgresTestCase):
         db.session.commit()
 
         self.assertIsNone(refresh_current_hsk_level(self.user_id))
-        self.assertEqual(refresh_current_hsk_level(other.id), 1)
+        self.assertEqual(refresh_current_hsk_level(other.shortid), 1)
 
 
 if __name__ == "__main__":

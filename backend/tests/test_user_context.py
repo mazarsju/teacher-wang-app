@@ -42,12 +42,12 @@ class TestEnsureCurrentUser(PostgresTestCase):
             self.assertEqual(user.username, "wang")
             self.assertEqual(user.email, f"{COGNITO_SUB}@users.local")
             self.assertEqual(user.plan, "free")
-            self.assertEqual(current_user_id(), COGNITO_SUB)
+            self.assertEqual(current_user_id(), user.shortid)
             self.assertEqual(current_user().id, COGNITO_SUB)
 
-        self.assertGreater(Setting.query.filter_by(user_id=COGNITO_SUB).count(), 0)
+        self.assertGreater(Setting.query.filter_by(user_id=user.shortid).count(), 0)
         available = Setting.query.filter_by(
-            user_id=COGNITO_SUB, key=SETTING_AVAILABLE_TOKEN
+            user_id=user.shortid, key=SETTING_AVAILABLE_TOKEN
         ).first()
         self.assertIsNotNone(available)
         self.assertEqual(available.value, str(FREE_PLAN_MAX_ALLOWED_TOKEN))
@@ -56,10 +56,10 @@ class TestEnsureCurrentUser(PostgresTestCase):
         with self._request():
             g.cognito_claims = ACCESS_CLAIMS
             g.cognito_sub = COGNITO_SUB
-            ensure_current_user()
+            user = ensure_current_user()
 
         Setting.query.filter_by(
-            user_id=COGNITO_SUB, key=SETTING_AVAILABLE_TOKEN
+            user_id=user.shortid, key=SETTING_AVAILABLE_TOKEN
         ).delete()
         from backend.extensions import db
 
@@ -71,7 +71,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
             ensure_current_user()
 
         available = Setting.query.filter_by(
-            user_id=COGNITO_SUB, key=SETTING_AVAILABLE_TOKEN
+            user_id=user.shortid, key=SETTING_AVAILABLE_TOKEN
         ).first()
         self.assertIsNotNone(available)
         self.assertEqual(available.value, str(FREE_PLAN_MAX_ALLOWED_TOKEN))

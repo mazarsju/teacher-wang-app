@@ -33,11 +33,11 @@ class TestSettings(PostgresTestCase):
     def test_settings_are_isolated_per_user(self):
         other = create_test_user("other-user", "other", "other@example.com")
         set_setting(self.user_id, SETTING_LEVEL, "3", commit=True)
-        set_setting(other.id, SETTING_LEVEL, "5", commit=True)
+        set_setting(other.shortid, SETTING_LEVEL, "5", commit=True)
 
         self.assertEqual(get_setting(self.user_id, SETTING_LEVEL), "3")
-        self.assertEqual(get_setting(other.id, SETTING_LEVEL), "5")
-        self.assertEqual(get_setting("unknown-user", SETTING_LEVEL, "none"), "none")
+        self.assertEqual(get_setting(other.shortid, SETTING_LEVEL), "5")
+        self.assertEqual(get_setting(-1, SETTING_LEVEL, "none"), "none")
 
 
 if __name__ == "__main__":

@@ -51,7 +51,6 @@ class TestDeleteCharacterEndpoint(unittest.TestCase):
             user_id=TEST_USER_ID,
             char="爱",
         )
-        char_record.words.clear.assert_called_once_with()
         self.mock_session.delete.assert_called_once_with(char_record)
         self.mock_session.commit.assert_called_once()
         self.mock_refresh.assert_called_once_with(TEST_USER_ID)

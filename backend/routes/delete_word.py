@@ -13,7 +13,6 @@ def delete_word(word: str):
     if word_record is None:
         return {"error": "Word not found"}, 404
 
-    word_record.characters.clear()
     db.session.delete(word_record)
     db.session.commit()
 

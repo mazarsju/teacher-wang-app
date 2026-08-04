@@ -76,11 +76,9 @@ def bulk_characters():
                 word_record = Word(user_id=user_id, word=word_str, definition="")
                 db.session.add(word_record)
 
-            if word_record not in char_record.words:
-                char_record.words.append(word_record)
-                now = updated_at if updated_at is not None else utcnow()
-                char_record.updated_at = now
-                word_record.updated_at = now
+            now = updated_at if updated_at is not None else utcnow()
+            char_record.updated_at = now
+            word_record.updated_at = now
 
     db.session.commit()
     refresh_current_hsk_level(user_id)

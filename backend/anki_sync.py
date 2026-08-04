@@ -133,7 +133,12 @@ def _is_word_eligible_for_writting(word: Word) -> bool:
 
 def _find_writting_word_for_character(character: Character) -> Word | None:
     candidates = [
-        word for word in character.words if _is_word_eligible_for_writting(word)
+        word
+        for word in Word.query.filter(
+            Word.user_id == character.user_id,
+            Word.word.contains(character.char),
+        ).all()
+        if _is_word_eligible_for_writting(word)
     ]
     if not candidates:
         return None
@@ -442,15 +447,6 @@ def _import_vocabulary_card(
         updated_at=now,
     )
     db.session.add(word_record)
-    for char in word_text:
-        if not is_han_character(char):
-            continue
-        char_record = _find_character(user_id, char)
-        if char_record is None:
-            continue
-        if word_record not in char_record.words:
-            char_record.words.append(word_record)
-            char_record.updated_at = now
     db.session.commit()
     return True, len(created_chars)
 

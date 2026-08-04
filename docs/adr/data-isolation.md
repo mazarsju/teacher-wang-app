@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — implemented by Alembic revision `9c4b71e0a2d5` (`users` table + hash-partitioned private tables) and the request-scoped tenant resolution in `backend/user_context.py`. RLS remains a documented follow-up.
+Accepted — implemented by Alembic revision `9c4b71e0a2d5` (`users` table + hash-partitioned private tables), `c3d4e5f6a7b8` / `d5e6f7a8b9c0` (`users.shortid` as private-table tenant key), and the request-scoped tenant resolution in `backend/user_context.py`. RLS remains a documented follow-up.
 
 Aligned with Decisions 2 and 3 in [teacher-wang-infra multi-user architecture](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md). Credentials live in Cognito; see [auth ADR](./auth.md). Coding invariants: `.cursor/rules/multi-tenant.mdc`. Table/PK catalog: [schema tenancy](../architecture/schema-tenancy.md). Conversation log paths: [conversation logs](../architecture/conversation-logs.md).
 
@@ -24,10 +24,11 @@ Constraints inherited from infra / product:
 
 | Concern | Choice |
 | --- | --- |
-| Tenant identity | `users.id` **is the Cognito `sub`** — no separate internal id, no mapping table to keep in sync |
-| Per-user private data | One DB, one schema; every private table carries `user_id` as the **first primary-key column** and a FK to `users.id`, and is **`PARTITION BY HASH (user_id)` with `MODULUS 8`** (`p0`…`p7`) |
+| Account identity | `users.id` **is the Cognito `sub`** — stable across username/email changes |
+| Tenant key for private data | `users.shortid` (NUMERIC, sequence-backed, unique) — every private table's `user_id` FKs to it |
+| Per-user private data | One DB, one schema; every private table carries `user_id` as the **first primary-key column** and a FK to `users.shortid`, and is **`PARTITION BY HASH (user_id)` with `MODULUS 8`** (`p0`…`p7`) |
 | Shared catalog | Same DB, plain (unpartitioned) `hsk_*` tables, no `user_id` |
-| Isolation enforcement | **Application-level filtering** today: `current_user_id()` on every private query. PostgreSQL RLS stays a follow-up backstop |
+| Isolation enforcement | **Application-level filtering** today: `current_user_id()` (returns `shortid`) on every private query. PostgreSQL RLS stays a follow-up backstop |
 | Escape hatches | Schema-per-user or database-per-user on the same RDS **only if** partitioning proves insufficient |
 
 ### Tenant resolution on every request
@@ -38,7 +39,7 @@ Constraints inherited from infra / product:
 2. The verified claims land in `g.cognito_claims` / `g.cognito_sub`.
 3. `ensure_current_user()` upserts the `users` row for that `sub`, takes the email from the optional verified `X-Id-Token` companion header, and refreshes `last_connexion`.
 4. A brand-new user gets their default `settings` rows seeded lazily right there — there is no global tenant bootstrap at app boot any more.
-5. `current_user_id()` then serves the tenant id to routes and services for the rest of the request.
+5. `current_user_id()` then serves the tenant key (`users.shortid`) to routes and services for the rest of the request.
 
 The frontend sends both tokens through `frontend/src/utils/auth/apiFetch.ts`.
 
@@ -46,9 +47,8 @@ The frontend sends both tokens through `frontend/src/utils/auth/apiFetch.ts`.
 
 | Layer | Status |
 | --- | --- |
-| Application filters by authenticated `user_id` | **Done** — every private query goes through `current_user_id()` |
+| Application filters by authenticated `user_id` (`shortid`) | **Done** — every private query goes through `current_user_id()` |
 | `user_id` is part of every private primary key | **Done** — a cross-user collision is a constraint violation, not silent corruption |
-| Composite FKs on `character_word` | **Done** |
 | PostgreSQL RLS as a backstop (`SET LOCAL app.user_id = …`) | **Follow-up** |
 | Separate `app` vs `migrator` DB roles | **Follow-up** (infra) |
 
@@ -65,18 +65,20 @@ flowchart TB
     subgraph DB["One database"]
       Shared["hsk_* tables<br/>shared, read-only"]
       Private["private tables<br/>user_id + hash partitions p0..p7"]
-      Users["users<br/>PK = Cognito sub"]
+      Users["users<br/>PK = Cognito sub<br/>shortid = tenant key"]
     end
   end
 
   App[Flask] -->|SELECT| Shared
-  App -->|CRUD WHERE user_id = me| Private
+  App -->|CRUD WHERE user_id = shortid| Private
   App -->|ensure_current_user on each request| Users
 ```
 
 ## Migration from single tenant
 
 Revision `9c4b71e0a2d5` (after `376edc4d57aa`) **drops and recreates** the private tables rather than backfilling an owner. The app was still single-tenant and pre-production, so existing characters/words are re-imported per user through the bulk import; the HSK tables are untouched. `downgrade()` restores the previous unpartitioned, un-scoped shape (also destructively).
+
+Revision `c3d4e5f6a7b8` adds `users.shortid`. Revision `d5e6f7a8b9c0` remaps private `user_id` columns onto `shortid`, recreates the hash partitions, and drops `character_word`.
 
 ## Out of scope (for now)
 
@@ -90,7 +92,7 @@ Revision `9c4b71e0a2d5` (after `376edc4d57aa`) **drops and recreates** the priva
 ### Advantages
 
 * One Alembic history and one connection string keep ops cheap on `db.t4g.micro`.
-* Using the Cognito `sub` as the primary key removes an id-mapping table and makes `user_id` meaningful in logs and support queries.
+* Cognito `sub` stays the account primary key; `shortid` keeps private-table keys and partition hashes compact and stable.
 * `user_id` sits in every private primary key and in the partition key, so per-user reads prune partitions and cross-user writes cannot collide.
 * New users need no provisioning step: the first authenticated request creates the row and its default settings.
 

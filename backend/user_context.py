@@ -1,12 +1,14 @@
 """Per-request authentication and tenant resolution.
 
 Every request except ``OPTIONS`` and ``/health`` must carry a Cognito access
-token. The verified ``sub`` claim identifies the tenant: it is upserted into
-``users`` and exposed to the rest of the request through ``current_user_id()``,
+token. The verified ``sub`` claim identifies the account: it is upserted into
+``users`` and the row's ``shortid`` is exposed through ``current_user_id()``,
 which every query on a private table must filter on.
 """
 
 from __future__ import annotations
+
+from decimal import Decimal
 
 from flask import Flask, g, jsonify, request
 
@@ -73,7 +75,7 @@ def ensure_current_user() -> User:
         )
         db.session.add(user)
         db.session.commit()
-        _ensure_user_defaults(user.id)
+        _ensure_user_defaults(user.shortid)
     else:
         user.username = username
         if email is not None:
@@ -81,13 +83,14 @@ def ensure_current_user() -> User:
         user.last_connexion = utcnow()
         db.session.commit()
         # Seed any newly introduced default keys (e.g. available_token).
-        _ensure_user_defaults(user.id)
+        _ensure_user_defaults(user.shortid)
 
-    g.current_user_id = user.id
+    g.current_user = user
+    g.current_user_id = user.shortid
     return user
 
 
-def _ensure_user_defaults(user_id: str) -> None:
+def _ensure_user_defaults(user_id) -> None:
     """Seed the per-user settings rows a fresh account needs."""
     from backend.settings import ensure_default_settings
 
@@ -115,15 +118,22 @@ def register_user_context(app: Flask) -> None:
     app.before_request(authenticate_request)
 
 
-def current_user_id() -> str:
+def current_user_id() -> Decimal:
+    """Return the tenant key for private tables (``users.shortid``)."""
     user_id = getattr(g, "current_user_id", None)
-    if not user_id:
+    if user_id is None:
         raise RuntimeError("No authenticated user in the current request context")
     return user_id
 
 
 def current_user() -> User:
-    user = db.session.get(User, current_user_id())
+    user = getattr(g, "current_user", None)
+    if user is not None:
+        return user
+    sub = getattr(g, "cognito_sub", None)
+    if not sub:
+        raise RuntimeError("Authenticated user row is missing")
+    user = db.session.get(User, sub)
     if user is None:
         raise RuntimeError("Authenticated user row is missing")
     return user

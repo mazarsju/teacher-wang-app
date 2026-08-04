@@ -250,7 +250,7 @@ def get_token_usage_summary(user_id: str, days: int = TOKEN_HISTORY_DAYS) -> dic
         get_available_token,
     )
 
-    user = db.session.get(User, user_id)
+    user = User.query.filter_by(shortid=user_id).first()
     plan = user.plan if user is not None else DEFAULT_USER_PLAN
     available_token = get_available_token(user_id)
     max_allowed_token = (

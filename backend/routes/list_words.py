@@ -35,7 +35,7 @@ def list_words():
             "word": word.word,
             "definition": word.definition,
             "updated_at": word.updated_at.isoformat(),
-            "characters": [character.char for character in word.characters],
+            "characters": list(word.word),
         }
         for word in word_list
     ], 200
