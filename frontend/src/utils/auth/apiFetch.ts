@@ -1,6 +1,23 @@
-import { getStoredAccessToken, getStoredIdToken } from "./tokenStorage";
+import { clearCognitoTokens, getStoredAccessToken, getStoredIdToken } from "./tokenStorage";
 
 export const ID_TOKEN_HEADER = "X-Id-Token";
+
+type UnauthorizedHandler = () => void;
+
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+/**
+ * Register a handler invoked when any API call receives HTTP 401.
+ * Returns an unsubscribe function.
+ */
+export function onUnauthorizedSession(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandler = handler;
+  return () => {
+    if (unauthorizedHandler === handler) {
+      unauthorizedHandler = null;
+    }
+  };
+}
 
 /**
  * Attach the Cognito session to a request.
@@ -24,6 +41,11 @@ export function authHeaders(): Record<string, string> {
   return headers;
 }
 
+function handleUnauthorizedSession(): void {
+  clearCognitoTokens();
+  unauthorizedHandler?.();
+}
+
 /** `fetch` for the Flask API: same signature, plus the Cognito headers. */
 export async function apiFetch(
   input: RequestInfo | URL,
@@ -35,5 +57,9 @@ export async function apiFetch(
       headers.set(name, value);
     }
   }
-  return fetch(input, { ...init, headers });
+  const response = await fetch(input, { ...init, headers });
+  if (response.status === 401) {
+    handleUnauthorizedSession();
+  }
+  return response;
 }

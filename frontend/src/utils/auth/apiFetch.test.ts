@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ID_TOKEN_HEADER, apiFetch, authHeaders } from "./apiFetch";
-import { clearCognitoTokens, storeCognitoTokens } from "./tokenStorage";
+import {
+  ID_TOKEN_HEADER,
+  apiFetch,
+  authHeaders,
+  onUnauthorizedSession,
+} from "./apiFetch";
+import {
+  clearCognitoTokens,
+  getStoredAccessToken,
+  storeCognitoTokens,
+} from "./tokenStorage";
 
 function headersOf(fetchMock: ReturnType<typeof vi.fn>): Headers {
   return new Headers(fetchMock.mock.calls[0][1].headers);
@@ -8,6 +17,8 @@ function headersOf(fetchMock: ReturnType<typeof vi.fn>): Headers {
 
 describe("apiFetch", () => {
   afterEach(() => {
+    const unsubscribe = onUnauthorizedSession(() => {});
+    unsubscribe();
     vi.unstubAllGlobals();
     clearCognitoTokens();
   });
@@ -56,5 +67,42 @@ describe("apiFetch", () => {
     expect(headers.get("Authorization")).toBe("Bearer caller-token");
     expect(fetchMock.mock.calls[0][1].method).toBe("POST");
     expect(fetchMock.mock.calls[0][1].body).toBe("{}");
+  });
+
+  it("clears the session and notifies on HTTP 401", async () => {
+    storeCognitoTokens({
+      accessToken: "access-token",
+      idToken: "id-token",
+      refreshToken: "refresh-token",
+    });
+    const onUnauthorized = vi.fn();
+    const unsubscribe = onUnauthorizedSession(onUnauthorized);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await apiFetch("/api/characters", { method: "GET" });
+
+    expect(response.status).toBe(401);
+    expect(getStoredAccessToken()).toBeNull();
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
+
+  it("does not notify on non-401 responses", async () => {
+    storeCognitoTokens({
+      accessToken: "access-token",
+      idToken: "id-token",
+      refreshToken: "refresh-token",
+    });
+    const onUnauthorized = vi.fn();
+    const unsubscribe = onUnauthorizedSession(onUnauthorized);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiFetch("/api/characters", { method: "GET" });
+
+    expect(getStoredAccessToken()).toBe("access-token");
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    unsubscribe();
   });
 });

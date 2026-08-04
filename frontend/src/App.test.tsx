@@ -170,6 +170,40 @@ describe("App", () => {
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
 
+  it("returns to welcome auth when an API call receives 401", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "Unauthorized" }),
+      }),
+    );
+
+    const { apiFetch } = await import("./utils/auth/apiFetch");
+    await apiFetch("/api/characters", { method: "GET" });
+
+    await waitFor(() => {
+      expect(clearCognitoTokens).toHaveBeenCalled();
+      expect(
+        screen.getByText("Teacher Wang", {
+          selector: ".welcome-auth-brand-mark",
+        }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  });
+
   it("refreshes the store from the profile Synchro action", async () => {
     const user = userEvent.setup();
 

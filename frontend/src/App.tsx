@@ -8,6 +8,7 @@ import PreferencesPage from "./pages/PreferencesPage";
 import WelcomeAuthPage from "./pages/WelcomeAuthPage";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { resetAppData, syncAppData } from "./store/thunks/syncAppData";
+import { onUnauthorizedSession } from "./utils/auth/apiFetch";
 import {
   clearCognitoTokens,
   hasStoredSession,
@@ -36,6 +37,14 @@ export default function App() {
 
     void dispatch(syncAppData());
   }, [dispatch, isAuthenticated]);
+
+  useEffect(() => {
+    return onUnauthorizedSession(() => {
+      dispatch(resetAppData());
+      setActivePage("home");
+      setIsAuthenticated(false);
+    });
+  }, [dispatch]);
 
   function handleLogout() {
     clearCognitoTokens();
