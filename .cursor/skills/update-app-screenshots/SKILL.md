@@ -98,62 +98,15 @@ Confirm all six files above were written. Spot-check:
 
 ### 6. Update README.md Feature section
 
-After capturing (or refreshing) screenshots, insert or replace a **Feature** section
-in `README.md` **immediately after** the **Getting started** section (before
-**Roadmap**).
-
-Note: if an **AI logic** section exists between Getting started and Feature, keep
-Feature after AI logic (or wherever the repo currently places it), but keep the
-Feature body structure below.
-
-Use this structure and image paths. Write catchy copy where noted; keep the
-Preferences blurb **verbatim**.
-
-```markdown
-## Feature
-
-### Track your progress
-
-[Catchy sentence about insightful metrics to keep track of your current HSK level
-and what are the missing characters to reach the next step.]
-
-![Home](docs/screenshots/01-home.png)
-
-### Update your knowledge base
-
-[Catchy sentence about adding your words in an intuitive design.]
-
-![Knowledge base edit](docs/screenshots/03-knowledge-base-edit.png)
-
-[Catchy sentence about having a nice visualization of all your known characters
-grouped by pinyin to have a motivation visualization of your progress.]
-
-![Knowledge base view](docs/screenshots/02-knowledge-base-view.png)
-
-### Practice your skills with AI agents
-
-After connecting the application with your favourite LLM, discuss with predefined
-chat agents to practice your level.
-
-![Preferences](docs/screenshots/06-preferences.png)
-
-![Chat](docs/screenshots/04-chat.png)
-
-![Chat with Waiter challenge](docs/screenshots/05-chat-challenge-waiter.png)
-
-Step into real scenes: role-play with characters like the waiter, clear the
-checklist, and win the challenge in Mandarin.
-```
+Preserve the existing **Feature** section structure and prose in `README.md`.
+Only refresh the image paths / PNG contents so they stay in sync with the six
+files above (relative to the repo root: `docs/screenshots/...`).
 
 Rules:
 
 - Section title is **Feature** (singular), not Features.
-- Place it after **Getting started**, before **Roadmap** (respect existing
-  sections such as **AI logic** if present).
-- If a Feature section already exists, replace its body so images and order stay
-  in sync with the latest screenshots.
-- Image paths are relative to the repo root (`docs/screenshots/...`).
-- Always include the short catchy line **below** the Waiter challenge screenshot.
+- Keep placement after **Getting started** / **AI logic**, before **Roadmap**.
+- Do not rewrite marketing copy unless a screenshot rename requires it.
 - After a successful capture, remove obsolete `docs/screenshots/05-chat-xiao-ming.png`
   if it still exists.
 

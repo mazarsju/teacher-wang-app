@@ -1,0 +1,16 @@
+---
+description: Multi-tenant coding invariants for private Postgres tables and request auth
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Multi-tenant backend
+
+Rationale: `docs/adr/data-isolation.md`, `docs/adr/auth.md`. Schema catalog: `docs/architecture/schema-tenancy.md`.
+
+- Auth is global via `before_request` in `backend/user_context.py`. Do not add per-route auth decorators. Public routes: `OPTIONS` and `/health` only.
+- Read the tenant with `current_user_id()`; never re-parse JWT claims in a view.
+- Every query on a private table must filter by `user_id`; every insert must set it; updates/deletes must match on it. There is no RLS backstop yet.
+- Service functions take `user_id` as their first argument (do not reach into `flask.g`).
+- New private tables: `user_id` first in the primary key, plus `PARTITION BY HASH (user_id)` with `MODULUS 8` in raw SQL in the Alembic revision. SQLAlchemy models stay partition-agnostic.
+- Shared `hsk_*` tables have no `user_id`.

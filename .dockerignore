@@ -14,7 +14,8 @@ venv/
 conversation_logs/
 coverage-site/
 docs/
-agent.md
+AGENTS.md
+MIGRATION_SUMMARY.md
 README.md
 frontend/src/**/*.test.ts
 frontend/src/**/*.test.tsx

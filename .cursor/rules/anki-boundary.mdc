@@ -1,0 +1,13 @@
+---
+description: AnkiConnect stays browser-local; Flask only does KB bookkeeping
+globs: "**/anki*/**","frontend/src/utils/anki/**","backend/routes/*anki*"
+alwaysApply: false
+---
+
+# AnkiConnect boundary
+
+Rationale: `docs/adr/anki-connect.md`. Sync steps: `docs/anki/sync-protocol.md`.
+
+- The React client is the only process that talks to AnkiConnect (`POST http://127.0.0.1:8765`, JSON-RPC root — not `/anki/…` paths).
+- The backend never opens Anki or AnkiWeb.
+- Flask Anki bookkeeping (`/anki/status`, sync, deck setup) goes through `/api/anki/…` like every other backend route.

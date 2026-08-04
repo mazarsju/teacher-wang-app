@@ -11,7 +11,10 @@ description: >-
 
 Push **teacher-wang** container images to the ECR repos provisioned by the sibling
 **teacher-wang-infra** Terraform stack. Prefer the wrapper script below over
-re-typing README commands (quoting mistakes break ECR login).
+re-typing manual docker/terraform commands (quoting mistakes break ECR login).
+
+Container ports, `/api` proxy, and healthchecks: `docs/deployment/ecs-containers.md`.
+Coding invariants when editing Dockerfiles: `.cursor/rules/ecs-containers.mdc`.
 
 **ECS does not auto-load a new `:latest` image.** After push, the wrapper forces a
 new deployment so running tasks pull again.
@@ -27,8 +30,7 @@ new deployment so running tasks pull again.
 | `scripts/push-ecr.sh` | `docker buildx … --push` for one or both images |
 | `.cursor/skills/update-ecr-images/scripts/push.sh` | Full login + push + ECS redeploy |
 
-Build context is always the **app repo root**. Platform must be **`linux/arm64`**
-(Graviton / Apple Silicon).
+Build context is always the **app repo root**. Platform must be **`linux/arm64`**.
 
 ## Workflow
 
@@ -71,30 +73,12 @@ ECS rollout continues asynchronously after the script returns.
 
 1. Verifies Docker daemon is up (`open -a Docker` hint if not).
 2. `source ../teacher-wang-infra/config` (AWS keys — never print them).
-3. In `teacher-wang-infra/environments/prod`, reads:
-   - `terraform output -raw aws_region`
-   - `terraform output -raw ecr_backend_repository_url`
-   - `terraform output -raw ecr_frontend_repository_url`
-   - Cognito (public): `cognito_user_pool_id`, `cognito_app_client_id`,
-     `cognito_issuer`, `cognito_domain` → exported as `COGNITO_*`
-4. Logs into ECR with:
-   ```bash
-   REGISTRY="${ECR_BACKEND%%/*}"
-   aws ecr get-login-password --region "$AWS_REGION" \
-     | docker login --username AWS --password-stdin "$REGISTRY"
-   ```
-5. Runs `./scripts/push-ecr.sh` from the app root (tags `:latest` and `:<git-sha>`).
-   Frontend image gets Cognito as Vite `--build-arg` (`VITE_COGNITO_*`). Backend
-   Cognito config still comes from the ECS task definition at runtime.
-6. Forces a new ECS deployment for the matching service(s) (`all` → both):
-   ```bash
-   CLUSTER="$(terraform output -raw ecs_cluster_name)"          # teacher-wang-prod-ecs
-   BACKEND_SVC="$(terraform output -raw ecs_backend_service_name)"
-   FRONTEND_SVC="$(terraform output -raw ecs_frontend_service_name)"
-   aws ecs update-service --cluster "$CLUSTER" \
-     --service "$BACKEND_SVC" --force-new-deployment --region "$AWS_REGION"
-   # same for frontend when target is all|frontend
-   ```
+3. In `teacher-wang-infra/environments/prod`, reads terraform outputs for region,
+   ECR URLs, and public Cognito ids → exports `ECR_*` / `COGNITO_*`.
+4. Logs into ECR (`REGISTRY="${ECR_BACKEND%%/*}"` — no nested quotes).
+5. Runs `./scripts/push-ecr.sh` (tags `:latest` and `:<git-sha>`; frontend gets
+   `VITE_COGNITO_*` build-args). Backend Cognito still comes from the ECS task def.
+6. Forces a new ECS deployment for the matching service(s).
 
 ### 4. Report back
 
@@ -114,13 +98,6 @@ paste AWS access keys, secret keys, or `docker login` passwords into the chat.
 | Huge frontend build context (~100MB+) | Root `.dockerignore` must exclude `**/node_modules/` (frontend/.dockerignore is ignored when context is `.`) |
 | ECS tasks fail to start after push | Images must exist before / right after `enable_ecs = true`; platform must be `linux/arm64` |
 | New image in ECR but app unchanged | ECS does not watch `:latest`; need `--force-new-deployment` (wrapper step 6) |
-
-## Manual README equivalent
-
-Only if the wrapper cannot run. Same steps as README **Push images to AWS ECR**:
-start Docker → source infra `config` → terraform outputs → ECR login →
-`./scripts/push-ecr.sh` → `aws ecs update-service … --force-new-deployment` for
-each updated service.
 
 ## Out of scope
 

@@ -1,0 +1,19 @@
+---
+description: Use python3 for all Python invocations in this repo
+globs: "**/*.{py,sh}"
+alwaysApply: false
+---
+
+# Python command
+
+Use `python3`, not `python`, when running Python or Python modules:
+
+```bash
+python3 -m venv venv
+python3 -m backend.app
+python3 -m pip install -r backend/requirements.txt
+python3 -m alembic upgrade head
+python3 -m unittest discover -s backend/tests -v
+```
+
+Only use `python` if the environment explicitly requires it.

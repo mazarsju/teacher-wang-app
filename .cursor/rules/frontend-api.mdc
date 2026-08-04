@@ -1,0 +1,11 @@
+---
+description: How the React app calls the Flask API (proxy and Cognito headers)
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend → Flask API
+
+- Call the Flask API through `frontend/src/utils/auth/apiFetch.ts` so Cognito headers are attached.
+- Use `API_BASE = "/api"`. Nginx strips `/api` and proxies to the backend. Never hit the backend host directly from the browser in deployed environments.
+- Auth details: `docs/adr/auth.md`. Deploy proxy: `docs/deployment/ecs-containers.md`.

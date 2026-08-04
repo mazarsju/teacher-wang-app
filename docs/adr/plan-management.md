@@ -6,7 +6,7 @@ Draft / partially accepted
 
 The free-plan token budget is implemented. Payment, paid-plan entitlements, and upgrade UX remain open (README roadmap §8).
 
-Related: [auth](auth-archi-decision.md) (who the user is), [data isolation](data-isolation-archi-decision.md) (`users.plan`, private `settings` / `token_count`).
+Related: [auth](./auth.md) (who the user is), [data isolation](./data-isolation.md) (`users.plan`, private `settings` / `token_count`).
 
 ## Context
 
@@ -24,7 +24,7 @@ Constraints:
 ## Options considered
 
 | Option | What it is | Outcome |
-| --- | --- | --- |
+| --- | --- |
 | **A. Soft quota in `settings.available_token` + `users.plan`** | Cap remaining tokens for `plan == free`; deduct after each LLM call; paid skips gate | **Chosen (v1)** |
 | **B. Hard feature lock** | Disable chat entirely on free | Deferred — free users get a finite allowance instead |
 | **C. New `user_quotas` table** | Dedicated columns for max / remaining / period | Rejected for v1 (settings key/value is enough; seed on login) |

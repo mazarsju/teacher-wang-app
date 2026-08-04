@@ -4,7 +4,7 @@
 
 Accepted — implemented by Alembic revision `9c4b71e0a2d5` (`users` table + hash-partitioned private tables) and the request-scoped tenant resolution in `backend/user_context.py`. RLS remains a documented follow-up.
 
-Aligned with Decisions 2 and 3 in [teacher-wang-infra multi-user architecture](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md). Credentials live in Cognito; see [auth-archi-decision.md](auth-archi-decision.md).
+Aligned with Decisions 2 and 3 in [teacher-wang-infra multi-user architecture](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md). Credentials live in Cognito; see [auth ADR](./auth.md). Coding invariants: `.cursor/rules/multi-tenant.mdc`. Table/PK catalog: [schema tenancy](../architecture/schema-tenancy.md). Conversation log paths: [conversation logs](../architecture/conversation-logs.md).
 
 ## Context
 
@@ -29,53 +29,6 @@ Constraints inherited from infra / product:
 | Shared catalog | Same DB, plain (unpartitioned) `hsk_*` tables, no `user_id` |
 | Isolation enforcement | **Application-level filtering** today: `current_user_id()` on every private query. PostgreSQL RLS stays a follow-up backstop |
 | Escape hatches | Schema-per-user or database-per-user on the same RDS **only if** partitioning proves insufficient |
-
-### The `users` table
-
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | `TEXT PRIMARY KEY` | Cognito `sub` (stable across username/email changes) |
-| `username` | `TEXT NOT NULL UNIQUE` | From the access token `username` / `cognito:username` claim |
-| `email` | `TEXT NOT NULL UNIQUE` | From a verified ID token when the client sends one; otherwise the unique placeholder `{sub}@users.local` |
-| `plan` | `TEXT NOT NULL DEFAULT 'free'` | Billing tier hook |
-| `last_connexion` | `TIMESTAMPTZ NOT NULL` | Refreshed on every authenticated request |
-
-### Private tables (`user_id` FK → `users.id`, hash-partitioned, modulus 8)
-
-| Table | Primary key |
-| --- | --- |
-| `character` | `(user_id, char)` |
-| `words` | `(user_id, word)` |
-| `character_word` | `(user_id, character_char, word)` |
-| `settings` | `(user_id, key)` |
-| `ignore_vocab_card` | `(user_id, writting)` |
-| `ignore_writting_card` | `(user_id, recto)` |
-| `token_count` | `(user_id, recorded_at, type)` |
-
-`character_word` is partitioned like its parents on purpose: its composite foreign keys are `(user_id, character_char) → character (user_id, char)` and `(user_id, word) → words (user_id, word)`, so an association can never straddle two users.
-
-### Shared tables (no `user_id`, not partitioned)
-
-`hsk_words`, `hsk_characters`, `hsk_word_character`. They are loaded once at boot (`database.init_db`) and only ever read by the app.
-
-### Partitioning mechanics
-
-SQLAlchemy models declare plain tables; they do not know about partitions. Partitioning lives in raw SQL inside the Alembic revision:
-
-```sql
-CREATE TABLE settings (
-    user_id TEXT NOT NULL REFERENCES users (id),
-    key VARCHAR(64) NOT NULL,
-    value TEXT NOT NULL,
-    PRIMARY KEY (user_id, key)
-) PARTITION BY HASH (user_id);
-
-CREATE TABLE settings_p0 PARTITION OF settings
-    FOR VALUES WITH (MODULUS 8, REMAINDER 0);
--- … p1 … p7
-```
-
-Modulus 8 is a compromise for the "tens to low hundreds of users" posture: enough to spread hot tables, few enough to keep planning cheap. Changing it means a new migration that rewrites the partition set.
 
 ### Tenant resolution on every request
 
@@ -102,18 +55,9 @@ The frontend sends both tokens through `frontend/src/utils/auth/apiFetch.ts`.
 ### Roles (target, with infra)
 
 | Role | Usage | Privileges |
-| --- | --- | --- |
+| --- | --- |
 | `app` (ECS task) | Normal API | `SELECT` on HSK tables; CRUD on private tables |
 | `migrator` / admin | Alembic, seeds | DDL + write to HSK tables |
-
-### Target shape
-
-```text
-One RDS PostgreSQL database
-├── users                     -- PK = Cognito sub
-├── private tables            -- user_id first in the PK, PARTITION BY HASH (user_id) MODULUS 8
-└── hsk_*                     -- shared, read-only for the app role
-```
 
 ```mermaid
 flowchart TB
@@ -155,17 +99,6 @@ Revision `9c4b71e0a2d5` (after `376edc4d57aa`) **drops and recreates** the priva
 * A forgotten `WHERE user_id = …` is still a leak risk until RLS is enabled — the app filter is currently the only guard.
 * Changing the partition modulus later requires a rewriting migration.
 * `email` is `NOT NULL UNIQUE`, so users authenticated without an ID token carry a `{sub}@users.local` placeholder until a request supplies a verified email.
-
-### Conversation logs (resolved)
-
-Chat transcripts and challenge task progress are **per Cognito user** (`sub`):
-
-| Environment | Backend | Layout |
-| --- | --- | --- |
-| Local / tests | Filesystem (`CONVERSATION_LOGS_BACKEND=local`, default) | `CONVERSATION_LOGS_DIR/users/{sub}/{character_id}.txt` (+ threads / `.tasks.json`) |
-| Prod (ECS) | S3 (`CONVERSATION_LOGS_BACKEND=s3`) | `s3://…/users/{sub}/{character_id}.txt` (+ threads / `.tasks.json`) |
-
-API: `GET/POST/PATCH/DELETE /conversation-logs/<character_id>` (and `POST /chat` for LLM turns). History is loaded when a chat opens; there is no process-wide transcript cache.
 
 ### Known gaps (not covered by this decision yet)
 

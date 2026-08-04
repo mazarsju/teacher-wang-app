@@ -39,12 +39,14 @@ Browser (React)
 
 The React client is the only process that talks to AnkiConnect. The backend never opens Anki or AnkiWeb; it only stores knowledge-base data and deck configuration.
 
+Coding invariant: `.cursor/rules/anki-boundary.mdc`.
+
 High-level directions (product terms):
 
 * **Push** — Teacher Wang → Anki (create notes via AnkiConnect, then mark rows synchronized in the knowledge-base DB).
 * **Pull** — Anki → Teacher Wang (read notes via AnkiConnect, then import into the knowledge-base DB).
 
-Detailed push/pull rules live in [anki-sync-archi-decision.md](./anki-sync-archi-decision.md).
+Detailed push/pull rules live in [sync protocol](../anki/sync-protocol.md); orchestration rationale in [anki-sync ADR](./anki-sync.md). Setup screenshots: [anki/setup/](../anki/setup/).
 
 ### Responsibility split
 

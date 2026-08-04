@@ -1,0 +1,16 @@
+---
+description: ECS/Docker image invariants when touching containers or the ECR push script
+globs: "**/Dockerfile*","frontend/nginx*","scripts/push-ecr.sh"
+alwaysApply: false
+---
+
+# ECS container invariants
+
+Full reference: `docs/deployment/ecs-containers.md`. Push workflow: `.cursor/skills/update-ecr-images/`.
+
+- Build context is always the **repo root** (`-f backend/Dockerfile .` / `-f frontend/Dockerfile .`).
+- Target platform is **`linux/arm64`** (Graviton Spot `t4g`).
+- Backend container port **5000**; frontend nginx **80** (ECS host **8080**).
+- Backend accepts `DATABASE_URL` **or** ECS-style `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD`.
+- Frontend nginx reverse-proxies `/api/*` to `BACKEND_UPSTREAM` (stripping `/api`).
+- Both images define a Docker `HEALTHCHECK` against `GET /health`.

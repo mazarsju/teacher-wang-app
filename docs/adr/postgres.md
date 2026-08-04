@@ -26,27 +26,7 @@ Teacher Wang persists the knowledge base, Anki deck mappings, ignore lists, and 
 
 * GitHub Actions coverage workflow starts Postgres 15 as a service and sets `TEST_DATABASE_URL` / `DATABASE_URL` to that throwaway database.
 
-## Commands
-
-```bash
-PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
-  -c 'CREATE DATABASE teacher_wang;'
-PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \
-  -c 'CREATE DATABASE teacher_wang_test;'
-
-cp .env.example .env
-python3 -m pip install -r backend/requirements.txt
-python3 -m alembic upgrade head
-
-python3 -m unittest discover -s backend/tests -v
-```
-
-After model changes:
-
-```bash
-python3 -m alembic revision --autogenerate -m "describe change"
-python3 -m alembic upgrade head
-```
+Bootstrap and migration commands live in the README **Getting started** / **Database** sections (single source of truth for operators).
 
 ## Consequences
 

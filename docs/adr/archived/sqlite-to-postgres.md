@@ -4,7 +4,7 @@
 > | --- | --- |
 > | **Invalid from** | 2026-07-30 |
 > | **Why** | SQLite has been fully removed from the application, tests, and tooling. The project is PostgreSQL-only; the one-shot SQLite→Postgres import script and related helpers were deleted. |
-> | **Follow-up** | [PostgreSQL architecture](../postgres-archi-decision.md) |
+> | **Follow-up** | [PostgreSQL architecture](../postgres.md) |
 >
 > ---
 
@@ -56,9 +56,11 @@ Phases 0–2 (scaffold, local cutover, retire SQLite runtime) are done. Desktop 
 1. Change models in `backend/models.py`.
 2. `python3 -m alembic revision --autogenerate -m "…"`.
 3. Review the generated script; apply with `python3 -m alembic upgrade head` (or app/test startup).
-4. Update this document / README when bootstrap commands change.
+4. Update the [postgres ADR](../postgres.md) / README when bootstrap commands change.
 
 ## Commands
+
+Historical bootstrap commands (kept for archaeology). Living operator commands: README **Getting started** / **Database**.
 
 ```bash
 PGPASSWORD=1234 psql -h localhost -p 5432 -U postgres \

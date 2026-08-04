@@ -78,34 +78,32 @@ teacher-wang/
 │   └── vite.config.ts      # Dev server; proxies /api → Flask (strip prefix)
 ├── scripts/
 │   └── push-ecr.sh         # Build/push arm64 images to AWS ECR
-├── docs/
-│   ├── archived/           # Superseded architecture decisions (history)
-│   ├── screenshots/        # UI screenshots used in this README
-│   ├── anki-connect/       # AnkiConnect setup guide images (mirrors frontend/public)
-│   ├── anki-connect-archi-decision.md
-│   ├── anki-sync-archi-decision.md
-│   ├── ai-agents-archi-decision.md
-│   ├── postgres-archi-decision.md
-│   ├── auth-archi-decision.md
-│   ├── data-isolation-archi-decision.md
-│   └── plan-management-archi-decision.md
-├── agent.md
+├── docs/                   # Doc map: docs/README.md
+│   ├── adr/                # Architecture Decision Records (+ archived/)
+│   ├── architecture/       # Schema tenancy, conversation logs
+│   ├── deployment/         # ECS / container reference
+│   ├── anki/               # Sync protocol + setup screenshots
+│   └── screenshots/        # UI screenshots used in this README
+├── .cursor/
+│   ├── rules/              # Durable coding instructions for agents
+│   └── skills/             # Reusable workflows (ECR, challenges, …)
+├── AGENTS.md               # Short agent entrypoint (points at rules + docs)
 └── README.md
 ```
 
 ## Architecture decisions
 
-Longer design notes live under `docs/`:
+Full map: [docs/README.md](docs/README.md). ADRs:
 
-- [AnkiConnect bridge](docs/anki-connect-archi-decision.md) — why the React client talks to local AnkiConnect instead of AnkiWeb
-- [Anki ↔ knowledge-base sync](docs/anki-sync-archi-decision.md) — push / pull orchestration, deck kinds, ignore lists
-- [Multi-agent chat](docs/ai-agents-archi-decision.md) — character, grammar teacher, and challenge judge collaboration
-- [PostgreSQL](docs/postgres-archi-decision.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
-- [Authentication & credentials](docs/auth-archi-decision.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
-- [Data isolation](docs/data-isolation-archi-decision.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
-- [Plan management](docs/plan-management-archi-decision.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
+- [AnkiConnect bridge](docs/adr/anki-connect.md) — why the React client talks to local AnkiConnect instead of AnkiWeb
+- [Anki ↔ knowledge-base sync](docs/adr/anki-sync.md) — push / pull orchestration (steps: [sync protocol](docs/anki/sync-protocol.md))
+- [Multi-agent chat](docs/adr/ai-agents.md) — character, grammar teacher, and challenge judge collaboration
+- [PostgreSQL](docs/adr/postgres.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
+- [Authentication & credentials](docs/adr/auth.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
+- [Data isolation](docs/adr/data-isolation.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
+- [Plan management](docs/adr/plan-management.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
 
-Obsolete decisions are kept under [`docs/archived/`](docs/archived/) (see `agent.md`), for example [SQLite → PostgreSQL](docs/archived/sqlite-to-postgres-archi-decision.md).
+Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
 
 ## Getting started
 
@@ -163,24 +161,9 @@ python3 -m pip install -r backend/requirements.txt
 python3 -m alembic upgrade head   # also runs automatically on app start
 ```
 
-Schema is managed with **Alembic** (`backend/migrations/`). See [PostgreSQL](docs/postgres-archi-decision.md) for details.
+Schema is managed with **Alembic** (`backend/migrations/`). Decision notes: [PostgreSQL](docs/adr/postgres.md). Table catalog and partition layout: [schema tenancy](docs/architecture/schema-tenancy.md). Isolation rationale: [data isolation](docs/adr/data-isolation.md).
 
-On first start the app seeds the shared HSK content; each user's default settings are seeded on their first authenticated request.
-
-Learner data is **private per user**: those tables start their primary key with `user_id` (the Cognito `sub`, FK → `users.id`) and are hash-partitioned on it (8 partitions). The HSK catalog is shared and unpartitioned. See [data isolation](docs/data-isolation-archi-decision.md).
-
-| Table | Scope | Columns |
-| --- | --- | --- |
-| `users` | — | `id` (PK, Cognito `sub`), `username` (unique), `email` (unique), `plan` (default `free`), `last_connexion` |
-| `character` | private | PK `(user_id, char)`, `pinyin` (max 8 chars), `writting_known` (boolean), `synchronized` (boolean, default false), `updated_at` (datetime) |
-| `words` | private | PK `(user_id, word)` (max 10 chars), `definition` (max 100 chars, nullable), `synchronized` (boolean, default false), `updated_at` (datetime) |
-| `character_word` | private | PK `(user_id, character_char, word)` — many-to-many link between `character` and `words` |
-| `settings` | private | PK `(user_id, key)`, `value` (Anki mappings, HSK level, `available_token`, …) |
-| `ignore_vocab_card` / `ignore_writting_card` | private | PK `(user_id, writting)` / `(user_id, recto)` — Anki pull ignore lists |
-| `token_count` | private | PK `(user_id, recorded_at, type)`, `tokens`, `price` — LLM usage history (not the free-plan remaining budget) |
-| `hsk_words` | shared | `id` (PK, `word\|pinyin`), `word`, `level` (HSK 3.0 1–7), `frequency`, `pinyin`, `definition` (meanings joined with ` | `) |
-| `hsk_characters` | shared | `character` (PK, single Han character), `level` (integer, HSK 3.0 level 1–7), `frequency` (integer) |
-| `hsk_word_character` | shared | many-to-many link between `hsk_words.id` and `hsk_characters` |
+On first start the app seeds the shared HSK content; each user's default settings are seeded on their first authenticated request. Learner data is private per Cognito user (`user_id`); HSK tables are shared.
 
 You can preload your characters and words with the bulk upload endpoint (see below), for example:
 
@@ -206,32 +189,17 @@ Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are r
 
 #### Free-plan token budget
 
-Every user has `users.plan` (default `free`). Free accounts get a lifetime allowance of **100 000** LLM tokens stored as the per-user setting `available_token` (seeded on first login and whenever a returning user is missing the key).
-
-| Behavior | Free plan | Paid plan (`plan ≠ free`) |
-| --- | --- | --- |
-| Before each LLM call | Block if `available_token <= 0` (HTTP 400 with a clear upgrade hint) | No gate |
-| After each LLM call | Subtract input + output tokens (may briefly go negative) | No deduct |
-| Preferences | Progress bar: remaining vs 100 000 | No max / no bar |
-
-Historical usage still lives in `token_count` and is shown as the 7-day chart + total tokens used. Design notes: [plan management](docs/plan-management-archi-decision.md).
+Free accounts (`users.plan = free`) get a lifetime **100 000**-token allowance (`settings.available_token`), enforced on every LLM invoke. Preferences shows remaining vs max; historical usage lives in `token_count`. Design notes: [plan management](docs/adr/plan-management.md).
 
 #### AnkiConnect
 
-Preferences can map knowledge-base decks to Anki through [AnkiConnect](https://git.sr.ht/~foosoft/anki-connect):
+Preferences map knowledge-base decks to Anki through [AnkiConnect](https://git.sr.ht/~foosoft/anki-connect) (add-on `2055492159`). Anki must be running locally; the **frontend** talks to `http://127.0.0.1:8765` — set `webCorsOriginList` to allow the app origin (e.g. `["*"]` or `http://localhost:5173`). Deck mappings live in `settings` via Flask routes.
 
-| UI label | Kind | Required fields |
-| --- | --- | --- |
-| Mandarin vocabulary | `mandarin_vocabulary` | `writting`, `pinyin`, `definition` — deck type should support three directions (writting↔pinyin↔definition) |
-| Mandarin writting | `mandarin_writting` | `recto` (definition (pinyin)), `verso` (characters) — writing practice only; only characters with “written known” are intended for this deck |
-
-Anki must be running with the AnkiConnect add-on installed (code `2055492159`). The **frontend** talks to AnkiConnect at `http://127.0.0.1:8765` (deck listing, note creation, AnkiWeb sync). In AnkiConnect’s add-on config, set `webCorsOriginList` to `["*"]` (or include `http://localhost:5173`) so the app can call it from the browser. Deck name, deck type, and field mappings are stored in the `settings` table via thin Flask routes.
-
-Architecture notes: [AnkiConnect bridge](docs/anki-connect-archi-decision.md), [push / pull sync](docs/anki-sync-archi-decision.md).
+Design notes: [AnkiConnect bridge](docs/adr/anki-connect.md), [sync orchestration](docs/adr/anki-sync.md), [sync protocol](docs/anki/sync-protocol.md). Setup images: [docs/anki/setup/](docs/anki/setup/).
 
 #### API endpoints
 
-Every route below except `/health` requires `Authorization: Bearer <cognito_access_token>` (plus the optional `X-Id-Token` companion header) and only ever reads or writes the authenticated user's rows — see [data isolation](docs/data-isolation-archi-decision.md).
+Every route below except `/health` requires `Authorization: Bearer <cognito_access_token>` (plus the optional `X-Id-Token` companion header) and only ever reads or writes the authenticated user's rows — see [data isolation](docs/adr/data-isolation.md).
 
 | Method | Route | Description |
 | --- | --- | --- |
@@ -302,7 +270,7 @@ To enable the hosted report, go to **Settings → Pages** and set **Build and de
 
 ## AI logic
 
-Chat turns are not a single LLM call: a character agent, grammar teacher, and (for challenges) a judge collaborate on each message. Full decision notes, including the interaction diagram, are in [docs/ai-agents-archi-decision.md](docs/ai-agents-archi-decision.md).
+Chat turns are not a single LLM call: a character agent, grammar teacher, and (for challenges) a judge collaborate on each message. Full decision notes, including the interaction diagram, are in [docs/adr/ai-agents.md](docs/adr/ai-agents.md).
 
 ## Feature
 
@@ -385,7 +353,7 @@ Host the web app so learners can use it without a local install. Infrastructure 
 
 ### 6. Multi-user auth & data isolation
 
-Several learners can sign in; each owns private data, while shared catalogs stay read-only. Design notes: [auth](docs/auth-archi-decision.md), [data isolation](docs/data-isolation-archi-decision.md), infra [multi-user](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md).
+Several learners can sign in; each owns private data, while shared catalogs stay read-only. Design notes: [auth](docs/adr/auth.md), [data isolation](docs/adr/data-isolation.md), infra [multi-user](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md).
 
 - [x] Cognito User Pool in infra (app client; optional Google IdP) wired into ECS
 - [x] Welcome auth UI — username/password login & sign-up, plus Google SSO (Hosted UI + PKCE)
@@ -406,7 +374,7 @@ Keep the app feeling snappy and polished as datasets and features grow — clear
 
 ### 8. Plan management
 
-Differentiate free and paid tiers so AI chat can scale without unbounded cost. Design notes: [plan management](docs/plan-management-archi-decision.md).
+Differentiate free and paid tiers so AI chat can scale without unbounded cost. Design notes: [plan management](docs/adr/plan-management.md).
 
 - [x] `users.plan` defaults to `free`; free accounts get a 100 000-token `available_token` budget
 - [x] Gate and deduct on every backend LLM invoke; chat surfaces a clear exhaustion message
@@ -459,76 +427,16 @@ Short playful games in chat to reinforce vocabulary and comprehension alongside 
 
 #### Push images to AWS ECR (from this Mac)
 
-ECS capacity uses Graviton (`t4g`) — images must be **`linux/arm64`** (native on Apple Silicon).
-
-1. **Start the Docker daemon locally** (Docker Desktop on macOS). Wait until it is fully running — `docker info` should show a Server section:
+ECS uses Graviton (`t4g`) — images must be **`linux/arm64`**. Ports, proxy, and healthchecks: [ECS containers](docs/deployment/ecs-containers.md). Full push + redeploy workflow: Cursor skill **update-ecr-images** (`.cursor/skills/update-ecr-images/`).
 
 ```bash
-open -a Docker
-# wait for the whale icon to settle, then:
-docker info
+# Preferred: login, build/push, and force ECS redeploy
+.cursor/skills/update-ecr-images/scripts/push.sh           # both
+.cursor/skills/update-ecr-images/scripts/push.sh backend
+.cursor/skills/update-ecr-images/scripts/push.sh frontend
+
+# Or build/push only (requires ECR_* / Cognito env from infra Terraform outputs)
+./scripts/push-ecr.sh
 ```
-
-2. From **teacher-wang-infra** (once per shell):
-
-```bash
-cd environments/prod
-source ../../config
-export AWS_REGION="$(terraform output -raw aws_region)"
-export ECR_BACKEND="$(terraform output -raw ecr_backend_repository_url)"
-export ECR_FRONTEND="$(terraform output -raw ecr_frontend_repository_url)"
-export COGNITO_REGION="$AWS_REGION"
-export COGNITO_USER_POOL_ID="$(terraform output -raw cognito_user_pool_id)"
-export COGNITO_APP_CLIENT_ID="$(terraform output -raw cognito_app_client_id)"
-export COGNITO_ISSUER="$(terraform output -raw cognito_issuer)"
-export COGNITO_DOMAIN="$(terraform output -raw cognito_domain)"
-aws ecr get-login-password --region "$AWS_REGION" \
-  | docker login --username AWS --password-stdin "$(echo "$ECR_BACKEND" | cut -d/ -f1)"
-```
-
-Prefer the skill wrapper (reads ECR + Cognito outputs for you):
-
-```bash
-# from teacher-wang-app
-.cursor/skills/update-ecr-images/scripts/push.sh
-```
-
-3. Then from **this repo** (teacher-wang-app), if not using the wrapper:
-
-```bash
-./scripts/push-ecr.sh           # both images
-./scripts/push-ecr.sh backend   # backend only
-./scripts/push-ecr.sh frontend  # frontend only
-```
-
-Equivalent manual commands:
-
-```bash
-docker buildx build --platform linux/arm64 \
-  -t "$ECR_BACKEND:latest" -t "$ECR_BACKEND:$(git rev-parse --short HEAD)" \
-  -f backend/Dockerfile --push .
-
-docker buildx build --platform linux/arm64 \
-  -t "$ECR_FRONTEND:latest" -t "$ECR_FRONTEND:$(git rev-parse --short HEAD)" \
-  -f frontend/Dockerfile \
-  --build-arg "VITE_COGNITO_REGION=$COGNITO_REGION" \
-  --build-arg "VITE_COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" \
-  --build-arg "VITE_COGNITO_APP_CLIENT_ID=$COGNITO_APP_CLIENT_ID" \
-  --build-arg "VITE_COGNITO_DOMAIN=$COGNITO_DOMAIN" \
-  --build-arg "VITE_COGNITO_ISSUER=$COGNITO_ISSUER" \
-  --push .
-```
-
-| Image | Container port | ECS host port | Runtime notes |
-| --- | --- | --- | --- |
-| Backend | 5000 | 5000 | gunicorn; `DB_*` + `COGNITO_*` from ECS task def; Docker `HEALTHCHECK` → `GET /health` (includes DB) |
-| Frontend | 80 | 8080 | nginx; proxies **`/api/*`** → `BACKEND_UPSTREAM/*`; Cognito public ids baked at build (`VITE_COGNITO_*`); Docker `HEALTHCHECK` → `GET /health` |
-
-Health endpoints:
-
-| Service | URL | Meaning |
-| --- | --- | --- |
-| Backend | `http://<backend>:5000/health` | `{"status":"ok","service":"backend","database":"up"}` or `503` if DB is down |
-| Frontend | `http://<frontend>/health` (ALB path `/health`) | `{"status":"ok","service":"frontend"}` — does not call the API |
 
 Push images **before** (or right after) setting `enable_ecs = true` in infra, or tasks will fail to pull.

@@ -4,11 +4,11 @@
 
 Accepted
 
-Aligned with Decision 1 in [teacher-wang-infra multi-user architecture](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md). Per-user data isolation is covered separately in [data-isolation-archi-decision.md](data-isolation-archi-decision.md).
+Aligned with Decision 1 in [teacher-wang-infra multi-user architecture](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md). Per-user data isolation is covered separately in [data-isolation ADR](./data-isolation.md). Coding invariants: `.cursor/rules/multi-tenant.mdc`, `.cursor/rules/frontend-api.mdc`.
 
 ## Context
 
-Teacher Wang is a Flask API plus React UI deployed on AWS (ECS containers, RDS PostgreSQL via [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra)). Today there is **no authentication**: APIs are open, Postgres holds a single shared knowledge base, and there is no users table.
+Teacher Wang is a Flask API plus React UI deployed on AWS (ECS containers, RDS PostgreSQL via [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra)). Authentication is implemented with Amazon Cognito; APIs (except `OPTIONS` and `/health`) require a verified Bearer JWT, and private learner data is scoped by Cognito `sub` (see [data isolation](./data-isolation.md)).
 
 Product needs:
 
@@ -35,7 +35,7 @@ Credentials must not live as reversible secrets in application tables. Infra and
 | --- | --- |
 | Username, email, password (hashed by Cognito), Google SSO | **Cognito User Pool** |
 | Stable subject + profile fields the app needs (display name, email for UX) | **Postgres** thin `users` / `profiles` row keyed by Cognito `sub` |
-| Private learner data and shared catalogs | See [data isolation](data-isolation-archi-decision.md) |
+| Private learner data and shared catalogs | See [data isolation](./data-isolation.md) |
 
 ### Identity (Cognito)
 
@@ -80,7 +80,7 @@ Browser
 
 ## Out of scope (remaining)
 
-* PostgreSQL RLS as a backstop behind the app-level `user_id` filters — [data-isolation-archi-decision.md](data-isolation-archi-decision.md).
+* PostgreSQL RLS as a backstop behind the app-level `user_id` filters — [data-isolation ADR](./data-isolation.md).
 * Enabling Google IdP (infra supports it when `TF_VAR_cognito_google_client_*` are set).
 
 ## Consequences
@@ -98,4 +98,4 @@ Browser
 * Every request now pays a JWKS-cached signature check plus one `users` upsert; a busy session writes `last_connexion` on each call.
 * Local and CI need Cognito env vars (or mocks) for protected routes — see `.env.example` (`COGNITO_*` backend, `VITE_COGNITO_*` frontend). Route unit tests stub verification through `backend/tests/auth_stub.py`.
 * Migration away from Cognito later is painful (hashes not exportable)—accept re-registration or a dual-run plan if that ever matters.
-* Auth alone does not isolate knowledge-base rows; the row-level scoping lives in [data isolation](data-isolation-archi-decision.md).
+* Auth alone does not isolate knowledge-base rows; the row-level scoping lives in [data isolation](./data-isolation.md).
