@@ -5,7 +5,7 @@ import CharacterFormModal, {
 } from "../components/CharacterFormModal";
 import CharacterWordsModal from "../components/CharacterWordsModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
+import { ExportIcon, EyeIcon, ImportIcon, PenIcon, TrashIcon } from "../components/icons";
 import Page from "../components/Page";
 import PinyinGridView from "../components/PinyinGridView";
 import Table, { type TableColumn } from "../components/Table";
@@ -26,7 +26,7 @@ import {
   updateCharacter,
 } from "../utils/knowledgeBase/charactersApi";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
-import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import { deleteKnowledgeBase, exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import {
   createWord,
   deleteWord,
@@ -128,7 +128,9 @@ export default function KnowledgeBasePage() {
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isDeletingKnowledgeBaseConfirmOpen, setIsDeletingKnowledgeBaseConfirmOpen] = useState(false);
   const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -206,13 +208,30 @@ export default function KnowledgeBasePage() {
     setStatusMessage(null);
   }, []);
 
+  async function handleOpenConfirmDeleteKnowledgeBase() {
+    setIsDeletingKnowledgeBaseConfirmOpen(true);
+  }
+
+  async function handleConfirmDeleteKnowledgeBase() {
+      setIsDeletingKnowledgeBaseConfirmOpen(false);
+      setIsDeleting(true);
+      try {
+        await deleteKnowledgeBase();
+        // TODO dispatch(resetKnowledgeBase());
+      } catch (deleteError) {
+        setMutationError(deleteError instanceof Error ? deleteError.message : "Failed to delete database.");
+      } finally {
+        setIsDeleting(false);
+      }
+  }
+
   async function handleExportDatabase() {
     setStatusMessage(null);
     setIsExporting(true);
 
     try {
       await exportDatabase();
-      setStatusMessage('The database has been saved in the "db.txt" file.');
+      setStatusMessage('The database has been downloaded as a zip file.');
     } catch (exportError) {
       setMutationError(
         exportError instanceof Error
@@ -470,6 +489,15 @@ export default function KnowledgeBasePage() {
           <div className="page-header-actions">
             <button
               type="button"
+              className="page-mode-button--danger"
+              onClick={() => void handleOpenConfirmDeleteKnowledgeBase()}
+              disabled={isDeleting}
+            >
+              <TrashIcon className="chat-modal-clear-icon" />
+              Delete
+            </button>
+            <button
+              type="button"
               className="page-mode-button"
               onClick={() => void handleExportDatabase()}
               disabled={isExporting}
@@ -564,6 +592,13 @@ export default function KnowledgeBasePage() {
         initialCharacter={characterToEdit}
         onCancel={() => setCharacterToEdit(null)}
         onConfirm={(values) => void confirmEditCharacter(values)}
+      />
+      <ConfirmModal
+        isOpen={isDeletingKnowledgeBaseConfirmOpen}
+        message="Are you sure you want to delete the knowledge base?"
+        danger={true}
+        onCancel={() => setIsDeletingKnowledgeBaseConfirmOpen(false)}
+        onConfirm={() => void handleConfirmDeleteKnowledgeBase()}
       />
       <ConfirmModal
         isOpen={characterToDelete !== null}
