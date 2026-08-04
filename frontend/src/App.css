@@ -9,7 +9,8 @@
   --app-border: #b7c9ce;
   --app-border-light: rgba(26, 92, 110, 0.1);
   --app-focus: rgba(26, 92, 110, 0.35);
-  
+  --app-danger: #ef4444;
+  --app-danger-hover: #b91c1c;
   --font-sans: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: Fraunces, Georgia, serif;
 }
@@ -279,6 +280,49 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
 .page-mode-button-icon {
   width: 1rem;
   height: 1rem;
+}
+
+.page-mode-button--danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--app-danger);
+  border-radius: 0.55rem;
+  background-color: var(--app-danger);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.page-mode-button--danger:hover {
+  background-color: var(--app-danger-hover);
+}
+
+.modal-button-confirm--danger {
+  background-color: var(--app-danger);
+}
+
+.modal-button-confirm--danger:hover {
+  background-color: var(--app-danger-hover);
+}
+
+.modal-button-confirm--danger {
+  background-color: var(--app-danger);
+}
+
+.modal-button-confirm--danger:hover {
+  background-color: var(--app-danger-hover);
+}
+
+.modal-message--danger {
+  color: var(--app-danger);
+  font-style: italic;
 }
 
 .page-header-actions {
@@ -2236,6 +2280,15 @@ button.chat-message-severity-badge {
   font-size: 0.95rem;
   cursor: pointer;
   transition: background-color 0.15s ease;
+}
+
+.page-content button.button--danger {
+  background-color: var(--app-danger);
+  color: #ffffff;
+}
+
+.page-content button.button--danger:hover {
+  background-color: var(--app-danger-hover);
 }
 
 .page-content button:hover {

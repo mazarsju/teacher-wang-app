@@ -1,6 +1,7 @@
 type ConfirmModalProps = {
   isOpen: boolean;
   message: string;
+  danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -8,6 +9,7 @@ type ConfirmModalProps = {
 export default function ConfirmModal({
   isOpen,
   message,
+  danger = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -27,13 +29,18 @@ export default function ConfirmModal({
         <p id="confirm-modal-message" className="modal-message">
           {message}
         </p>
+        {danger && (
+          <p id="confirm-modal-message" className="modal-message--danger">
+            This action is irreversible.
+          </p>
+        )}
         <div className="modal-actions">
           <button type="button" className="modal-button-cancel" onClick={onCancel}>
             Cancel
           </button>
           <button
             type="button"
-            className="modal-button-confirm"
+            className={`${danger ? "button--danger" : ""}`}
             onClick={onConfirm}
           >
             Confirm
