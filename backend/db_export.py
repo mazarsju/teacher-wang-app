@@ -1,15 +1,6 @@
 import os
 from pathlib import Path
-
 from backend.models import Character, Word
-
-DB_EXPORT_FILENAME = "db.txt"
-DB_EXPORT_PATH = Path(
-    os.environ.get(
-        "DB_EXPORT_PATH",
-        Path(__file__).resolve().parent.parent / DB_EXPORT_FILENAME,
-    )
-)
 
 VALID_TONES = {"1", "2", "3", "4"}
 
@@ -61,13 +52,14 @@ def serialize_database(
     return "\n".join(lines) + "\n"
 
 
-def export_database_to_file(user_id: str, path: Path | None = None) -> Path:
-    export_path = path or DB_EXPORT_PATH
+def get_export_database_content(user_id: str, path: Path | None = None) -> bytes:
+    """Export the database and return it to the frontend zipped."""
     characters = (
         Character.query.filter_by(user_id=user_id)
         .order_by(Character.pinyin, Character.char)
         .all()
     )
     words = Word.query.filter_by(user_id=user_id).order_by(Word.word).all()
-    export_path.write_text(serialize_database(characters, words), encoding="utf-8")
-    return export_path
+    content = serialize_database(characters, words)
+
+    return content
