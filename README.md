@@ -132,6 +132,7 @@ Backend tests require PostgreSQL via `TEST_DATABASE_URL` (see `.env.example`). C
 ```bash
 python3 -m unittest discover -s backend/tests -v
 python3 backend/test_coverage.py
+python3 -m unittest discover -s backend/tests -p "<my_test_file>.py" -v
 ```
 
 From the `backend/` directory:
