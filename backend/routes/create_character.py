@@ -8,6 +8,48 @@ from backend.user_context import current_user_id
 
 bp = Blueprint("create_character", __name__)
 
+PINYIN_MAX_LENGTH = 8
+
+
+class CharacterValidationError(ValueError):
+    pass
+
+
+def validate_character_payload(data: dict) -> tuple[str, str, bool]:
+    """Validate a single character payload, returning (char, pinyin, writting_known).
+
+    Shared by the single and bulk create-character routes so both enforce
+    identical rules.
+    """
+    if "char" not in data or "pinyin" not in data or "writting_known" not in data:
+        raise CharacterValidationError(
+            "Missing required fields: char, pinyin, writting_known"
+        )
+
+    char = data["char"]
+    pinyin = data["pinyin"]
+    writting_known = data["writting_known"]
+
+    if not isinstance(char, str) or not char.strip():
+        raise CharacterValidationError("char must be a non-empty string")
+
+    if not isinstance(pinyin, str) or not pinyin.strip():
+        raise CharacterValidationError("pinyin must be a non-empty string")
+
+    if len(pinyin.strip()) > PINYIN_MAX_LENGTH:
+        raise CharacterValidationError(
+            f"pinyin must be at most {PINYIN_MAX_LENGTH} characters"
+        )
+
+    if not isinstance(writting_known, bool):
+        raise CharacterValidationError("writting_known must be a boolean")
+
+    char_value = char.strip()
+    if not is_han_character(char_value):
+        raise CharacterValidationError("char must be a single Chinese character")
+
+    return char_value, pinyin.strip(), writting_known
+
 
 @bp.post("/characters")
 def create_character():
@@ -15,28 +57,10 @@ def create_character():
     if data is None:
         return {"error": "Invalid JSON body"}, 400
 
-    if "char" not in data or "pinyin" not in data or "writting_known" not in data:
-        return {"error": "Missing required fields: char, pinyin, writting_known"}, 400
-
-    char = data["char"]
-    pinyin = data["pinyin"]
-    writting_known = data["writting_known"]
-
-    if not isinstance(char, str) or not char.strip():
-        return {"error": "char must be a non-empty string"}, 400
-
-    if not isinstance(pinyin, str) or not pinyin.strip():
-        return {"error": "pinyin must be a non-empty string"}, 400
-
-    if len(pinyin.strip()) > 8:
-        return {"error": "pinyin must be at most 8 characters"}, 400
-
-    if not isinstance(writting_known, bool):
-        return {"error": "writting_known must be a boolean"}, 400
-
-    char_value = char.strip()
-    if not is_han_character(char_value):
-        return {"error": "char must be a single Chinese character"}, 400
+    try:
+        char_value, pinyin_value, writting_known = validate_character_payload(data)
+    except CharacterValidationError as exc:
+        return {"error": str(exc)}, 400
 
     user_id = current_user_id()
     if (
@@ -48,7 +72,7 @@ def create_character():
     char_record = Character(
         user_id=user_id,
         char=char_value,
-        pinyin=pinyin.strip(),
+        pinyin=pinyin_value,
         writting_known=writting_known,
     )
     db.session.add(char_record)

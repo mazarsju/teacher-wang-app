@@ -7,24 +7,23 @@ export type SmartWordRow = {
   knownToWrite: boolean;
 };
 
-type CharacterLine = {
-  base: string;
-  tone: string;
-  known: boolean;
-  words: Set<string>;
+export type CharacterEntry = {
+  char: string;
+  pinyin: string;
+  writting_known: boolean;
 };
 
 /**
- * Build `character;pinyin;tone;known;words` lines (the bulk-import format,
- * see backend/routes/bulk_characters.py) from smart-creation word picks.
+ * Derive the unique characters (with merged pinyin/known-to-write) needed to
+ * bulk-create every word in `rows`.
  *
  * ponytail: assumes one space-separated numeric-pinyin syllable per
  * character, aligned by index (true for HSK data — see
  * normalize_hsk_numeric_pinyin). Falls back to the first syllable when a
  * word has fewer syllables than characters.
  */
-export function buildImportFileContent(rows: SmartWordRow[]): string {
-  const byCharacter = new Map<string, CharacterLine>();
+export function extractCharacterEntries(rows: SmartWordRow[]): CharacterEntry[] {
+  const byCharacter = new Map<string, CharacterEntry>();
 
   for (const row of rows) {
     const characters = splitWordCharacters(row.word);
@@ -32,31 +31,19 @@ export function buildImportFileContent(rows: SmartWordRow[]): string {
 
     characters.forEach((character, index) => {
       const syllable = syllables[index] ?? syllables[0] ?? "";
-      const match = syllable.match(/^(.*?)(\d)?$/);
-      const base = match?.[1] ?? syllable;
-      const tone = match?.[2] ?? "";
 
       const existing = byCharacter.get(character);
       if (existing) {
-        existing.known = existing.known || row.knownToWrite;
-        existing.words.add(row.word);
+        existing.writting_known = existing.writting_known || row.knownToWrite;
       } else {
         byCharacter.set(character, {
-          base,
-          tone,
-          known: row.knownToWrite,
-          words: new Set([row.word]),
+          char: character,
+          pinyin: syllable,
+          writting_known: row.knownToWrite,
         });
       }
     });
   }
 
-  return Array.from(byCharacter.entries())
-    .map(
-      ([character, line]) =>
-        `${character};${line.base};${line.tone};${line.known};${Array.from(
-          line.words,
-        ).join(",")}`,
-    )
-    .join("\n");
+  return Array.from(byCharacter.values());
 }

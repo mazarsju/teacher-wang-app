@@ -6,6 +6,8 @@ def register_routes(app: Flask) -> None:
         anki,
         auth_me,
         bulk_characters,
+        bulk_create_characters,
+        bulk_create_words,
         chat,
         challenges,
         conversation_logs,
@@ -39,10 +41,12 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(anki.bp)
     app.register_blueprint(list_characters.bp)
     app.register_blueprint(create_character.bp)
+    app.register_blueprint(bulk_create_characters.bp)
     app.register_blueprint(delete_character.bp)
     app.register_blueprint(update_character.bp)
     app.register_blueprint(list_words.bp)
     app.register_blueprint(create_word.bp)
+    app.register_blueprint(bulk_create_words.bp)
     app.register_blueprint(update_word.bp)
     app.register_blueprint(delete_word.bp)
     app.register_blueprint(bulk_characters.bp)

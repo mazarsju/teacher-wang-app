@@ -42,6 +42,35 @@ function defaultFetchResponse(url: URL, init?: RequestInit) {
       json: async () => ({ message: "File received" }),
     });
   }
+  if (url.pathname.endsWith("/characters/bulk-create") && init?.method === "POST") {
+    const characters = jsonBody(init).characters as {
+      char: string;
+      pinyin: string;
+      writting_known: boolean;
+    }[];
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        characters: characters.map((entry) => ({
+          ...entry,
+          updated_at: "2026-01-01T00:00:00+00:00",
+        })),
+      }),
+    });
+  }
+  if (url.pathname.endsWith("/words/bulk-create") && init?.method === "POST") {
+    const words = jsonBody(init).words as { word: string; definition: string | null }[];
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        words: words.map((entry) => ({
+          ...entry,
+          updated_at: "2026-01-01T00:00:00+00:00",
+          characters: [...entry.word],
+        })),
+      }),
+    });
+  }
   if (url.pathname.startsWith("/api/words/") && init?.method === "PATCH") {
     return Promise.resolve({
       ok: true,
@@ -382,23 +411,80 @@ describe("KnowledgeBaseInitWizardModal", () => {
       expect(onClose).toHaveBeenCalledOnce();
     });
 
-    const bulkImportCall = fetchMock.mock.calls.find(([requestInput]) =>
-      String(requestInput).endsWith("/characters/bulk"),
+    const bulkCharacterCall = fetchMock.mock.calls.find(([requestInput]) =>
+      String(requestInput).endsWith("/characters/bulk-create"),
     );
-    expect(bulkImportCall).toBeDefined();
-    const uploadedFile = (bulkImportCall?.[1]?.body as FormData).get("file") as File;
-    expect(await uploadedFile.text()).toBe("爱;ai;4;false;爱");
+    expect(bulkCharacterCall).toBeDefined();
+    expect(jsonBody(bulkCharacterCall?.[1])).toEqual({
+      characters: [{ char: "爱", pinyin: "ai4", writting_known: false }],
+    });
 
-    // The bulk-import line format has no slot for a word's definition, so
-    // it must be patched in separately after the import.
-    const definitionPatchCall = fetchMock.mock.calls.find(
-      ([requestInput, requestInit]) =>
-        String(requestInput).endsWith("/words/%E7%88%B1") &&
-        requestInit?.method === "PATCH",
+    const bulkWordCall = fetchMock.mock.calls.find(([requestInput]) =>
+      String(requestInput).endsWith("/words/bulk-create"),
     );
-    expect(definitionPatchCall).toBeDefined();
-    expect(jsonBody(definitionPatchCall?.[1])).toEqual({
-      definition: "to love",
+    expect(bulkWordCall).toBeDefined();
+    expect(jsonBody(bulkWordCall?.[1])).toEqual({
+      words: [{ word: "爱", definition: "to love" }],
+    });
+  });
+
+  it("shows sync progress while confirming smart-creation words", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    const ai = hskWord("爱", "ai4", "to love", 0);
+
+    let releaseCharacterBulkCreate: (() => void) | undefined;
+    const characterBulkCreateGate = new Promise<void>((resolve) => {
+      releaseCharacterBulkCreate = resolve;
+    });
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://localhost");
+      if (url.pathname.endsWith("/characters/bulk-create") && init?.method === "POST") {
+        await characterBulkCreateGate;
+      }
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
+      }
+
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(ai, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+      return nextWordResponse(null, { current_index: 1, previous_index: 0, increment: 1 });
+    });
+
+    renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Smart creation based on what you already know",
+      }),
+    );
+
+    expect(await screen.findByText("爱")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Can recognize it" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Your quick setup is done! Please review the list below.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    const progressBar = await screen.findByRole("progressbar");
+    expect(progressBar).toHaveAttribute("max", "2");
+    expect(screen.getByText(/Syncing your knowledge base… 0\/2/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+
+    releaseCharacterBulkCreate?.();
+
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     });
   });
 

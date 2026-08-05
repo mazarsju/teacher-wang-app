@@ -2708,6 +2708,20 @@ button.chat-message-severity-badge {
   margin-top: 0.75rem;
 }
 
+.wizard-sync-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.wizard-sync-progress progress {
+  width: 100%;
+  accent-color: var(--app-sea);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

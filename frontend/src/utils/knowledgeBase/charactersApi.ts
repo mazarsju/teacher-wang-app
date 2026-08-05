@@ -33,6 +33,23 @@ export async function createCharacter(values: {
   return (await response.json()) as Character;
 }
 
+export async function bulkCreateCharacters(
+  values: { char: string; pinyin: string; writting_known: boolean }[],
+): Promise<Character[]> {
+  const response = await apiFetch(`${API_BASE}/characters/bulk-create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ characters: values }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to add characters.");
+  }
+
+  const payload = (await response.json()) as { characters: Character[] };
+  return payload.characters;
+}
+
 export async function updateCharacter(
   char: string,
   values: { pinyin: string; writting_known: boolean },

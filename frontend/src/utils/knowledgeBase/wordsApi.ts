@@ -32,6 +32,23 @@ export async function createWord(values: {
   return (await response.json()) as Word;
 }
 
+export async function bulkCreateWords(
+  values: { word: string; definition: string | null }[],
+): Promise<Word[]> {
+  const response = await apiFetch(`${API_BASE}/words/bulk-create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ words: values }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to add words.");
+  }
+
+  const payload = (await response.json()) as { words: Word[] };
+  return payload.words;
+}
+
 export async function updateWord(
   word: string,
   values: { definition: string | null },

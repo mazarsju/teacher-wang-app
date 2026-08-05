@@ -223,8 +223,10 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writting_known` |
 | `DELETE` | `/characters/<char>` | Delete a character |
 | `POST` | `/characters/bulk` | Upload a `.txt` file (`multipart/form-data`, field name `file`) |
+| `POST` | `/characters/bulk-create` | Create up to 100 characters at once (`{ "characters": [...] }`) |
 | `GET` | `/words` | List all words |
 | `POST` | `/words` | Create a new word (characters in the word must already exist) |
+| `POST` | `/words/bulk-create` | Create up to 100 words at once (`{ "words": [...] }`) |
 | `PATCH` | `/words/<word>` | Update a word's `definition` |
 | `DELETE` | `/words/<word>` | Delete a word |
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |

@@ -7,6 +7,50 @@ from backend.user_context import current_user_id
 
 bp = Blueprint("create_word", __name__)
 
+WORD_MAX_LENGTH = 10
+DEFINITION_MAX_LENGTH = 100
+
+
+class WordValidationError(ValueError):
+    pass
+
+
+def validate_word_payload(data: dict) -> tuple[str, str]:
+    """Validate a single word payload, returning (word, definition).
+
+    Shared by the single and bulk create-word routes so both enforce
+    identical rules.
+    """
+    if "word" not in data:
+        raise WordValidationError("Missing required field: word")
+
+    word_value = data["word"]
+    definition = data.get("definition", "")
+
+    if not isinstance(word_value, str) or not word_value.strip():
+        raise WordValidationError("word must be a non-empty string")
+
+    if len(word_value.strip()) > WORD_MAX_LENGTH:
+        raise WordValidationError(
+            f"word must be at most {WORD_MAX_LENGTH} characters"
+        )
+
+    if definition is not None and not isinstance(definition, str):
+        raise WordValidationError("definition must be a string")
+
+    if definition and len(definition.strip()) > DEFINITION_MAX_LENGTH:
+        raise WordValidationError(
+            f"definition must be at most {DEFINITION_MAX_LENGTH} characters"
+        )
+
+    word_text = word_value.strip()
+    definition_text = definition.strip() if isinstance(definition, str) else ""
+
+    if not is_han_text(word_text):
+        raise WordValidationError("word must contain only Chinese characters")
+
+    return word_text, definition_text
+
 
 @bp.post("/words")
 def create_word():
@@ -14,29 +58,10 @@ def create_word():
     if data is None:
         return {"error": "Invalid JSON body"}, 400
 
-    if "word" not in data:
-        return {"error": "Missing required field: word"}, 400
-
-    word_value = data["word"]
-    definition = data.get("definition", "")
-
-    if not isinstance(word_value, str) or not word_value.strip():
-        return {"error": "word must be a non-empty string"}, 400
-
-    if len(word_value.strip()) > 10:
-        return {"error": "word must be at most 10 characters"}, 400
-
-    if definition is not None and not isinstance(definition, str):
-        return {"error": "definition must be a string"}, 400
-
-    if len(definition.strip()) > 100:
-        return {"error": "definition must be at most 100 characters"}, 400
-
-    word_text = word_value.strip()
-    definition_text = definition.strip() if isinstance(definition, str) else ""
-
-    if not is_han_text(word_text):
-        return {"error": "word must contain only Chinese characters"}, 400
+    try:
+        word_text, definition_text = validate_word_payload(data)
+    except WordValidationError as exc:
+        return {"error": str(exc)}, 400
 
     user_id = current_user_id()
     missing_characters = [

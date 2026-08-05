@@ -6,9 +6,10 @@ import { useAppDispatch } from "../store/hooks";
 import { syncAppData } from "../store/thunks/syncAppData";
 import type { HskWord } from "../types/hskWord";
 import {
-  buildImportFileContent,
+  extractCharacterEntries,
   type SmartWordRow,
 } from "../utils/knowledgeBase/buildImportLines";
+import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
 import {
   INITIAL_WORD_PICK_STATE,
   pickNextHskWord,
@@ -17,7 +18,19 @@ import {
   type WordPickState,
 } from "../utils/knowledgeBase/hskWordsApi";
 import { importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
-import { updateWord } from "../utils/knowledgeBase/wordsApi";
+import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
+
+// Keeps each request under the backend's bulk-create limit (see
+// backend/routes/bulk_create_words.py / bulk_create_characters.py).
+const BULK_BATCH_SIZE = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
 
 type KnowledgeBaseInitWizardModalProps = {
   isOpen: boolean;
@@ -48,6 +61,10 @@ export default function KnowledgeBaseInitWizardModal({
   const [smartWords, setSmartWords] = useState<SmartWordRow[]>([]);
   const [smartError, setSmartError] = useState<string | null>(null);
   const [isSmartSubmitting, setIsSmartSubmitting] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
   const [hasRecognizedOnly, setHasRecognizedOnly] = useState(false);
   const [isSmartSetupDone, setIsSmartSetupDone] = useState(false);
 
@@ -65,6 +82,7 @@ export default function KnowledgeBaseInitWizardModal({
     setSmartError(null);
     setHasRecognizedOnly(false);
     setIsSmartSetupDone(false);
+    setSyncProgress(null);
     onClose();
   }
 
@@ -261,24 +279,34 @@ export default function KnowledgeBaseInitWizardModal({
     setSmartError(null);
     setIsSmartSubmitting(true);
 
+    const characterBatches = chunk(
+      extractCharacterEntries(smartWords),
+      BULK_BATCH_SIZE,
+    );
+    const wordBatches = chunk(
+      smartWords.map((row) => ({
+        word: row.word,
+        definition: row.definition.trim().slice(0, 100) || null,
+      })),
+      BULK_BATCH_SIZE,
+    );
+    setSyncProgress({ completed: 0, total: characterBatches.length + wordBatches.length });
+
     try {
-      const file = new File(
-        [buildImportFileContent(smartWords)],
-        "smart-creation.txt",
-        { type: "text/plain" },
-      );
-      await importDatabase(file);
-      // The bulk-import format has no slot for a word's definition (see
-      // backend/routes/bulk_characters.py), so patch it in separately —
-      // words start out with an empty definition once the import above
-      // creates them.
-      await Promise.all(
-        smartWords
-          .filter((row) => row.definition.trim() !== "")
-          .map((row) =>
-            updateWord(row.word, { definition: row.definition.slice(0, 100) }),
-          ),
-      );
+      // Characters must exist before the words that use them can be
+      // created (see backend/routes/bulk_create_words.py).
+      for (const batch of characterBatches) {
+        await bulkCreateCharacters(batch);
+        setSyncProgress((previous) =>
+          previous ? { ...previous, completed: previous.completed + 1 } : previous,
+        );
+      }
+      for (const batch of wordBatches) {
+        await bulkCreateWords(batch);
+        setSyncProgress((previous) =>
+          previous ? { ...previous, completed: previous.completed + 1 } : previous,
+        );
+      }
       await dispatch(syncAppData()).unwrap();
       resetAndClose();
     } catch (error) {
@@ -288,6 +316,8 @@ export default function KnowledgeBaseInitWizardModal({
           : "Failed to save your knowledge base.",
       );
       setIsSmartSubmitting(false);
+    } finally {
+      setSyncProgress(null);
     }
   }
 
@@ -558,11 +588,22 @@ export default function KnowledgeBaseInitWizardModal({
 
             {smartError && <p className="table-error">{smartError}</p>}
 
+            {syncProgress && (
+              <div className="wizard-sync-progress">
+                <progress value={syncProgress.completed} max={syncProgress.total} />
+                <span>
+                  Syncing your knowledge base… {syncProgress.completed}/
+                  {syncProgress.total}
+                </span>
+              </div>
+            )}
+
             <div className="modal-actions">
               <button
                 type="button"
                 className="modal-button-cancel"
                 onClick={() => setStep("choose")}
+                disabled={isSmartSubmitting}
               >
                 Cancel
               </button>
