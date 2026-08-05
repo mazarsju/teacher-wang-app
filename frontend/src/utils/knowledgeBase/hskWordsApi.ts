@@ -68,3 +68,18 @@ export async function pickNextHskWord(
     wordsBetween: payload.words_between,
   };
 }
+
+/**
+ * The most strategic HSK words (by level, then frequency) the user doesn't
+ * already know, for the knowledge-base "inspiration" banner.
+ */
+export async function getSuggestedHskWords(): Promise<HskWord[]> {
+  const response = await apiFetch(`${API_BASE}/hsk-words/suggestions`);
+
+  if (!response.ok) {
+    throw new Error("Failed to load suggested words.");
+  }
+
+  const payload = (await response.json()) as { words: HskWord[] };
+  return payload.words;
+}

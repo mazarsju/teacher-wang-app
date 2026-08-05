@@ -1,0 +1,179 @@
+import { useEffect, useState } from "react";
+import Table, { type TableColumn } from "./Table";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { syncAppData } from "../store/thunks/syncAppData";
+import type { HskWord } from "../types/hskWord";
+import { extractCharacterEntries } from "../utils/knowledgeBase/buildImportLines";
+import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
+import { getSuggestedHskWords } from "../utils/knowledgeBase/hskWordsApi";
+import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
+
+type AddSuggestedWordsModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+export default function AddSuggestedWordsModal({
+  isOpen,
+  onClose,
+}: AddSuggestedWordsModalProps) {
+  const dispatch = useAppDispatch();
+  const knownCharacters = useAppSelector((state) => state.characters.items);
+
+  const [suggestions, setSuggestions] = useState<HskWord[]>([]);
+  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setSelectedWords(new Set());
+    setError(null);
+    setIsLoading(true);
+
+    getSuggestedHskWords()
+      .then(setSuggestions)
+      .catch((fetchError) => {
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Failed to load suggested words.",
+        );
+      })
+      .finally(() => setIsLoading(false));
+  }, [isOpen]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  function toggleSelected(word: string) {
+    setSelectedWords((previous) => {
+      const next = new Set(previous);
+      if (next.has(word)) {
+        next.delete(word);
+      } else {
+        next.add(word);
+      }
+      return next;
+    });
+  }
+
+  async function handleConfirm() {
+    const selected = suggestions.filter((word) => selectedWords.has(word.word));
+    if (selected.length === 0) {
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const knownCharacterSet = new Set(knownCharacters.map((character) => character.char));
+      const characterEntries = extractCharacterEntries(
+        selected.map((word) => ({
+          word: word.word,
+          pinyin: word.pinyin,
+          definition: word.definition,
+          knownToWrite: false,
+        })),
+      ).filter((entry) => !knownCharacterSet.has(entry.char));
+
+      if (characterEntries.length > 0) {
+        await bulkCreateCharacters(characterEntries);
+      }
+      await bulkCreateWords(
+        selected.map((word) => ({
+          word: word.word,
+          definition: word.definition.trim().slice(0, 100) || null,
+        })),
+      );
+      await dispatch(syncAppData()).unwrap();
+      onClose();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to add the selected words.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const columns: TableColumn<HskWord>[] = [
+    { key: "word", header: "Word" },
+    { key: "pinyin", header: "Pinyin" },
+    { key: "definition", header: "Definition" },
+    {
+      key: "id",
+      header: "Select",
+      render: (row) => (
+        <label className="toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={selectedWords.has(row.word)}
+            onChange={() => toggleSelected(row.word)}
+          />
+          <span className="toggle-slider" />
+        </label>
+      ),
+    },
+  ];
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-dialog kb-init-wizard-dialog--wide"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-suggested-words-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="add-suggested-words-title" className="modal-title">
+          Words to learn next
+        </h2>
+        <p className="modal-message">
+          The following words are the most strategic for you to learn.
+        </p>
+
+        {isLoading && <p className="modal-message">Loading suggestions…</p>}
+        {error && <p className="table-error">{error}</p>}
+
+        {!isLoading && (
+          <Table
+            columns={columns}
+            rows={suggestions}
+            compact
+            getRowKey={(row) => row.word}
+            emptyMessage="No more words to suggest right now."
+          />
+        )}
+
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="modal-button-cancel"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="modal-button-confirm-primary"
+            onClick={() => void handleConfirm()}
+            disabled={selectedWords.size === 0 || isSubmitting}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

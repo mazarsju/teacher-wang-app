@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
+import AddSuggestedWordsModal from "../components/AddSuggestedWordsModal";
 import AddWordModal, { type WordFormValues } from "../components/AddWordModal";
 import CharacterFormModal, {
   type CharacterFormValues,
@@ -8,6 +9,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
 import KnowledgeBaseOnboardingBanner from "../components/KnowledgeBaseOnboardingBanner";
+import KnowledgeBaseSuggestionsBanner from "../components/KnowledgeBaseSuggestionsBanner";
 import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
 import PinyinGridView from "../components/PinyinGridView";
@@ -139,6 +141,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
   const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
+  const [isSuggestedWordsModalOpen, setIsSuggestedWordsModalOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const hasSyncedData = lastSyncedAt !== null;
@@ -513,13 +516,22 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         )
       }
     >
-      {words.length < ONBOARDING_WORD_THRESHOLD && (
-        <KnowledgeBaseOnboardingBanner onStart={() => setIsInitWizardOpen(true)} />
-      )}
+      {pageMode === "edit" &&
+        (words.length < ONBOARDING_WORD_THRESHOLD ? (
+          <KnowledgeBaseOnboardingBanner onStart={() => setIsInitWizardOpen(true)} />
+        ) : (
+          <KnowledgeBaseSuggestionsBanner
+            onStart={() => setIsSuggestedWordsModalOpen(true)}
+          />
+        ))}
       <KnowledgeBaseInitWizardModal
         isOpen={isInitWizardOpen}
         onClose={() => setIsInitWizardOpen(false)}
         onNavigate={onNavigate}
+      />
+      <AddSuggestedWordsModal
+        isOpen={isSuggestedWordsModalOpen}
+        onClose={() => setIsSuggestedWordsModalOpen(false)}
       />
       {quickSyncError && <p className="table-error">{quickSyncError}</p>}
       {pageMode === "view" && (

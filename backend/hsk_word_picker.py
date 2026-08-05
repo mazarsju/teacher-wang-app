@@ -55,6 +55,11 @@ def _ordered_unseen_words(user_id: str) -> list[HskWord]:
     return ordered
 
 
+def suggested_hsk_words(user_id: str, *, limit: int = 10) -> list[HskWord]:
+    """The ``limit`` most strategic unseen HSK words (level, then frequency)."""
+    return _ordered_unseen_words(user_id)[:limit]
+
+
 def _advance_index(
     decision: str,
     current_index: int,

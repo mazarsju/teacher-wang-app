@@ -2,7 +2,7 @@ import bootstrap  # noqa: F401
 import unittest
 
 from backend.extensions import db
-from backend.hsk_word_picker import pick_next_hsk_word
+from backend.hsk_word_picker import pick_next_hsk_word, suggested_hsk_words
 from backend.models import HskWord, Word
 from postgres_test_case import PostgresTestCase
 
@@ -212,6 +212,25 @@ class TestPickNextHskWordOrdering(PostgresTestCase):
         # Level 1 word wins even though it has a much higher (worse)
         # frequency than the level 2 word.
         self.assertEqual(result.next_word.word, "低频一级")
+
+
+class TestSuggestedHskWords(PostgresTestCase):
+    def setUp(self):
+        super().setUp()
+        self.words = seed_words(self.user_id)
+
+    def test_returns_the_top_words_ordered_by_level_then_frequency(self):
+        result = suggested_hsk_words(self.user_id, limit=3)
+
+        self.assertEqual([word.word for word in result], ["词0", "词1", "词2"])
+
+    def test_excludes_words_already_in_the_users_knowledge_base(self):
+        db.session.add(Word(user_id=self.user_id, word="词0", definition="known"))
+        db.session.commit()
+
+        result = suggested_hsk_words(self.user_id, limit=3)
+
+        self.assertEqual([word.word for word in result], ["词1", "词2", "词3"])
 
 
 if __name__ == "__main__":
