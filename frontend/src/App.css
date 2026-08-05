@@ -593,6 +593,11 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   max-width: 40rem;
 }
 
+.preferences-section--danger {
+  margin-top: 2.5rem;
+  max-width: 40rem;
+}
+
 .anki-warning {
   margin: 0 0 1.25rem;
   padding: 0.85rem 1rem;

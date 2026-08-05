@@ -436,4 +436,105 @@ describe("PreferencesPage", () => {
       expect(fetchHskLevelStatus).toHaveBeenCalled();
     });
   });
+
+  it("deletes the knowledge base from dangerous actions", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    const { store } = renderWithStore(<PreferencesPage />, {
+      preloadedState: {
+        ...syncedState,
+        characters: {
+          items: [
+            {
+              char: "爱",
+              pinyin: "ai4",
+              writting_known: true,
+              updated_at: "2026-07-12T12:00:00+00:00",
+            },
+          ],
+        },
+        words: {
+          items: [
+            {
+              word: "爱好",
+              definition: "hobby",
+              updated_at: "2026-07-12T12:00:00+00:00",
+              characters: ["爱", "好"],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Dangerous actions" }),
+    ).toBeInTheDocument();
+
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+
+        if (url.endsWith("/token-usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              total_tokens: 1250,
+              total_cost_usd: 0.000435,
+              plan: "free",
+              available_token: 98750,
+              max_allowed_token: 100000,
+              days: [
+                { date: "2026-07-18", tokens: 10 },
+                { date: "2026-07-19", tokens: 20 },
+                { date: "2026-07-20", tokens: 0 },
+                { date: "2026-07-21", tokens: 100 },
+                { date: "2026-07-22", tokens: 50 },
+                { date: "2026-07-23", tokens: 70 },
+                { date: "2026-07-24", tokens: 1000 },
+              ],
+            }),
+          });
+        }
+
+        if (
+          url.includes("/database/knowledge-base") &&
+          init?.method === "DELETE"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ message: "Knowledge base deleted" }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      },
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Delete knowledge base" }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("This action is irreversible.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/database/knowledge-base"),
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+    expect(store.getState().characters.items).toEqual([]);
+    expect(store.getState().words.items).toEqual([]);
+  });
 });
