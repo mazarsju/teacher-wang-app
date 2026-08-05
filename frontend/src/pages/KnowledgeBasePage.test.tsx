@@ -398,12 +398,16 @@ describe("KnowledgeBasePage", () => {
       const url = String(input);
 
       if (url.endsWith("/database/export")) {
+        const blob = new Blob(["test"], { type: "application/zip" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "teacher-wang-export.zip";
+        a.click();
+        URL.revokeObjectURL(url);
         return Promise.resolve({
           ok: true,
-          json: async () => ({
-            message: "Database exported to db.txt",
-            filename: "db.txt",
-          }),
+          blob: async () => blob,
         });
       }
 
@@ -428,10 +432,9 @@ describe("KnowledgeBasePage", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Export" }));
-
     await waitFor(() => {
       expect(
-        screen.getByText('The database has been saved in the "db.txt" file.'),
+        screen.getByText("The database has been downloaded as a zip file."),
       ).toBeInTheDocument();
     });
   });

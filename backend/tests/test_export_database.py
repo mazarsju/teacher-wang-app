@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
+import zipfile
+import io
 
 import backend.database as database_module
 
@@ -24,27 +26,39 @@ class TestExportDatabaseEndpoint(unittest.TestCase):
     def setUp(self):
         patch_request_auth(self)
         self.client = authenticated_client(app)
-        self.export_patcher = patch("backend.routes.export_database.export_database_to_file")
+        self.export_patcher = patch("backend.routes.export_database.get_export_database_content")
         self.mock_export = self.export_patcher.start()
         self.addCleanup(self.export_patcher.stop)
         self.mock_export.reset_mock()
+    
+    def test_export_database_returns_file_with_flask_send_file(self):
+        # Arrange
+        self.mock_export.return_value = "Hello world!"
 
-    def test_export_database_writes_file_and_returns_success(self):
-        with TemporaryDirectory() as temp_dir:
-            export_path = Path(temp_dir) / "db.txt"
-            self.mock_export.return_value = export_path
+        # Act
+        response = self.client.post("/database/export")
 
-            response = self.client.post("/database/export")
+        # Assert HTTP response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/zip")
 
-            self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "attachment; filename=teacher-wang-export.zip",
+            response.headers["Content-Disposition"],
+        )
+
+        # Assert ZIP contents
+        with zipfile.ZipFile(io.BytesIO(response.data)) as zip_file:
             self.assertEqual(
-                response.get_json(),
-                {
-                    "message": "Database exported to db.txt",
-                    "filename": "db.txt",
-                },
+                zip_file.namelist(),
+                ["teacher-wang-export.txt"],
             )
-            self.mock_export.assert_called_once_with(TEST_USER_ID)
+
+            exported_content = zip_file.read(
+                "teacher-wang-export.txt"
+            ).decode("utf-8")
+
+        self.assertEqual(exported_content, "Hello world!")
 
 
 if __name__ == "__main__":

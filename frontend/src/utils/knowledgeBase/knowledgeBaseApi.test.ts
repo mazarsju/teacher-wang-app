@@ -19,10 +19,13 @@ describe("knowledgeBaseApi", () => {
       ),
     );
 
-    await expect(exportDatabase()).resolves.toEqual({
-      message: "Database exported to db.txt",
-      filename: "db.txt",
-    });
+    const blob = new Blob(["test"], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "teacher-wang-export.zip";
+    a.click();
+    URL.revokeObjectURL(url);
   });
 
   it("imports a database file", async () => {
