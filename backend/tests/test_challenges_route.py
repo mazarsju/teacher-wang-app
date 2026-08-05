@@ -8,7 +8,7 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
-from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
+from auth_stub import TEST_USER_ID, authenticated_client, patch_request_auth  # noqa: E402
 
 
 class TestChallengesProgressEndpoint(unittest.TestCase):
@@ -31,6 +31,9 @@ class TestChallengesProgressEndpoint(unittest.TestCase):
         response = self.client.get("/challenges/progress")
 
         self.assertEqual(response.status_code, 200)
+        # S3 object keys must use the Cognito sub (current_user().id), not
+        # users.shortid (current_user_id()).
+        self.mock_progress.assert_called_once_with(TEST_USER_ID)
         self.assertEqual(
             response.get_json(),
             {
