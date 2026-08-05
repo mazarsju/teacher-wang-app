@@ -6,6 +6,8 @@ import CharacterFormModal, {
 import CharacterWordsModal from "../components/CharacterWordsModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
+import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
+import KnowledgeBaseOnboardingBanner from "../components/KnowledgeBaseOnboardingBanner";
 import Page from "../components/Page";
 import PinyinGridView from "../components/PinyinGridView";
 import Table, { type TableColumn } from "../components/Table";
@@ -101,6 +103,8 @@ function filterCharactersForView(
 
 type KnowledgeBaseMode = "view" | "edit";
 
+const ONBOARDING_WORD_THRESHOLD = 10;
+
 export default function KnowledgeBasePage() {
   const dispatch = useAppDispatch();
   const characters = useAppSelector((state) => state.characters.items);
@@ -131,6 +135,7 @@ export default function KnowledgeBasePage() {
   const [isImporting, setIsImporting] = useState(false);
   const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
+  const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const hasSyncedData = lastSyncedAt !== null;
@@ -505,6 +510,13 @@ export default function KnowledgeBasePage() {
         )
       }
     >
+      {words.length < ONBOARDING_WORD_THRESHOLD && (
+        <KnowledgeBaseOnboardingBanner onStart={() => setIsInitWizardOpen(true)} />
+      )}
+      <KnowledgeBaseInitWizardModal
+        isOpen={isInitWizardOpen}
+        onClose={() => setIsInitWizardOpen(false)}
+      />
       {quickSyncError && <p className="table-error">{quickSyncError}</p>}
       {pageMode === "view" && (
         <>

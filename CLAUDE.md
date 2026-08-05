@@ -10,6 +10,12 @@ screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 - Doc map and ADR archive process: `docs/README.md`.
 - Do not duplicate ADR rationale into this file or README — link instead.
 
+## Testing
+
+- After changing `frontend/src/**`, run `cd frontend && npx vitest run` and fix any failures before finishing.
+- After changing `backend/**`, run `python3 -m unittest discover -s backend/tests -v` and fix any failures before finishing.
+- Any new feature or element (component, page, route, util, service function) must ship with unit tests covering it — frontend (`*.test.tsx`/`*.test.ts` next to the source) and/or backend (`backend/tests/`), as applicable.
+
 ## Python command
 
 Applies to: `**/*.py`, `**/*.sh`.

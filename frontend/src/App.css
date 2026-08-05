@@ -676,6 +676,44 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   cursor: not-allowed;
 }
 
+.kb-onboarding-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #93c5fd;
+  border-radius: 0.75rem;
+  background: #eff6ff;
+}
+
+.kb-onboarding-banner-text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  color: #1e40af;
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.kb-onboarding-banner-button {
+  flex-shrink: 0;
+  border: 1px solid #2563eb;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #1e40af;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+.kb-onboarding-banner-button:hover {
+  background: #dbeafe;
+}
+
 .anki-deck-list {
   list-style: none;
   margin: 0;

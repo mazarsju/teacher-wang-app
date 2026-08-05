@@ -101,4 +101,48 @@ describe("HomePage", () => {
       expect(screen.getByText(/Failed to load/)).toBeInTheDocument();
     });
   });
+
+  it("shows the onboarding banner and opens the init wizard when few words are known", async () => {
+    const user = userEvent.setup();
+    renderWithStore(<HomePage />, {
+      preloadedState: {
+        ...syncedState,
+        words: {
+          items: [
+            {
+              word: "爱好",
+              definition: "hobby",
+              updated_at: "2026-07-12T12:00:00+00:00",
+              characters: ["爱", "好"],
+            },
+          ],
+        },
+      },
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: "Start building your knowledge base" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Build your knowledge base" }),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the onboarding banner once enough words are known", () => {
+    const words = Array.from({ length: 10 }, (_, index) => ({
+      word: `word-${index}`,
+      definition: null,
+      updated_at: "2026-07-12T12:00:00+00:00",
+      characters: [] as string[],
+    }));
+
+    renderWithStore(<HomePage />, {
+      preloadedState: { ...syncedState, words: { items: words } },
+    });
+
+    expect(
+      screen.queryByRole("button", { name: "Start building your knowledge base" }),
+    ).not.toBeInTheDocument();
+  });
 });

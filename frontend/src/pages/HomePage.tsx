@@ -1,18 +1,24 @@
 import { useMemo, useState } from "react";
+import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
+import KnowledgeBaseOnboardingBanner from "../components/KnowledgeBaseOnboardingBanner";
 import MissingHskCharactersModal from "../components/MissingHskCharactersModal";
 import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppSelector } from "../store/hooks";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
 
+const ONBOARDING_WORD_THRESHOLD = 10;
+
 export default function HomePage() {
   const characters = useAppSelector((state) => state.characters.items);
+  const words = useAppSelector((state) => state.words.items);
   const hskLevelStatus = useAppSelector((state) => state.hsk.status);
   const syncStatus = useAppSelector((state) => state.sync.status);
   const syncError = useAppSelector((state) => state.sync.error);
   const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
   const [isMissingModalOpen, setIsMissingModalOpen] = useState(false);
   const [isHskInfoOpen, setIsHskInfoOpen] = useState(false);
+  const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
 
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
@@ -56,6 +62,13 @@ export default function HomePage() {
 
   return (
     <Page title="Home">
+      {words.length < ONBOARDING_WORD_THRESHOLD && (
+        <KnowledgeBaseOnboardingBanner onStart={() => setIsInitWizardOpen(true)} />
+      )}
+      <KnowledgeBaseInitWizardModal
+        isOpen={isInitWizardOpen}
+        onClose={() => setIsInitWizardOpen(false)}
+      />
       {isLoading && <p>Loading your progress...</p>}
       {error && <p className="table-error">{error}</p>}
       {!isLoading && !error && hskLevelStatus !== null && (
