@@ -154,6 +154,36 @@ describe("KnowledgeBasePage", () => {
     ).toBeTruthy();
   });
 
+  it("shows the onboarding banner and opens the init wizard when few words are known", async () => {
+    const user = userEvent.setup();
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+
+    await user.click(
+      screen.getByRole("button", { name: "Start building your knowledge base" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Build your knowledge base" }),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the onboarding banner once enough words are known", () => {
+    const manyWords = Array.from({ length: 10 }, (_, index) => ({
+      word: `word-${index}`,
+      definition: null,
+      updated_at: "2026-07-12T12:00:00+00:00",
+      characters: [] as string[],
+    }));
+
+    renderWithStore(<KnowledgeBasePage />, {
+      preloadedState: { ...syncedState, words: { items: manyWords } },
+    });
+
+    expect(
+      screen.queryByRole("button", { name: "Start building your knowledge base" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("switches between edit and view modes", async () => {
     const user = userEvent.setup();
 
