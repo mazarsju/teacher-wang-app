@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
-import { InfoIcon, SettingsIcon, SyncIcon } from "../components/icons";
+import ConfirmModal from "../components/ConfirmModal";
+import { InfoIcon, SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
-import { syncAppData } from "../store/thunks/syncAppData";
+import { resetKnowledgeBaseData, syncAppData } from "../store/thunks/syncAppData";
 import {
   ANKI_DECK_LABELS,
   ANKI_DECK_ORDER,
@@ -17,6 +18,7 @@ import {
 import type { TokenUsageSummary } from "../types/tokenUsage";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
 import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
+import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
 
 function formatDayLabel(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
@@ -60,6 +62,9 @@ export default function PreferencesPage() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [setupKind, setSetupKind] = useState<AnkiDeckKind | null>(null);
   const [syncKind, setSyncKind] = useState<AnkiDeckKind | null>(null);
+  const [isDeletingKnowledgeBase, setIsDeletingKnowledgeBase] = useState(false);
+  const [isDeleteKnowledgeBaseConfirmOpen, setIsDeleteKnowledgeBaseConfirmOpen] =
+    useState(false);
 
   const loadTokenUsage = useCallback(async () => {
     setExtrasError(null);
@@ -115,6 +120,23 @@ export default function PreferencesPage() {
       return;
     }
     await refreshAnkiStatus();
+  }
+
+  async function handleConfirmDeleteKnowledgeBase() {
+    setIsDeleteKnowledgeBaseConfirmOpen(false);
+    setIsDeletingKnowledgeBase(true);
+    try {
+      await deleteKnowledgeBase();
+      dispatch(resetKnowledgeBaseData());
+    } catch (deleteError) {
+      setExtrasError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Failed to delete knowledge base.",
+      );
+    } finally {
+      setIsDeletingKnowledgeBase(false);
+    }
   }
 
   const maxDailyTokens = Math.max(
@@ -291,6 +313,32 @@ export default function PreferencesPage() {
         </section>
       )}
 
+      {!isLoading && (
+        <section className="preferences-section preferences-section--danger">
+          <h2 className="preferences-section-title">Dangerous actions</h2>
+          <p className="preferences-section-description">
+            These actions are irreversible. Export your knowledge base first if
+            you may need it later.
+          </p>
+          <button
+            type="button"
+            className="page-mode-button--danger"
+            onClick={() => setIsDeleteKnowledgeBaseConfirmOpen(true)}
+            disabled={isDeletingKnowledgeBase}
+          >
+            <TrashIcon className="chat-modal-clear-icon" />
+            Delete knowledge base
+          </button>
+        </section>
+      )}
+
+      <ConfirmModal
+        isOpen={isDeleteKnowledgeBaseConfirmOpen}
+        message="Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it."
+        danger={true}
+        onCancel={() => setIsDeleteKnowledgeBaseConfirmOpen(false)}
+        onConfirm={() => void handleConfirmDeleteKnowledgeBase()}
+      />
       <AnkiConnectGuideModal
         isOpen={isGuideOpen}
         onClose={() => {
