@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
+import AnkiSyncHelpModal from "../components/AnkiSyncHelpModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { InfoIcon, SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
@@ -60,6 +61,7 @@ export default function PreferencesPage() {
   const [isTokenUsageLoading, setIsTokenUsageLoading] = useState(true);
   const [extrasError, setExtrasError] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isSyncHelpOpen, setIsSyncHelpOpen] = useState(false);
   const [setupKind, setSetupKind] = useState<AnkiDeckKind | null>(null);
   const [syncKind, setSyncKind] = useState<AnkiDeckKind | null>(null);
   const [isDeletingKnowledgeBase, setIsDeletingKnowledgeBase] = useState(false);
@@ -159,6 +161,9 @@ export default function PreferencesPage() {
     kind,
     label: ANKI_DECK_LABELS[kind],
   }));
+  const hasUnsynchronizedDeck = deckRows.some(
+    ({ kind }) => ankiStatus.decks[kind].status === "not_synchronized",
+  );
 
   return (
     <Page title="Preferences">
@@ -186,6 +191,25 @@ export default function PreferencesPage() {
                   aria-label="How to set up AnkiConnect"
                   title="How to set up AnkiConnect"
                   onClick={() => setIsGuideOpen(true)}
+                >
+                  <InfoIcon className="home-hsk-info-icon" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {hasUnsynchronizedDeck && (
+            <div className="anki-warning" role="status">
+              <div className="anki-warning-title-row">
+                <p className="anki-warning-text">
+                  Struggling with your Anki setup? Click here for more info
+                </p>
+                <button
+                  type="button"
+                  className="home-hsk-info-button"
+                  aria-label="Anki synchronization help"
+                  title="Anki synchronization help"
+                  onClick={() => setIsSyncHelpOpen(true)}
                 >
                   <InfoIcon className="home-hsk-info-icon" />
                 </button>
@@ -360,6 +384,10 @@ export default function PreferencesPage() {
         kind={syncKind}
         onCancel={() => setSyncKind(null)}
         onSynced={(direction) => void handleSyncCompleted(direction)}
+      />
+      <AnkiSyncHelpModal
+        isOpen={isSyncHelpOpen}
+        onClose={() => setIsSyncHelpOpen(false)}
       />
     </Page>
   );

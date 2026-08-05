@@ -194,6 +194,68 @@ describe("PreferencesPage", () => {
     expect(screen.getByText(/webCorsOriginList/)).toBeInTheDocument();
   });
 
+  it("shows sync help banner and gotchas modal when a deck is not synchronized", async () => {
+    const user = userEvent.setup();
+    const connectedStatus: AnkiStatus = {
+      connected: true,
+      synchronization_status: "not_synchronized",
+      pending_push_estimate: 0,
+      decks: {
+        mandarin_vocabulary: {
+          status: "not_synchronized",
+          deck_name: "Vocab",
+          model_name: "Vocab",
+          fields: {},
+        },
+        mandarin_writting: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+        },
+      },
+    };
+    fetchAnkiStatus.mockResolvedValue(connectedStatus);
+
+    renderWithStore(<PreferencesPage />, {
+      preloadedState: { ...syncedState, anki: { status: connectedStatus } },
+    });
+
+    await screen.findByRole("heading", { name: "Anki synchronization" });
+    expect(
+      screen.getByText(
+        "Struggling with your Anki setup? Click here for more info",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Anki synchronization help" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Anki synchronization gotchas" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/have a "definition"/)).toBeInTheDocument();
+    expect(screen.getByText(/correct syntax for pinyin/)).toBeInTheDocument();
+    expect(screen.getByText(/detected automatically/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(
+      screen.queryByRole("heading", { name: "Anki synchronization gotchas" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the sync help banner when all decks are synchronized or not configured", async () => {
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    await screen.findByRole("heading", { name: "Anki synchronization" });
+    expect(
+      screen.queryByText(
+        "Struggling with your Anki setup? Click here for more info",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not expose LLM configuration controls", async () => {
     renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
