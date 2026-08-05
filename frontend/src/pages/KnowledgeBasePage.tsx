@@ -12,6 +12,7 @@ import Table, { type TableColumn } from "../components/Table";
 import type { Character } from "../types/character";
 import type { Word } from "../types/word";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { resetKnowledgeBaseData } from "../store/thunks/syncAppData";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
 import {
   removeCharacter,
@@ -217,7 +218,7 @@ export default function KnowledgeBasePage() {
       setIsDeleting(true);
       try {
         await deleteKnowledgeBase();
-        // TODO dispatch(resetKnowledgeBase());
+        dispatch(resetKnowledgeBaseData());
       } catch (deleteError) {
         setMutationError(deleteError instanceof Error ? deleteError.message : "Failed to delete database.");
       } finally {
@@ -595,7 +596,7 @@ export default function KnowledgeBasePage() {
       />
       <ConfirmModal
         isOpen={isDeletingKnowledgeBaseConfirmOpen}
-        message="Are you sure you want to delete the knowledge base?"
+        message="Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it."
         danger={true}
         onCancel={() => setIsDeletingKnowledgeBaseConfirmOpen(false)}
         onConfirm={() => void handleConfirmDeleteKnowledgeBase()}

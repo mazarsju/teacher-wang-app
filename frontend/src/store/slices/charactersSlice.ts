@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Character } from "../../types/character";
-import { resetAppData, syncAppData } from "../thunks/syncAppData";
+import { resetAppData, syncAppData, resetKnowledgeBaseData } from "../thunks/syncAppData";
 
 export type CharactersState = {
   items: Character[];
@@ -42,7 +42,8 @@ const charactersSlice = createSlice({
       .addCase(syncAppData.fulfilled, (state, action) => {
         state.items = sortCharacters(action.payload.characters);
       })
-      .addCase(resetAppData, () => initialState);
+      .addCase(resetAppData, () => initialState)
+      .addCase(resetKnowledgeBaseData, () => initialState);
   },
 });
 

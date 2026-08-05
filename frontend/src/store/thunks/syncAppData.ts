@@ -19,6 +19,8 @@ export type SyncedAppData = {
 
 export const resetAppData = createAction("appData/reset");
 
+export const resetKnowledgeBaseData = createAction("knowledgeBaseData/reset");
+
 export const syncAppData = createAsyncThunk(
   "appData/sync",
   async (): Promise<SyncedAppData> => {

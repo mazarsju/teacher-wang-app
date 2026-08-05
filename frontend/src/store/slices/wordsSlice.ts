@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Word } from "../../types/word";
-import { resetAppData, syncAppData } from "../thunks/syncAppData";
+import { resetAppData, resetKnowledgeBaseData, syncAppData } from "../thunks/syncAppData";
 
 export type WordsState = {
   items: Word[];
@@ -40,7 +40,8 @@ const wordsSlice = createSlice({
       .addCase(syncAppData.fulfilled, (state, action) => {
         state.items = sortWords(action.payload.words);
       })
-      .addCase(resetAppData, () => initialState);
+      .addCase(resetAppData, () => initialState)
+      .addCase(resetKnowledgeBaseData, () => initialState);
   },
 });
 
