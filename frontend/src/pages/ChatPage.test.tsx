@@ -1,5 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactElement } from "react";
+import { renderWithStore } from "../test/renderWithStore";
 import ChatPage from "./ChatPage";
 
 const DEFAULT_PROGRESS = [
@@ -8,6 +10,32 @@ const DEFAULT_PROGRESS = [
   { id: "challenge-hotel", completed: false },
   { id: "challenge-shop", completed: false },
 ];
+
+const UNLOCKED_STATE = {
+  characters: {
+    items: Array.from({ length: 50 }, (_, index) => ({
+      char: `字${index}`,
+      pinyin: "zi4",
+      writting_known: false,
+      updated_at: "2026-07-12T12:00:00+00:00",
+    })),
+  },
+  hsk: {
+    status: {
+      current_level: 2,
+      next_level: 3,
+      characters_to_next_level: 10,
+      progress_to_next_level: 50,
+      missing_characters: [],
+      max_level: 7,
+      completion_ratio: 0.85,
+    },
+  },
+};
+
+function render(ui: ReactElement) {
+  return renderWithStore(ui, { preloadedState: UNLOCKED_STATE });
+}
 
 describe("ChatPage", () => {
   beforeEach(() => {
@@ -306,5 +334,54 @@ describe("ChatPage", () => {
         }),
       ).toBeInTheDocument();
     });
+  });
+
+  it("shows a knowledge base banner and hides Xiao Ming below 50 characters", () => {
+    renderWithStore(<ChatPage onNavigate={vi.fn()} />, {
+      preloadedState: {
+        characters: { items: [] },
+        hsk: { status: null },
+      },
+    });
+
+    expect(
+      screen.getByText(/Build your knowledge base to unlock more people/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Teacher Wang/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Xiao Ming/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("navigates to the knowledge base page from the banner", async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    renderWithStore(<ChatPage onNavigate={onNavigate} />, {
+      preloadedState: {
+        characters: { items: [] },
+        hsk: { status: null },
+      },
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: "Go to knowledge base" }),
+    );
+
+    expect(onNavigate).toHaveBeenCalledWith("knowledge-base");
+  });
+
+  it("hides challenges above the user's achieved HSK level", () => {
+    renderWithStore(<ChatPage />, {
+      preloadedState: {
+        ...UNLOCKED_STATE,
+        hsk: { status: { ...UNLOCKED_STATE.hsk.status, current_level: 1 } },
+      },
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /Waiter/ }),
+    ).not.toBeInTheDocument();
   });
 });

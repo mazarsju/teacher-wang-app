@@ -17,6 +17,7 @@ export const RESTAURANT_CHALLENGE: Challenge = {
     { id: "ask-bill", label: "Ask for the bill" },
     { id: "pay-bill", label: "Pay the bill" },
   ],
+  hskLevel: 2,
 };
 
 export const TAXI_CHALLENGE: Challenge = {
@@ -36,6 +37,7 @@ export const TAXI_CHALLENGE: Challenge = {
     { id: "ask-fare", label: "Ask how much the ride costs" },
     { id: "pay-fare", label: "Pay for the ride" },
   ],
+  hskLevel: 2,
 };
 
 export const HOTEL_CHALLENGE: Challenge = {
@@ -55,6 +57,7 @@ export const HOTEL_CHALLENGE: Challenge = {
     { id: "ask-breakfast", label: "Ask what time breakfast starts" },
     { id: "check-out", label: "Check out of the hotel" },
   ],
+  hskLevel: 2,
 };
 
 export const SHOP_CHALLENGE: Challenge = {
@@ -74,6 +77,7 @@ export const SHOP_CHALLENGE: Challenge = {
     { id: "ask-different-size", label: "Ask for a different size" },
     { id: "pay-item", label: "Pay for the item" },
   ],
+  hskLevel: 2,
 };
 
 export const CHALLENGES: Challenge[] = [

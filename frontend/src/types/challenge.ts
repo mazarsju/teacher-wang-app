@@ -11,6 +11,7 @@ export type Challenge = {
   description: string;
   character: ChatCharacter;
   tasks: ChallengeTask[];
+  hskLevel: number;
 };
 
 export type ChallengeProgressEntry = {

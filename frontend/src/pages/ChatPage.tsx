@@ -4,13 +4,19 @@ import ChatCharacterCard, {
   type ChatCharacter,
 } from "../components/ChatCharacterCard";
 import ChatModal from "../components/ChatModal";
+import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
+import { useAppSelector } from "../store/hooks";
 import { CHALLENGES } from "../data/challenges";
-import { CHAT_CHARACTERS } from "../data/chatCharacters";
+import { CHAT_CHARACTERS, TEACHER_WANG } from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
 import { fetchChallengesProgress } from "../utils/aiChat/challengesApi";
 
-export default function ChatPage() {
+const KB_CHARACTER_THRESHOLD = 50;
+
+type ChatPageProps = { onNavigate?: (page: PageId) => void };
+
+export default function ChatPage({ onNavigate }: ChatPageProps) {
   const [selectedCharacter, setSelectedCharacter] =
     useState<ChatCharacter | null>(null);
   const [selectedChallenge, setSelectedChallenge] =
@@ -18,6 +24,18 @@ export default function ChatPage() {
   const [completedChallengeIds, setCompletedChallengeIds] = useState<
     Set<string>
   >(() => new Set());
+
+  const characterCount = useAppSelector((state) => state.characters.items.length);
+  const currentHskLevel = useAppSelector(
+    (state) => state.hsk.status?.current_level ?? 0,
+  );
+  const hasEnoughCharacters = characterCount >= KB_CHARACTER_THRESHOLD;
+  const visibleCharacters = hasEnoughCharacters
+    ? CHAT_CHARACTERS
+    : [TEACHER_WANG];
+  const visibleChallenges = CHALLENGES.filter(
+    (challenge) => challenge.hskLevel <= currentHskLevel,
+  );
 
   const loadChallengeProgress = useCallback(async () => {
     try {
@@ -54,9 +72,26 @@ export default function ChatPage() {
         challengeTitle={selectedChallenge?.title}
       />
 
+      {!hasEnoughCharacters && (
+        <div className="kb-onboarding-banner" role="status">
+          <p className="kb-onboarding-banner-text">
+            Build your knowledge base to unlock more people to talk to!
+          </p>
+          {onNavigate && (
+            <button
+              type="button"
+              className="kb-onboarding-banner-button"
+              onClick={() => onNavigate("knowledge-base")}
+            >
+              Go to knowledge base
+            </button>
+          )}
+        </div>
+      )}
+
       <p className="chat-intro">Who do you want to speak with today?</p>
       <div className="chat-character-grid">
-        {CHAT_CHARACTERS.map((character) => (
+        {visibleCharacters.map((character) => (
           <ChatCharacterCard
             key={character.id}
             character={character}
@@ -73,7 +108,7 @@ export default function ChatPage() {
           Practice real-life conversations with guided tasks.
         </p>
         <div className="challenge-card-grid">
-          {CHALLENGES.map((challenge) => (
+          {visibleChallenges.map((challenge) => (
             <ChallengeCard
               key={challenge.id}
               challenge={challenge}
