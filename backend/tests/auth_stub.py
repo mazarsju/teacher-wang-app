@@ -7,7 +7,7 @@ away, so they stub token verification and tenant resolution instead.
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from flask import Flask, g
 from flask.testing import FlaskClient
@@ -52,6 +52,7 @@ def stub_current_user() -> None:
     g.cognito_claims = TEST_CLAIMS
     g.cognito_sub = TEST_USER_ID
     g.current_user_id = TEST_USER_ID
+    g.current_user = MagicMock(id=TEST_USER_ID)
 
 
 def patch_request_auth(test_case) -> None:
