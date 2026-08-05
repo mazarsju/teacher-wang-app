@@ -14,7 +14,9 @@ import {
   hasStoredSession,
 } from "./utils/auth/tokenStorage";
 
-const PAGES: Record<PageId, ComponentType> = {
+type PageProps = { onNavigate?: (page: PageId) => void };
+
+const PAGES: Record<PageId, ComponentType<PageProps>> = {
   home: HomePage,
   "knowledge-base": KnowledgeBasePage,
   chat: ChatPage,
@@ -73,7 +75,7 @@ export default function App() {
         isSyncing={syncStatus === "loading"}
       />
       <main className="app-main">
-        <ActivePage />
+        <ActivePage onNavigate={setActivePage} />
       </main>
     </div>
   );
