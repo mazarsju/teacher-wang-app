@@ -5,5 +5,4 @@ export type HskWord = {
   frequency: number;
   pinyin: string;
   definition: string;
-  characters: string[];
 };

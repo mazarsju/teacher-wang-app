@@ -8,6 +8,74 @@ function matchesApiPath(url: string, path: string) {
   return new URL(url, "http://localhost").pathname === expected;
 }
 
+function jsonBody(init?: RequestInit) {
+  return init?.body ? JSON.parse(String(init.body)) : {};
+}
+
+function hskWord(word: string, pinyin: string, definition: string, frequency = 1) {
+  return { id: `${word}|${pinyin}`, word, pinyin, definition, level: 1, frequency };
+}
+
+type PickState = { current_index: number; previous_index: number; increment: number };
+
+function nextWordResponse(
+  word: ReturnType<typeof hskWord> | null,
+  state: PickState,
+  wordsBetween: ReturnType<typeof hskWord>[] = [],
+) {
+  return Promise.resolve({
+    ok: true,
+    json: async () => ({
+      word,
+      current_index: state.current_index,
+      previous_index: state.previous_index,
+      increment: state.increment,
+      words_between: wordsBetween,
+    }),
+  });
+}
+
+function defaultFetchResponse(url: URL, init?: RequestInit) {
+  if (url.pathname.endsWith("/characters/bulk") && init?.method === "POST") {
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({ message: "File received" }),
+    });
+  }
+  if (url.pathname.startsWith("/api/words/") && init?.method === "PATCH") {
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        word: decodeURIComponent(url.pathname.replace("/api/words/", "")),
+        definition: jsonBody(init).definition,
+        updated_at: "2026-01-01T00:00:00+00:00",
+      }),
+    });
+  }
+  if (matchesApiPath(url.pathname, "/characters")) {
+    return Promise.resolve({ ok: true, json: async () => [] });
+  }
+  if (matchesApiPath(url.pathname, "/words")) {
+    return Promise.resolve({ ok: true, json: async () => [] });
+  }
+  if (matchesApiPath(url.pathname, "/hsk-level")) {
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        current_level: null,
+        next_level: 1,
+        characters_to_next_level: 1,
+        progress_to_next_level: 0,
+        missing_characters: [],
+        max_level: 7,
+        completion_ratio: 0,
+      }),
+    });
+  }
+
+  return Promise.resolve({ ok: false, json: async () => ({}) });
+}
+
 describe("KnowledgeBaseInitWizardModal", () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -237,62 +305,26 @@ describe("KnowledgeBaseInitWizardModal", () => {
   it("lets the user pick, skip, adjust, and confirm smart-creation words", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
-    const hskWordPool = [
-      { word: "爱", pinyin: "ai4", definition: "to love" },
-      { word: "好", pinyin: "hao3", definition: "good" },
-    ];
+    const ai = hskWord("爱", "ai4", "to love", 0);
+    const hao = hskWord("好", "hao3", "good", 2);
 
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), "http://localhost");
-
-      if (url.pathname === "/api/hsk-words/next") {
-        const excluded = new Set(
-          (url.searchParams.get("exclude") ?? "").split(",").filter(Boolean),
-        );
-        const next = hskWordPool.find((entry) => !excluded.has(entry.word));
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            word: next
-              ? {
-                  id: `${next.word}|${next.pinyin}`,
-                  level: 1,
-                  frequency: 1,
-                  characters: [...next.word],
-                  ...next,
-                }
-              : null,
-          }),
-        });
-      }
-      if (url.pathname === "/api/characters/bulk" && init?.method === "POST") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ message: "File received" }),
-        });
-      }
-      if (matchesApiPath(url.pathname, "/characters")) {
-        return Promise.resolve({ ok: true, json: async () => [] });
-      }
-      if (matchesApiPath(url.pathname, "/words")) {
-        return Promise.resolve({ ok: true, json: async () => [] });
-      }
-      if (matchesApiPath(url.pathname, "/hsk-level")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            current_level: null,
-            next_level: 1,
-            characters_to_next_level: 1,
-            progress_to_next_level: 0,
-            missing_characters: [],
-            max_level: 7,
-            completion_ratio: 0,
-          }),
-        });
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
       }
 
-      return Promise.resolve({ ok: false, json: async () => ({}) });
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(ai, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+      if (body.decision === "can_write") {
+        return nextWordResponse(hao, { current_index: 2, previous_index: 0, increment: 2 });
+      }
+      if (body.decision === "dont_know") {
+        return nextWordResponse(null, { current_index: 1, previous_index: 0, increment: 1 });
+      }
+      throw new Error(`Unexpected decision: ${body.decision}`);
     });
 
     const onClose = vi.fn();
@@ -308,12 +340,32 @@ describe("KnowledgeBaseInitWizardModal", () => {
     await user.click(screen.getByRole("button", { name: "Can write it" }));
 
     expect(await screen.findByText("好")).toBeInTheDocument();
+    expect(jsonBody(fetchMock.mock.calls.at(-1)?.[1])).toEqual({
+      decision: "can_write",
+      current_index: 0,
+      previous_index: -1,
+      increment: 1,
+      exclude: [],
+    });
+
     await user.click(screen.getByRole("button", { name: "Don't know it" }));
 
     await waitFor(() => {
       expect(
-        screen.getByText("No more words available right now."),
+        screen.getByText(
+          "Your quick setup is done! Please review the list below.",
+        ),
       ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole("button", { name: "Don't know it" }),
+    ).not.toBeInTheDocument();
+    expect(jsonBody(fetchMock.mock.calls.at(-1)?.[1])).toEqual({
+      decision: "dont_know",
+      current_index: 2,
+      previous_index: 0,
+      increment: 2,
+      exclude: ["爱"],
     });
 
     expect(screen.getByRole("cell", { name: "爱" })).toBeInTheDocument();
@@ -336,37 +388,116 @@ describe("KnowledgeBaseInitWizardModal", () => {
     expect(bulkImportCall).toBeDefined();
     const uploadedFile = (bulkImportCall?.[1]?.body as FormData).get("file") as File;
     expect(await uploadedFile.text()).toBe("爱;ai;4;false;爱");
+
+    // The bulk-import line format has no slot for a word's definition, so
+    // it must be patched in separately after the import.
+    const definitionPatchCall = fetchMock.mock.calls.find(
+      ([requestInput, requestInit]) =>
+        String(requestInput).endsWith("/words/%E7%88%B1") &&
+        requestInit?.method === "PATCH",
+    );
+    expect(definitionPatchCall).toBeDefined();
+    expect(jsonBody(definitionPatchCall?.[1])).toEqual({
+      definition: "to love",
+    });
+  });
+
+  it("adds words a jump skipped over as already known, tagged by the decision", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    const first = hskWord("一", "yi1", "one", 0);
+    const skipped = hskWord("二", "er4", "two", 1);
+    const second = hskWord("三", "san1", "three", 2);
+    const skippedAfterRecognize = hskWord("四", "si4", "four", 3);
+    const third = hskWord("五", "wu3", "five", 4);
+
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://localhost");
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
+      }
+
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(first, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+      if (body.decision === "can_write") {
+        return nextWordResponse(
+          second,
+          { current_index: 2, previous_index: 0, increment: 2 },
+          [skipped],
+        );
+      }
+      if (body.decision === "can_recognize") {
+        return nextWordResponse(
+          third,
+          { current_index: 4, previous_index: 2, increment: 2 },
+          [skippedAfterRecognize],
+        );
+      }
+      throw new Error(`Unexpected decision: ${body.decision}`);
+    });
+
+    renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Smart creation based on what you already know",
+      }),
+    );
+
+    expect(await screen.findByText("一")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Can write it" }));
+
+    // "一" (decided) and "二" (skipped over by the jump) both land in the
+    // review list, marked as known-to-write since the decision was "Can
+    // write it". "三" becomes the next candidate shown in Part 2.
+    expect(await screen.findByText("三")).toBeInTheDocument();
+    const rows = screen.getAllByRole("row").slice(1); // drop the header row
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("一");
+    expect(rows[1]).toHaveTextContent("二");
+    for (const row of rows) {
+      expect(row.querySelector("input[type=checkbox]")).toBeChecked();
+    }
+
+    await user.click(screen.getByRole("button", { name: "Can recognize it" }));
+
+    // "三" (decided) and "四" (skipped) are added next, this time marked as
+    // not known-to-write since the decision was "Can recognize it". "五"
+    // becomes the next candidate shown in Part 2.
+    expect(await screen.findByText("五")).toBeInTheDocument();
+    const allRows = screen.getAllByRole("row").slice(1);
+    expect(allRows).toHaveLength(4);
+    expect(allRows[2]).toHaveTextContent("三");
+    expect(allRows[3]).toHaveTextContent("四");
+    expect(allRows[2].querySelector("input[type=checkbox]")).not.toBeChecked();
+    expect(allRows[3].querySelector("input[type=checkbox]")).not.toBeChecked();
+
+    // The "Can recognize it" request (sent right before this round's
+    // response) already excludes everything shown or auto-added in round 1.
+    expect(jsonBody(fetchMock.mock.calls.at(-1)?.[1]).exclude).toEqual([
+      "一",
+      "二",
+    ]);
   });
 
   it("removes a picked word from the review list", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
+    const ai = hskWord("爱", "ai4", "to love");
 
-    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), "http://localhost");
-
-      if (url.pathname === "/api/hsk-words/next") {
-        const excluded = url.searchParams.get("exclude") ?? "";
-        const word = excluded.includes("爱") ? null : "爱";
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            word: word
-              ? {
-                  id: "爱|ai4",
-                  word: "爱",
-                  level: 1,
-                  frequency: 1,
-                  pinyin: "ai4",
-                  definition: "to love",
-                  characters: ["爱"],
-                }
-              : null,
-          }),
-        });
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
       }
 
-      return Promise.resolve({ ok: false, json: async () => ({}) });
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(ai, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+      return nextWordResponse(null, { current_index: 2, previous_index: 0, increment: 2 });
     });
 
     renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
@@ -390,53 +521,173 @@ describe("KnowledgeBaseInitWizardModal", () => {
     ).toBeDisabled();
   });
 
+  it("always shows the full review table, with no expand/collapse control", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    const ai = hskWord("爱", "ai4", "to love");
+
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://localhost");
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
+      }
+
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(ai, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+      return nextWordResponse(null, { current_index: 2, previous_index: 0, increment: 2 });
+    });
+
+    renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Smart creation based on what you already know",
+      }),
+    );
+
+    expect(await screen.findByText("爱")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Can recognize it" }));
+    await screen.findByRole("cell", { name: "爱" });
+
+    expect(document.querySelector(".table-wrapper")).not.toHaveClass(
+      "table-wrapper--scrollable",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Expand" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Collapse" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("treats a repeated word as the end of the quick setup", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    const ai = hskWord("爱", "ai4", "to love", 0);
+
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://localhost");
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
+      }
+
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(ai, { current_index: 5, previous_index: 4, increment: 2 });
+      }
+      // The walk converged: it proposes the exact same word again instead
+      // of moving on.
+      return nextWordResponse(ai, { current_index: 5, previous_index: 4, increment: 1 });
+    });
+
+    renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Smart creation based on what you already know",
+      }),
+    );
+
+    expect(await screen.findByText("爱")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Don't know it" }));
+
+    expect(
+      await screen.findByText(
+        "Your quick setup is done! Please review the list below.",
+      ),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".wizard-word-picker-hanzi")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Don't know it" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Can recognize it" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Can write it" }),
+    ).not.toBeInTheDocument();
+    // "Don't know it" never adds a row, so the review list stays empty.
+    expect(screen.getByText("No words picked yet.")).toBeInTheDocument();
+  });
+
+  it("disables 'Can write it' for the rest of the session after the first 'Can recognize it'", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    const first = hskWord("爱", "ai4", "to love", 0);
+    const second = hskWord("好", "hao3", "good", 1);
+
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), "http://localhost");
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
+      }
+
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(first, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+      return nextWordResponse(second, { current_index: 2, previous_index: 0, increment: 2 });
+    });
+
+    renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Smart creation based on what you already know",
+      }),
+    );
+
+    expect(await screen.findByText("爱")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Can write it" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Can recognize it" }));
+
+    // Once a candidate word arrives after the "Can recognize it" click,
+    // "Can write it" stays disabled — not just because a fetch is in
+    // flight or there's no candidate — for the rest of the session.
+    expect(await screen.findByText("好")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Can write it" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Don't know it" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Can recognize it" }),
+    ).toBeEnabled();
+  });
+
   it("keeps showing the previous word, disabled, while the next one loads", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
+    const ai = hskWord("爱", "ai4", "to love");
+    const hao = hskWord("好", "hao3", "good", 2);
     let resolveSecondPick: (() => void) | null = null;
 
-    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), "http://localhost");
-
-      if (url.pathname === "/api/hsk-words/next") {
-        const excluded = url.searchParams.get("exclude") ?? "";
-        if (!excluded) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              word: {
-                id: "爱|ai4",
-                word: "爱",
-                level: 1,
-                frequency: 1,
-                pinyin: "ai4",
-                definition: "to love",
-                characters: ["爱"],
-              },
-            }),
-          });
-        }
-
-        return new Promise((resolve) => {
-          resolveSecondPick = () =>
-            resolve({
-              ok: true,
-              json: async () => ({
-                word: {
-                  id: "好|hao3",
-                  word: "好",
-                  level: 1,
-                  frequency: 2,
-                  pinyin: "hao3",
-                  definition: "good",
-                  characters: ["好"],
-                },
-              }),
-            });
-        });
+      if (url.pathname !== "/api/hsk-words/next") {
+        return defaultFetchResponse(url, init);
       }
 
-      return Promise.resolve({ ok: false, json: async () => ({}) });
+      const body = jsonBody(init);
+      if (body.decision == null) {
+        return nextWordResponse(ai, { current_index: 0, previous_index: -1, increment: 1 });
+      }
+
+      return new Promise((resolve) => {
+        resolveSecondPick = () =>
+          resolve({
+            ok: true,
+            json: async () => ({
+              word: hao,
+              current_index: 2,
+              previous_index: 0,
+              increment: 2,
+              words_between: [],
+            }),
+          });
+      });
     });
 
     renderWithStore(<KnowledgeBaseInitWizardModal isOpen onClose={() => {}} />);
@@ -451,15 +702,17 @@ describe("KnowledgeBaseInitWizardModal", () => {
     await user.click(screen.getByRole("button", { name: "Can write it" }));
 
     // While the next word is still loading, "爱" must stay on screen in the
-    // Part 2 card — not disappear into a "No more words" / blank flash —
-    // and the pick buttons must be disabled rather than removed, so Part 2
-    // doesn't jump. (It now also appears in the Part 3 table below, hence
-    // scoping the lookup to the card.)
+    // Part 2 card — not disappear into a "quick setup is done" / blank
+    // flash — and the pick buttons must be disabled rather than removed,
+    // so Part 2 doesn't jump. (It now also appears in the Part 3 table
+    // below, hence scoping the lookup to the card.)
     expect(
       document.querySelector(".wizard-word-picker-hanzi"),
     ).toHaveTextContent("爱");
     expect(
-      screen.queryByText("No more words available right now."),
+      screen.queryByText(
+        "Your quick setup is done! Please review the list below.",
+      ),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Don't know it" })).toBeDisabled();
     expect(

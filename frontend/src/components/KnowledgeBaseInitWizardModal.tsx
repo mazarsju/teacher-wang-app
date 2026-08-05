@@ -9,8 +9,15 @@ import {
   buildImportFileContent,
   type SmartWordRow,
 } from "../utils/knowledgeBase/buildImportLines";
-import { pickNextHskWord } from "../utils/knowledgeBase/hskWordsApi";
+import {
+  INITIAL_WORD_PICK_STATE,
+  pickNextHskWord,
+  type WordPickDecision,
+  type WordPickResponse,
+  type WordPickState,
+} from "../utils/knowledgeBase/hskWordsApi";
 import { importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import { updateWord } from "../utils/knowledgeBase/wordsApi";
 
 type KnowledgeBaseInitWizardModalProps = {
   isOpen: boolean;
@@ -32,12 +39,17 @@ export default function KnowledgeBaseInitWizardModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [candidateWord, setCandidateWord] = useState<HskWord | null>(null);
+  const [pickState, setPickState] = useState<WordPickState>(
+    INITIAL_WORD_PICK_STATE,
+  );
   const [isPickingWord, setIsPickingWord] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
   const [seenWords, setSeenWords] = useState<string[]>([]);
   const [smartWords, setSmartWords] = useState<SmartWordRow[]>([]);
   const [smartError, setSmartError] = useState<string | null>(null);
   const [isSmartSubmitting, setIsSmartSubmitting] = useState(false);
+  const [hasRecognizedOnly, setHasRecognizedOnly] = useState(false);
+  const [isSmartSetupDone, setIsSmartSetupDone] = useState(false);
 
   if (!isOpen) {
     return null;
@@ -47,9 +59,12 @@ export default function KnowledgeBaseInitWizardModal({
     setStep("choose");
     setImportError(null);
     setCandidateWord(null);
+    setPickState(INITIAL_WORD_PICK_STATE);
     setSeenWords([]);
     setSmartWords([]);
     setSmartError(null);
+    setHasRecognizedOnly(false);
+    setIsSmartSetupDone(false);
     onClose();
   }
 
@@ -88,12 +103,27 @@ export default function KnowledgeBaseInitWizardModal({
     }
   }
 
-  async function loadNextWord(exclude: string[]) {
+  // A word arriving twice in a row (or the walk running out of words
+  // entirely) means there's nothing more to usefully ask — the exponential
+  // walk has converged. Apply the result and flag the session as done
+  // instead of re-showing (or endlessly re-fetching) the same word.
+  function applyPickResult(result: WordPickResponse, previousWord: string | null) {
+    setPickState(result.state);
+    if (result.word === null || result.word.word === previousWord) {
+      setIsSmartSetupDone(true);
+      setCandidateWord(null);
+    } else {
+      setCandidateWord(result.word);
+    }
+  }
+
+  async function fetchInitialWord() {
     setIsPickingWord(true);
     setPickError(null);
 
     try {
-      setCandidateWord(await pickNextHskWord(exclude));
+      const result = await pickNextHskWord(INITIAL_WORD_PICK_STATE, null, []);
+      applyPickResult(result, null);
     } catch (error) {
       setPickError(
         error instanceof Error ? error.message : "Failed to pick a word.",
@@ -108,11 +138,22 @@ export default function KnowledgeBaseInitWizardModal({
     setSeenWords([]);
     setCandidateWord(null);
     setSmartError(null);
+    setPickState(INITIAL_WORD_PICK_STATE);
+    setHasRecognizedOnly(false);
+    setIsSmartSetupDone(false);
     setStep("smart");
-    void loadNextWord([]);
+    void fetchInitialWord();
   }
 
-  function recordWordPick(row: SmartWordRow | null) {
+  // Applies one of the three Part 2 decisions: doubles/shrinks the walk's
+  // step (see backend/hsk_word_picker.py), bulk-adds any words the walk
+  // jumped over as implicitly known, and fetches the next candidate. Keeps
+  // showing the current word (buttons just go disabled) until the next one
+  // is ready, so Part 2 doesn't collapse and jump between picks.
+  async function applyDecision(
+    decision: WordPickDecision,
+    knownToWrite: boolean | null,
+  ) {
     if (!candidateWord || isPickingWord) {
       return;
     }
@@ -120,46 +161,84 @@ export default function KnowledgeBaseInitWizardModal({
     if (seenWords.includes(candidateWord.word)) {
       // Already recorded (e.g. retrying after a failed pick) — just retry
       // loading the next word instead of recording it twice.
-      void loadNextWord(seenWords);
+      void fetchNextWord(decision, seenWords, candidateWord.word);
       return;
     }
 
-    const nextSeen = [...seenWords, candidateWord.word];
-    setSeenWords(nextSeen);
-    if (row) {
-      setSmartWords((previous) => [...previous, row]);
+    const decidedWord = candidateWord;
+    const decidedRow: SmartWordRow[] =
+      knownToWrite === null
+        ? []
+        : [
+            {
+              word: decidedWord.word,
+              pinyin: decidedWord.pinyin,
+              definition: decidedWord.definition,
+              knownToWrite,
+            },
+          ];
+
+    setIsPickingWord(true);
+    setPickError(null);
+
+    try {
+      const result = await pickNextHskWord(pickState, decision, seenWords);
+      const betweenRows: SmartWordRow[] = result.wordsBetween.map((word) => ({
+        word: word.word,
+        pinyin: word.pinyin,
+        definition: word.definition,
+        knownToWrite: decision === "can_write",
+      }));
+
+      if (decidedRow.length > 0 || betweenRows.length > 0) {
+        setSmartWords((previous) => [...previous, ...decidedRow, ...betweenRows]);
+      }
+      setSeenWords((previous) => [
+        ...previous,
+        decidedWord.word,
+        ...result.wordsBetween.map((word) => word.word),
+      ]);
+      applyPickResult(result, decidedWord.word);
+    } catch (error) {
+      setPickError(
+        error instanceof Error ? error.message : "Failed to pick a word.",
+      );
+    } finally {
+      setIsPickingWord(false);
     }
-    // Keep showing this word (and its picked state) until the next one is
-    // ready, so Part 2 doesn't collapse and jump between picks.
-    void loadNextWord(nextSeen);
+  }
+
+  async function fetchNextWord(
+    decision: WordPickDecision,
+    exclude: string[],
+    previousWord: string,
+  ) {
+    setIsPickingWord(true);
+    setPickError(null);
+
+    try {
+      const result = await pickNextHskWord(pickState, decision, exclude);
+      applyPickResult(result, previousWord);
+    } catch (error) {
+      setPickError(
+        error instanceof Error ? error.message : "Failed to pick a word.",
+      );
+    } finally {
+      setIsPickingWord(false);
+    }
   }
 
   function handleDontKnowWord() {
-    recordWordPick(null);
+    void applyDecision("dont_know", null);
   }
 
   function handleCanRecognizeWord() {
-    if (!candidateWord) {
-      return;
-    }
-    recordWordPick({
-      word: candidateWord.word,
-      pinyin: candidateWord.pinyin,
-      definition: candidateWord.definition,
-      knownToWrite: false,
-    });
+    setHasRecognizedOnly(true);
+    void applyDecision("can_recognize", false);
   }
 
   function handleCanWriteWord() {
-    if (!candidateWord) {
-      return;
-    }
-    recordWordPick({
-      word: candidateWord.word,
-      pinyin: candidateWord.pinyin,
-      definition: candidateWord.definition,
-      knownToWrite: true,
-    });
+    void applyDecision("can_write", true);
   }
 
   function toggleSmartWordKnownToWrite(word: string) {
@@ -189,6 +268,17 @@ export default function KnowledgeBaseInitWizardModal({
         { type: "text/plain" },
       );
       await importDatabase(file);
+      // The bulk-import format has no slot for a word's definition (see
+      // backend/routes/bulk_characters.py), so patch it in separately —
+      // words start out with an empty definition once the import above
+      // creates them.
+      await Promise.all(
+        smartWords
+          .filter((row) => row.definition.trim() !== "")
+          .map((row) =>
+            updateWord(row.word, { definition: row.definition.slice(0, 100) }),
+          ),
+      );
       await dispatch(syncAppData()).unwrap();
       resetAndClose();
     } catch (error) {
@@ -401,58 +491,58 @@ export default function KnowledgeBaseInitWizardModal({
               words you are about to add at any moment before confirming.
             </p>
 
-            <div className="wizard-word-picker">
-              {candidateWord && (
-                <div className="wizard-word-picker-word">
-                  <p className="wizard-word-picker-hanzi">{candidateWord.word}</p>
-                  <p className="wizard-word-picker-pinyin">{candidateWord.pinyin}</p>
-                  <p className="wizard-word-picker-definition">
-                    {candidateWord.definition}
-                  </p>
+            {isSmartSetupDone ? (
+              <p className="modal-message">
+                Your quick setup is done! Please review the list below.
+              </p>
+            ) : (
+              <div className="wizard-word-picker">
+                {candidateWord && (
+                  <div className="wizard-word-picker-word">
+                    <p className="wizard-word-picker-hanzi">{candidateWord.word}</p>
+                    <p className="wizard-word-picker-pinyin">{candidateWord.pinyin}</p>
+                    <p className="wizard-word-picker-definition">
+                      {candidateWord.definition}
+                    </p>
+                  </div>
+                )}
+                {isPickingWord && !candidateWord && (
+                  <p className="modal-message">Picking a word…</p>
+                )}
+                {pickError && <p className="table-error">{pickError}</p>}
+                <div className="wizard-word-picker-actions">
+                  <button
+                    type="button"
+                    className="modal-button-cancel"
+                    onClick={handleDontKnowWord}
+                    disabled={!candidateWord || isPickingWord}
+                  >
+                    Don't know it
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-button-confirm"
+                    onClick={handleCanRecognizeWord}
+                    disabled={!candidateWord || isPickingWord}
+                  >
+                    Can recognize it
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-button-confirm-primary"
+                    onClick={handleCanWriteWord}
+                    disabled={!candidateWord || isPickingWord || hasRecognizedOnly}
+                  >
+                    Can write it
+                  </button>
                 </div>
-              )}
-              {isPickingWord && !candidateWord && (
-                <p className="modal-message">Picking a word…</p>
-              )}
-              {pickError && <p className="table-error">{pickError}</p>}
-              {!isPickingWord && !pickError && !candidateWord && (
-                <p className="modal-message">
-                  No more words available right now.
-                </p>
-              )}
-              <div className="wizard-word-picker-actions">
-                <button
-                  type="button"
-                  className="modal-button-cancel"
-                  onClick={handleDontKnowWord}
-                  disabled={!candidateWord || isPickingWord}
-                >
-                  Don't know it
-                </button>
-                <button
-                  type="button"
-                  className="modal-button-confirm"
-                  onClick={handleCanRecognizeWord}
-                  disabled={!candidateWord || isPickingWord}
-                >
-                  Can recognize it
-                </button>
-                <button
-                  type="button"
-                  className="modal-button-confirm-primary"
-                  onClick={handleCanWriteWord}
-                  disabled={!candidateWord || isPickingWord}
-                >
-                  Can write it
-                </button>
               </div>
-            </div>
+            )}
 
             <Table
               columns={smartWordColumns}
               rows={smartWords}
               compact
-              maxVisibleRows={5}
               getRowKey={(row) => row.word}
               emptyMessage="No words picked yet."
               renderRowActions={(row) => (
