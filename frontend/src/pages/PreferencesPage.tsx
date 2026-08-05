@@ -165,79 +165,6 @@ export default function PreferencesPage() {
       {isLoading && <p>Loading preferences...</p>}
       {error && <p className="table-error">{error}</p>}
 
-      {!isLoading && tokenUsage && (
-        <section className="preferences-section preferences-section--usage">
-          <h2 className="preferences-section-title">Token usage</h2>
-          <p className="preferences-section-description">
-            Tokens consumed by chat and grammar-check LLM calls.
-          </p>
-
-          <p className="preferences-token-total">
-            <span className="preferences-token-total-label">Total tokens used</span>
-            <span className="preferences-token-total-value">
-              {formatTokenCount(tokenUsage.total_tokens)}
-            </span>
-          </p>
-
-          {tokenUsage.max_allowed_token !== null && remainingTokens !== null && (
-            <div
-              className="preferences-token-remaining"
-              aria-label="Remaining tokens"
-            >
-              <div className="preferences-token-remaining-header">
-                <span className="preferences-token-remaining-label">
-                  Remaining tokens
-                </span>
-                <span className="preferences-token-remaining-value">
-                  {formatTokenCount(remainingTokens)} /{" "}
-                  {formatTokenCount(tokenUsage.max_allowed_token)}
-                </span>
-              </div>
-              <div
-                className="preferences-token-remaining-track"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={tokenUsage.max_allowed_token}
-                aria-valuenow={remainingTokens}
-                aria-label="Remaining free-plan tokens"
-              >
-                <div
-                  className="preferences-token-remaining-fill"
-                  style={{ width: `${remainingPercent}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div
-            className="preferences-token-chart"
-            role="img"
-            aria-label="Token usage for the last 7 days"
-          >
-            {tokenUsage.days.map((day) => {
-              const heightPercent = (day.tokens / maxDailyTokens) * 100;
-              return (
-                <div key={day.date} className="preferences-token-chart-bar">
-                  <div className="preferences-token-chart-value">
-                    {formatTokenCount(day.tokens)}
-                  </div>
-                  <div className="preferences-token-chart-track">
-                    <div
-                      className="preferences-token-chart-fill"
-                      style={{ height: `${heightPercent}%` }}
-                      title={`${formatDayLabel(day.date)}: ${formatTokenCount(day.tokens)} tokens`}
-                    />
-                  </div>
-                  <div className="preferences-token-chart-label">
-                    {formatDayLabel(day.date)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {!isLoading && (
         <section className="preferences-section preferences-section--anki">
           <h2 className="preferences-section-title">Anki synchronization</h2>
@@ -310,6 +237,79 @@ export default function PreferencesPage() {
               );
             })}
           </ul>
+        </section>
+      )}
+
+{!isLoading && tokenUsage && (
+        <section className="preferences-section preferences-section--usage">
+          <h2 className="preferences-section-title">Token usage</h2>
+          <p className="preferences-section-description">
+            Tokens consumed by chat and grammar-check LLM calls.
+          </p>
+
+          <p className="preferences-token-total">
+            <span className="preferences-token-total-label">Total tokens used</span>
+            <span className="preferences-token-total-value">
+              {formatTokenCount(tokenUsage.total_tokens)}
+            </span>
+          </p>
+
+          {tokenUsage.max_allowed_token !== null && remainingTokens !== null && (
+            <div
+              className="preferences-token-remaining"
+              aria-label="Remaining tokens"
+            >
+              <div className="preferences-token-remaining-header">
+                <span className="preferences-token-remaining-label">
+                  Remaining tokens
+                </span>
+                <span className="preferences-token-remaining-value">
+                  {formatTokenCount(remainingTokens)} /{" "}
+                  {formatTokenCount(tokenUsage.max_allowed_token)}
+                </span>
+              </div>
+              <div
+                className="preferences-token-remaining-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={tokenUsage.max_allowed_token}
+                aria-valuenow={remainingTokens}
+                aria-label="Remaining free-plan tokens"
+              >
+                <div
+                  className="preferences-token-remaining-fill"
+                  style={{ width: `${remainingPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div
+            className="preferences-token-chart"
+            role="img"
+            aria-label="Token usage for the last 7 days"
+          >
+            {tokenUsage.days.map((day) => {
+              const heightPercent = (day.tokens / maxDailyTokens) * 100;
+              return (
+                <div key={day.date} className="preferences-token-chart-bar">
+                  <div className="preferences-token-chart-value">
+                    {formatTokenCount(day.tokens)}
+                  </div>
+                  <div className="preferences-token-chart-track">
+                    <div
+                      className="preferences-token-chart-fill"
+                      style={{ height: `${heightPercent}%` }}
+                      title={`${formatDayLabel(day.date)}: ${formatTokenCount(day.tokens)} tokens`}
+                    />
+                  </div>
+                  <div className="preferences-token-chart-label">
+                    {formatDayLabel(day.date)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
 

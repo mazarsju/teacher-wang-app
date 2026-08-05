@@ -8,6 +8,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
 import KnowledgeBaseOnboardingBanner from "../components/KnowledgeBaseOnboardingBanner";
+import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
 import PinyinGridView from "../components/PinyinGridView";
 import Table, { type TableColumn } from "../components/Table";
@@ -105,7 +106,9 @@ type KnowledgeBaseMode = "view" | "edit";
 
 const ONBOARDING_WORD_THRESHOLD = 10;
 
-export default function KnowledgeBasePage() {
+type KnowledgeBasePageProps = { onNavigate?: (page: PageId) => void };
+
+export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps) {
   const dispatch = useAppDispatch();
   const characters = useAppSelector((state) => state.characters.items);
   const words = useAppSelector((state) => state.words.items);
@@ -516,6 +519,7 @@ export default function KnowledgeBasePage() {
       <KnowledgeBaseInitWizardModal
         isOpen={isInitWizardOpen}
         onClose={() => setIsInitWizardOpen(false)}
+        onNavigate={onNavigate}
       />
       {quickSyncError && <p className="table-error">{quickSyncError}</p>}
       {pageMode === "view" && (
