@@ -85,7 +85,6 @@ const syncedState = {
   },
 };
 
-
 function matchesApiPath(url: string, path: string) {
   const expected = path.startsWith("/api/") ? path : `/api${path}`;
   try {
@@ -138,11 +137,17 @@ describe("KnowledgeBasePage", () => {
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
 
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
-    expect(await screen.findByPlaceholderText("Search words...")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Search characters...")).toBeInTheDocument();
+    expect(
+      await screen.findByPlaceholderText("Search words..."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search characters..."),
+    ).toBeInTheDocument();
 
     const wordsHeading = screen.getByRole("heading", { name: "Words" });
-    const charactersHeading = screen.getByRole("heading", { name: "Characters" });
+    const charactersHeading = screen.getByRole("heading", {
+      name: "Characters",
+    });
     expect(
       wordsHeading.compareDocumentPosition(charactersHeading) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -154,18 +159,26 @@ describe("KnowledgeBasePage", () => {
 
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
 
-    expect(await screen.findByPlaceholderText("Search characters...")).toBeInTheDocument();
+    expect(
+      await screen.findByPlaceholderText("Search characters..."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
 
     await enterViewMode(user);
 
-    expect(screen.queryByPlaceholderText("Search characters...")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Search characters..."),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Modify" })).toBeInTheDocument();
-    expect(await screen.findByRole("columnheader", { name: "ai" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("columnheader", { name: "ai" }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Modify" }));
 
-    expect(await screen.findByPlaceholderText("Search characters...")).toBeInTheDocument();
+    expect(
+      await screen.findByPlaceholderText("Search characters..."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
   });
 
@@ -189,7 +202,9 @@ describe("KnowledgeBasePage", () => {
     await user.type(screen.getByPlaceholderText("Search characters..."), "zz");
 
     await waitFor(() => {
-      expect(screen.queryByRole("cell", { name: "爱" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("cell", { name: "爱" }),
+      ).not.toBeInTheDocument();
     });
     expect(
       screen.getByText("No characters match your search."),
@@ -371,9 +386,7 @@ describe("KnowledgeBasePage", () => {
     });
 
     expect(
-      screen.getByText(
-        "2 cards need to be added in Anki for synchronization.",
-      ),
+      screen.getByText("2 cards need to be added in Anki for synchronization."),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Quick synchro" }));
@@ -439,20 +452,20 @@ describe("KnowledgeBasePage", () => {
     });
   });
 
-  it("imports a database file from edit mode", async () => {
+  it("deletes the knowledge base from edit mode", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
 
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
-    await screen.findByRole("button", { name: "Import" });
+    await screen.findByRole("cell", { name: "爱" });
 
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
 
-      if (url.endsWith("/characters/bulk") && init?.method === "POST") {
+      if (matchesApiPath(url, "/database/knowledge-base") && init?.method === "DELETE") {
         return Promise.resolve({
           ok: true,
-          json: async () => ({ message: "File received" }),
+          json: async () => ({ message: "Knowledge base deleted" }),
         });
       }
 
@@ -470,50 +483,121 @@ describe("KnowledgeBasePage", () => {
         });
       }
 
-      if (url.includes("/hsk-level")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            current_level: null,
-            next_level: 1,
-            characters_to_next_level: 1,
-            progress_to_next_level: 0,
-            missing_characters: [],
-            max_level: 7,
-            completion_ratio: 0.85,
-          }),
-        });
-      }
-
-      if (url.includes("/anki/status")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            synchronization_status: "not_synchronized",
-            pending_push_estimate: 0,
-            decks: {
-              mandarin_vocabulary: {
-                status: "not_configured",
-                deck_name: "",
-                model_name: "",
-                fields: {},
-              },
-              mandarin_writting: {
-                status: "not_configured",
-                deck_name: "",
-                model_name: "",
-                fields: {},
-              },
-            },
-          }),
-        });
-      }
-
       return Promise.resolve({
         ok: false,
         json: async () => ({}),
       });
     });
+
+    const deleteKnowledgeBaseButton = document.querySelector(
+      ".page-mode-button--danger",
+    ) as HTMLButtonElement;
+    await user.click(deleteKnowledgeBaseButton);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("This action is irreversible.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("No words in the database yet."),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("No characters in the database yet."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: "爱" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: "爱好" })).not.toBeInTheDocument();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/database/knowledge-base"),
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("imports a database file from edit mode", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+    await screen.findByRole("button", { name: "Import" });
+
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+
+        if (url.endsWith("/characters/bulk") && init?.method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ message: "File received" }),
+          });
+        }
+
+        if (matchesApiPath(url, "/characters")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => characters,
+          });
+        }
+
+        if (matchesApiPath(url, "/words")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => words,
+          });
+        }
+
+        if (url.includes("/hsk-level")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              current_level: null,
+              next_level: 1,
+              characters_to_next_level: 1,
+              progress_to_next_level: 0,
+              missing_characters: [],
+              max_level: 7,
+              completion_ratio: 0.85,
+            }),
+          });
+        }
+
+        if (url.includes("/anki/status")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              synchronization_status: "not_synchronized",
+              pending_push_estimate: 0,
+              decks: {
+                mandarin_vocabulary: {
+                  status: "not_configured",
+                  deck_name: "",
+                  model_name: "",
+                  fields: {},
+                },
+                mandarin_writting: {
+                  status: "not_configured",
+                  deck_name: "",
+                  model_name: "",
+                  fields: {},
+                },
+              },
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      },
+    );
 
     const fileInput = document.querySelector(
       ".knowledge-base-import-input",
