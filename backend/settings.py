@@ -22,10 +22,13 @@ SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED = (
 SETTING_AVAILABLE_TOKEN = "available_token"
 
 FREE_PLAN_MAX_ALLOWED_TOKEN = 100_000
+PRO_PLAN_TOKEN_GRANT = 10_000_000
 FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE = (
     "Sorry, you've used up the tokens included with your free plan. "
     "If you're enjoying chat, consider upgrading to a paid account!"
 )
+
+ADMIN_EMAIL = "mazarsju@gmail.com"
 
 LEGACY_SETTING_MIGRATIONS: tuple[tuple[str, str], ...] = (
     ("anki_character_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
@@ -138,7 +141,7 @@ def assert_free_plan_has_tokens(user) -> None:
 
     if user.plan != DEFAULT_USER_PLAN:
         return
-    if (user.email != "mazarsju@gmail.com" and get_available_token(user.shortid) <= 0):
+    if user.email != ADMIN_EMAIL and get_available_token(user.shortid) <= 0:
         raise ValueError(FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE)
 
 

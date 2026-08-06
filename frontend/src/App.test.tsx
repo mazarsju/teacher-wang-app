@@ -32,11 +32,25 @@ vi.mock("./utils/auth/tokenStorage", async (importOriginal) => {
   };
 });
 
-function stubAuthenticatedApis() {
+function stubAuthenticatedApis(options: { isAdmin?: boolean } = {}) {
+  const { isAdmin = false } = options;
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo) => {
       const url = String(input);
+
+      if (url.includes("/auth/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            sub: "test-user",
+            username: "learner",
+            email: "learner@example.com",
+            plan: "free",
+            is_admin: isAdmin,
+          }),
+        });
+      }
 
       if (url.includes("/characters")) {
         return Promise.resolve({
@@ -147,6 +161,27 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Chat" }));
 
     expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
+  });
+
+  it("shows the Admin tab only for the admin user", async () => {
+    const user = userEvent.setup();
+    stubAuthenticatedApis({ isAdmin: true });
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Admin" }));
+
+    expect(screen.getByRole("heading", { name: "Admin" })).toBeInTheDocument();
   });
 
   it("logs out from the profile menu and returns to welcome auth", async () => {

@@ -205,7 +205,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | Method | Route | Description |
 | --- | --- | --- |
 | `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) — the only public route |
-| `GET` | `/auth/me` | Current user (`username`, `email`, `plan`) from the `users` row |
+| `GET` | `/auth/me` | Current user (`username`, `email`, `plan`, `is_admin`) from the `users` row |
 | `GET` | `/token-usage` | Token history (`total_tokens`, `days`, …) plus `plan`, `available_token`, and `max_allowed_token` (100000 on free, else `null`) |
 | `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
 | `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writting deck, deck type, and field mapping |
@@ -232,6 +232,8 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
+| `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
+| `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
 
 ### Frontend
 

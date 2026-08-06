@@ -48,4 +48,31 @@ describe("Navbar", () => {
 
     expect(onPageChange).toHaveBeenCalledWith("chat");
   });
+
+  it("only shows the Admin tab when isAdmin is true", () => {
+    const { rerender } = render(
+      <Navbar
+        activePage="home"
+        onPageChange={() => {}}
+        onLogout={() => {}}
+        onSync={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Admin" }),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <Navbar
+        activePage="home"
+        onPageChange={() => {}}
+        onLogout={() => {}}
+        onSync={() => {}}
+        isAdmin
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
+  });
 });

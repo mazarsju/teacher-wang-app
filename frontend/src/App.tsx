@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentType } from "react";
 import "./App.css";
 import Navbar, { type PageId } from "./components/Navbar";
+import AdminPage from "./pages/AdminPage";
 import ChatPage from "./pages/ChatPage";
 import HomePage from "./pages/HomePage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
@@ -9,6 +10,7 @@ import WelcomeAuthPage from "./pages/WelcomeAuthPage";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { resetAppData, syncAppData } from "./store/thunks/syncAppData";
 import { onUnauthorizedSession } from "./utils/auth/apiFetch";
+import { fetchCurrentUser } from "./utils/auth/meApi";
 import {
   clearCognitoTokens,
   hasStoredSession,
@@ -21,6 +23,7 @@ const PAGES: Record<PageId, ComponentType<PageProps>> = {
   "knowledge-base": KnowledgeBasePage,
   chat: ChatPage,
   preferences: PreferencesPage,
+  admin: AdminPage,
 };
 
 export default function App() {
@@ -30,6 +33,7 @@ export default function App() {
     hasStoredSession(),
   );
   const [activePage, setActivePage] = useState<PageId>("home");
+  const [isAdmin, setIsAdmin] = useState(false);
   const ActivePage = PAGES[activePage];
 
   useEffect(() => {
@@ -38,6 +42,9 @@ export default function App() {
     }
 
     void dispatch(syncAppData());
+    fetchCurrentUser()
+      .then((user) => setIsAdmin(user.is_admin))
+      .catch(() => setIsAdmin(false));
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
@@ -53,6 +60,7 @@ export default function App() {
     dispatch(resetAppData());
     setActivePage("home");
     setIsAuthenticated(false);
+    setIsAdmin(false);
   }
 
   function handleSync() {
@@ -73,6 +81,7 @@ export default function App() {
         onLogout={handleLogout}
         onSync={handleSync}
         isSyncing={syncStatus === "loading"}
+        isAdmin={isAdmin}
       />
       <main className="app-main">
         <ActivePage onNavigate={setActivePage} />

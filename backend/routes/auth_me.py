@@ -3,6 +3,7 @@
 from flask import Blueprint, jsonify
 
 from backend.auth import current_cognito_claims, current_cognito_sub
+from backend.settings import ADMIN_EMAIL
 from backend.user_context import current_user
 
 bp = Blueprint("auth_me", __name__)
@@ -18,6 +19,7 @@ def auth_me():
             "username": user.username,
             "email": user.email,
             "plan": user.plan,
+            "is_admin": user.email == ADMIN_EMAIL,
             "token_use": claims.get("token_use"),
             "client_id": claims.get("client_id"),
         }

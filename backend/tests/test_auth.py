@@ -185,10 +185,23 @@ class TestAuthMeRoute(unittest.TestCase):
                 "username": "alice",
                 "email": "alice@example.com",
                 "plan": "free",
+                "is_admin": False,
                 "token_use": TEST_CLAIMS["token_use"],
                 "client_id": TEST_CLAIMS["client_id"],
             },
         )
+
+    def test_auth_me_marks_admin_email(self):
+        self.mock_current_user.return_value = MagicMock(
+            id=TEST_USER_ID,
+            username="admin",
+            email="mazarsju@gmail.com",
+            plan="free",
+        )
+
+        response = self.client.get("/auth/me")
+
+        self.assertEqual(response.get_json()["is_admin"], True)
 
 
 if __name__ == "__main__":

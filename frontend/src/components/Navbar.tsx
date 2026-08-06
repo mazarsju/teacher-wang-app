@@ -2,11 +2,17 @@ import {
   ChatBubbleIcon,
   HouseIcon,
   NotebookIcon,
+  ProfileIcon,
   SettingsIcon,
 } from "./icons";
 import ProfileMenu from "./ProfileMenu";
 
-export type PageId = "home" | "knowledge-base" | "chat" | "preferences";
+export type PageId =
+  | "home"
+  | "knowledge-base"
+  | "chat"
+  | "preferences"
+  | "admin";
 
 type NavItem = {
   id: PageId;
@@ -21,12 +27,15 @@ const NAV_ITEMS: NavItem[] = [
   { id: "preferences", label: "Preferences", icon: SettingsIcon },
 ];
 
+const ADMIN_NAV_ITEM: NavItem = { id: "admin", label: "Admin", icon: ProfileIcon };
+
 type NavbarProps = {
   activePage: PageId;
   onPageChange: (page: PageId) => void;
   onLogout: () => void;
   onSync: () => void;
   isSyncing?: boolean;
+  isAdmin?: boolean;
 };
 
 export default function Navbar({
@@ -35,7 +44,9 @@ export default function Navbar({
   onLogout,
   onSync,
   isSyncing = false,
+  isAdmin = false,
 }: NavbarProps) {
+  const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
   return (
     <nav className="navbar" aria-label="Main navigation">
       <div className="navbar-inner">
@@ -45,7 +56,7 @@ export default function Navbar({
             <span className="navbar-brand-text">Teacher Wang</span>
           </div>
           <ul className="navbar-list">
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+            {navItems.map(({ id, label, icon: Icon }) => {
               const isActive = activePage === id;
 
               return (

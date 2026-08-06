@@ -22,11 +22,13 @@ def register_routes(app: Flask) -> None:
         list_characters,
         list_hsk_character_words,
         list_hsk_characters,
+        list_users,
         list_words,
         pick_hsk_word,
         suggest_hsk_words,
         token_usage,
         update_character,
+        update_user,
         update_word,
     )
     from backend.user_context import register_user_context
@@ -58,3 +60,5 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(get_hsk_level.bp)
     app.register_blueprint(pick_hsk_word.bp)
     app.register_blueprint(suggest_hsk_words.bp)
+    app.register_blueprint(list_users.bp)
+    app.register_blueprint(update_user.bp)
