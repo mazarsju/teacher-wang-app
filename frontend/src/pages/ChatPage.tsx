@@ -6,7 +6,8 @@ import ChatCharacterCard, {
 import ChatModal from "../components/ChatModal";
 import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
-import { useAppSelector } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setChallengeProgress } from "../store/slices/challengeProgressSlice";
 import { CHALLENGES, NEW_FRIEND_CHALLENGE } from "../data/challenges";
 import { CHAT_CHARACTERS, TEACHER_WANG, XIAO_MING } from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
@@ -17,13 +18,14 @@ const KB_CHARACTER_THRESHOLD = 50;
 type ChatPageProps = { onNavigate?: (page: PageId) => void };
 
 export default function ChatPage({ onNavigate }: ChatPageProps) {
+  const dispatch = useAppDispatch();
   const [selectedCharacter, setSelectedCharacter] =
     useState<ChatCharacter | null>(null);
   const [selectedChallenge, setSelectedChallenge] =
     useState<Challenge | null>(null);
-  const [completedChallengeIds, setCompletedChallengeIds] = useState<
-    Set<string>
-  >(() => new Set());
+  const completedChallengeIds = new Set(
+    useAppSelector((state) => state.challengeProgress.completedIds),
+  );
 
   const characterCount = useAppSelector((state) => state.characters.items.length);
   const currentHskLevel = useAppSelector(
@@ -49,8 +51,8 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
   const loadChallengeProgress = useCallback(async () => {
     try {
       const summary = await fetchChallengesProgress();
-      setCompletedChallengeIds(
-        new Set(
+      dispatch(
+        setChallengeProgress(
           summary.challenges
             .filter((entry) => entry.completed)
             .map((entry) => entry.id),
@@ -59,7 +61,7 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
     } catch {
       // Keep the last known progress if the request fails.
     }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     void loadChallengeProgress();

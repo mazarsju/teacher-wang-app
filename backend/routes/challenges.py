@@ -1,12 +1,11 @@
 from flask import Blueprint
 
 from backend.challenges import get_challenges_progress
-from backend.user_context import current_user
+from backend.user_context import current_user_id
 
 bp = Blueprint("challenges", __name__)
 
 
 @bp.get("/challenges/progress")
 def challenges_progress():
-    # S3 object keys are keyed by the Cognito sub, not users.shortid.
-    return get_challenges_progress(current_user().id), 200
+    return get_challenges_progress(current_user_id()), 200

@@ -39,6 +39,12 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_ignore_writting_card_query = self.ignore_writting_card_patcher.start()
         self.addCleanup(self.ignore_writting_card_patcher.stop)
 
+        self.storage_patcher = patch("backend.routes.delete_knowledge_base.get_storage")
+        self.mock_get_storage = self.storage_patcher.start()
+        self.addCleanup(self.storage_patcher.stop)
+        self.mock_storage = MagicMock()
+        self.mock_get_storage.return_value = self.mock_storage
+
     def test_delete_knowledge_base_removes_all_records(self):
         word_record = MagicMock()
         character_record = MagicMock()
@@ -62,6 +68,12 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_ignore_vocab_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_ignore_writting_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
+
+        # Assert conversation logs (transcripts, threads, challenge task
+        # progress) are wiped for this user, keyed by the Cognito sub.
+        self.mock_storage.delete_prefix.assert_called_once_with(
+            f"users/{TEST_USER_ID}/"
+        )
 
 if __name__ == "__main__":
     unittest.main()

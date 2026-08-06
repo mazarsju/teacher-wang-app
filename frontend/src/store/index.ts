@@ -1,5 +1,6 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import ankiReducer from "./slices/ankiSlice";
+import challengeProgressReducer from "./slices/challengeProgressSlice";
 import charactersReducer from "./slices/charactersSlice";
 import hskReducer from "./slices/hskSlice";
 import syncReducer from "./slices/syncSlice";
@@ -11,6 +12,7 @@ const rootReducer = combineReducers({
   hsk: hskReducer,
   anki: ankiReducer,
   sync: syncReducer,
+  challengeProgress: challengeProgressReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

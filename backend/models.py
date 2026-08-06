@@ -141,6 +141,16 @@ class IgnoreWrittingCard(db.Model):
     recto = db.Column(String, primary_key=True)
 
 
+class ChallengeProgress(db.Model):
+    """Whether a user has fully completed a challenge scenario."""
+
+    __tablename__ = "challenge_progress"
+
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
+    challenge_scenario = db.Column(String, primary_key=True)
+    completed = db.Column(db.Boolean, nullable=False, default=True)
+
+
 class TokenCount(db.Model):
     """One recorded LLM token-usage event (input or output)."""
 

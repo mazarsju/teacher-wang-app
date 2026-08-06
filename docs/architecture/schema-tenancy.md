@@ -23,6 +23,7 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 | `ignore_vocab_card` | `(user_id, writting)` |
 | `ignore_writting_card` | `(user_id, recto)` |
 | `token_count` | `(user_id, recorded_at, type)` |
+| `challenge_progress` | `(user_id, challenge_scenario)` |
 
 Character↔word membership is derived at read time (a word contains its characters as substrings); there is no association table.
 

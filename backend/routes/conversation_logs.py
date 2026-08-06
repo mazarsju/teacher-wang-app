@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 
 from backend.challenge_progress import (
+    clear_challenge_progress,
     clear_completed_task_ids,
     load_completed_task_ids,
 )
@@ -13,7 +14,7 @@ from backend.conversation_logs import (
     load_conversation,
     replace_conversation,
 )
-from backend.user_context import current_user
+from backend.user_context import current_user, current_user_id
 
 bp = Blueprint("conversation_logs", __name__)
 
@@ -70,6 +71,7 @@ def patch_conversation_log(character_id: str):
 
     if not messages and is_challenge_character(character_id):
         clear_completed_task_ids(user_id, character_id)
+        clear_challenge_progress(current_user_id(), character_id)
 
     return _history_payload(user_id, character_id), 200
 
@@ -83,4 +85,5 @@ def delete_conversation_log(character_id: str):
     clear_conversation(user_id, character_id)
     if is_challenge_character(character_id):
         clear_completed_task_ids(user_id, character_id)
+        clear_challenge_progress(current_user_id(), character_id)
     return {"message": "Conversation log deleted"}, 200

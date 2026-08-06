@@ -93,6 +93,18 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_clear_tasks = self.clear_tasks_patcher.start()
         self.addCleanup(self.clear_tasks_patcher.stop)
 
+        self.mark_completed_patcher = patch(
+            "backend.routes.chat.mark_challenge_completed"
+        )
+        self.mock_mark_completed = self.mark_completed_patcher.start()
+        self.addCleanup(self.mark_completed_patcher.stop)
+
+        self.clear_progress_patcher = patch(
+            "backend.routes.chat.clear_challenge_progress"
+        )
+        self.mock_clear_progress = self.clear_progress_patcher.start()
+        self.addCleanup(self.clear_progress_patcher.stop)
+
         self.mock_generate.reset_mock()
         self.mock_append.reset_mock()
         self.mock_append_thread.reset_mock()
@@ -109,6 +121,8 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_save_tasks.reset_mock()
         self.mock_copy_conversation.reset_mock()
         self.mock_clear_tasks.reset_mock()
+        self.mock_mark_completed.reset_mock()
+        self.mock_clear_progress.reset_mock()
         self.mock_should_append.return_value = True
         self.mock_should_append_thread.return_value = True
         self.mock_thread_exists.return_value = True
@@ -494,6 +508,10 @@ class TestChatEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        self.mock_mark_completed.assert_called_once_with(
+            TEST_USER_ID,
+            "challenge-new-friend",
+        )
         self.mock_copy_conversation.assert_called_once_with(
             TEST_USER_ID,
             "challenge-new-friend",
@@ -519,6 +537,7 @@ class TestChatEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        self.mock_mark_completed.assert_not_called()
         self.mock_copy_conversation.assert_not_called()
 
     def test_challenge_completion_without_unlock_mapping_does_not_hand_off(self):
@@ -544,6 +563,10 @@ class TestChatEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        self.mock_mark_completed.assert_called_once_with(
+            TEST_USER_ID,
+            "challenge-restaurant",
+        )
         self.mock_copy_conversation.assert_not_called()
 
     def test_challenge_chat_returns_judge_conversation_when_revised(self):
@@ -620,6 +643,10 @@ class TestChatEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.mock_clear.assert_called_once_with(TEST_USER_ID, "challenge-restaurant")
         self.mock_clear_tasks.assert_called_once_with(
+            TEST_USER_ID,
+            "challenge-restaurant",
+        )
+        self.mock_clear_progress.assert_called_once_with(
             TEST_USER_ID,
             "challenge-restaurant",
         )

@@ -1,8 +1,10 @@
 from flask import Blueprint, request
 
 from backend.challenge_progress import (
+    clear_challenge_progress,
     clear_completed_task_ids,
     load_completed_task_ids,
+    mark_challenge_completed,
     save_completed_task_ids,
 )
 from backend.challenges import (
@@ -258,6 +260,7 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         if completed_task_ids is not None:
             task_ids = {task["id"] for task in challenge["tasks"]}
             if task_ids <= set(completed_task_ids):
+                mark_challenge_completed(user_id, character_id)
                 unlocked_character_id = get_unlocked_character_id(character_id)
                 if unlocked_character_id:
                     copy_conversation(log_user_id, character_id, unlocked_character_id)
@@ -308,4 +311,5 @@ def delete_chat_history(character_id: str):
     clear_conversation(user_id, character_id)
     if is_challenge_character(character_id):
         clear_completed_task_ids(user_id, character_id)
+        clear_challenge_progress(current_user_id(), character_id)
     return {"message": "Chat history cleared"}, 200

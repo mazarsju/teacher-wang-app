@@ -30,6 +30,7 @@ _TRUNCATE_TABLES = (
     "ignore_vocab_card",
     "ignore_writting_card",
     "token_count",
+    "challenge_progress",
 )
 
 

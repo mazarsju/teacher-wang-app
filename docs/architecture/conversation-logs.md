@@ -8,3 +8,5 @@ Part of the [data isolation](../adr/data-isolation.md) decision. Chat transcript
 | Prod (ECS) | S3 (`CONVERSATION_LOGS_BACKEND=s3`) | `s3://…/users/{sub}/{character_id}.txt` (+ threads / `.tasks.json`) |
 
 API: `GET/POST/PATCH/DELETE /conversation-logs/<character_id>` (and `POST /chat` for LLM turns). History is loaded when a chat opens; there is no process-wide transcript cache.
+
+`DELETE /database/knowledge-base` also wipes every object under a user's `users/{sub}/` prefix (all transcripts, threads, and challenge task progress), not just one character's.

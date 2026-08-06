@@ -7,6 +7,8 @@ import json
 from backend.challenges import is_challenge_character
 from backend.conversation_log_storage import get_storage, object_key
 from backend.conversation_logs import VALID_CHARACTER_IDS
+from backend.extensions import db
+from backend.models import ChallengeProgress
 
 
 def progress_object_key(user_id: str, character_id: str) -> str:
@@ -67,3 +69,49 @@ def clear_completed_task_ids(user_id: str, character_id: str) -> None:
         return
 
     get_storage().delete(progress_object_key(user_id, character_id))
+
+
+def mark_challenge_completed(
+    user_id, challenge_scenario: str, *, commit: bool = True
+) -> None:
+    """Record in the DB that ``user_id`` fully completed ``challenge_scenario``."""
+    if not is_challenge_character(challenge_scenario):
+        return
+
+    row = db.session.get(ChallengeProgress, (user_id, challenge_scenario))
+    if row is None:
+        db.session.add(
+            ChallengeProgress(
+                user_id=user_id, challenge_scenario=challenge_scenario, completed=True
+            )
+        )
+    else:
+        row.completed = True
+
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
+
+
+def has_completed_challenge(user_id, challenge_scenario: str) -> bool:
+    """Whether the DB has a completed row for ``challenge_scenario``.
+
+    If the challenge can't be found in the database, it isn't completed.
+    """
+    row = db.session.get(ChallengeProgress, (user_id, challenge_scenario))
+    return row is not None and bool(row.completed)
+
+
+def clear_challenge_progress(
+    user_id, challenge_scenario: str, *, commit: bool = True
+) -> None:
+    row = db.session.get(ChallengeProgress, (user_id, challenge_scenario))
+    if row is None:
+        return
+
+    db.session.delete(row)
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()

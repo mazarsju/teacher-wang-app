@@ -1,16 +1,9 @@
 import bootstrap  # noqa: F401
 import unittest
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
-from backend.challenge_progress import save_completed_task_ids
-from backend.challenges import get_challenges_progress, is_challenge_completed
-from backend.conversation_log_storage import (
-    LocalConversationLogStorage,
-    reset_storage_for_tests,
-)
-
-TEST_USER = "user-a"
+from backend.challenge_progress import has_completed_challenge, mark_challenge_completed
+from backend.challenges import get_challenges_progress
+from postgres_test_case import PostgresTestCase
 
 ALL_CHALLENGE_IDS = (
     "challenge-restaurant",
@@ -33,88 +26,31 @@ def progress_payload(**completed_ids: bool) -> dict:
     }
 
 
-class TestChallengesProgress(unittest.TestCase):
-    def setUp(self):
-        self.temp_dir = TemporaryDirectory()
-        self.addCleanup(self.temp_dir.cleanup)
-        self.logs_dir = Path(self.temp_dir.name)
-        reset_storage_for_tests(LocalConversationLogStorage(self.logs_dir))
-        self.addCleanup(reset_storage_for_tests)
-
+class TestChallengesProgress(PostgresTestCase):
     def test_challenge_not_completed_by_default(self):
         for challenge_id in ALL_CHALLENGE_IDS:
-            self.assertFalse(is_challenge_completed(TEST_USER, challenge_id))
-        self.assertEqual(get_challenges_progress(TEST_USER), progress_payload())
+            self.assertFalse(has_completed_challenge(self.user_id, challenge_id))
+        self.assertEqual(get_challenges_progress(self.user_id), progress_payload())
 
-    def test_challenge_completed_when_all_tasks_done(self):
-        save_completed_task_ids(
-            TEST_USER,
-            "challenge-restaurant",
-            ["call-waiter", "ask-no-meat", "ask-bill", "pay-bill"],
-        )
-        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-restaurant"))
+    def test_challenge_completed_once_marked(self):
+        mark_challenge_completed(self.user_id, "challenge-restaurant")
+
+        self.assertTrue(has_completed_challenge(self.user_id, "challenge-restaurant"))
         self.assertEqual(
-            get_challenges_progress(TEST_USER),
+            get_challenges_progress(self.user_id),
             progress_payload(**{"challenge-restaurant": True}),
         )
 
-    def test_new_friend_challenge_completed_when_all_tasks_done(self):
-        save_completed_task_ids(
-            TEST_USER,
-            "challenge-new-friend",
-            ["greet-friend", "introduce-name", "say-age", "say-goodbye"],
-        )
-        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-new-friend"))
-        self.assertEqual(
-            get_challenges_progress(TEST_USER),
-            progress_payload(**{"challenge-new-friend": True}),
-        )
+    def test_marking_completed_twice_is_idempotent(self):
+        mark_challenge_completed(self.user_id, "challenge-new-friend")
+        mark_challenge_completed(self.user_id, "challenge-new-friend")
 
-    def test_taxi_challenge_completed_when_all_tasks_done(self):
-        save_completed_task_ids(
-            TEST_USER,
-            "challenge-taxi",
-            ["hail-taxi", "give-destination", "ask-fare", "pay-fare"],
-        )
-        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-taxi"))
-        self.assertEqual(
-            get_challenges_progress(TEST_USER),
-            progress_payload(**{"challenge-taxi": True}),
-        )
+        self.assertTrue(has_completed_challenge(self.user_id, "challenge-new-friend"))
 
-    def test_hotel_challenge_completed_when_all_tasks_done(self):
-        save_completed_task_ids(
-            TEST_USER,
-            "challenge-hotel",
-            [
-                "greet-receptionist",
-                "check-in",
-                "ask-breakfast",
-                "check-out",
-            ],
-        )
-        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-hotel"))
-        self.assertEqual(
-            get_challenges_progress(TEST_USER),
-            progress_payload(**{"challenge-hotel": True}),
-        )
+    def test_non_challenge_character_is_never_marked_completed(self):
+        mark_challenge_completed(self.user_id, "teacher-wang")
 
-    def test_shop_challenge_completed_when_all_tasks_done(self):
-        save_completed_task_ids(
-            TEST_USER,
-            "challenge-shop",
-            [
-                "greet-assistant",
-                "ask-price",
-                "ask-different-size",
-                "pay-item",
-            ],
-        )
-        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-shop"))
-        self.assertEqual(
-            get_challenges_progress(TEST_USER),
-            progress_payload(**{"challenge-shop": True}),
-        )
+        self.assertFalse(has_completed_challenge(self.user_id, "teacher-wang"))
 
 
 if __name__ == "__main__":
