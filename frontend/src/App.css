@@ -468,11 +468,7 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   font-size: 0.95rem;
 }
 
-.preferences-token-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+.preferences-usage-progress {
   margin: 0 0 1.25rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--app-border-light);
@@ -481,28 +477,7 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   backdrop-filter: blur(10px);
 }
 
-.preferences-token-total-label {
-  color: #4b5563;
-  font-size: 0.95rem;
-}
-
-.preferences-token-total-value {
-  color: #111827;
-  font-size: 1.35rem;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
-.preferences-token-remaining {
-  margin: 0 0 1.25rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--app-border-light);
-  border-radius: 0.75rem;
-  background: var(--app-surface);
-  backdrop-filter: blur(10px);
-}
-
-.preferences-token-remaining-header {
+.preferences-usage-progress-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -510,19 +485,19 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   margin-bottom: 0.65rem;
 }
 
-.preferences-token-remaining-label {
+.preferences-usage-progress-label {
   color: #4b5563;
   font-size: 0.95rem;
 }
 
-.preferences-token-remaining-value {
+.preferences-usage-progress-value {
   color: #111827;
   font-size: 0.95rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.preferences-token-remaining-track {
+.preferences-usage-progress-track {
   width: 100%;
   height: 0.65rem;
   border-radius: 999px;
@@ -530,19 +505,20 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   overflow: hidden;
 }
 
-.preferences-token-remaining-fill {
+.preferences-usage-progress-fill {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, #60a5fa 0%, #2563eb 100%);
   transition: width 0.2s ease;
 }
 
-.preferences-token-chart {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.65rem;
-  align-items: end;
-  min-height: 11rem;
+.preferences-usage-reset-note {
+  margin: 0.5rem 0 0;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.preferences-usage-chart {
   padding: 1rem 0.75rem 0.75rem;
   border: 1px solid var(--app-border-light);
   border-radius: 0.75rem;
@@ -550,42 +526,48 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   backdrop-filter: blur(10px);
 }
 
-.preferences-token-chart-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
+.preferences-usage-chart-svg {
+  width: 100%;
+  aspect-ratio: 600 / 160;
+  display: block;
+  overflow: visible;
 }
 
-.preferences-token-chart-value {
-  color: #6b7280;
-  font-size: 0.7rem;
+.preferences-usage-chart-grid {
+  stroke: var(--app-border-light);
+  stroke-width: 1;
+}
+
+.preferences-usage-chart-area {
+  fill: url(#preferences-usage-area-fill);
+  stroke: none;
+}
+
+.preferences-usage-chart-line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.preferences-usage-chart-dot {
+  fill: #2563eb;
+}
+
+.preferences-usage-chart-current-label {
+  fill: #111827;
+  font-size: 11px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
 }
 
-.preferences-token-chart-track {
+.preferences-usage-chart-labels {
   display: flex;
-  align-items: flex-end;
-  width: 100%;
-  height: 7rem;
-  padding: 0 0.2rem;
-}
-
-.preferences-token-chart-fill {
-  width: 100%;
-  min-height: 0.2rem;
-  border-radius: 0.35rem 0.35rem 0.15rem 0.15rem;
-  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
-}
-
-.preferences-token-chart-label {
+  justify-content: space-between;
+  margin-top: 0.5rem;
   color: #6b7280;
   font-size: 0.68rem;
-  line-height: 1.2;
-  text-align: center;
-  overflow-wrap: anywhere;
 }
 
 .preferences-section--anki {

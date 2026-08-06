@@ -5,10 +5,12 @@ from backend.models import Setting
 from backend.settings import (
     DEFAULT_SETTINGS,
     FREE_PLAN_MAX_ALLOWED_TOKEN,
+    PRO_PLAN_TOKEN_GRANT,
     SETTING_AVAILABLE_TOKEN,
     SETTING_LEVEL,
     ensure_default_settings,
     get_setting,
+    reset_available_token,
     set_setting,
 )
 from postgres_test_case import PostgresTestCase, create_test_user
@@ -38,6 +40,21 @@ class TestSettings(PostgresTestCase):
         self.assertEqual(get_setting(self.user_id, SETTING_LEVEL), "3")
         self.assertEqual(get_setting(other.shortid, SETTING_LEVEL), "5")
         self.assertEqual(get_setting(-1, SETTING_LEVEL, "none"), "none")
+
+    def test_reset_available_token_grants_plan_allowance(self):
+        set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
+
+        reset_available_token(self.user_id, "free", commit=True)
+        self.assertEqual(
+            get_setting(self.user_id, SETTING_AVAILABLE_TOKEN),
+            str(FREE_PLAN_MAX_ALLOWED_TOKEN),
+        )
+
+        reset_available_token(self.user_id, "pro", commit=True)
+        self.assertEqual(
+            get_setting(self.user_id, SETTING_AVAILABLE_TOKEN),
+            str(PRO_PLAN_TOKEN_GRANT),
+        )
 
 
 if __name__ == "__main__":

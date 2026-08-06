@@ -2,13 +2,7 @@ from flask import Blueprint, request
 
 from backend.extensions import db
 from backend.models import User
-from backend.settings import (
-    ADMIN_EMAIL,
-    FREE_PLAN_MAX_ALLOWED_TOKEN,
-    PRO_PLAN_TOKEN_GRANT,
-    SETTING_AVAILABLE_TOKEN,
-    set_setting,
-)
+from backend.settings import ADMIN_EMAIL, reset_available_token
 from backend.user_context import current_user
 
 bp = Blueprint("update_user", __name__)
@@ -37,8 +31,7 @@ def update_user(user_id: int):
         return {"error": "User not found"}, 404
 
     if plan != target.plan:
-        grant = PRO_PLAN_TOKEN_GRANT if plan == "pro" else FREE_PLAN_MAX_ALLOWED_TOKEN
-        set_setting(target.shortid, SETTING_AVAILABLE_TOKEN, str(grant))
+        reset_available_token(target.shortid, plan, commit=False)
         target.plan = plan
 
     db.session.commit()

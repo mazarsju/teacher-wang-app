@@ -6,6 +6,7 @@ import AnkiSyncModal from "../components/AnkiSyncModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { InfoIcon, SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
 import Page from "../components/Page";
+import UpdatePlanModal from "../components/UpdatePlanModal";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
 import { resetKnowledgeBaseData, syncAppData } from "../store/thunks/syncAppData";
@@ -31,13 +32,16 @@ function formatDayLabel(isoDate: string): string {
   });
 }
 
-function formatTokenCount(value: number): string {
-  return value.toLocaleString();
+function formatPercent(value: number): string {
+  return `${Math.round(value)}%`;
 }
 
-function clampToken(value: number, max: number): number {
-  return Math.min(max, Math.max(0, value));
+function clampPercent(value: number): number {
+  return Math.min(100, Math.max(0, value));
 }
+
+const USAGE_CHART_WIDTH = 600;
+const USAGE_CHART_HEIGHT = 160;
 
 function formatDeckStatus(status: AnkiDeckStatus): string {
   switch (status) {
@@ -67,6 +71,7 @@ export default function PreferencesPage() {
   const [isDeletingKnowledgeBase, setIsDeletingKnowledgeBase] = useState(false);
   const [isDeleteKnowledgeBaseConfirmOpen, setIsDeleteKnowledgeBaseConfirmOpen] =
     useState(false);
+  const [isUpdatePlanModalOpen, setIsUpdatePlanModalOpen] = useState(false);
 
   const loadTokenUsage = useCallback(async () => {
     setExtrasError(null);
@@ -141,21 +146,35 @@ export default function PreferencesPage() {
     }
   }
 
-  const maxDailyTokens = Math.max(
-    1,
-    ...(tokenUsage?.days.map((day) => day.tokens) ?? [0]),
-  );
+  let cumulativeTokens = 0;
+  const usageChartPoints = (tokenUsage?.days ?? []).map((day, index, days) => {
+    cumulativeTokens += day.tokens;
+    const percent =
+      tokenUsage !== null && tokenUsage.max_allowed_token > 0
+        ? clampPercent((cumulativeTokens / tokenUsage.max_allowed_token) * 100)
+        : 0;
+    const x =
+      days.length > 1
+        ? (index / (days.length - 1)) * USAGE_CHART_WIDTH
+        : USAGE_CHART_WIDTH / 2;
+    const y = USAGE_CHART_HEIGHT - (percent / 100) * USAGE_CHART_HEIGHT;
+    return { date: day.date, percent, x, y };
+  });
 
-  const remainingTokens =
-    tokenUsage !== null && tokenUsage.max_allowed_token !== null
-      ? clampToken(tokenUsage.available_token, tokenUsage.max_allowed_token)
-      : null;
-  const remainingPercent =
-    tokenUsage !== null &&
-    tokenUsage.max_allowed_token !== null &&
-    remainingTokens !== null
-      ? (remainingTokens / tokenUsage.max_allowed_token) * 100
+  const usedPercent =
+    usageChartPoints.length > 0
+      ? usageChartPoints[usageChartPoints.length - 1].percent
       : 0;
+
+  const usageLinePath = usageChartPoints
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+  const usageAreaPath =
+    usageChartPoints.length > 0
+      ? `${usageLinePath} L ${usageChartPoints[usageChartPoints.length - 1].x} ${USAGE_CHART_HEIGHT} L ${usageChartPoints[0].x} ${USAGE_CHART_HEIGHT} Z`
+      : "";
+  const currentUsagePoint = usageChartPoints[usageChartPoints.length - 1];
+  const isUsageExhausted = usedPercent >= 100;
 
   const deckRows = ANKI_DECK_ORDER.map((kind) => ({
     kind,
@@ -266,73 +285,131 @@ export default function PreferencesPage() {
 
 {!isLoading && tokenUsage && (
         <section className="preferences-section preferences-section--usage">
-          <h2 className="preferences-section-title">Token usage</h2>
+          <h2 className="preferences-section-title">AI usage</h2>
           <p className="preferences-section-description">
-            Tokens consumed by chat and grammar-check LLM calls.
+            How much of your monthly AI allowance chat and grammar-check calls
+            have used.
           </p>
 
-          <p className="preferences-token-total">
-            <span className="preferences-token-total-label">Total tokens used</span>
-            <span className="preferences-token-total-value">
-              {formatTokenCount(tokenUsage.total_tokens)}
-            </span>
-          </p>
-
-          {tokenUsage.max_allowed_token !== null && remainingTokens !== null && (
+          <div className="preferences-usage-progress">
+            <div className="preferences-usage-progress-header">
+              <span className="preferences-usage-progress-label">
+                Used this month
+              </span>
+              <span className="preferences-usage-progress-value">
+                {formatPercent(usedPercent)}
+              </span>
+            </div>
             <div
-              className="preferences-token-remaining"
-              aria-label="Remaining tokens"
+              className="preferences-usage-progress-track"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(usedPercent)}
+              aria-label="Percentage of monthly AI usage allowance used"
             >
-              <div className="preferences-token-remaining-header">
-                <span className="preferences-token-remaining-label">
-                  Remaining tokens
-                </span>
-                <span className="preferences-token-remaining-value">
-                  {formatTokenCount(remainingTokens)} /{" "}
-                  {formatTokenCount(tokenUsage.max_allowed_token)}
-                </span>
-              </div>
               <div
-                className="preferences-token-remaining-track"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={tokenUsage.max_allowed_token}
-                aria-valuenow={remainingTokens}
-                aria-label="Remaining free-plan tokens"
-              >
-                <div
-                  className="preferences-token-remaining-fill"
-                  style={{ width: `${remainingPercent}%` }}
-                />
+                className="preferences-usage-progress-fill"
+                style={{ width: `${usedPercent}%` }}
+              />
+            </div>
+            <p className="preferences-usage-reset-note">
+              Resets to 0% on the 1st of next month.
+            </p>
+          </div>
+
+          {isUsageExhausted && (
+            <div className="anki-warning" role="status">
+              <div className="anki-warning-title-row">
+                <p className="anki-warning-text">
+                  You&apos;re running out of AI usage for the month. Need
+                  more? Don&apos;t hesitate to change your plan!
+                </p>
+                <button
+                  type="button"
+                  className="page-add-button"
+                  onClick={() => setIsUpdatePlanModalOpen(true)}
+                >
+                  Update plan
+                </button>
               </div>
             </div>
           )}
 
           <div
-            className="preferences-token-chart"
+            className="preferences-usage-chart"
             role="img"
-            aria-label="Token usage for the last 7 days"
+            aria-label={`Cumulative AI usage this month, currently at ${formatPercent(usedPercent)} of the monthly allowance`}
           >
-            {tokenUsage.days.map((day) => {
-              const heightPercent = (day.tokens / maxDailyTokens) * 100;
-              return (
-                <div key={day.date} className="preferences-token-chart-bar">
-                  <div className="preferences-token-chart-value">
-                    {formatTokenCount(day.tokens)}
-                  </div>
-                  <div className="preferences-token-chart-track">
-                    <div
-                      className="preferences-token-chart-fill"
-                      style={{ height: `${heightPercent}%` }}
-                      title={`${formatDayLabel(day.date)}: ${formatTokenCount(day.tokens)} tokens`}
-                    />
-                  </div>
-                  <div className="preferences-token-chart-label">
-                    {formatDayLabel(day.date)}
-                  </div>
-                </div>
-              );
-            })}
+            <svg
+              viewBox={`0 0 ${USAGE_CHART_WIDTH} ${USAGE_CHART_HEIGHT}`}
+              className="preferences-usage-chart-svg"
+            >
+              <defs>
+                <linearGradient
+                  id="preferences-usage-area-fill"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {[0, 25, 50, 75, 100].map((tick) => {
+                const y = USAGE_CHART_HEIGHT - (tick / 100) * USAGE_CHART_HEIGHT;
+                return (
+                  <line
+                    key={tick}
+                    x1={0}
+                    x2={USAGE_CHART_WIDTH}
+                    y1={y}
+                    y2={y}
+                    className="preferences-usage-chart-grid"
+                  />
+                );
+              })}
+              {usageAreaPath && (
+                <path d={usageAreaPath} className="preferences-usage-chart-area" />
+              )}
+              {usageLinePath && (
+                <path d={usageLinePath} className="preferences-usage-chart-line" />
+              )}
+              {usageChartPoints.map((point) => (
+                <circle
+                  key={point.date}
+                  cx={point.x}
+                  cy={point.y}
+                  r={2.5}
+                  className="preferences-usage-chart-dot"
+                >
+                  <title>{`${formatDayLabel(point.date)}: ${formatPercent(point.percent)} used`}</title>
+                </circle>
+              ))}
+              {currentUsagePoint && (
+                <text
+                  x={currentUsagePoint.x}
+                  y={Math.max(12, currentUsagePoint.y - 8)}
+                  textAnchor="end"
+                  className="preferences-usage-chart-current-label"
+                >
+                  {formatPercent(usedPercent)}
+                </text>
+              )}
+            </svg>
+            <div className="preferences-usage-chart-labels">
+              <span>
+                {tokenUsage.days[0]
+                  ? formatDayLabel(tokenUsage.days[0].date)
+                  : ""}
+              </span>
+              <span>
+                {tokenUsage.days[tokenUsage.days.length - 1]
+                  ? formatDayLabel(tokenUsage.days[tokenUsage.days.length - 1].date)
+                  : ""}
+              </span>
+            </div>
           </div>
         </section>
       )}
@@ -388,6 +465,10 @@ export default function PreferencesPage() {
       <AnkiSyncHelpModal
         isOpen={isSyncHelpOpen}
         onClose={() => setIsSyncHelpOpen(false)}
+      />
+      <UpdatePlanModal
+        isOpen={isUpdatePlanModalOpen}
+        onClose={() => setIsUpdatePlanModalOpen(false)}
       />
     </Page>
   );

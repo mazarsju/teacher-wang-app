@@ -53,7 +53,7 @@ def create_test_user(
         id=user_id,
         username=username,
         email=email,
-        last_connexion=utcnow(),
+        last_connection=utcnow(),
     )
     db.session.add(user)
     db.session.commit()

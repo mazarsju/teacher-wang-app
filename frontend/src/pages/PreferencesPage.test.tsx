@@ -123,33 +123,92 @@ describe("PreferencesPage", () => {
     vi.clearAllMocks();
   });
 
-  it("shows total token usage, remaining tokens bar, and the 7-day chart", async () => {
+  it("shows AI usage as a percentage bar and a cumulative usage chart", async () => {
     renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
     expect(
       screen.getByRole("heading", { name: "Preferences" }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Token usage" }),
+      await screen.findByRole("heading", { name: "AI usage" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Total tokens used")).toBeInTheDocument();
+    expect(screen.queryByText("Token usage")).not.toBeInTheDocument();
+    expect(screen.queryByText(/token/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Used this month")).toBeInTheDocument();
+    // 1,250 tokens used out of a 100,000 allowance rounds to 1%.
     expect(
-      screen.getByText((_, element) => {
-        return (
-          element?.textContent?.trim() === "1,250" &&
-          element?.classList.contains("preferences-token-total-value") === true
-        );
+      screen.getByRole("progressbar", {
+        name: "Percentage of monthly AI usage allowance used",
+      }),
+    ).toHaveAttribute("aria-valuenow", "1");
+    expect(
+      screen.getByRole("img", {
+        name: /Cumulative AI usage this month/,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/roughly/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Remaining tokens")).toBeInTheDocument();
-    expect(screen.getByText("98,750 / 100,000")).toBeInTheDocument();
     expect(
-      screen.getByRole("progressbar", { name: "Remaining free-plan tokens" }),
-    ).toHaveAttribute("aria-valuenow", "98750");
-    expect(
-      screen.getByRole("img", { name: "Token usage for the last 7 days" }),
+      screen.getByText("Resets to 0% on the 1st of next month."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Update plan" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("prompts to update the plan once the monthly AI usage allowance is reached", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation((input: RequestInfo) => {
+      const url = String(input);
+
+      if (url.endsWith("/token-usage")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            total_tokens: 100000,
+            total_cost_usd: 3.5,
+            plan: "free",
+            available_token: 0,
+            max_allowed_token: 100000,
+            days: [{ date: "2026-07-24", tokens: 100000 }],
+          }),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    await screen.findByRole("heading", { name: "AI usage" });
+    expect(
+      screen.getByText(
+        "You're running out of AI usage for the month. Need more? Don't hesitate to change your plan!",
+      ),
+    ).toBeInTheDocument();
+
+    const updatePlanButton = screen.getByRole("button", {
+      name: "Update plan",
+    });
+    await user.click(updatePlanButton);
+
+    expect(
+      screen.getByRole("heading", { name: "Upgrade your plan" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/early bird/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "GitHub" }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/mazarsju/teacher-wang-app/issues",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(
+      screen.queryByRole("heading", { name: "Upgrade your plan" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows Anki synchronization with disconnected warning", async () => {
@@ -259,7 +318,7 @@ describe("PreferencesPage", () => {
   it("does not expose LLM configuration controls", async () => {
     renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 
-    await screen.findByRole("heading", { name: "Token usage" });
+    await screen.findByRole("heading", { name: "AI usage" });
     expect(
       screen.queryByRole("heading", { name: "LLM configuration" }),
     ).not.toBeInTheDocument();

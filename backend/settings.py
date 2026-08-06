@@ -145,6 +145,12 @@ def assert_free_plan_has_tokens(user) -> None:
         raise ValueError(FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE)
 
 
+def reset_available_token(user_id: str, plan: str, *, commit: bool = True) -> None:
+    """Refill available_token to the plan's monthly grant."""
+    grant = PRO_PLAN_TOKEN_GRANT if plan == "pro" else FREE_PLAN_MAX_ALLOWED_TOKEN
+    set_setting(user_id, SETTING_AVAILABLE_TOKEN, str(grant), commit=commit)
+
+
 def deduct_available_token(user_id: str, used: int, *, commit: bool = True) -> int:
     """Subtract ``used`` from available_token. May go negative."""
     if used <= 0:

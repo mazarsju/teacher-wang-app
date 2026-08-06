@@ -243,10 +243,11 @@ def get_daily_usage(
     ]
 
 
-def get_token_usage_summary(user_id: str, days: int = TOKEN_HISTORY_DAYS) -> dict:
+def get_token_usage_summary(user_id: str, days: int | None = None) -> dict:
     from backend.models import DEFAULT_USER_PLAN, User
     from backend.settings import (
         FREE_PLAN_MAX_ALLOWED_TOKEN,
+        PRO_PLAN_TOKEN_GRANT,
         get_available_token,
     )
 
@@ -254,13 +255,15 @@ def get_token_usage_summary(user_id: str, days: int = TOKEN_HISTORY_DAYS) -> dic
     plan = user.plan if user is not None else DEFAULT_USER_PLAN
     available_token = get_available_token(user_id)
     max_allowed_token = (
-        FREE_PLAN_MAX_ALLOWED_TOKEN if plan == DEFAULT_USER_PLAN else None
+        FREE_PLAN_MAX_ALLOWED_TOKEN if plan == DEFAULT_USER_PLAN else PRO_PLAN_TOKEN_GRANT
     )
+    # Default to month-to-date: today.day days ending today covers the 1st through today.
+    days_to_fetch = days if days is not None else utcnow().day
 
     return {
         "total_tokens": get_total_tokens(user_id),
         "total_cost_usd": get_total_cost_usd(user_id),
-        "days": get_daily_usage(user_id, days),
+        "days": get_daily_usage(user_id, days_to_fetch),
         "plan": plan,
         "available_token": available_token,
         "max_allowed_token": max_allowed_token,

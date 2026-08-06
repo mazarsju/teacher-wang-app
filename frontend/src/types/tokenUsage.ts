@@ -9,5 +9,5 @@ export type TokenUsageSummary = {
   days: TokenUsageDay[];
   plan: string;
   available_token: number;
-  max_allowed_token: number | null;
+  max_allowed_token: number;
 };

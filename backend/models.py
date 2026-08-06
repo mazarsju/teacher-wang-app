@@ -30,7 +30,7 @@ class User(db.Model):
     username = db.Column(String, nullable=False, unique=True)
     email = db.Column(String, nullable=False, unique=True)
     plan = db.Column(String, nullable=False, default=DEFAULT_USER_PLAN)
-    last_connexion = db.Column(
+    last_connection = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
         default=utcnow,

@@ -29,9 +29,11 @@ class TestUpdateUserEndpoint(unittest.TestCase):
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)
 
-        self.set_setting_patcher = patch("backend.routes.update_user.set_setting")
-        self.mock_set_setting = self.set_setting_patcher.start()
-        self.addCleanup(self.set_setting_patcher.stop)
+        self.reset_available_token_patcher = patch(
+            "backend.routes.update_user.reset_available_token"
+        )
+        self.mock_reset_available_token = self.reset_available_token_patcher.start()
+        self.addCleanup(self.reset_available_token_patcher.stop)
 
     def test_upgrading_to_pro_grants_ten_million_tokens(self):
         target = MagicMock(shortid=1, email="a@example.com", plan="free")
@@ -44,8 +46,8 @@ class TestUpdateUserEndpoint(unittest.TestCase):
             response.get_json(), {"id": "1", "email": "a@example.com", "plan": "pro"}
         )
         self.assertEqual(target.plan, "pro")
-        self.mock_set_setting.assert_called_once_with(
-            target.shortid, "available_token", "10000000"
+        self.mock_reset_available_token.assert_called_once_with(
+            target.shortid, "pro", commit=False
         )
         self.mock_session.commit.assert_called_once()
 
@@ -57,8 +59,8 @@ class TestUpdateUserEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(target.plan, "free")
-        self.mock_set_setting.assert_called_once_with(
-            target.shortid, "available_token", "100000"
+        self.mock_reset_available_token.assert_called_once_with(
+            target.shortid, "free", commit=False
         )
 
     def test_same_plan_does_not_touch_tokens(self):
@@ -68,7 +70,7 @@ class TestUpdateUserEndpoint(unittest.TestCase):
         response = self.client.patch("/admin/users/3", json={"plan": "free"})
 
         self.assertEqual(response.status_code, 200)
-        self.mock_set_setting.assert_not_called()
+        self.mock_reset_available_token.assert_not_called()
         self.mock_session.commit.assert_called_once()
 
     def test_missing_user_returns_not_found(self):

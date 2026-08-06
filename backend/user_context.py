@@ -71,7 +71,7 @@ def ensure_current_user() -> User:
             username=username,
             email=email or _placeholder_email(sub),
             plan=DEFAULT_USER_PLAN,
-            last_connexion=utcnow(),
+            last_connection=utcnow(),
         )
         db.session.add(user)
         db.session.commit()
@@ -80,10 +80,17 @@ def ensure_current_user() -> User:
         user.username = username
         if email is not None:
             user.email = email
-        user.last_connexion = utcnow()
+        previous_connection = user.last_connection
+        new_connection = utcnow()
+        user.last_connection = new_connection
         db.session.commit()
         # Seed any newly introduced default keys (e.g. available_token).
         _ensure_user_defaults(user.shortid)
+        if (previous_connection.year, previous_connection.month) < (
+            new_connection.year,
+            new_connection.month,
+        ):
+            _reset_monthly_tokens(user)
 
     g.current_user = user
     g.current_user_id = user.shortid
@@ -95,6 +102,13 @@ def _ensure_user_defaults(user_id) -> None:
     from backend.settings import ensure_default_settings
 
     ensure_default_settings(user_id)
+
+
+def _reset_monthly_tokens(user: User) -> None:
+    """Refill the plan's token allowance when a new calendar month starts."""
+    from backend.settings import reset_available_token
+
+    reset_available_token(user.shortid, user.plan, commit=True)
 
 
 def authenticate_request():

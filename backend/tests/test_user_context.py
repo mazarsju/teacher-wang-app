@@ -115,19 +115,68 @@ class TestEnsureCurrentUser(PostgresTestCase):
 
         self.assertEqual(user.email, f"{COGNITO_SUB}@users.local")
 
-    def test_second_request_refreshes_last_connexion_without_duplicating(self):
+    def test_second_request_refreshes_last_connection_without_duplicating(self):
         with self._request():
             g.cognito_claims = ACCESS_CLAIMS
             g.cognito_sub = COGNITO_SUB
-            first_seen = ensure_current_user().last_connexion
+            first_seen = ensure_current_user().last_connection
 
         with self._request():
             g.cognito_claims = ACCESS_CLAIMS
             g.cognito_sub = COGNITO_SUB
-            second_seen = ensure_current_user().last_connexion
+            second_seen = ensure_current_user().last_connection
 
         self.assertEqual(User.query.filter_by(id=COGNITO_SUB).count(), 1)
         self.assertGreaterEqual(second_seen, first_seen)
+
+    def test_resets_available_token_when_a_new_month_starts(self):
+        from backend.extensions import db
+        from backend.settings import SETTING_AVAILABLE_TOKEN, set_setting
+
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            user = ensure_current_user()
+
+        set_setting(user.shortid, SETTING_AVAILABLE_TOKEN, "0", commit=True)
+        now = user.last_connection
+        previous_month = (
+            now.replace(year=now.year - 1, month=12, day=1)
+            if now.month == 1
+            else now.replace(month=now.month - 1, day=1)
+        )
+        user.last_connection = previous_month
+        db.session.commit()
+
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            ensure_current_user()
+
+        available = Setting.query.filter_by(
+            user_id=user.shortid, key=SETTING_AVAILABLE_TOKEN
+        ).first()
+        self.assertEqual(available.value, str(FREE_PLAN_MAX_ALLOWED_TOKEN))
+
+    def test_does_not_reset_available_token_within_the_same_month(self):
+        from backend.settings import SETTING_AVAILABLE_TOKEN, set_setting
+
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            user = ensure_current_user()
+
+        set_setting(user.shortid, SETTING_AVAILABLE_TOKEN, "0", commit=True)
+
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            ensure_current_user()
+
+        available = Setting.query.filter_by(
+            user_id=user.shortid, key=SETTING_AVAILABLE_TOKEN
+        ).first()
+        self.assertEqual(available.value, "0")
 
     def test_falls_back_to_sub_when_username_claim_is_missing(self):
         with self._request():

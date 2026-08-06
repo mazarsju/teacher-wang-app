@@ -120,6 +120,22 @@ class TestTokenUsage(PostgresTestCase):
         self.assertEqual(summary["available_token"], 100_000)
         self.assertEqual(summary["max_allowed_token"], 100_000)
 
+    def test_summary_days_default_to_month_to_date(self):
+        today = datetime.now(timezone.utc)
+        summary = get_token_usage_summary(self.user_id)
+        self.assertEqual(len(summary["days"]), today.day)
+        self.assertEqual(summary["days"][-1]["date"], today.date().isoformat())
+
+    def test_summary_max_allowed_token_for_pro_plan(self):
+        from backend.models import User
+
+        User.query.filter_by(shortid=self.user_id).update({"plan": "pro"})
+        db.session.commit()
+
+        summary = get_token_usage_summary(self.user_id)
+        self.assertEqual(summary["plan"], "pro")
+        self.assertEqual(summary["max_allowed_token"], 10_000_000)
+
 
 if __name__ == "__main__":
     unittest.main()
