@@ -337,6 +337,22 @@ export function WarningIcon({ className }: IconProps) {
   );
 }
 
+export function HourglassIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+      <path d="M8 6h8l-4 6 4 6H8l4-6z" fill="#fff" />
+    </svg>
+  );
+}
+
 export function ProfileIcon({ className }: IconProps) {
   return (
     <svg

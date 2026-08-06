@@ -211,6 +211,34 @@ describe("PreferencesPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the current plan and opens the plan comparison modal", async () => {
+    const user = userEvent.setup();
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    await screen.findByRole("heading", { name: "Current plan" });
+    expect(screen.getByText("Free", { selector: "b" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Compare plans" }));
+
+    const comparisonDialog = screen.getByRole("dialog", {
+      name: "Compare plans",
+    });
+    expect(
+      within(comparisonDialog).getByText("Current plan"),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(comparisonDialog).getByRole("button", { name: "Switch to Pro" }),
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Compare plans" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Upgrade your plan" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows Anki synchronization with disconnected warning", async () => {
     renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
 

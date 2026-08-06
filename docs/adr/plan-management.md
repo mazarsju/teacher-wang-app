@@ -73,7 +73,7 @@ Two complementary numbers:
 
 ### Frontend
 
-* Preferences shows a **Remaining tokens** progress bar when `max_allowed_token` is set (clamped display `0…max`).
+* Preferences shows a **Remaining tokens** progress bar when `max_allowed_token` is set (clamped display `0…max`), plus a "Current plan" section with a Free/Pro feature-comparison modal (`ChangePlanModal`). Picking Pro opens `UpdatePlanModal`, which is still the same non-functional placeholder (no payment provider wired up).
 * Chat surfaces the API error string as-is (no special-case copy in the client).
 * Upgrade / checkout UI is out of scope until a payment provider is chosen.
 

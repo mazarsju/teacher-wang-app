@@ -4,6 +4,7 @@ import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncHelpModal from "../components/AnkiSyncHelpModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
 import Banner from "../components/Banner";
+import ChangePlanModal from "../components/ChangePlanModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
 import Page from "../components/Page";
@@ -18,6 +19,7 @@ import {
   type AnkiDeckStatus,
   type AnkiSyncDirection,
 } from "../types/anki";
+import type { UserPlan } from "../types/adminUser";
 import type { TokenUsageSummary } from "../types/tokenUsage";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
 import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
@@ -73,6 +75,7 @@ export default function PreferencesPage() {
   const [isDeleteKnowledgeBaseConfirmOpen, setIsDeleteKnowledgeBaseConfirmOpen] =
     useState(false);
   const [isUpdatePlanModalOpen, setIsUpdatePlanModalOpen] = useState(false);
+  const [isChangePlanModalOpen, setIsChangePlanModalOpen] = useState(false);
 
   const loadTokenUsage = useCallback(async () => {
     setExtrasError(null);
@@ -177,6 +180,8 @@ export default function PreferencesPage() {
   const currentUsagePoint = usageChartPoints[usageChartPoints.length - 1];
   const isUsageExhausted = usedPercent >= 100;
 
+  const currentPlan: UserPlan = tokenUsage?.plan === "pro" ? "pro" : "free";
+
   const deckRows = ANKI_DECK_ORDER.map((kind) => ({
     kind,
     label: ANKI_DECK_LABELS[kind],
@@ -189,6 +194,25 @@ export default function PreferencesPage() {
     <Page title="Preferences">
       {isLoading && <p>Loading preferences...</p>}
       {error && <p className="table-error">{error}</p>}
+
+      {!isLoading && tokenUsage && (
+        <section className="preferences-section preferences-section--plan">
+          <h2 className="preferences-section-title">Current plan</h2>
+          <p className="preferences-section-description">
+            <span>
+              You&apos;re on the{" "}
+              <b>{currentPlan === "pro" ? "Pro" : "Free"}</b> plan.
+            </span>
+            <button
+              type="button"
+              className="page-add-button"
+              onClick={() => setIsChangePlanModalOpen(true)}
+            >
+              Compare plans
+            </button>
+          </p>
+        </section>
+      )}
 
       {!isLoading && (
         <section className="preferences-section preferences-section--anki">
@@ -436,6 +460,15 @@ export default function PreferencesPage() {
       <AnkiSyncHelpModal
         isOpen={isSyncHelpOpen}
         onClose={() => setIsSyncHelpOpen(false)}
+      />
+      <ChangePlanModal
+        isOpen={isChangePlanModalOpen}
+        currentPlan={currentPlan}
+        onClose={() => setIsChangePlanModalOpen(false)}
+        onSwitchPlan={() => {
+          setIsChangePlanModalOpen(false);
+          setIsUpdatePlanModalOpen(true);
+        }}
       />
       <UpdatePlanModal
         isOpen={isUpdatePlanModalOpen}
