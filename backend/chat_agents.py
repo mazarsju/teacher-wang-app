@@ -61,6 +61,14 @@ CHAT_CHARACTERS = {
             CHALLENGE_SCENARIOS["challenge-shop"]
         ),
     },
+    "challenge-new-friend": {
+        "name": "Xiao Ming",
+        "chinese_name": "小明",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-new-friend"]
+        ),
+    },
 }
 
 

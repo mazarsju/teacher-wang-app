@@ -80,7 +80,28 @@ export const SHOP_CHALLENGE: Challenge = {
   hskLevel: 2,
 };
 
+export const NEW_FRIEND_CHALLENGE: Challenge = {
+  id: "challenge-new-friend",
+  title: "New Friend",
+  description: "Meet Xiao Ming for the first time and introduce yourself in Chinese",
+  character: {
+    id: "challenge-new-friend",
+    name: "Xiao Ming",
+    chineseName: "小明",
+    description: "Meet Xiao Ming for the first time and introduce yourself in Chinese",
+    avatarVariant: "friend",
+  },
+  tasks: [
+    { id: "greet-friend", label: "Say hi to your new friend" },
+    { id: "introduce-name", label: "Introduce yourself by name" },
+    { id: "say-age", label: "Tell them your age" },
+    { id: "say-goodbye", label: "Say goodbye" },
+  ],
+  hskLevel: 0,
+};
+
 export const CHALLENGES: Challenge[] = [
+  NEW_FRIEND_CHALLENGE,
   RESTAURANT_CHALLENGE,
   TAXI_CHALLENGE,
   HOTEL_CHALLENGE,

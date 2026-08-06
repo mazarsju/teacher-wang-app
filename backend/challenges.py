@@ -46,11 +46,30 @@ CHALLENGES = {
             {"id": "pay-item", "label": "Pay for the item"},
         ],
     },
+    "challenge-new-friend": {
+        "title": "New Friend",
+        "tasks": [
+            {"id": "greet-friend", "label": "Say hi to your new friend"},
+            {"id": "introduce-name", "label": "Introduce yourself by name"},
+            {"id": "say-age", "label": "Tell them your age"},
+            {"id": "say-goodbye", "label": "Say goodbye"},
+        ],
+    },
+}
+
+# Completing these challenges unlocks a persistent chat character and hands
+# its conversation history over to that character (see routes/chat.py).
+CHALLENGE_UNLOCKS_CHARACTER_ID = {
+    "challenge-new-friend": "xiao-ming",
 }
 
 
 def get_challenge(character_id: str) -> dict | None:
     return CHALLENGES.get(character_id)
+
+
+def get_unlocked_character_id(character_id: str) -> str | None:
+    return CHALLENGE_UNLOCKS_CHARACTER_ID.get(character_id)
 
 
 def is_challenge_character(character_id: str) -> bool:

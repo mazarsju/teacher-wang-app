@@ -13,7 +13,7 @@ from backend.conversation_logs import (
     load_conversation,
     replace_conversation,
 )
-from backend.user_context import current_user_id
+from backend.user_context import current_user
 
 bp = Blueprint("conversation_logs", __name__)
 
@@ -31,7 +31,7 @@ def get_conversation_log(character_id: str):
         return {"error": "Invalid character_id"}, 400
 
     try:
-        return _history_payload(current_user_id(), character_id), 200
+        return _history_payload(current_user().id, character_id), 200
     except PermissionError as error:
         return {"error": str(error)}, 403
 
@@ -41,7 +41,7 @@ def create_conversation_log(character_id: str):
     if character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
 
-    user_id = current_user_id()
+    user_id = current_user().id
     if conversation_exists(user_id, character_id):
         return {"error": "Conversation log already exists"}, 409
 
@@ -62,7 +62,7 @@ def patch_conversation_log(character_id: str):
     if not isinstance(messages, list):
         return {"error": "messages must be an array"}, 400
 
-    user_id = current_user_id()
+    user_id = current_user().id
     try:
         replace_conversation(user_id, character_id, messages)
     except ValueError as error:
@@ -79,7 +79,7 @@ def delete_conversation_log(character_id: str):
     if character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
 
-    user_id = current_user_id()
+    user_id = current_user().id
     clear_conversation(user_id, character_id)
     if is_challenge_character(character_id):
         clear_completed_task_ids(user_id, character_id)

@@ -1,10 +1,11 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactElement } from "react";
 import { renderWithStore } from "../test/renderWithStore";
 import ChatPage from "./ChatPage";
 
 const DEFAULT_PROGRESS = [
+  { id: "challenge-new-friend", completed: false },
   { id: "challenge-restaurant", completed: false },
   { id: "challenge-taxi", completed: false },
   { id: "challenge-hotel", completed: false },
@@ -37,56 +38,60 @@ function render(ui: ReactElement) {
   return renderWithStore(ui, { preloadedState: UNLOCKED_STATE });
 }
 
-describe("ChatPage", () => {
-  beforeEach(() => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo) => {
-        const url = String(input);
+function stubProgressFetch(challenges: { id: string; completed: boolean }[]) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo) => {
+      const url = String(input);
 
-        if (url.endsWith("/challenges/progress")) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              challenges: DEFAULT_PROGRESS,
-            }),
-          });
-        }
-
+      if (url.endsWith("/challenges/progress")) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({ messages: [], completed_task_ids: [] }),
+          json: async () => ({ challenges }),
         });
-      }),
-    );
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ messages: [], completed_task_ids: [] }),
+      });
+    }),
+  );
+}
+
+describe("ChatPage", () => {
+  beforeEach(() => {
+    stubProgressFetch(DEFAULT_PROGRESS);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("renders the chat character selection", () => {
-    render(<ChatPage />);
+  it("renders the chat character selection, hiding Xiao Ming until the New Friend challenge is done", () => {
+    const { container } = render(<ChatPage />);
+
+    const characterGrid = container.querySelector(
+      ".chat-character-grid",
+    ) as HTMLElement;
 
     expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
     expect(
       screen.getByText("Who do you want to speak with today?"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Teacher Wang/ }),
+      within(characterGrid).getByRole("button", { name: /Teacher Wang/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText("(王老师)")).toBeInTheDocument();
+    expect(within(characterGrid).getByText("(王老师)")).toBeInTheDocument();
     expect(
       screen.getByText("The native Chinese teacher who can also speak English"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Xiao Ming/ }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("(小明)")).toBeInTheDocument();
-    expect(screen.getByText("Your native Chinese friend")).toBeInTheDocument();
+      within(characterGrid).queryByRole("button", { name: /Xiao Ming/ }),
+    ).not.toBeInTheDocument();
   });
 
-  it("renders the Challenges section in order", () => {
+  it("renders the Challenges section in order, with New Friend (Xiao Ming) first", () => {
     render(<ChatPage />);
 
     expect(
@@ -94,28 +99,26 @@ describe("ChatPage", () => {
     ).toBeInTheDocument();
 
     const challengeButtons = [
+      screen.getByRole("button", { name: /Xiao Ming/ }),
       screen.getByRole("button", { name: /Waiter/ }),
       screen.getByRole("button", { name: /Taxi Driver/ }),
       screen.getByRole("button", { name: /Hotel Receptionist/ }),
       screen.getByRole("button", { name: /Shop Assistant/ }),
     ];
-    const positions = challengeButtons.map((button) =>
-      button.compareDocumentPosition(challengeButtons[0]),
-    );
-    expect(positions[0]).toBe(0);
-    expect(
-      challengeButtons[0].compareDocumentPosition(challengeButtons[1]) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      challengeButtons[1].compareDocumentPosition(challengeButtons[2]) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      challengeButtons[2].compareDocumentPosition(challengeButtons[3]) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    for (let index = 0; index < challengeButtons.length - 1; index += 1) {
+      expect(
+        challengeButtons[index].compareDocumentPosition(
+          challengeButtons[index + 1],
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
 
+    expect(screen.getByText("(小明)")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Meet Xiao Ming for the first time and introduce yourself in Chinese",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("(服务员)")).toBeInTheDocument();
     expect(
       screen.getByText("Talk with the waiter and order a meal"),
@@ -135,31 +138,13 @@ describe("ChatPage", () => {
   });
 
   it("marks completed challenges on the card", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo) => {
-        const url = String(input);
-
-        if (url.endsWith("/challenges/progress")) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              challenges: [
-                { id: "challenge-restaurant", completed: true },
-                { id: "challenge-taxi", completed: false },
-                { id: "challenge-hotel", completed: false },
-                { id: "challenge-shop", completed: false },
-              ],
-            }),
-          });
-        }
-
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ messages: [], completed_task_ids: [] }),
-        });
-      }),
-    );
+    stubProgressFetch([
+      { id: "challenge-new-friend", completed: false },
+      { id: "challenge-restaurant", completed: true },
+      { id: "challenge-taxi", completed: false },
+      { id: "challenge-hotel", completed: false },
+      { id: "challenge-shop", completed: false },
+    ]);
 
     render(<ChatPage />);
 
@@ -280,12 +265,34 @@ describe("ChatPage", () => {
     expect(screen.getByLabelText("Pay for the item")).toBeDisabled();
   });
 
-  it("closes the chat modal", async () => {
+  it("opens the new friend challenge chat modal as Xiao Ming with tasks", async () => {
     const user = userEvent.setup();
 
     render(<ChatPage />);
 
     await user.click(screen.getByRole("button", { name: /Xiao Ming/ }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Xiao Ming \(小明\)/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "New Friend — tasks" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Say hi to your new friend")).toBeDisabled();
+    expect(
+      screen.getByLabelText("Introduce yourself by name"),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("Tell them your age")).toBeDisabled();
+    expect(screen.getByLabelText("Say goodbye")).toBeDisabled();
+  });
+
+  it("closes the chat modal", async () => {
+    const user = userEvent.setup();
+
+    render(<ChatPage />);
+
+    await user.click(screen.getByRole("button", { name: /Teacher Wang/ }));
     await user.click(screen.getByRole("button", { name: "Close chat" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -304,6 +311,7 @@ describe("ChatPage", () => {
           ok: true,
           json: async () => ({
             challenges: [
+              { id: "challenge-new-friend", completed: false },
               {
                 id: "challenge-restaurant",
                 completed: callCount > 1,
@@ -336,7 +344,36 @@ describe("ChatPage", () => {
     });
   });
 
-  it("shows a knowledge base banner and hides Xiao Ming below 50 characters", () => {
+  it("unlocks Xiao Ming and hides the New Friend challenge once it is completed", async () => {
+    stubProgressFetch([
+      { id: "challenge-new-friend", completed: true },
+      { id: "challenge-restaurant", completed: false },
+      { id: "challenge-taxi", completed: false },
+      { id: "challenge-hotel", completed: false },
+      { id: "challenge-shop", completed: false },
+    ]);
+
+    const { container } = render(<ChatPage />);
+
+    await waitFor(() => {
+      const characterGrid = container.querySelector(
+        ".chat-character-grid",
+      ) as HTMLElement;
+      expect(
+        within(characterGrid).getByRole("button", { name: /Xiao Ming/ }),
+      ).toBeInTheDocument();
+    });
+
+    const challengeSection = container.querySelector(
+      ".challenge-card-grid",
+    ) as HTMLElement;
+    expect(within(challengeSection).getAllByRole("button")).toHaveLength(4);
+    expect(
+      within(challengeSection).queryByText("(小明)"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a knowledge base banner and hides Xiao Ming and challenges below 50 characters", () => {
     renderWithStore(<ChatPage onNavigate={vi.fn()} />, {
       preloadedState: {
         characters: { items: [] },
@@ -372,7 +409,7 @@ describe("ChatPage", () => {
     expect(onNavigate).toHaveBeenCalledWith("knowledge-base");
   });
 
-  it("hides challenges above the user's achieved HSK level", () => {
+  it("hides challenges above the user's achieved HSK level, keeping HSK0 New Friend visible", () => {
     renderWithStore(<ChatPage />, {
       preloadedState: {
         ...UNLOCKED_STATE,
@@ -383,5 +420,8 @@ describe("ChatPage", () => {
     expect(
       screen.queryByRole("button", { name: /Waiter/ }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Xiao Ming/ }),
+    ).toBeInTheDocument();
   });
 });

@@ -17,6 +17,7 @@ ALL_CHALLENGE_IDS = (
     "challenge-taxi",
     "challenge-hotel",
     "challenge-shop",
+    "challenge-new-friend",
 )
 
 
@@ -55,6 +56,18 @@ class TestChallengesProgress(unittest.TestCase):
         self.assertEqual(
             get_challenges_progress(TEST_USER),
             progress_payload(**{"challenge-restaurant": True}),
+        )
+
+    def test_new_friend_challenge_completed_when_all_tasks_done(self):
+        save_completed_task_ids(
+            TEST_USER,
+            "challenge-new-friend",
+            ["greet-friend", "introduce-name", "say-age", "say-goodbye"],
+        )
+        self.assertTrue(is_challenge_completed(TEST_USER, "challenge-new-friend"))
+        self.assertEqual(
+            get_challenges_progress(TEST_USER),
+            progress_payload(**{"challenge-new-friend": True}),
         )
 
     def test_taxi_challenge_completed_when_all_tasks_done(self):

@@ -12,6 +12,7 @@ from backend.conversation_logs import (
     append_message,
     append_thread_message,
     clear_conversation,
+    copy_conversation,
     create_correction_thread,
     load_conversation,
     load_thread,
@@ -227,6 +228,54 @@ class TestConversationLogs(unittest.TestCase):
                 "xiao-ming",
                 {"role": "user", "content": "How are you?"},
             )
+        )
+
+    def test_copy_conversation_hands_history_and_threads_to_new_character(self):
+        thread_id, _ = create_correction_thread(
+            TEST_USER, "challenge-new-friend", "Fix this."
+        )
+        append_message(
+            TEST_USER,
+            "challenge-new-friend",
+            "user",
+            "你好",
+            correction_thread_id=thread_id,
+        )
+        append_message(TEST_USER, "challenge-new-friend", "assistant", "你好！")
+
+        copy_conversation(TEST_USER, "challenge-new-friend", "xiao-ming")
+
+        copied = load_conversation(TEST_USER, "xiao-ming")
+        self.assertEqual(
+            [{"role": message["role"], "content": message["content"]} for message in copied],
+            [
+                {"role": "user", "content": "你好"},
+                {"role": "assistant", "content": "你好！"},
+            ],
+        )
+        self.assertEqual(copied[0]["correctionThreadId"], thread_id)
+        self.assertEqual(
+            load_thread(TEST_USER, "xiao-ming", thread_id),
+            load_thread(TEST_USER, "challenge-new-friend", thread_id),
+        )
+
+    def test_copy_conversation_does_not_overwrite_existing_destination(self):
+        append_message(TEST_USER, "challenge-new-friend", "user", "你好")
+        append_message(TEST_USER, "xiao-ming", "user", "已经聊过了")
+
+        copy_conversation(TEST_USER, "challenge-new-friend", "xiao-ming")
+
+        self.assertEqual(
+            load_conversation(TEST_USER, "xiao-ming"),
+            [{"role": "user", "content": "已经聊过了"}],
+        )
+
+    def test_copy_conversation_is_noop_when_source_is_empty(self):
+        copy_conversation(TEST_USER, "challenge-new-friend", "xiao-ming")
+
+        self.assertEqual(load_conversation(TEST_USER, "xiao-ming"), [])
+        self.assertFalse(
+            (self.logs_dir / "users" / TEST_USER / "xiao-ming.txt").exists()
         )
 
 

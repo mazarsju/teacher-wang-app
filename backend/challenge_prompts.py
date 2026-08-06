@@ -69,7 +69,7 @@ def build_challenge_system_prompt(scenario: ChallengeScenario) -> str:
         (
             "## Style\n"
             "Keep replies short and natural, usually between 1 and 3 sentences.\n"
-            "Can speak only Chinese (except English stage-direction blocks "
+            "Can speak and understand only Chinese (except English stage-direction blocks "
             "inside [[...]]).\n"
             "Do not keep asking follow-up questions; respond to what the "
             "learner said and wait."
@@ -325,9 +325,61 @@ SHOP = ChallengeScenario(
     ),
 )
 
+NEW_FRIEND = ChallengeScenario(
+    english_name="Xiao Ming",
+    chinese_name="小明",
+    role_summary=(
+        "You are the learner's new Chinese friend, meeting them for the "
+        "first time. Help them practice a basic self-introduction in "
+        "Mandarin: greeting, saying their name, saying their age, and "
+        "saying goodbye. Do not introduce yourself by name until right "
+        "after the learner has introduced theirs."
+    ),
+    initial_situation=(
+        "You and the learner have just met for the first time. You have not "
+        "spoken yet, and you have not told them your name yet."
+    ),
+    gate=ChallengeGate(
+        wait_bracket="Xiao Ming needs to be greeted first",
+        trigger_examples="你好, 你好！, 嗨, or any clear greeting",
+        trigger_description="greeted you",
+        post_contact_action="greet them back warmly",
+        greeting_example="你好！很高兴认识你。",
+        first_step_never_out_of_order=(
+            "Greeting you is never out of order at the start: if they say "
+            "你好 before anything else, always greet them back."
+        ),
+    ),
+    steps=(
+        "the learner must first greet you (see First contact);",
+        "then the learner must introduce themselves by saying their name "
+        "(e.g. 我叫..., 我是...); immediately after they do, introduce "
+        "yourself as 小明 (e.g. 我叫小明 / 我是小明);",
+        "then the learner must tell you their age (e.g. 我...岁, 我今年...岁);",
+        "only after that may they say goodbye to end the conversation "
+        "(e.g. 再见, 拜拜).",
+    ),
+    out_of_order_examples=(
+        "telling their age before introducing their name, or saying "
+        "goodbye before introducing themselves and their age"
+    ),
+    mid_flow_tips=(
+        "When they introduce their name, respond warmly and introduce "
+        "yourself as 小明, e.g. 你好，我叫小明，很高兴认识你。",
+        "When they tell you their age, react naturally, e.g. 哦，你...岁啊。",
+    ),
+    leave_agent_label="Xiao Ming leaves",
+    leave_example=(
+        "[[Xiao Ming leaves]][[Xiao Ming waves goodbye]]"
+        "再见，很高兴认识你！"
+    ),
+    leave_when_examples="for example the learner has said goodbye",
+)
+
 CHALLENGE_SCENARIOS: dict[str, ChallengeScenario] = {
     "challenge-restaurant": RESTAURANT,
     "challenge-taxi": TAXI,
     "challenge-hotel": HOTEL,
     "challenge-shop": SHOP,
+    "challenge-new-friend": NEW_FRIEND,
 }

@@ -85,6 +85,10 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_save_tasks = self.save_tasks_patcher.start()
         self.addCleanup(self.save_tasks_patcher.stop)
 
+        self.copy_conversation_patcher = patch("backend.routes.chat.copy_conversation")
+        self.mock_copy_conversation = self.copy_conversation_patcher.start()
+        self.addCleanup(self.copy_conversation_patcher.stop)
+
         self.clear_tasks_patcher = patch("backend.routes.chat.clear_completed_task_ids")
         self.mock_clear_tasks = self.clear_tasks_patcher.start()
         self.addCleanup(self.clear_tasks_patcher.stop)
@@ -103,6 +107,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_challenge_reply.reset_mock()
         self.mock_load_tasks.reset_mock()
         self.mock_save_tasks.reset_mock()
+        self.mock_copy_conversation.reset_mock()
         self.mock_clear_tasks.reset_mock()
         self.mock_should_append.return_value = True
         self.mock_should_append_thread.return_value = True
@@ -465,6 +470,81 @@ class TestChatEndpoint(unittest.TestCase):
             input_tokens=35,
             output_tokens=15,
         )
+
+    def test_challenge_completion_hands_history_to_unlocked_character(self):
+        self.mock_challenge_reply.return_value = MagicMock(
+            content="再见，很高兴认识你！",
+            unknown_characters=[],
+            completed_task_ids=["say-goodbye"],
+            judge_conversation=[],
+            token_usage=MagicMock(input_tokens=10, output_tokens=5),
+        )
+        self.mock_load_tasks.return_value = [
+            "greet-friend",
+            "introduce-name",
+            "say-age",
+        ]
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "challenge-new-friend",
+                "messages": [{"role": "user", "content": "再见"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_copy_conversation.assert_called_once_with(
+            TEST_USER_ID,
+            "challenge-new-friend",
+            "xiao-ming",
+        )
+
+    def test_challenge_in_progress_does_not_hand_off_history(self):
+        self.mock_challenge_reply.return_value = MagicMock(
+            content="你好！很高兴认识你。",
+            unknown_characters=[],
+            completed_task_ids=["greet-friend"],
+            judge_conversation=[],
+            token_usage=MagicMock(input_tokens=10, output_tokens=5),
+        )
+        self.mock_load_tasks.return_value = []
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "challenge-new-friend",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_copy_conversation.assert_not_called()
+
+    def test_challenge_completion_without_unlock_mapping_does_not_hand_off(self):
+        self.mock_challenge_reply.return_value = MagicMock(
+            content="谢谢惠顾。",
+            unknown_characters=[],
+            completed_task_ids=["pay-bill"],
+            judge_conversation=[],
+            token_usage=MagicMock(input_tokens=10, output_tokens=5),
+        )
+        self.mock_load_tasks.return_value = [
+            "call-waiter",
+            "ask-no-meat",
+            "ask-bill",
+        ]
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "challenge-restaurant",
+                "messages": [{"role": "user", "content": "谢谢"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_copy_conversation.assert_not_called()
 
     def test_challenge_chat_returns_judge_conversation_when_revised(self):
         self.mock_challenge_reply.return_value = MagicMock(

@@ -22,6 +22,7 @@ SCENARIO_GATES = {
     "challenge-taxi": "[[The taxi needs to be hailed]]",
     "challenge-hotel": "[[The receptionist needs to be greeted]]",
     "challenge-shop": "[[The shop assistant needs to be greeted]]",
+    "challenge-new-friend": "[[Xiao Ming needs to be greeted first]]",
 }
 
 

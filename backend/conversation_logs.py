@@ -358,6 +358,31 @@ def append_message(
     storage.write_text(key, existing + addition)
 
 
+def copy_conversation(user_id: str, from_character_id: str, to_character_id: str) -> None:
+    """Hand a conversation (and its correction threads) to another character.
+
+    No-op if the source is empty or the destination already has history, so
+    it is safe to call on every turn once a challenge is completed.
+    """
+    storage = get_storage()
+    to_key = log_object_key(user_id, to_character_id)
+    if storage.exists(to_key):
+        return
+
+    from_text = storage.read_text(log_object_key(user_id, from_character_id))
+    if not from_text:
+        return
+
+    storage.write_text(to_key, from_text)
+
+    from_prefix = threads_prefix(user_id, from_character_id)
+    to_prefix = threads_prefix(user_id, to_character_id)
+    for key in storage.list_keys(from_prefix):
+        content = storage.read_text(key)
+        if content is not None:
+            storage.write_text(to_prefix + key[len(from_prefix) :], content)
+
+
 def clear_conversation(user_id: str, character_id: str) -> None:
     storage = get_storage()
     storage.delete(log_object_key(user_id, character_id))
