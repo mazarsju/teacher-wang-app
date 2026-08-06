@@ -1,0 +1,11 @@
+---
+description: Run tests with minimal output after touching frontend or backend code
+globs: "frontend/src/**,backend/**"
+alwaysApply: false
+---
+
+# Testing
+
+- After changing `frontend/src/**`, run `cd frontend && npx vitest run --silent` and fix any failures before finishing.
+- After changing `backend/**`, run `python3 -m unittest discover -s backend/tests -q` and fix any failures before finishing.
+- Always pass `--silent` to vitest and `-q` to unittest to keep output minimal; drop the flag only when a failure needs full output to diagnose.

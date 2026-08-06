@@ -12,8 +12,9 @@ screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 
 ## Testing
 
-- After changing `frontend/src/**`, run `cd frontend && npx vitest run` and fix any failures before finishing.
-- After changing `backend/**`, run `python3 -m unittest discover -s backend/tests -v` and fix any failures before finishing.
+- After changing `frontend/src/**`, run `cd frontend && npx vitest run --silent` and fix any failures before finishing.
+- After changing `backend/**`, run `python3 -m unittest discover -s backend/tests -q` and fix any failures before finishing.
+- Always pass `--silent` to vitest and `-q` to unittest to keep output minimal; drop the flag only when a failure needs full output to diagnose.
 - Any new feature or element (component, page, route, util, service function) must ship with unit tests covering it — frontend (`*.test.tsx`/`*.test.ts` next to the source) and/or backend (`backend/tests/`), as applicable.
 
 ## Python command
