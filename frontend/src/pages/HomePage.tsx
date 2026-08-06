@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
+import Banner from "../components/Banner";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
-import KnowledgeBaseOnboardingBanner from "../components/KnowledgeBaseOnboardingBanner";
 import MissingHskCharactersModal from "../components/MissingHskCharactersModal";
 import type { PageId } from "../components/Navbar";
 import { InfoIcon, TrophyIcon } from "../components/icons";
@@ -66,7 +66,12 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   return (
     <Page title="Home">
       {words.length < ONBOARDING_WORD_THRESHOLD && (
-        <KnowledgeBaseOnboardingBanner onStart={() => setIsInitWizardOpen(true)} />
+        <Banner
+          type="info"
+          message="Struggling with setting up your knowledge base? Click here for a faster and easier onboarding!"
+          buttonMessage="Start building your knowledge base"
+          actionOnButtonClick={() => setIsInitWizardOpen(true)}
+        />
       )}
       <KnowledgeBaseInitWizardModal
         isOpen={isInitWizardOpen}

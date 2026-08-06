@@ -3,8 +3,9 @@ import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncHelpModal from "../components/AnkiSyncHelpModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
+import Banner from "../components/Banner";
 import ConfirmModal from "../components/ConfirmModal";
-import { InfoIcon, SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
+import { SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
 import Page from "../components/Page";
 import UpdatePlanModal from "../components/UpdatePlanModal";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -198,42 +199,21 @@ export default function PreferencesPage() {
           </p>
 
           {!ankiStatus.connected && (
-            <div className="anki-warning" role="status">
-              <div className="anki-warning-title-row">
-                <p className="anki-warning-text">
-                  Start the Anki app with the AnkiConnect add-on activated before
-                  configuring decks.
-                </p>
-                <button
-                  type="button"
-                  className="home-hsk-info-button"
-                  aria-label="How to set up AnkiConnect"
-                  title="How to set up AnkiConnect"
-                  onClick={() => setIsGuideOpen(true)}
-                >
-                  <InfoIcon className="home-hsk-info-icon" />
-                </button>
-              </div>
-            </div>
+            <Banner
+              type="warning"
+              message="Start the Anki app with the AnkiConnect add-on activated before configuring decks."
+              buttonMessage="How to set up AnkiConnect"
+              actionOnButtonClick={() => setIsGuideOpen(true)}
+            />
           )}
 
           {hasUnsynchronizedDeck && (
-            <div className="anki-warning" role="status">
-              <div className="anki-warning-title-row">
-                <p className="anki-warning-text">
-                  Struggling with your Anki setup? Click here for more info
-                </p>
-                <button
-                  type="button"
-                  className="home-hsk-info-button"
-                  aria-label="Anki synchronization help"
-                  title="Anki synchronization help"
-                  onClick={() => setIsSyncHelpOpen(true)}
-                >
-                  <InfoIcon className="home-hsk-info-icon" />
-                </button>
-              </div>
-            </div>
+            <Banner
+              type="warning"
+              message="Struggling with your Anki setup? Click here for more info"
+              buttonMessage="Anki synchronization help"
+              actionOnButtonClick={() => setIsSyncHelpOpen(true)}
+            />
           )}
 
           <ul className="anki-deck-list">
@@ -319,21 +299,12 @@ export default function PreferencesPage() {
           </div>
 
           {isUsageExhausted && (
-            <div className="anki-warning" role="status">
-              <div className="anki-warning-title-row">
-                <p className="anki-warning-text">
-                  You&apos;re running out of AI usage for the month. Need
-                  more? Don&apos;t hesitate to change your plan!
-                </p>
-                <button
-                  type="button"
-                  className="page-add-button"
-                  onClick={() => setIsUpdatePlanModalOpen(true)}
-                >
-                  Update plan
-                </button>
-              </div>
-            </div>
+            <Banner
+              type="warning"
+              message="You're running out of AI usage for the month. Need more? Don't hesitate to change your plan!"
+              buttonMessage="Update plan"
+              actionOnButtonClick={() => setIsUpdatePlanModalOpen(true)}
+            />
           )}
 
           <div

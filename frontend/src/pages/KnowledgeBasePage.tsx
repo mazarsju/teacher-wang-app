@@ -5,11 +5,10 @@ import CharacterFormModal, {
   type CharacterFormValues,
 } from "../components/CharacterFormModal";
 import CharacterWordsModal from "../components/CharacterWordsModal";
+import Banner from "../components/Banner";
 import ConfirmModal from "../components/ConfirmModal";
 import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
-import KnowledgeBaseOnboardingBanner from "../components/KnowledgeBaseOnboardingBanner";
-import KnowledgeBaseSuggestionsBanner from "../components/KnowledgeBaseSuggestionsBanner";
 import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
 import PinyinGridView from "../components/PinyinGridView";
@@ -518,10 +517,18 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     >
       {pageMode === "edit" &&
         (words.length < ONBOARDING_WORD_THRESHOLD ? (
-          <KnowledgeBaseOnboardingBanner onStart={() => setIsInitWizardOpen(true)} />
+          <Banner
+            type="info"
+            message="Struggling with setting up your knowledge base? Click here for a faster and easier onboarding!"
+            buttonMessage="Start building your knowledge base"
+            actionOnButtonClick={() => setIsInitWizardOpen(true)}
+          />
         ) : (
-          <KnowledgeBaseSuggestionsBanner
-            onStart={() => setIsSuggestedWordsModalOpen(true)}
+          <Banner
+            type="info"
+            message="Need some inspiration for your next word to learn?"
+            buttonMessage="Add next word"
+            actionOnButtonClick={() => setIsSuggestedWordsModalOpen(true)}
           />
         ))}
       <KnowledgeBaseInitWizardModal

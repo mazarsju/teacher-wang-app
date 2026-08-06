@@ -3,6 +3,7 @@ import ChallengeCard from "../components/ChallengeCard";
 import ChatCharacterCard, {
   type ChatCharacter,
 } from "../components/ChatCharacterCard";
+import Banner from "../components/Banner";
 import ChatModal from "../components/ChatModal";
 import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
@@ -83,21 +84,13 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
         challengeTitle={selectedChallenge?.title}
       />
 
-      {!hasEnoughCharacters && (
-        <div className="kb-onboarding-banner" role="status">
-          <p className="kb-onboarding-banner-text">
-            Build your knowledge base to unlock more people to talk to!
-          </p>
-          {onNavigate && (
-            <button
-              type="button"
-              className="kb-onboarding-banner-button"
-              onClick={() => onNavigate("knowledge-base")}
-            >
-              Go to knowledge base
-            </button>
-          )}
-        </div>
+      {!hasEnoughCharacters && onNavigate && (
+        <Banner
+          type="info"
+          message="Build your knowledge base to unlock more people to talk to!"
+          buttonMessage="Go to knowledge base"
+          actionOnButtonClick={() => onNavigate("knowledge-base")}
+        />
       )}
 
       <p className="chat-intro">Who do you want to speak with today?</p>
