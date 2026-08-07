@@ -17,6 +17,7 @@ type AddWordModalProps = {
   initialWord?: Word | null;
   existingWords?: string[];
   hskCharacterPinyin: Record<string, string>;
+  characterPinyin: Record<string, string>;
   onConfirm: (values: WordFormValues) => void;
   onCancel: () => void;
 };
@@ -27,6 +28,7 @@ export default function AddWordModal({
   initialWord = null,
   existingWords = [],
   hskCharacterPinyin,
+  characterPinyin,
   onConfirm,
   onCancel,
 }: AddWordModalProps) {
@@ -111,7 +113,13 @@ export default function AddWordModal({
               onChange={(event) => {
                 const newWord = event.target.value;
                 setWord(newWord);
-                setPinyin(buildPinyinFromCharacterMap(newWord, hskCharacterPinyin));
+                setPinyin(
+                  buildPinyinFromCharacterMap(
+                    newWord,
+                    hskCharacterPinyin,
+                    characterPinyin,
+                  ),
+                );
               }}
             />
           </label>

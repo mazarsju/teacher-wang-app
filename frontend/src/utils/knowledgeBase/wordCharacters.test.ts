@@ -54,14 +54,29 @@ describe("isWordPinyinValid", () => {
 });
 
 describe("buildPinyinFromCharacterMap", () => {
-  it("maps each Chinese character to its known reading", () => {
+  it("maps each Chinese character to its known HSK reading", () => {
     expect(
       buildPinyinFromCharacterMap("你好", { 你: "ni3", 好: "hao3" }),
     ).toBe("ni3 hao3");
   });
 
-  it("uses '??' for Chinese characters missing from the map", () => {
+  it("falls back to the user's own character table when missing from HSK", () => {
+    expect(
+      buildPinyinFromCharacterMap("你好", { 你: "ni3" }, { 好: "hao3" }),
+    ).toBe("ni3 hao3");
+  });
+
+  it("prefers the HSK reading over the user's own character table", () => {
+    expect(
+      buildPinyinFromCharacterMap("你", { 你: "ni3" }, { 你: "ni2" }),
+    ).toBe("ni3");
+  });
+
+  it("uses '??' for Chinese characters missing from both sources", () => {
     expect(buildPinyinFromCharacterMap("你好", { 你: "ni3" })).toBe("ni3 ??");
+    expect(
+      buildPinyinFromCharacterMap("你好", { 你: "ni3" }, { 想: "xiang3" }),
+    ).toBe("ni3 ??");
   });
 
   it("keeps non-Chinese characters as-is, one token each", () => {

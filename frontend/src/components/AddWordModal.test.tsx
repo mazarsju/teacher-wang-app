@@ -12,6 +12,7 @@ describe("AddWordModal", () => {
         isOpen
         existingWords={["爱好"]}
         hskCharacterPinyin={{}}
+        characterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -34,6 +35,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{ 想: "xiang3" }}
+        characterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
       />,
@@ -58,6 +60,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -68,7 +71,7 @@ describe("AddWordModal", () => {
     expect(screen.getByLabelText("pinyin")).toHaveValue("ai4 hao3");
   });
 
-  it("auto-fills '??' for Chinese characters missing from the HSK pinyin map", async () => {
+  it("falls back to the user's own character table when a character is missing from HSK", async () => {
     const user = userEvent.setup();
 
     render(
@@ -76,6 +79,26 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{ 爱: "ai4" }}
+        characterPinyin={{ 好: "hao3" }}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("words"), "爱好");
+
+    expect(screen.getByLabelText("pinyin")).toHaveValue("ai4 hao3");
+  });
+
+  it("auto-fills '??' for Chinese characters missing from both the HSK map and the user's own characters", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        hskCharacterPinyin={{ 爱: "ai4" }}
+        characterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -95,6 +118,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
       />,
@@ -119,6 +143,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -139,6 +164,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -157,6 +183,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         hskCharacterPinyin={{}}
+        characterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -190,6 +217,7 @@ describe("AddWordModal", () => {
           characters: ["A", "想", "B"],
         }}
         hskCharacterPinyin={{}}
+        characterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
       />,
@@ -228,6 +256,7 @@ describe("AddWordModal", () => {
           characters: ["爱", "好"],
         }}
         hskCharacterPinyin={{}}
+        characterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
       />,

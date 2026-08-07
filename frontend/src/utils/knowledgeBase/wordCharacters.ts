@@ -30,18 +30,22 @@ export function isWordPinyinValid(word: string, pinyinInput: string): boolean {
 
 /**
  * Auto-fill a word's pinyin from known character readings: each Han
- * character becomes its `pinyinByCharacter` reading (or "??" when unknown),
- * and each non-Han character is kept as-is — one space-separated token per
- * character.
+ * character becomes its `hskCharacterPinyin` reading, falling back to its
+ * reading in the user's own `userCharacterPinyin` character table, then to
+ * "??" when neither has it. Each non-Han character is kept as-is — one
+ * space-separated token per character.
  */
 export function buildPinyinFromCharacterMap(
   word: string,
-  pinyinByCharacter: Record<string, string>,
+  hskCharacterPinyin: Record<string, string>,
+  userCharacterPinyin: Record<string, string> = {},
 ): string {
   return splitWordCharacters(word)
     .map((character) =>
       isHanCharacter(character)
-        ? pinyinByCharacter[character] || "??"
+        ? hskCharacterPinyin[character] ||
+          userCharacterPinyin[character] ||
+          "??"
         : character,
     )
     .join(" ");

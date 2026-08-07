@@ -226,6 +226,20 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByRole("cell", { name: "ai4 hao3" })).toBeInTheDocument();
   });
 
+  it("auto-fills pinyin from the user's own character table when missing from HSK", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+    await screen.findByRole("button", { name: "Add word" });
+
+    await user.click(screen.getByRole("button", { name: "Add word" }));
+    // "好" is only known via the user's own `characters` table (no HSK
+    // reading seeded in this test); "你" is unknown everywhere.
+    await user.type(screen.getByLabelText("words"), "你好");
+
+    expect(screen.getByLabelText("pinyin")).toHaveValue("?? hao3");
+  });
+
   it("keeps the characters section read-only: no add/edit/delete controls", async () => {
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
     await screen.findByRole("cell", { name: "爱" });

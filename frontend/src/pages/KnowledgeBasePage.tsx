@@ -149,6 +149,14 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     [characters],
   );
 
+  const characterPinyin = useMemo(
+    () =>
+      Object.fromEntries(
+        characters.map((character) => [character.char, character.pinyin]),
+      ),
+    [characters],
+  );
+
   const existingWords = useMemo(
     () => words.map((word) => word.word),
     [words],
@@ -517,6 +525,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         isOpen={isAddWordModalOpen}
         existingWords={existingWords}
         hskCharacterPinyin={hskCharacterPinyin}
+        characterPinyin={characterPinyin}
         onCancel={() => setIsAddWordModalOpen(false)}
         onConfirm={(values) => void confirmAddWord(values)}
       />
@@ -525,6 +534,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         isOpen={wordToEdit !== null}
         initialWord={wordToEdit}
         hskCharacterPinyin={hskCharacterPinyin}
+        characterPinyin={characterPinyin}
         onCancel={() => setWordToEdit(null)}
         onConfirm={(values) => void confirmEditWord(values)}
       />
