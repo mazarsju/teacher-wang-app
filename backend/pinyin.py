@@ -720,6 +720,15 @@ def replace_pinyin_accents(token: str) -> str:
     return result + tone
 
 
+def fix_erhua_syllable(syllable: str) -> str:
+    """Erhua suffix split into its own token (e.g. "r" for 儿) is "er", not "r"."""
+    tone = syllable[-1] if syllable and syllable[-1] in _VALID_TONES else ""
+    base = syllable[:-1] if tone else syllable
+    if base == "r":
+        return "er" + tone
+    return syllable
+
+
 def normalize_anki_pinyin_token(token: str) -> str | None:
     """Normalize one Anki pinyin syllable to app form (e.g. Qīn → qin1).
 
@@ -729,7 +738,7 @@ def normalize_anki_pinyin_token(token: str) -> str | None:
     if trimmed == "":
         return None
 
-    candidate = replace_pinyin_accents(trimmed).lower()
+    candidate = fix_erhua_syllable(replace_pinyin_accents(trimmed).lower())
     if is_valid_pinyin(candidate):
         return candidate
 

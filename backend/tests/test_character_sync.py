@@ -259,6 +259,12 @@ class TestBuildWordPinyinForStorage(unittest.TestCase):
     def test_allows_blank_pinyin(self):
         self.assertEqual(build_word_pinyin_for_storage("你好", ""), "")
 
+    def test_lowercases_index_aligned_tokens(self):
+        self.assertEqual(
+            build_word_pinyin_for_storage("爱", "Ai3"),
+            "ai3",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

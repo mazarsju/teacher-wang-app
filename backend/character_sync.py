@@ -42,7 +42,7 @@ def _valid_reading_at(tokens: list[str], index: int) -> str | None:
         return None
     if not is_valid_pinyin(token):
         return None
-    return token
+    return token.lower()
 
 
 def pair_han_characters_with_anki_pinyin_tokens(

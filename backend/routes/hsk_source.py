@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.request import urlopen
 
-from backend.pinyin import is_valid_pinyin, suggest_umlaut_pinyin
+from backend.pinyin import normalize_anki_pinyin_token
 
 COMPLETE_HSK_JSON_URL = (
     "https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/complete.json"
@@ -41,19 +41,8 @@ def make_hsk_word_id(word: str, pinyin: str) -> str:
 
 
 def _correct_pinyin_syllable(syllable: str) -> str:
-    """Fix known upstream pinyin syntax mistakes in one syllable.
-
-    Erhua suffix split off as its own token (e.g. "r" for 儿) is spelled
-    "er", not "r". Otherwise, retry invalid syllables with u→ü (e.g. "xue2"
-    isn't valid pinyin, "xüe2" is) and keep the original when still unfixable.
-    """
-    tone = syllable[-1] if syllable and syllable[-1] in "1234" else ""
-    base = syllable[:-1] if tone else syllable
-    if base == "r":
-        return "er" + tone
-    if is_valid_pinyin(syllable):
-        return syllable
-    return suggest_umlaut_pinyin(syllable) or syllable
+    """Fix known upstream pinyin syntax mistakes, keeping the original when unfixable."""
+    return normalize_anki_pinyin_token(syllable) or syllable
 
 
 def normalize_hsk_numeric_pinyin(numeric: str) -> str:

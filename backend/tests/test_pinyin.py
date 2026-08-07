@@ -22,6 +22,13 @@ class PinyinNormalizeTests(unittest.TestCase):
         self.assertIsNone(normalize_anki_pinyin_token(""))
         self.assertIsNone(normalize_anki_pinyin_token("xyz9"))
 
+    def test_normalize_lowercases(self):
+        self.assertEqual(normalize_anki_pinyin_token("Ai3"), "ai3")
+
+    def test_normalize_erhua_suffix(self):
+        self.assertEqual(normalize_anki_pinyin_token("r"), "er")
+        self.assertEqual(normalize_anki_pinyin_token("r2"), "er2")
+
 
 if __name__ == "__main__":
     unittest.main()
