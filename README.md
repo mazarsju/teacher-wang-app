@@ -287,7 +287,7 @@ See at a glance where you stand on the HSK ladder—and exactly which characters
 
 ### Update your knowledge base
 
-Add characters and words in a clean edit view, then switch to a pinyin grid that turns your vocabulary into a visual map of progress.
+Add words in a clean edit view — matching characters are created automatically — then switch to a pinyin grid that turns your vocabulary into a visual map of progress.
 
 ![Knowledge base edit](docs/screenshots/03-knowledge-base-edit.png)
 

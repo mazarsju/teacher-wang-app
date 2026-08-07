@@ -1,9 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import AddSuggestedWordsModal from "../components/AddSuggestedWordsModal";
 import AddWordModal, { type WordFormValues } from "../components/AddWordModal";
-import CharacterFormModal, {
-  type CharacterFormValues,
-} from "../components/CharacterFormModal";
 import CharacterWordsModal from "../components/CharacterWordsModal";
 import Banner from "../components/Banner";
 import ConfirmModal from "../components/ConfirmModal";
@@ -17,19 +14,11 @@ import type { Character } from "../types/character";
 import type { Word } from "../types/word";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
-import {
-  removeCharacter,
-  upsertCharacter,
-} from "../store/slices/charactersSlice";
+import { upsertCharacter } from "../store/slices/charactersSlice";
 import { removeWord, upsertWord } from "../store/slices/wordsSlice";
 import { syncAppData } from "../store/thunks/syncAppData";
 import { runAnkiQuickSync } from "../utils/anki/ankiApi";
-import {
-  bulkCreateCharacters,
-  createCharacter,
-  deleteCharacter,
-  updateCharacter,
-} from "../utils/knowledgeBase/charactersApi";
+import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { extractMissingCharacterEntries } from "../utils/knowledgeBase/wordCharacters";
@@ -134,15 +123,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
   const [characterSearchQuery, setCharacterSearchQuery] = useState("");
   const [wordSearchQuery, setWordSearchQuery] = useState("");
-  const [characterToDelete, setCharacterToDelete] = useState<Character | null>(
-    null,
-  );
-  const [characterToEdit, setCharacterToEdit] = useState<Character | null>(null);
   const [wordToDelete, setWordToDelete] = useState<Word | null>(null);
   const [wordToEdit, setWordToEdit] = useState<Word | null>(null);
-  const [isAddCharacterModalOpen, setIsAddCharacterModalOpen] = useState(false);
   const [isAddWordModalOpen, setIsAddWordModalOpen] = useState(false);
-  const [prefilledCharForAdd, setPrefilledCharForAdd] = useState("");
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -204,25 +187,11 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const showAnkiSyncBanner =
     ankiOverallSynchronized && pendingAnkiPushEstimate > 0;
 
-  const openAddCharacterModal = useCallback((prefilledChar = "") => {
-    setPrefilledCharForAdd(prefilledChar);
-    setIsAddCharacterModalOpen(true);
-  }, []);
-
-  const closeAddCharacterModal = useCallback(() => {
-    setIsAddCharacterModalOpen(false);
-    setPrefilledCharForAdd("");
-  }, []);
-
   const switchToViewMode = useCallback(() => {
     setPageMode("view");
-    setCharacterToDelete(null);
-    setCharacterToEdit(null);
     setWordToDelete(null);
     setWordToEdit(null);
-    setIsAddCharacterModalOpen(false);
     setIsAddWordModalOpen(false);
-    setPrefilledCharForAdd("");
     setStatusMessage(null);
   }, []);
 
@@ -270,26 +239,6 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     }
   }
 
-  async function confirmDeleteCharacter() {
-    if (characterToDelete === null) {
-      return;
-    }
-
-    const character = characterToDelete;
-    setCharacterToDelete(null);
-
-    try {
-      await deleteCharacter(character.char);
-      dispatch(removeCharacter(character.char));
-    } catch (deleteError) {
-      setMutationError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Failed to delete character.",
-      );
-    }
-  }
-
   async function confirmDeleteWord() {
     if (wordToDelete === null) {
       return;
@@ -306,29 +255,6 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         deleteError instanceof Error
           ? deleteError.message
           : "Failed to delete word.",
-      );
-    }
-  }
-
-  async function confirmEditCharacter(values: CharacterFormValues) {
-    if (characterToEdit === null) {
-      return;
-    }
-
-    const character = characterToEdit;
-    setCharacterToEdit(null);
-
-    try {
-      const updatedCharacter = await updateCharacter(character.char, {
-        pinyin: values.pinyin,
-        writting_known: values.writting_known,
-      });
-      dispatch(upsertCharacter(updatedCharacter));
-    } catch (updateError) {
-      setMutationError(
-        updateError instanceof Error
-          ? updateError.message
-          : "Failed to update character.",
       );
     }
   }
@@ -371,19 +297,6 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         updateError instanceof Error
           ? updateError.message
           : "Failed to update word.",
-      );
-    }
-  }
-
-  async function confirmAddCharacter(values: CharacterFormValues) {
-    closeAddCharacterModal();
-
-    try {
-      const createdCharacter = await createCharacter(values);
-      dispatch(upsertCharacter(createdCharacter));
-    } catch (addError) {
-      setMutationError(
-        addError instanceof Error ? addError.message : "Failed to add character.",
       );
     }
   }
@@ -615,31 +528,6 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         onCancel={() => setWordToEdit(null)}
         onConfirm={(values) => void confirmEditWord(values)}
       />
-      <CharacterFormModal
-        mode="add"
-        isOpen={isAddCharacterModalOpen}
-        prefilledChar={prefilledCharForAdd}
-        existingCharacters={knownCharacters}
-        onCancel={closeAddCharacterModal}
-        onConfirm={(values) => void confirmAddCharacter(values)}
-      />
-      <CharacterFormModal
-        mode="edit"
-        isOpen={characterToEdit !== null}
-        initialCharacter={characterToEdit}
-        onCancel={() => setCharacterToEdit(null)}
-        onConfirm={(values) => void confirmEditCharacter(values)}
-      />
-      <ConfirmModal
-        isOpen={characterToDelete !== null}
-        message={
-          characterToDelete
-            ? `Are you sure you want to delete "${characterToDelete.char}"?`
-            : ""
-        }
-        onCancel={() => setCharacterToDelete(null)}
-        onConfirm={() => void confirmDeleteCharacter()}
-      />
       <ConfirmModal
         isOpen={wordToDelete !== null}
         message={
@@ -708,13 +596,6 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
           <section className="knowledge-base-section">
             <div className="knowledge-base-section-header">
               <h2 className="knowledge-base-section-title">Characters</h2>
-              <button
-                type="button"
-                className="page-add-button"
-                onClick={() => openAddCharacterModal()}
-              >
-                Add character
-              </button>
             </div>
             <label className="search-bar">
               <span className="search-bar-label">Search</span>
@@ -736,24 +617,6 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
                   ? "No characters in the database yet."
                   : "No characters match your search."
               }
-              renderRowActions={(row) => (
-                <div className="table-row-actions">
-                  <button
-                    type="button"
-                    className="table-edit-button"
-                    onClick={() => setCharacterToEdit(row)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="table-delete-button"
-                    onClick={() => setCharacterToDelete(row)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
             />
           </section>
         </>

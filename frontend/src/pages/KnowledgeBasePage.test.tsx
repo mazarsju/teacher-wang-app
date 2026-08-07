@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import KnowledgeBasePage from "./KnowledgeBasePage";
 import * as ankiApi from "../utils/anki/ankiApi";
@@ -224,6 +224,36 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByRole("cell", { name: "爱好" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "hobby" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "ai4 hao3" })).toBeInTheDocument();
+  });
+
+  it("keeps the characters section read-only: no add/edit/delete controls", async () => {
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+    await screen.findByRole("cell", { name: "爱" });
+
+    expect(
+      screen.queryByRole("button", { name: "Add character" }),
+    ).not.toBeInTheDocument();
+
+    const charactersSection = screen
+      .getByRole("heading", { name: "Characters" })
+      .closest("section") as HTMLElement;
+    expect(
+      within(charactersSection).queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(charactersSection).queryByRole("button", { name: "Delete" }),
+    ).not.toBeInTheDocument();
+
+    // The words section keeps its own edit/delete controls.
+    const wordsSection = screen
+      .getByRole("heading", { name: "Words" })
+      .closest("section") as HTMLElement;
+    expect(
+      within(wordsSection).getByRole("button", { name: "Edit" }),
+    ).toBeInTheDocument();
+    expect(
+      within(wordsSection).getByRole("button", { name: "Delete" }),
+    ).toBeInTheDocument();
   });
 
   it("auto-creates only the missing characters when adding a word", async () => {
