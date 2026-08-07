@@ -63,6 +63,9 @@ class TestExtractToneSyllablesInOrder(unittest.TestCase):
         self.assertEqual(
             extract_tone_syllables_in_order("ni3..hao3", 2), ["ni3", "hao3"]
         )
+        self.assertEqual(
+            extract_tone_syllables_in_order("(gong1) yuan2", 2), ["gong1", "yuan2"]
+        )
 
     def test_stops_once_enough_syllables_are_found(self):
         self.assertEqual(extract_tone_syllables_in_order("ni3 hao3", 1), ["ni3"])
@@ -322,6 +325,20 @@ class TestBuildWordPinyinForStorage(unittest.TestCase):
         self.assertEqual(
             build_word_pinyin_for_storage("女", "nue3"),
             "nüe3",
+        )
+
+    def test_resolves_punctuation_glued_to_the_neighboring_syllable(self):
+        self.assertEqual(
+            build_word_pinyin_for_storage("…好了吗?", "...hao3 le ma?"),
+            "… hao3 le ma ?",
+        )
+        self.assertEqual(
+            build_word_pinyin_for_storage("...行吗?", "...xing2 ma?"),
+            ". . . xing2 ma ?",
+        )
+        self.assertEqual(
+            build_word_pinyin_for_storage("(公)园", "(gong1) yuan2"),
+            "( gong1 ) yuan2",
         )
 
     def test_normalizes_erhua_index_aligned_token(self):

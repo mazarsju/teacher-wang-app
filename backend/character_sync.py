@@ -47,23 +47,24 @@ def _valid_reading_at(tokens: list[str], index: int) -> str | None:
 
 
 _PINYIN_START_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzü")
-_TONE_DIGITS = frozenset("1234")
 
 
 def extract_tone_syllables_in_order(text: str, count: int) -> list[str] | None:
-    """Scan ``text`` for up to ``count`` toned pinyin syllables, in order.
+    """Scan ``text`` for up to ``count`` pinyin syllables, in order.
 
     Mirrors the frontend's ``extractToneSyllablesInOrder``: a syllable is
-    lowercase and ends in a tone digit (1-4); anything else -- letters,
-    digits, punctuation, whitespace -- is skipped. Used to pull each Han
-    character's pinyin out of a word's pinyin field when that field also
-    holds non-Han filler that doesn't need to align with real positions.
+    lowercase (tone digit optional -- neutral-tone particles like "le" and
+    "ma" are common); anything else -- letters, digits, punctuation,
+    whitespace -- is skipped. Used to pull each Han character's pinyin out
+    of a word's pinyin field when that field also holds non-Han filler
+    (parentheses, ellipses, question marks, ...) that doesn't need to line
+    up positionally with real characters.
 
-    ponytail: same deliberate narrowing as the frontend twin -- requiring a
-    trailing tone digit keeps a stray letter like "A" from being mistaken
-    for the bare pinyin final "a"; a pinyin-shaped substring hiding inside
-    longer filler can still false-match, which is acceptable since the
-    filler itself is intentionally unchecked.
+    ponytail: requiring the scan to start on a lowercase letter keeps a
+    stray placeholder like "A" from being mistaken for the bare pinyin
+    final "a"; a pinyin-shaped substring hiding inside longer filler can
+    still false-match, which is acceptable since the filler itself is
+    intentionally unchecked.
     """
     matches: list[str] = []
     i = 0
@@ -75,7 +76,13 @@ def extract_tone_syllables_in_order(text: str, count: int) -> list[str] | None:
         matched_length = 0
         for length in range(min(PINYIN_MAX_LENGTH, n - i), 0, -1):
             candidate = text[i : i + length]
-            if candidate[-1] in _TONE_DIGITS and is_valid_pinyin(candidate):
+            # Reject a candidate that only validates because is_valid_pinyin
+            # trims it internally (e.g. "hao3 " -> "hao3"); the exact span
+            # must already be clean so a trailing space on a longer
+            # candidate can't shadow a clean, shorter match.
+            if candidate[-1].isspace():
+                continue
+            if is_valid_pinyin(candidate):
                 matched_length = length
                 break
         if matched_length > 0:
@@ -116,8 +123,32 @@ def _resolved_word_tokens(
     `AddWordModal`'s fallback). ``None`` marks a position that couldn't be
     resolved. When ``pinyin_field`` is blank there are no field tokens to
     align against, so non-Han characters pass through as their own literal.
+
+    A word mixed with non-Han characters (parentheses, ellipses, question
+    marks, ...) tries `extract_tone_syllables_in_order` first instead: real
+    Anki fields routinely glue that punctuation directly onto the
+    neighboring syllable ("...hao3", "(gong1)"), which breaks the
+    index-aligned/literal-match rule below since it expects the field's
+    whitespace layout to mirror the word's non-Han positions. Only falls
+    through to the index-aligned rule when the scan can't fully resolve
+    (e.g. a genuinely new character needing a guess).
     """
     field_blank = pinyin_field.strip() == ""
+
+    if not field_blank and any(not is_han_character(char) for char in word_text):
+        han_chars = [char for char in word_text if is_han_character(char)]
+        scanned = extract_tone_syllables_in_order(pinyin_field, len(han_chars))
+        if scanned is not None:
+            resolved: list[str | None] = []
+            han_index = 0
+            for char in word_text:
+                if is_han_character(char):
+                    resolved.append(scanned[han_index])
+                    han_index += 1
+                else:
+                    resolved.append(char)
+            return resolved
+
     raw_tokens = pinyin_field.split()
     anki_by_char = dict(
         pair_han_characters_with_anki_pinyin_tokens(word_text, pinyin_field)

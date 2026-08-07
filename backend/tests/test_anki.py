@@ -580,6 +580,65 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         character = Character.query.filter_by(user_id=self.user_id, char="水").one()
         self.assertTrue(character.synchronized)
 
+    def test_pull_imports_vocabulary_cards_with_punctuation_glued_to_pinyin(self):
+        from backend.anki_sync import apply_pull, setup_deck
+        from backend.models import Word
+
+        setup_deck(
+            self.user_id,
+            "mandarin_vocabulary",
+            "Vocab",
+            model_name="Basic",
+            fields={
+                "writting": "Front",
+                "pinyin": "Back",
+                "definition": "Extra",
+            },
+        )
+
+        result = apply_pull(
+            self.user_id,
+            "mandarin_vocabulary",
+            "synchronize_all",
+            cards=[
+                {
+                    "id": "…好了吗?",
+                    "writting": "…好了吗?",
+                    "pinyin": "...hao3 le ma?",
+                    "definition": "is it good now?",
+                },
+                {
+                    "id": "...行吗?",
+                    "writting": "...行吗?",
+                    "pinyin": "...xing2 ma?",
+                    "definition": "is that ok?",
+                },
+                {
+                    "id": "(公)园",
+                    "writting": "(公)园",
+                    "pinyin": "(gong1) yuan2",
+                    "definition": "park",
+                },
+            ],
+            ignore_keys=[],
+        )
+
+        self.assertEqual(result["added"], 3)
+        self.assertEqual(result["failed"], 0)
+        self.assertEqual(result["failed_characters"], [])
+        self.assertEqual(
+            Word.query.filter_by(user_id=self.user_id, word="…好了吗?").one().pinyin,
+            "… hao3 le ma ?",
+        )
+        self.assertEqual(
+            Word.query.filter_by(user_id=self.user_id, word="...行吗?").one().pinyin,
+            ". . . xing2 ma ?",
+        )
+        self.assertEqual(
+            Word.query.filter_by(user_id=self.user_id, word="(公)园").one().pinyin,
+            "( gong1 ) yuan2",
+        )
+
     def test_pull_rejects_vocabulary_card_with_unresolvable_pinyin(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.models import Word

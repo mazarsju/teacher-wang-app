@@ -7,23 +7,22 @@ export function splitWordCharacters(word: string): string[] {
 
 const MAX_PINYIN_SYLLABLE_LENGTH = 8;
 const PINYIN_START_CHAR = /^[a-zü]$/;
-const ENDS_WITH_TONE = /[1-4]$/;
 
 /**
- * Scan `text` left to right for up to `count` toned pinyin syllables
- * (lowercase, ending in a tone digit 1-4), skipping any other character —
- * letters, digits, punctuation, whitespace, anything. Used to find each
- * Chinese character's pinyin when the field also holds non-Chinese filler
- * that doesn't need to align with real character positions.
+ * Scan `text` left to right for up to `count` pinyin syllables (lowercase,
+ * tone digit optional — neutral-tone particles like "le" and "ma" are
+ * common), skipping any other character — letters, digits, punctuation,
+ * whitespace, anything. Used to find each Chinese character's pinyin when
+ * the field also holds non-Chinese filler (parentheses, ellipses, question
+ * marks, ...) that doesn't need to align with real character positions.
  *
- * ponytail: requiring a trailing tone digit is a deliberate narrowing (a
- * toneless "ni hao" embedded in filler won't match) so a stray letter like
- * "A" can't be mistaken for the bare pinyin final "a"; widen if toneless
- * relaxed input turns out to be needed. Embedded pinyin-shaped substrings
- * hiding inside longer literal filler can still false-match — acceptable
- * since the filler itself is intentionally unchecked.
+ * ponytail: requiring the scan to start on a lowercase letter keeps a stray
+ * placeholder like "A" from being mistaken for the bare pinyin final "a";
+ * an embedded pinyin-shaped substring hiding inside longer literal filler
+ * can still false-match, which is acceptable since the filler itself is
+ * intentionally unchecked.
  */
-function extractToneSyllablesInOrder(
+export function extractToneSyllablesInOrder(
   text: string,
   count: number,
 ): string[] | null {
@@ -41,7 +40,14 @@ function extractToneSyllablesInOrder(
       length -= 1
     ) {
       const candidate = text.slice(i, i + length);
-      if (ENDS_WITH_TONE.test(candidate) && isValidPinyin(candidate)) {
+      // Reject a candidate that only validates because isValidPinyin trims
+      // it internally (e.g. "hao3 " -> "hao3"); the exact span must already
+      // be clean so a trailing space on a longer candidate can't shadow a
+      // clean, shorter match.
+      if (/\s$/.test(candidate)) {
+        continue;
+      }
+      if (isValidPinyin(candidate)) {
         matchedLength = length;
         break;
       }
@@ -61,9 +67,9 @@ function extractToneSyllablesInOrder(
  * syllable. A word made entirely of Chinese characters keeps the exact,
  * space-aligned rule (one valid syllable per character, nothing extra). A
  * word mixed with non-Chinese characters (e.g. "你A好", "你好?") is checked
- * loosely instead: only that a valid toned syllable for each Chinese
- * character appears in order somewhere in the field — its exact spelling,
- * spacing, or count for the non-Chinese parts is never checked.
+ * loosely instead: only that a valid syllable for each Chinese character
+ * appears in order somewhere in the field — its exact spelling, spacing, or
+ * count for the non-Chinese parts is never checked.
  */
 export function isWordPinyinValid(word: string, pinyinInput: string): boolean {
   const characters = splitWordCharacters(word.trim());

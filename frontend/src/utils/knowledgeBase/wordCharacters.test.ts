@@ -73,6 +73,12 @@ describe("isWordPinyinValid", () => {
     expect(isWordPinyinValid("你A", "")).toBe(false);
     expect(isWordPinyinValid("你A好", "ni3")).toBe(false);
   });
+
+  it("resolves toneless neutral-tone particles glued to punctuation", () => {
+    expect(isWordPinyinValid("…好了吗?", "...hao3 le ma?")).toBe(true);
+    expect(isWordPinyinValid("...行吗?", "...xing2 ma?")).toBe(true);
+    expect(isWordPinyinValid("(公)园", "(gong1) yuan2")).toBe(true);
+  });
 });
 
 describe("buildPinyinFromCharacterMap", () => {

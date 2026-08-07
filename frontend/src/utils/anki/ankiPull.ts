@@ -1,4 +1,5 @@
 import { isHanCharacter } from "../knowledgeBase/chineseCharacters";
+import { extractToneSyllablesInOrder } from "../knowledgeBase/wordCharacters";
 import { normalizeAnkiPinyinToken } from "../../types/pinyin";
 import type {
   AnkiPendingVocabularyCard,
@@ -59,6 +60,22 @@ export function charactersToCreateForCard(
   hskCharacterPinyin: Record<string, string>,
 ): string[] | null {
   const pinyinBlank = pinyinField.trim() === "";
+  const characters = [...wordText];
+  const hanChars = characters.filter(isHanCharacter);
+  const hasNonHan = hanChars.length < characters.length;
+
+  // Real Anki fields routinely glue non-Han punctuation directly onto the
+  // neighboring syllable ("...hao3", "(gong1)"), which the whitespace-token
+  // pairing below can't line up with the word's non-Han positions. Try the
+  // relaxed scan first for that case; fall back below when it can't fully
+  // resolve (e.g. a genuinely new character needing an HSK guess).
+  if (hasNonHan && !pinyinBlank) {
+    const scanned = extractToneSyllablesInOrder(pinyinField, hanChars.length);
+    if (scanned !== null) {
+      return hanChars.filter((char) => !characterByChar.has(char));
+    }
+  }
+
   const toCreate: string[] = [];
   for (const [char, cardPinyin] of pairWrittingWithPinyinTokens(
     wordText,

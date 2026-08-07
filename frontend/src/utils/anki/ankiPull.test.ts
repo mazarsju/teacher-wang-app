@@ -84,6 +84,40 @@ describe("vocabularyPullCardsFromNotes", () => {
     expect(result.cards).toEqual([]);
     expect(result.missing).toEqual(["风水"]);
   });
+
+  it("resolves pinyin glued to punctuation instead of marking the card missing", () => {
+    const result = vocabularyPullCardsFromNotes(
+      [
+        {
+          writting: "…好了吗?",
+          pinyin: "...hao3 le ma?",
+          definition: "is it good now?",
+        },
+        {
+          writting: "...行吗?",
+          pinyin: "...xing2 ma?",
+          definition: "is that ok?",
+        },
+        { writting: "(公)园", pinyin: "(gong1) yuan2", definition: "park" },
+      ],
+      new Set(),
+      new Set(),
+      new Map(),
+    );
+
+    expect(result.missing).toEqual([]);
+    expect(new Set(result.cards.map((card) => card.writting))).toEqual(
+      new Set(["…好了吗?", "...行吗?", "(公)园"]),
+    );
+    expect(
+      result.cards.find((card) => card.writting === "…好了吗?")
+        ?.characters_to_create,
+    ).toEqual(["好", "了", "吗"]);
+    expect(
+      result.cards.find((card) => card.writting === "(公)园")
+        ?.characters_to_create,
+    ).toEqual(["公", "园"]);
+  });
 });
 
 describe("writtingPullFromNotes", () => {
