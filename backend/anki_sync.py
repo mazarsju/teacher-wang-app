@@ -13,7 +13,14 @@ from backend.character_sync import (
 )
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
-from backend.models import Character, IgnoreVocabCard, IgnoreWrittingCard, Word, utcnow
+from backend.models import (
+    Character,
+    HskCharacter,
+    IgnoreVocabCard,
+    IgnoreWrittingCard,
+    Word,
+    utcnow,
+)
 from backend.settings import (
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
@@ -377,9 +384,9 @@ def _import_vocabulary_card(
     definition = str(card.get("definition") or "").strip()[:100]
     pinyin_field = str(card.get("pinyin") or "")
 
-    # Guessing falls back to the HSK master reading first (``guesses``, as
-    # supplied by the frontend), then to the reading the user already has
-    # for that character -- both count as "possible to re-create".
+    # Guessing falls back to the HSK master reading first (``guesses`` from
+    # ``hsk_characters.most_used_pinyin``), then to the reading the user
+    # already has for that character -- both count as "possible to re-create".
     resolved_guesses = dict(guesses or {})
     for char in han_chars:
         if char in resolved_guesses:
@@ -732,6 +739,21 @@ def apply_push_completion(
     )
 
 
+def _hsk_pinyin_guesses_for_cards(cards: list[dict[str, Any]]) -> dict[str, str]:
+    chars: set[str] = set()
+    for card in cards:
+        word_text = str(card.get("writting") or "").strip()
+        chars.update(char for char in word_text if is_han_character(char))
+    if not chars:
+        return {}
+    rows = HskCharacter.query.filter(HskCharacter.character.in_(chars)).all()
+    return {
+        row.character: row.most_used_pinyin
+        for row in rows
+        if row.most_used_pinyin
+    }
+
+
 def apply_pull(
     user_id: str,
     kind: DeckKind,
@@ -739,16 +761,15 @@ def apply_pull(
     *,
     cards: list[dict[str, Any]],
     ignore_keys: list[str],
-    pinyin_guesses: dict[str, str] | None = None,
     pull_count_after: int | None = None,
 ) -> dict[str, Any]:
     imported = 0
     characters_added = 0
     failed = 0
     failed_characters: list[str] = []
-    guesses = pinyin_guesses or {}
 
     if kind == "mandarin_vocabulary":
+        guesses = _hsk_pinyin_guesses_for_cards(cards)
         chars_before = {
             row.char for row in Character.query.filter_by(user_id=user_id).all()
         }

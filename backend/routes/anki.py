@@ -163,7 +163,6 @@ def pull_apply():
     action = data.get("action")
     cards = data.get("cards", [])
     ignore_keys = data.get("ignore_keys", [])
-    pinyin_guesses = data.get("pinyin_guesses", {})
     pull_count_after = data.get("pull_count_after")
 
     if kind not in VALID_KINDS:
@@ -184,14 +183,6 @@ def pull_apply():
     ):
         return {"error": "ignore_keys must be an array of strings"}, 400
 
-    if pinyin_guesses is None:
-        pinyin_guesses = {}
-    if not isinstance(pinyin_guesses, dict) or not all(
-        isinstance(key, str) and isinstance(value, str)
-        for key, value in pinyin_guesses.items()
-    ):
-        return {"error": "pinyin_guesses must be an object of string keys/values"}, 400
-
     if pull_count_after is not None and (
         not isinstance(pull_count_after, int) or isinstance(pull_count_after, bool)
     ):
@@ -204,7 +195,6 @@ def pull_apply():
             action,
             cards=cards,
             ignore_keys=ignore_keys,
-            pinyin_guesses=pinyin_guesses,
             pull_count_after=pull_count_after,
         )
     except ValueError as exc:

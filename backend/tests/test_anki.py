@@ -618,9 +618,10 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             Word.query.filter_by(user_id=self.user_id, word="水").first()
         )
 
-    def test_pull_resolves_vocabulary_card_pinyin_from_guesses(self):
+    def test_pull_resolves_vocabulary_card_pinyin_from_hsk_characters(self):
         from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import Word
+        from backend.extensions import db
+        from backend.models import HskCharacter, Word
 
         setup_deck(
             self.user_id,
@@ -633,6 +634,15 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 "definition": "Extra",
             },
         )
+        db.session.add(
+            HskCharacter(
+                character="水",
+                level=1,
+                frequency=1,
+                most_used_pinyin="shui3",
+            )
+        )
+        db.session.commit()
 
         result = apply_pull(
             self.user_id,
@@ -647,7 +657,6 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 }
             ],
             ignore_keys=[],
-            pinyin_guesses={"水": "shui3"},
         )
 
         self.assertEqual(result["added"], 1)

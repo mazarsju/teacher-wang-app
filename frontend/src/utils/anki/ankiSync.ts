@@ -406,7 +406,6 @@ async function runPull(
   }
 
   let ignoreKeys: string[] = [];
-  let pinyinGuesses: Record<string, string> = {};
 
   if (kind === "mandarin_vocabulary") {
     ignoreKeys = toIgnore.map((card) => String(card.id));
@@ -415,7 +414,6 @@ async function runPull(
         ...(pending.pull_missing ?? []).filter((item) => item.trim() !== ""),
       );
     }
-    pinyinGuesses = hskCharacterPinyin;
   } else {
     for (const card of toIgnore) {
       const writtingCard = card as AnkiPendingWrittingCard;
@@ -440,7 +438,6 @@ async function runPull(
     action,
     cards: toImport,
     ignore_keys: ignoreKeys,
-    pinyin_guesses: pinyinGuesses,
     pull_count_after: pullCountAfter,
   });
 }
