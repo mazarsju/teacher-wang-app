@@ -1,8 +1,4 @@
-import {
-  isHanCharacter,
-  isValidCharacter,
-  isValidChineseWord,
-} from "./chineseCharacters";
+import { isHanCharacter, isValidCharacter } from "./chineseCharacters";
 
 describe("isHanCharacter", () => {
   it.each(["爱", "好"])("accepts Chinese character %s", (value) => {
@@ -22,17 +18,4 @@ describe("isValidCharacter", () => {
   it.each(["", "   ", "爱好", "a"])("rejects invalid character value %s", (value) => {
     expect(isValidCharacter(value)).toBe(false);
   });
-});
-
-describe("isValidChineseWord", () => {
-  it.each(["爱好", " 中国 "])("accepts Chinese words in %s", (value) => {
-    expect(isValidChineseWord(value)).toBe(true);
-  });
-
-  it.each(["", "   ", "hello", "爱a", "爱1"])(
-    "rejects invalid word value %s",
-    (value) => {
-      expect(isValidChineseWord(value)).toBe(false);
-    },
-  );
 });

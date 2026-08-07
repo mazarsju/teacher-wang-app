@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from backend.chinese_validation import is_han_text
+from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
 from backend.user_context import current_user_id
@@ -57,8 +57,8 @@ def validate_word_payload(data: dict) -> tuple[str, str, str]:
     definition_text = definition.strip() if isinstance(definition, str) else ""
     pinyin_text = pinyin.strip() if isinstance(pinyin, str) else ""
 
-    if not is_han_text(word_text):
-        raise WordValidationError("word must contain only Chinese characters")
+    if not any(is_han_character(character) for character in word_text):
+        raise WordValidationError("word must contain at least one Chinese character")
 
     return word_text, definition_text, pinyin_text
 
@@ -78,7 +78,8 @@ def create_word():
     missing_characters = [
         character
         for character in word_text
-        if Character.query.filter_by(user_id=user_id, char=character).first() is None
+        if is_han_character(character)
+        and Character.query.filter_by(user_id=user_id, char=character).first() is None
     ]
     if missing_characters:
         return {

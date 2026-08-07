@@ -52,7 +52,7 @@ export async function bulkCreateWords(
 
 export async function updateWord(
   word: string,
-  values: { definition: string | null },
+  values: { definition: string | null; pinyin?: string | null },
 ): Promise<Word> {
   const response = await apiFetch(
     `${API_BASE}/words/${encodeURIComponent(word)}`,

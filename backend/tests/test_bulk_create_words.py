@@ -154,10 +154,34 @@ class TestBulkCreateWordsEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             response.get_json(),
-            {"error": "Item 0: word must contain only Chinese characters"},
+            {"error": "Item 0: word must contain at least one Chinese character"},
         )
         self.mock_session.add.assert_not_called()
         self.mock_session.commit.assert_not_called()
+
+    def test_bulk_create_words_ignores_non_chinese_characters_for_missing_check(self):
+        self._set_existing_characters({"想"})
+        updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
+        self.mock_utcnow.return_value = updated_at
+
+        def make_word(**kwargs):
+            record = MagicMock(**kwargs)
+            record.updated_at = updated_at
+            return record
+
+        self.mock_word_cls.side_effect = make_word
+
+        response = self.client.post(
+            "/words/bulk-create",
+            json={
+                "words": [
+                    {"word": "A想B", "definition": "to think", "pinyin": "A xiang3 B"},
+                ]
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.mock_character_cls.char.in_.assert_called_once_with({"想"})
 
     def test_bulk_create_words_requires_words_list(self):
         response = self.client.post("/words/bulk-create", json={})

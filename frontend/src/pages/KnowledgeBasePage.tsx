@@ -339,6 +339,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     try {
       const updatedWord = await updateWord(word.word, {
         definition: values.definition,
+        pinyin: values.pinyin || null,
       });
       dispatch(upsertWord(updatedWord));
     } catch (updateError) {
@@ -370,6 +371,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       const createdWord = await createWord({
         word: values.word,
         definition: values.definition || null,
+        pinyin: values.pinyin || null,
       });
       dispatch(upsertWord(createdWord));
     } catch (addWordError) {

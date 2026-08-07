@@ -36,6 +36,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
         word_record = MagicMock(
             word="爱好",
             definition="old",
+            pinyin="ai4 hao3",
             updated_at=updated_at,
         )
         self.mock_word_cls.query.filter_by.return_value.first.return_value = (
@@ -45,7 +46,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
 
         response = self.client.patch(
             "/words/爱好",
-            json={"definition": "hobby"},
+            json={"definition": "hobby", "pinyin": "ai4 hao3"},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -54,11 +55,46 @@ class TestUpdateWordEndpoint(unittest.TestCase):
             {
                 "word": "爱好",
                 "definition": "hobby",
+                "pinyin": "ai4 hao3",
                 "updated_at": "2026-07-12T12:00:00+00:00",
             },
         )
         self.assertEqual(word_record.definition, "hobby")
+        self.assertEqual(word_record.pinyin, "ai4 hao3")
         self.mock_session.commit.assert_called_once()
+
+    def test_update_word_leaves_pinyin_unchanged_when_omitted(self):
+        updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
+        word_record = MagicMock(
+            word="爱好",
+            definition="old",
+            pinyin="ai4 hao3",
+            updated_at=updated_at,
+        )
+        self.mock_word_cls.query.filter_by.return_value.first.return_value = (
+            word_record
+        )
+        self.mock_utcnow.return_value = updated_at
+
+        response = self.client.patch("/words/爱好", json={"definition": "hobby"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["pinyin"], "ai4 hao3")
+
+    def test_update_word_rejects_non_string_pinyin(self):
+        word_record = MagicMock(word="爱好", definition="old", pinyin="ai4 hao3")
+        self.mock_word_cls.query.filter_by.return_value.first.return_value = (
+            word_record
+        )
+
+        response = self.client.patch(
+            "/words/爱好",
+            json={"definition": "hobby", "pinyin": 123},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json(), {"error": "pinyin must be a string"})
+        self.mock_session.commit.assert_not_called()
 
     def test_update_missing_word_returns_not_found(self):
         self.mock_word_cls.query.filter_by.return_value.first.return_value = None

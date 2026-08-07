@@ -92,7 +92,7 @@ class TestCreateWordEndpoint(unittest.TestCase):
         self.mock_session.add.assert_not_called()
         self.mock_session.commit.assert_not_called()
 
-    def test_create_non_chinese_word_returns_error(self):
+    def test_create_word_without_any_chinese_character_returns_error(self):
         response = self.client.post(
             "/words",
             json={"word": "hello", "definition": "hobby"},
@@ -101,10 +101,38 @@ class TestCreateWordEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             response.get_json(),
-            {"error": "word must contain only Chinese characters"},
+            {"error": "word must contain at least one Chinese character"},
         )
         self.mock_session.add.assert_not_called()
         self.mock_session.commit.assert_not_called()
+
+    def test_create_word_allows_non_chinese_characters_mixed_with_chinese(self):
+        updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
+
+        def mock_filter_by(**kwargs):
+            query = MagicMock()
+            query.first.return_value = MagicMock() if kwargs["char"] == "想" else None
+            return query
+
+        self.mock_character_cls.query.filter_by.side_effect = mock_filter_by
+
+        def make_word(**kwargs):
+            record = MagicMock(**kwargs)
+            record.updated_at = updated_at
+            return record
+
+        self.mock_word_cls.side_effect = make_word
+        self.mock_utcnow.return_value = updated_at
+
+        response = self.client.post(
+            "/words",
+            json={"word": "A想B", "definition": "to think", "pinyin": "A xiang3 B"},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.mock_character_cls.query.filter_by.assert_called_once_with(
+            user_id=TEST_USER_ID, char="想"
+        )
 
 
 if __name__ == "__main__":

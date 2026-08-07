@@ -12,4 +12,9 @@ describe("getMissingCharacters", () => {
     expect(getMissingCharacters("你好", new Set(["你"]))).toEqual(["好"]);
     expect(getMissingCharacters("你好", new Set(["你", "好"]))).toEqual([]);
   });
+
+  it("ignores non-Chinese characters", () => {
+    expect(getMissingCharacters("A想B", new Set([]))).toEqual(["想"]);
+    expect(getMissingCharacters("A想B", new Set(["想"]))).toEqual([]);
+  });
 });

@@ -28,6 +28,14 @@ def update_word(word: str):
     if len(definition.strip()) > 100:
         return {"error": "definition must be at most 100 characters"}, 400
 
+    if "pinyin" in data:
+        pinyin = data["pinyin"]
+        if pinyin is not None and not isinstance(pinyin, str):
+            return {"error": "pinyin must be a string"}, 400
+        if pinyin and len(pinyin.strip()) > 64:
+            return {"error": "pinyin must be at most 64 characters"}, 400
+        word_record.pinyin = pinyin.strip() or None if isinstance(pinyin, str) else None
+
     word_record.definition = definition.strip() or None
     word_record.updated_at = utcnow()
     db.session.commit()
@@ -35,5 +43,6 @@ def update_word(word: str):
     return {
         "word": word_record.word,
         "definition": word_record.definition,
+        "pinyin": word_record.pinyin,
         "updated_at": word_record.updated_at.isoformat(),
     }, 200

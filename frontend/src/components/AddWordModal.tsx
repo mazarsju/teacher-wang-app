@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { Word } from "../types/word";
-import { isValidChineseWord } from "../utils/knowledgeBase/chineseCharacters";
-import { getMissingCharacters } from "../utils/knowledgeBase/wordCharacters";
+import {
+  getMissingCharacters,
+  isWordPinyinValid,
+} from "../utils/knowledgeBase/wordCharacters";
 
 export type WordFormValues = {
   word: string;
   definition: string;
+  pinyin: string;
 };
 
 type AddWordModalProps = {
@@ -31,6 +34,7 @@ export default function AddWordModal({
 }: AddWordModalProps) {
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
+  const [pinyin, setPinyin] = useState("");
 
   const knownCharacterSet = useMemo(
     () => new Set(knownCharacters),
@@ -55,11 +59,13 @@ export default function AddWordModal({
     if (mode === "edit" && initialWord) {
       setWord(initialWord.word);
       setDefinition(initialWord.definition ?? "");
+      setPinyin(initialWord.pinyin ?? "");
       return;
     }
 
     setWord("");
     setDefinition("");
+    setPinyin("");
   }, [isOpen, mode, initialWord]);
 
   if (!isOpen) {
@@ -67,16 +73,19 @@ export default function AddWordModal({
   }
 
   const trimmedWord = word.trim();
-  const hasInvalidChineseCharacters =
-    mode === "add" && trimmedWord !== "" && !isValidChineseWord(word);
+  const trimmedPinyin = pinyin.trim();
+  const trimmedDefinition = definition.trim();
   const isDuplicateWord =
     mode === "add" && trimmedWord !== "" && existingWordSet.has(trimmedWord);
+  const isPinyinValid =
+    trimmedPinyin !== "" && isWordPinyinValid(word, pinyin);
+  const showPinyinWarning = trimmedPinyin !== "" && !isPinyinValid;
   const isConfirmDisabled =
-    mode === "add" &&
-    (trimmedWord === "" ||
-      hasInvalidChineseCharacters ||
-      missingCharacters.length > 0 ||
-      isDuplicateWord);
+    trimmedWord === "" ||
+    trimmedDefinition === "" ||
+    !isPinyinValid ||
+    (mode === "add" &&
+      (missingCharacters.length > 0 || isDuplicateWord));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,6 +97,7 @@ export default function AddWordModal({
     onConfirm({
       word: word.trim(),
       definition: definition.trim(),
+      pinyin: pinyin.trim(),
     });
   }
 
@@ -114,11 +124,6 @@ export default function AddWordModal({
               onChange={(event) => setWord(event.target.value)}
             />
           </label>
-          {hasInvalidChineseCharacters && (
-            <p className="form-warning">
-              Word must contain only Chinese characters.
-            </p>
-          )}
           {missingCharacters.map((character) => (
             <div key={character} className="form-warning-row">
               <p className="form-warning">
@@ -137,6 +142,23 @@ export default function AddWordModal({
           {isDuplicateWord && (
             <p className="form-warning">
               This word already exists in the database.
+            </p>
+          )}
+          <label className="modal-field">
+            <span className="modal-field-label">pinyin</span>
+            <input
+              type="text"
+              value={pinyin}
+              maxLength={64}
+              aria-invalid={showPinyinWarning}
+              aria-describedby={showPinyinWarning ? "word-pinyin-warning" : undefined}
+              onChange={(event) => setPinyin(event.target.value)}
+            />
+          </label>
+          {showPinyinWarning && (
+            <p id="word-pinyin-warning" className="form-warning">
+              Enter one valid pinyin syllable per Chinese character (e.g. hao3),
+              matching any other characters exactly, separated by spaces.
             </p>
           )}
           <label className="modal-field">

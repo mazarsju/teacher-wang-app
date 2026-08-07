@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 
+from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
 from backend.routes.create_word import WordValidationError, validate_word_payload
@@ -43,7 +44,10 @@ def bulk_create_words():
     user_id = current_user_id()
 
     needed_characters = {
-        character for word_text, _, _ in parsed for character in word_text
+        character
+        for word_text, _, _ in parsed
+        for character in word_text
+        if is_han_character(character)
     }
     existing_characters = {
         row.char
