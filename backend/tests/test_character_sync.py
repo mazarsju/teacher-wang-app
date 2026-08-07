@@ -5,6 +5,7 @@ from backend.character_sync import (
     build_character_pinyin_map_from_words,
     build_word_pinyin_for_storage,
     rebuild_characters_from_words,
+    serialize_character,
 )
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
@@ -55,6 +56,32 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
         good = Character.query.filter_by(user_id=self.user_id, char="好").one()
         self.assertEqual(love.pinyin_readings, ["ai4"])
         self.assertEqual(good.pinyin_readings, ["hao3"])
+
+    def test_serialize_character_includes_all_pinyin_readings(self):
+        now = utcnow()
+        db.session.add_all(
+            [
+                Word(user_id=self.user_id, word="的", pinyin="de", updated_at=now),
+                Word(user_id=self.user_id, word="目的", pinyin="mu4 di4", updated_at=now),
+            ]
+        )
+        db.session.commit()
+
+        rebuild_characters_from_words(self.user_id)
+        db.session.commit()
+
+        record = Character.query.filter_by(user_id=self.user_id, char="的").one()
+
+        self.assertEqual(
+            serialize_character(record),
+            {
+                "char": "的",
+                "pinyin": "de",
+                "pinyin_readings": ["de", "di4"],
+                "writting_known": record.writting_known,
+                "updated_at": record.updated_at.isoformat(),
+            },
+        )
 
     def test_adds_missing_pinyin_to_existing_character(self):
         now = utcnow()

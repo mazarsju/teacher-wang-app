@@ -1,23 +1,33 @@
 import type { Word } from "../../types/word";
 
-export function buildWordsByCharacter(words: Word[]): Map<string, Word[]> {
-  const map = new Map<string, Word[]>();
+// character -> pinyin reading -> words using that character with that reading
+export function buildWordsByCharacter(
+  words: Word[],
+): Map<string, Map<string, Word[]>> {
+  const map = new Map<string, Map<string, Word[]>>();
 
   for (const word of words) {
-    for (const character of word.characters) {
-      const existing = map.get(character) ?? [];
+    const pinyinTokens = word.pinyin?.trim().split(/\s+/) ?? [];
+
+    word.characters.forEach((character, index) => {
+      const pinyin = pinyinTokens[index] ?? "";
+      const byPinyin = map.get(character) ?? new Map<string, Word[]>();
+      const existing = byPinyin.get(pinyin) ?? [];
       existing.push(word);
-      map.set(character, existing);
-    }
+      byPinyin.set(pinyin, existing);
+      map.set(character, byPinyin);
+    });
   }
 
-  for (const [character, characterWords] of map) {
-    map.set(
-      character,
-      [...characterWords].sort((left, right) =>
-        left.word.localeCompare(right.word),
-      ),
-    );
+  for (const byPinyin of map.values()) {
+    for (const [pinyin, characterWords] of byPinyin) {
+      byPinyin.set(
+        pinyin,
+        [...characterWords].sort((left, right) =>
+          left.word.localeCompare(right.word),
+        ),
+      );
+    }
   }
 
   return map;

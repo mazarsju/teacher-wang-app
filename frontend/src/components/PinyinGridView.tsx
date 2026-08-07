@@ -11,6 +11,7 @@ import {
 
 type GridCharacter = {
   char: string;
+  pinyin: string;
   tone: PinyinTone | null;
 };
 
@@ -63,8 +64,8 @@ function chunkGridCharacters(
 
 function renderCellCharacters(
   characters: GridCharacter[],
-  characterHasWords?: (char: string) => boolean,
-  onCharacterClick?: (char: string) => void,
+  characterHasWords?: (char: string, pinyin: string) => boolean,
+  onCharacterClick?: (char: string, pinyin: string) => void,
 ): ReactNode {
   const lines = chunkGridCharacters(characters);
 
@@ -73,12 +74,13 @@ function renderCellCharacters(
       {lines.map((line, lineIndex) => (
         <span key={lineIndex} className="pinyin-grid-cell-line">
           {line.map((item, itemIndex) => {
-            const hasWords = characterHasWords?.(item.char) ?? false;
+            const hasWords =
+              characterHasWords?.(item.char, item.pinyin) ?? false;
             const toneClassName = getToneClassName(item.tone);
 
             return (
               <span
-                key={`${item.char}-${item.tone ?? "none"}-${lineIndex}-${itemIndex}`}
+                key={`${item.char}-${item.pinyin}-${lineIndex}-${itemIndex}`}
                 className={
                   hasWords
                     ? `${toneClassName} pinyin-grid-char-clickable`
@@ -91,7 +93,7 @@ function renderCellCharacters(
                 }
                 onClick={
                   hasWords
-                    ? () => onCharacterClick?.(item.char)
+                    ? () => onCharacterClick?.(item.char, item.pinyin)
                     : undefined
                 }
                 onKeyDown={
@@ -99,7 +101,7 @@ function renderCellCharacters(
                     ? (event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          onCharacterClick?.(item.char);
+                          onCharacterClick?.(item.char, item.pinyin);
                         }
                       }
                     : undefined
@@ -121,21 +123,27 @@ function groupCharactersByPinyin(
   const grid = new Map<string, Map<string, GridCharacter[]>>();
 
   for (const character of characters) {
-    const syllable = parsePinyinSyllable(character.pinyin);
-    if (syllable === null) {
-      continue;
+    const readings = character.pinyin_readings ?? [character.pinyin];
+
+    for (const reading of readings) {
+      const syllable = parsePinyinSyllable(reading);
+      if (syllable === null) {
+        continue;
+      }
+
+      const { start, final } = syllable;
+      const finalsForStart =
+        grid.get(start) ?? new Map<string, GridCharacter[]>();
+      const charsForCell = finalsForStart.get(final) ?? [];
+
+      charsForCell.push({
+        char: character.char,
+        pinyin: reading,
+        tone: parseTone(reading),
+      });
+      finalsForStart.set(final, charsForCell);
+      grid.set(start, finalsForStart);
     }
-
-    const { start, final } = syllable;
-    const finalsForStart = grid.get(start) ?? new Map<string, GridCharacter[]>();
-    const charsForCell = finalsForStart.get(final) ?? [];
-
-    charsForCell.push({
-      char: character.char,
-      tone: parseTone(character.pinyin),
-    });
-    finalsForStart.set(final, charsForCell);
-    grid.set(start, finalsForStart);
   }
 
   return grid;
@@ -143,8 +151,8 @@ function groupCharactersByPinyin(
 
 type PinyinGridViewProps = {
   characters: Character[];
-  characterHasWords?: (char: string) => boolean;
-  onCharacterClick?: (char: string) => void;
+  characterHasWords?: (char: string, pinyin: string) => boolean;
+  onCharacterClick?: (char: string, pinyin: string) => void;
 };
 
 export default function PinyinGridView({

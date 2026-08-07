@@ -189,7 +189,37 @@ describe("PinyinGridView", () => {
 
     await user.click(screen.getByRole("button", { name: "爱 associated words" }));
 
-    expect(onCharacterClick).toHaveBeenCalledWith("爱");
+    expect(onCharacterClick).toHaveBeenCalledWith("爱", "ai4");
+  });
+
+  it("inserts a character once per pinyin reading, in the matching cell for each", async () => {
+    const user = userEvent.setup();
+    const onCharacterClick = vi.fn();
+
+    render(
+      <PinyinGridView
+        characters={[
+          {
+            char: "的",
+            pinyin: "de",
+            pinyin_readings: ["de", "di4"],
+            writting_known: true,
+            updated_at: "2026-07-12T12:00:00+00:00",
+          },
+        ]}
+        characterHasWords={() => true}
+        onCharacterClick={onCharacterClick}
+      />,
+    );
+
+    const buttons = screen.getAllByRole("button", { name: "的 associated words" });
+    expect(buttons).toHaveLength(2);
+
+    await user.click(buttons[0]);
+    await user.click(buttons[1]);
+
+    expect(onCharacterClick).toHaveBeenCalledWith("的", "de");
+    expect(onCharacterClick).toHaveBeenCalledWith("的", "di4");
   });
 
   it("marks invalid pinyin cells and keeps them unhighlighted on hover", () => {

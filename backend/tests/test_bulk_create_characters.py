@@ -55,6 +55,7 @@ class TestBulkCreateCharactersEndpoint(unittest.TestCase):
         def make_character(**kwargs):
             record = MagicMock(**kwargs)
             record.updated_at = updated_at
+            record.pinyin_readings = [kwargs["pinyin"]]
             return record
 
         self.mock_character_cls.side_effect = make_character

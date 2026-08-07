@@ -43,6 +43,7 @@ def update_character(char: str):
     return {
         "char": char_record.char,
         "pinyin": char_record.pinyin,
+        "pinyin_readings": char_record.pinyin_readings,
         "writting_known": char_record.writting_known,
         "updated_at": char_record.updated_at.isoformat(),
     }, 200

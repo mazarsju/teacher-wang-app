@@ -47,6 +47,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
         char_record = MagicMock(
             char="爱",
             pinyin="old",
+            pinyin_readings=["ai"],
             writting_known=False,
             updated_at=updated_at,
         )
@@ -66,6 +67,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
             {
                 "char": "爱",
                 "pinyin": "ai",
+                "pinyin_readings": ["ai"],
                 "writting_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
             },

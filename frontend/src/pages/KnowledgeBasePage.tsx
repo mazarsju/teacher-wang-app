@@ -126,7 +126,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const [pageMode, setPageMode] = useState<KnowledgeBaseMode>("edit");
   const [showWritingKnown, setShowWritingKnown] = useState(true);
   const [showWritingUnknown, setShowWritingUnknown] = useState(true);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<
+    { char: string; pinyin: string } | null
+  >(null);
   const [characterSearchQuery, setCharacterSearchQuery] = useState("");
   const [wordSearchQuery, setWordSearchQuery] = useState("");
   const [wordToDelete, setWordToDelete] = useState<Word | null>(null);
@@ -196,7 +198,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const selectedCharacterWords =
     selectedCharacter === null
       ? []
-      : (wordsByCharacter.get(selectedCharacter) ?? []);
+      : (wordsByCharacter
+          .get(selectedCharacter.char)
+          ?.get(selectedCharacter.pinyin) ?? []);
 
   const showAnkiSyncBanner =
     ankiOverallSynchronized && pendingAnkiPushEstimate > 0;
@@ -516,7 +520,10 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         <>
           <CharacterWordsModal
             isOpen={selectedCharacter !== null}
-            character={selectedCharacter}
+            character={
+              selectedCharacter &&
+              `${selectedCharacter.char} (${selectedCharacter.pinyin})`
+            }
             words={selectedCharacterWords}
             onClose={() => setSelectedCharacter(null)}
           />
@@ -525,10 +532,12 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
           {!isLoading && !error && (
             <PinyinGridView
               characters={viewModeCharacters}
-              characterHasWords={(char) =>
-                (wordsByCharacter.get(char)?.length ?? 0) > 0
+              characterHasWords={(char, pinyin) =>
+                (wordsByCharacter.get(char)?.get(pinyin)?.length ?? 0) > 0
               }
-              onCharacterClick={setSelectedCharacter}
+              onCharacterClick={(char, pinyin) =>
+                setSelectedCharacter({ char, pinyin })
+              }
             />
           )}
         </>

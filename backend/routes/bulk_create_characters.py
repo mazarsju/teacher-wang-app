@@ -80,6 +80,7 @@ def bulk_create_characters():
             {
                 "char": record.char,
                 "pinyin": record.pinyin,
+                "pinyin_readings": record.pinyin_readings,
                 "writting_known": record.writting_known,
                 "updated_at": record.updated_at.isoformat(),
             }

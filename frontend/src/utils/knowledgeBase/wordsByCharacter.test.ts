@@ -6,7 +6,7 @@ import {
 } from "./wordsByCharacter";
 
 describe("buildWordsByCharacter", () => {
-  it("groups words by their linked characters", () => {
+  it("groups words by character, then by the pinyin reading used at that position", () => {
     const words: Word[] = [
       {
         word: "爱好",
@@ -18,7 +18,7 @@ describe("buildWordsByCharacter", () => {
       {
         word: "爱",
         definition: null,
-        pinyin: null,
+        pinyin: "ai4",
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱"],
       },
@@ -26,11 +26,11 @@ describe("buildWordsByCharacter", () => {
 
     const wordsByCharacter = buildWordsByCharacter(words);
 
-    expect(wordsByCharacter.get("爱")).toEqual([
+    expect(wordsByCharacter.get("爱")?.get("ai4")).toEqual([
       {
         word: "爱",
         definition: null,
-        pinyin: null,
+        pinyin: "ai4",
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱"],
       },
@@ -42,7 +42,7 @@ describe("buildWordsByCharacter", () => {
         characters: ["爱", "好"],
       },
     ]);
-    expect(wordsByCharacter.get("好")).toEqual([
+    expect(wordsByCharacter.get("好")?.get("hao3")).toEqual([
       {
         word: "爱好",
         definition: "hobby",
@@ -51,6 +51,34 @@ describe("buildWordsByCharacter", () => {
         characters: ["爱", "好"],
       },
     ]);
+  });
+
+  it("keeps different pinyin readings of the same character in separate buckets", () => {
+    const words: Word[] = [
+      {
+        word: "的",
+        definition: "possessive particle",
+        pinyin: "de",
+        updated_at: "2026-07-12T12:00:00+00:00",
+        characters: ["的"],
+      },
+      {
+        word: "目的",
+        definition: "purpose",
+        pinyin: "mu4 di4",
+        updated_at: "2026-07-12T12:00:00+00:00",
+        characters: ["目", "的"],
+      },
+    ];
+
+    const wordsByCharacter = buildWordsByCharacter(words);
+
+    expect(wordsByCharacter.get("的")?.get("de")?.map((word) => word.word)).toEqual([
+      "的",
+    ]);
+    expect(
+      wordsByCharacter.get("的")?.get("di4")?.map((word) => word.word),
+    ).toEqual(["目的"]);
   });
 });
 

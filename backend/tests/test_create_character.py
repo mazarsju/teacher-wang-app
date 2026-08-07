@@ -44,6 +44,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
         def make_character(**kwargs):
             record = MagicMock(**kwargs)
             record.updated_at = updated_at
+            record.pinyin_readings = [kwargs["pinyin"]]
             return record
 
         self.mock_character_cls.side_effect = make_character
@@ -59,6 +60,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
             {
                 "char": "爱",
                 "pinyin": "ai",
+                "pinyin_readings": ["ai"],
                 "writting_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
             },
