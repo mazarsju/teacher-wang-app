@@ -19,7 +19,7 @@ class WordValidationError(ValueError):
 
 
 def validate_word_payload(data: dict) -> tuple[str, str, str, bool]:
-    """Validate a single word payload, returning (word, definition, pinyin, writting_known).
+    """Validate a single word payload, returning (word, definition, pinyin, writing_known).
 
     Shared by the single and bulk create-word routes so both enforce
     identical rules.
@@ -30,7 +30,7 @@ def validate_word_payload(data: dict) -> tuple[str, str, str, bool]:
     word_value = data["word"]
     definition = data.get("definition", "")
     pinyin = data.get("pinyin", "")
-    writting_known = data.get("writting_known", False)
+    writing_known = data.get("writing_known", False)
 
     if not isinstance(word_value, str) or not word_value.strip():
         raise WordValidationError("word must be a non-empty string")
@@ -56,8 +56,8 @@ def validate_word_payload(data: dict) -> tuple[str, str, str, bool]:
             f"pinyin must be at most {PINYIN_MAX_LENGTH} characters"
         )
 
-    if not isinstance(writting_known, bool):
-        raise WordValidationError("writting_known must be a boolean")
+    if not isinstance(writing_known, bool):
+        raise WordValidationError("writing_known must be a boolean")
 
     word_text = word_value.strip()
     definition_text = definition.strip() if isinstance(definition, str) else ""
@@ -66,7 +66,7 @@ def validate_word_payload(data: dict) -> tuple[str, str, str, bool]:
     if not any(is_han_character(character) for character in word_text):
         raise WordValidationError("word must contain at least one Chinese character")
 
-    return word_text, definition_text, pinyin_text, writting_known
+    return word_text, definition_text, pinyin_text, writing_known
 
 
 @bp.post("/words")
@@ -76,7 +76,7 @@ def create_word():
         return {"error": "Invalid JSON body"}, 400
 
     try:
-        word_text, definition_text, pinyin_text, writting_known = validate_word_payload(
+        word_text, definition_text, pinyin_text, writing_known = validate_word_payload(
             data
         )
     except WordValidationError as exc:
@@ -92,7 +92,7 @@ def create_word():
         word=word_text,
         definition=definition_text or None,
         pinyin=pinyin_text or None,
-        writting_known=writting_known,
+        writing_known=writing_known,
         updated_at=now,
     )
     db.session.add(word_record)
@@ -104,7 +104,7 @@ def create_word():
         "word": word_record.word,
         "definition": word_record.definition,
         "pinyin": word_record.pinyin,
-        "writting_known": word_record.writting_known,
+        "writing_known": word_record.writing_known,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_text),
         "updated_characters": [

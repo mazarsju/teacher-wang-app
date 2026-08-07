@@ -29,7 +29,7 @@ def serialize_character(character: Character) -> dict:
         "char": character.char,
         "pinyin": character.pinyin,
         "pinyin_readings": character.pinyin_readings,
-        "writting_known": character.writting_known,
+        "writing_known": character.writing_known,
         "updated_at": character.updated_at.isoformat(),
     }
 
@@ -263,14 +263,14 @@ def build_character_pinyin_map_from_words(words: list[Word]) -> dict[str, list[s
     return char_readings
 
 
-def build_character_writting_known_map_from_words(words: list[Word]) -> dict[str, bool]:
-    """A character is writting_known if any word containing it is writting_known."""
+def build_character_writing_known_map_from_words(words: list[Word]) -> dict[str, bool]:
+    """A character is writing_known if any word containing it is writing_known."""
     known: dict[str, bool] = {}
     for word in words:
         for char in word.word:
             if not is_han_character(char):
                 continue
-            known[char] = known.get(char, False) or word.writting_known
+            known[char] = known.get(char, False) or word.writing_known
     return known
 
 
@@ -282,7 +282,7 @@ def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
     """
     words = Word.query.filter_by(user_id=user_id).all()
     target = build_character_pinyin_map_from_words(words)
-    writting_known_map = build_character_writting_known_map_from_words(words)
+    writing_known_map = build_character_writing_known_map_from_words(words)
 
     existing = {
         row.char: row for row in Character.query.filter_by(user_id=user_id).all()
@@ -297,7 +297,7 @@ def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
                 user_id=user_id,
                 char=char,
                 pinyin_readings=readings,
-                writting_known=writting_known_map.get(char, False),
+                writing_known=writing_known_map.get(char, False),
                 synchronized=False,
                 updated_at=now,
             )
@@ -310,8 +310,8 @@ def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
             record.pinyin_readings = readings
             changed = True
 
-        if writting_known_map.get(char, False) and not record.writting_known:
-            record.writting_known = True
+        if writing_known_map.get(char, False) and not record.writing_known:
+            record.writing_known = True
             changed = True
 
         if changed:

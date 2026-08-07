@@ -101,7 +101,7 @@ function stubAuthenticatedApis(options: { isAdmin?: boolean } = {}) {
                 model_name: "",
                 fields: {},
               },
-              mandarin_writting: {
+              mandarin_writing: {
                 status: "not_configured",
                 deck_name: "",
                 model_name: "",

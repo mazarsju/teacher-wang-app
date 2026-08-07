@@ -466,7 +466,7 @@ export default function KnowledgeBaseInitWizardModal({
                     <th>word</th>
                     <th>definition</th>
                     <th>pinyin</th>
-                    <th>writting_known</th>
+                    <th>writing_known</th>
                     <th>synchronized</th>
                     <th>updated_at</th>
                   </tr>

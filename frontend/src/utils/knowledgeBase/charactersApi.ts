@@ -16,7 +16,7 @@ export async function fetchCharacters(limit?: number): Promise<Character[]> {
 }
 
 export async function bulkCreateCharacters(
-  values: { char: string; pinyin: string; writting_known: boolean }[],
+  values: { char: string; pinyin: string; writing_known: boolean }[],
 ): Promise<Character[]> {
   const response = await apiFetch(`${API_BASE}/characters/bulk-create`, {
     method: "POST",

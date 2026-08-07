@@ -17,7 +17,7 @@ const UNLOCKED_STATE = {
     items: Array.from({ length: 50 }, (_, index) => ({
       char: `字${index}`,
       pinyin: "zi4",
-      writting_known: false,
+      writing_known: false,
       updated_at: "2026-07-12T12:00:00+00:00",
     })),
   },

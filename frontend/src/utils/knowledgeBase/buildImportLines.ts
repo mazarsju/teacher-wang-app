@@ -11,7 +11,7 @@ export type SmartWordRow = {
 export type CharacterEntry = {
   char: string;
   pinyin: string;
-  writting_known: boolean;
+  writing_known: boolean;
 };
 
 /**
@@ -51,12 +51,12 @@ export function extractCharacterEntries(rows: SmartWordRow[]): CharacterEntry[] 
 
       const existing = byCharacter.get(character);
       if (existing) {
-        existing.writting_known = existing.writting_known || row.knownToWrite;
+        existing.writing_known = existing.writing_known || row.knownToWrite;
       } else {
         byCharacter.set(character, {
           char: character,
           pinyin: syllable,
-          writting_known: row.knownToWrite,
+          writing_known: row.knownToWrite,
         });
       }
     });

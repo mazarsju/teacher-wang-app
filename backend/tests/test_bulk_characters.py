@@ -77,7 +77,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
             {
                 "error": (
                     "Invalid line format. Should have the format "
-                    "'word,definition,pinyin,writting_known,synchronized,updated_at'."
+                    "'word,definition,pinyin,writing_known,synchronized,updated_at'."
                     "(error found in line: 爱好,hobby,ai4 hao4)"
                 )
             },
@@ -124,7 +124,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         self.mock_word_cls.side_effect = make_word
 
         file_content = (
-            b"word,definition,pinyin,writting_known,synchronized,updated_at\n"
+            b"word,definition,pinyin,writing_known,synchronized,updated_at\n"
             b"\xe7\x88\xb1\xe5\xa5\xbd,hobby,ai4 hao4,true,false,"
             b"2026-07-12T12:00:00+00:00\n"
         )
@@ -157,7 +157,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         record = created_words[0]
         self.assertEqual(record.definition, "hobby")
         self.assertEqual(record.pinyin, "ai4 hao4")
-        self.assertEqual(record.writting_known, True)
+        self.assertEqual(record.writing_known, True)
         self.assertEqual(record.anki_voc_sync, False)
         self.assertEqual(record.updated_at.isoformat(), "2026-07-12T12:00:00+00:00")
 
@@ -212,7 +212,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.mock_word_cls.assert_not_called()
         self.assertEqual(existing.definition, "hobby")
-        self.assertEqual(existing.writting_known, True)
+        self.assertEqual(existing.writing_known, True)
         self.mock_session.add.assert_not_called()
         self.mock_session.commit.assert_called_once()
 

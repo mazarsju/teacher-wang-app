@@ -34,9 +34,9 @@ export default function VocabularyNoteTypeInfoModal({
           This deck type should have 3 directions:
         </p>
         <ol className="anki-note-type-directions">
-          <li>asking writting → guessing pinyin + definition</li>
-          <li>asking pinyin → guessing writting + definition</li>
-          <li>asking definition → guessing writting + pinyin</li>
+          <li>asking writing → guessing pinyin + definition</li>
+          <li>asking pinyin → guessing writing + definition</li>
+          <li>asking definition → guessing writing + pinyin</li>
         </ol>
         <p className="home-hsk-info-text">
           If you do not already have such a deck type in Anki, you can create one

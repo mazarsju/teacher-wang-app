@@ -19,13 +19,13 @@ const vocabularyPending: AnkiPendingSync = {
   cards: [
     {
       id: "水",
-      writting: "水",
+      writing: "水",
       pinyin: "shui3",
       definition: "water",
     },
     {
       id: "火",
-      writting: "火",
+      writing: "火",
       pinyin: "huo3",
       definition: "fire",
     },
@@ -35,7 +35,7 @@ const vocabularyPending: AnkiPendingSync = {
   pull_cards: [
     {
       id: "风",
-      writting: "风",
+      writing: "风",
       pinyin: "feng1",
       definition: "wind",
     },
@@ -45,7 +45,7 @@ const vocabularyPending: AnkiPendingSync = {
     deck_name: "Vocab",
     model_name: "Vocab",
     fields: {
-      writting: "writting",
+      writing: "writing",
       pinyin: "pinyin",
       definition: "definition",
     },
@@ -64,7 +64,7 @@ const pushAllResult: AnkiSyncResult = {
     deck_name: "Vocab",
     model_name: "Vocab",
     fields: {
-      writting: "writting",
+      writing: "writing",
       pinyin: "pinyin",
       definition: "definition",
     },
@@ -189,9 +189,9 @@ describe("AnkiSyncModal", () => {
     expect(onSynced).toHaveBeenCalledWith("push", partialPushResult);
   });
 
-  it("shows writting unsyncable characters", async () => {
+  it("shows writing unsyncable characters", async () => {
     fetchAnkiPendingSync.mockResolvedValue({
-      kind: "mandarin_writting",
+      kind: "mandarin_writing",
       count: 1,
       cards: [
         {
@@ -205,7 +205,7 @@ describe("AnkiSyncModal", () => {
       pull_cards: [],
       deck: {
         status: "not_synchronized",
-        deck_name: "Writting",
+        deck_name: "Writing",
         model_name: "Basic",
         fields: { recto: "Front", verso: "Back" },
       },
@@ -214,7 +214,7 @@ describe("AnkiSyncModal", () => {
     renderWithStore(
       <AnkiSyncModal
         isOpen
-        kind="mandarin_writting"
+        kind="mandarin_writing"
         onCancel={vi.fn()}
         onSynced={vi.fn()}
       />,

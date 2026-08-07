@@ -35,9 +35,9 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_ignore_vocab_card_query = self.ignore_vocab_card_patcher.start()
         self.addCleanup(self.ignore_vocab_card_patcher.stop)
 
-        self.ignore_writting_card_patcher = patch("backend.routes.delete_knowledge_base.IgnoreWrittingCard.query")
-        self.mock_ignore_writting_card_query = self.ignore_writting_card_patcher.start()
-        self.addCleanup(self.ignore_writting_card_patcher.stop)
+        self.ignore_writing_card_patcher = patch("backend.routes.delete_knowledge_base.IgnoreWritingCard.query")
+        self.mock_ignore_writing_card_query = self.ignore_writing_card_patcher.start()
+        self.addCleanup(self.ignore_writing_card_patcher.stop)
 
         self.storage_patcher = patch("backend.routes.delete_knowledge_base.get_storage")
         self.mock_get_storage = self.storage_patcher.start()
@@ -49,7 +49,7 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         word_record = MagicMock()
         character_record = MagicMock()
         ignore_vocab_card_record = MagicMock()
-        ignore_writting_card_record = MagicMock()
+        ignore_writing_card_record = MagicMock()
 
         self.mock_session.commit.return_value = None
 
@@ -66,7 +66,7 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_word_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_character_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_ignore_vocab_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
-        self.mock_ignore_writting_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
+        self.mock_ignore_writing_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
 
         # Assert conversation logs (transcripts, threads, challenge task

@@ -10,15 +10,15 @@ describe("bulkCreateCharacters", () => {
       Promise.resolve({
         ok: true,
         json: async () => ({
-          characters: [{ char: "爱", pinyin: "ai4", writting_known: true }],
+          characters: [{ char: "爱", pinyin: "ai4", writing_known: true }],
         }),
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const values = [{ char: "爱", pinyin: "ai4", writting_known: true }];
+    const values = [{ char: "爱", pinyin: "ai4", writing_known: true }];
     await expect(bulkCreateCharacters(values)).resolves.toEqual([
-      { char: "爱", pinyin: "ai4", writting_known: true },
+      { char: "爱", pinyin: "ai4", writing_known: true },
     ]);
 
     const [, init] = fetchMock.mock.calls[0];
@@ -37,7 +37,7 @@ describe("bulkCreateCharacters", () => {
     );
 
     await expect(
-      bulkCreateCharacters([{ char: "爱", pinyin: "ai4", writting_known: true }]),
+      bulkCreateCharacters([{ char: "爱", pinyin: "ai4", writing_known: true }]),
     ).rejects.toThrow("Failed to add characters.");
   });
 });

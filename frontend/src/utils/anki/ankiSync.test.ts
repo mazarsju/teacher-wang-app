@@ -49,7 +49,7 @@ const configuredDeck = {
   deck_name: "Vocab",
   model_name: "Model",
   fields: {
-    writting: "writting",
+    writing: "writing",
     pinyin: "pinyin",
     definition: "definition",
   },
@@ -72,7 +72,7 @@ describe("ankiSync", () => {
           model_name: "",
           fields: {},
         },
-        mandarin_writting: {
+        mandarin_writing: {
           status: "not_configured",
           deck_name: "",
           model_name: "",
@@ -91,7 +91,7 @@ describe("ankiSync", () => {
       push_cards: [
         {
           id: "水",
-          writting: "水",
+          writing: "水",
           pinyin: "shui3",
           definition: "water",
         },
@@ -115,7 +115,7 @@ describe("ankiSync", () => {
       push_cards: [
         {
           id: "水",
-          writting: "水",
+          writing: "水",
           pinyin: "shui3",
           definition: "water",
         },
@@ -161,7 +161,7 @@ describe("ankiSync", () => {
       deck: configuredDeck,
     });
     mockFetchMappedNotes.mockResolvedValue([
-      { writting: "风", pinyin: "feng1", definition: "wind" },
+      { writing: "风", pinyin: "feng1", definition: "wind" },
     ]);
     mockPullApply.mockResolvedValue({
       kind: "mandarin_vocabulary",
@@ -216,7 +216,7 @@ describe("ankiSync", () => {
       pending_push_estimate: 0,
       decks: {
         mandarin_vocabulary: configuredDeck,
-        mandarin_writting: {
+        mandarin_writing: {
           status: "synchronized",
           deck_name: "W",
           model_name: "Basic",

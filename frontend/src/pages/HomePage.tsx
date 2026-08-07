@@ -29,8 +29,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   const error = !hasSyncedData ? syncError : null;
 
   const recognizedCount = characters.length;
-  const writtingCount = useMemo(
-    () => characters.filter((character) => character.writting_known).length,
+  const writingCount = useMemo(
+    () => characters.filter((character) => character.writing_known).length,
     [characters],
   );
   const motivationMessages = useMemo(
@@ -139,7 +139,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               </p>
             </div>
             <div className="home-metric-card">
-              <p className="home-metric-value">{writtingCount}</p>
+              <p className="home-metric-value">{writingCount}</p>
               <p className="home-metric-label">Characters you can write</p>
             </div>
           </div>

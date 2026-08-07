@@ -26,7 +26,7 @@ class TestSettings(PostgresTestCase):
             "not_synchronized",
         )
         self.assertEqual(get_setting(self.user_id, "anki_mandarin_vocabulary_deck"), "")
-        self.assertEqual(get_setting(self.user_id, "anki_mandarin_writting_deck"), "")
+        self.assertEqual(get_setting(self.user_id, "anki_mandarin_writing_deck"), "")
         self.assertEqual(
             get_setting(self.user_id, SETTING_AVAILABLE_TOKEN),
             str(FREE_PLAN_MAX_ALLOWED_TOKEN),

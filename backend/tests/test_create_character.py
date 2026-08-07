@@ -51,7 +51,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/characters",
-            json={"char": "爱", "pinyin": "ai", "writting_known": True},
+            json={"char": "爱", "pinyin": "ai", "writing_known": True},
         )
 
         self.assertEqual(response.status_code, 201)
@@ -61,7 +61,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
                 "char": "爱",
                 "pinyin": "ai",
                 "pinyin_readings": ["ai"],
-                "writting_known": True,
+                "writing_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
             },
         )
@@ -69,7 +69,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
             user_id=TEST_USER_ID,
             char="爱",
             pinyin="ai",
-            writting_known=True,
+            writing_known=True,
         )
         self.mock_session.add.assert_called_once()
         self.mock_session.commit.assert_called_once()
@@ -82,7 +82,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/characters",
-            json={"char": "爱", "pinyin": "ai", "writting_known": True},
+            json={"char": "爱", "pinyin": "ai", "writing_known": True},
         )
 
         self.assertEqual(response.status_code, 409)
@@ -94,7 +94,7 @@ class TestCreateCharacterEndpoint(unittest.TestCase):
     def test_create_non_chinese_character_returns_error(self):
         response = self.client.post(
             "/characters",
-            json={"char": "a", "pinyin": "ai", "writting_known": True},
+            json={"char": "a", "pinyin": "ai", "writing_known": True},
         )
 
         self.assertEqual(response.status_code, 400)

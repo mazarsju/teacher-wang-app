@@ -54,7 +54,7 @@ class TestAnkiRoutes(unittest.TestCase):
                     "model_name": "",
                     "fields": {},
                 },
-                "mandarin_writting": {
+                "mandarin_writing": {
                     "status": "not_configured",
                     "deck_name": "",
                     "model_name": "",
@@ -80,7 +80,7 @@ class TestAnkiRoutes(unittest.TestCase):
         response = self.client.post(
             "/anki/decks/setup",
             json={
-                "kind": "mandarin_writting",
+                "kind": "mandarin_writing",
                 "deck_name": "Characters",
                 "model_name": "Basic",
                 "fields": {"recto": "Front", "verso": "Back"},
@@ -90,7 +90,7 @@ class TestAnkiRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.mock_setup.assert_called_once_with(
             TEST_USER_ID,
-            "mandarin_writting",
+            "mandarin_writing",
             "Characters",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -98,7 +98,7 @@ class TestAnkiRoutes(unittest.TestCase):
         self.assertEqual(
             response.get_json(),
             {
-                "kind": "mandarin_writting",
+                "kind": "mandarin_writing",
                 "deck": self.mock_setup.return_value,
             },
         )
@@ -128,7 +128,7 @@ class TestAnkiRoutes(unittest.TestCase):
                 "deck_name": "Vocab",
                 "model_name": "Basic",
                 "fields": {
-                    "writting": "Front",
+                    "writing": "Front",
                     "pinyin": "Back",
                     "definition": "Extra",
                 },
@@ -224,7 +224,7 @@ class TestAnkiRoutes(unittest.TestCase):
                 "cards": [
                     {
                         "id": "水",
-                        "writting": "水",
+                        "writing": "水",
                         "pinyin": "shui3",
                         "definition": "water",
                     }
@@ -256,21 +256,21 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             status["decks"]["mandarin_vocabulary"]["status"], "not_configured"
         )
         self.assertEqual(
-            status["decks"]["mandarin_writting"]["status"], "not_configured"
+            status["decks"]["mandarin_writing"]["status"], "not_configured"
         )
 
     def test_setup_deck_persists_mapping(self):
         from backend.anki_sync import setup_deck
         from backend.settings import (
-            SETTING_ANKI_MANDARIN_WRITTING_DECK,
-            SETTING_ANKI_MANDARIN_WRITTING_FIELDS,
-            SETTING_ANKI_MANDARIN_WRITTING_MODEL,
+            SETTING_ANKI_MANDARIN_WRITING_DECK,
+            SETTING_ANKI_MANDARIN_WRITING_FIELDS,
+            SETTING_ANKI_MANDARIN_WRITING_MODEL,
             get_setting,
         )
 
         result = setup_deck(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "Characters",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -278,13 +278,13 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         self.assertEqual(result["status"], "synchronized")
         self.assertEqual(
-            get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITTING_DECK), "Characters"
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITING_DECK), "Characters"
         )
         self.assertEqual(
-            get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITTING_MODEL), "Basic"
+            get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITING_MODEL), "Basic"
         )
         self.assertIn(
-            "recto", get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITTING_FIELDS)
+            "recto", get_setting(self.user_id, SETTING_ANKI_MANDARIN_WRITING_FIELDS)
         )
 
     def test_setup_vocabulary_deck_persists_settings(self):
@@ -302,7 +302,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="VocabModel",
             fields={
-                "writting": "Hanzi",
+                "writing": "Hanzi",
                 "pinyin": "Pinyin",
                 "definition": "Meaning",
             },
@@ -317,7 +317,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "VocabModel",
         )
         self.assertIn(
-            "writting",
+            "writing",
             get_setting(self.user_id, SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS),
         )
 
@@ -335,7 +335,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -345,7 +345,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
         setup_deck(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -373,14 +373,14 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
         )
         setup_deck(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -420,7 +420,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -430,7 +430,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 char="水",
                 pinyin="shui3",
-                writting_known=False,
+                writing_known=False,
             )
         )
         db.session.add(
@@ -447,7 +447,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         self.assertEqual(payload["kind"], "mandarin_vocabulary")
         self.assertEqual(len(payload["push_cards"]), 1)
-        self.assertEqual(payload["push_cards"][0]["writting"], "水")
+        self.assertEqual(payload["push_cards"][0]["writing"], "水")
         self.assertEqual(payload["push_cards"][0]["pinyin"], "shui3")
         self.assertIn("水", payload["local_words"])
 
@@ -462,7 +462,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -513,7 +513,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -551,7 +551,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -564,7 +564,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             cards=[
                 {
                     "id": "水",
-                    "writting": "水",
+                    "writing": "水",
                     "pinyin": "shui3",
                     "definition": "water",
                 }
@@ -590,7 +590,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -603,19 +603,19 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             cards=[
                 {
                     "id": "…好了吗?",
-                    "writting": "…好了吗?",
+                    "writing": "…好了吗?",
                     "pinyin": "...hao3 le ma?",
                     "definition": "is it good now?",
                 },
                 {
                     "id": "...行吗?",
-                    "writting": "...行吗?",
+                    "writing": "...行吗?",
                     "pinyin": "...xing2 ma?",
                     "definition": "is that ok?",
                 },
                 {
                     "id": "(公)园",
-                    "writting": "(公)园",
+                    "writing": "(公)园",
                     "pinyin": "(gong1) yuan2",
                     "definition": "park",
                 },
@@ -649,7 +649,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -662,7 +662,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             cards=[
                 {
                     "id": "水",
-                    "writting": "水",
+                    "writing": "水",
                     "pinyin": "",
                     "definition": "water",
                 }
@@ -688,7 +688,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -710,7 +710,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             cards=[
                 {
                     "id": "水",
-                    "writting": "水",
+                    "writing": "水",
                     "pinyin": "",
                     "definition": "water",
                 }
@@ -734,7 +734,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -744,7 +744,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 char="水",
                 pinyin="shui3",
-                writting_known=False,
+                writing_known=False,
                 synchronized=True,
             )
         )
@@ -757,7 +757,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             cards=[
                 {
                     "id": "水",
-                    "writting": "水",
+                    "writing": "水",
                     "pinyin": "",
                     "definition": "water",
                 }
@@ -780,7 +780,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "Vocab",
             model_name="Basic",
             fields={
-                "writting": "Front",
+                "writing": "Front",
                 "pinyin": "Back",
                 "definition": "Extra",
             },
@@ -795,16 +795,16 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["ignored"], 1)
-        self.assertIn("稀有", {row.writting for row in IgnoreVocabCard.query.all()})
+        self.assertIn("稀有", {row.writing for row in IgnoreVocabCard.query.all()})
 
-    def test_pull_import_writting_card(self):
+    def test_pull_import_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.extensions import db
         from backend.models import Character
 
         setup_deck(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -814,7 +814,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 char="水",
                 pinyin="shui3",
-                writting_known=False,
+                writing_known=False,
                 synchronized=False,
             )
         )
@@ -822,7 +822,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         result = apply_pull(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "synchronize_all",
             cards=[{"id": "水", "recto": "shui3", "verso": "水"}],
             ignore_keys=[],
@@ -830,16 +830,16 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         self.assertEqual(result["added"], 1)
         updated = Character.query.filter_by(user_id=self.user_id, char="水").one()
-        self.assertTrue(updated.writting_known)
+        self.assertTrue(updated.writing_known)
         self.assertTrue(updated.synchronized)
 
-    def test_pull_ignore_writting_card(self):
+    def test_pull_ignore_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import IgnoreWrittingCard
+        from backend.models import IgnoreWritingCard
 
         setup_deck(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -847,7 +847,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         result = apply_pull(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "cancel_all",
             cards=[],
             ignore_keys=["water (shui3)"],
@@ -856,17 +856,17 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(result["ignored"], 1)
         self.assertIn(
             "water (shui3)",
-            {row.recto for row in IgnoreWrittingCard.query.all()},
+            {row.recto for row in IgnoreWritingCard.query.all()},
         )
 
-    def test_get_sync_data_writting_unsyncable(self):
+    def test_get_sync_data_writing_unsyncable(self):
         from backend.anki_sync import get_sync_data, setup_deck
         from backend.extensions import db
         from backend.models import Character
 
         setup_deck(
             self.user_id,
-            "mandarin_writting",
+            "mandarin_writing",
             "Writing",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
@@ -876,13 +876,13 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 char="孤",
                 pinyin="gu1",
-                writting_known=True,
+                writing_known=True,
                 synchronized=False,
             )
         )
         db.session.commit()
 
-        payload = get_sync_data(self.user_id, "mandarin_writting")
+        payload = get_sync_data(self.user_id, "mandarin_writing")
 
         self.assertEqual(payload["unsyncable"], ["孤"])
         self.assertEqual(payload["push_cards"], [])
@@ -898,7 +898,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                     user_id=self.user_id,
                     char=char,
                     pinyin=pinyin,
-                    writting_known=False,
+                    writing_known=False,
                 )
             )
         word = Word(

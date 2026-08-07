@@ -24,14 +24,14 @@ describe("syncMarkIdsForCards", () => {
   it("uses card ids for vocabulary", () => {
     expect(
       syncMarkIdsForCards("mandarin_vocabulary", [
-        { id: "水", writting: "水", pinyin: "shui3", definition: "water" },
+        { id: "水", writing: "水", pinyin: "shui3", definition: "water" },
       ]),
     ).toEqual(["水"]);
   });
 
-  it("expands writting versos into character ids", () => {
+  it("expands writing versos into character ids", () => {
     expect(
-      syncMarkIdsForCards("mandarin_writting", [
+      syncMarkIdsForCards("mandarin_writing", [
         { id: "hello (ni3 hao3)", recto: "hello (ni3 hao3)", verso: "你好" },
       ]),
     ).toEqual(["你", "好"]);
@@ -46,14 +46,14 @@ describe("buildAnkiNotes", () => {
         deckName: "Vocab",
         modelName: "Model",
         fieldMap: {
-          writting: "Hanzi",
+          writing: "Hanzi",
           pinyin: "Reading",
           definition: "Meaning",
         },
         cards: [
           {
             id: "水",
-            writting: "水",
+            writing: "水",
             pinyin: "shui3",
             definition: "water",
           },

@@ -64,8 +64,8 @@ class TestBulkCreateCharactersEndpoint(unittest.TestCase):
             "/characters/bulk-create",
             json={
                 "characters": [
-                    {"char": "爱", "pinyin": "ai4", "writting_known": True},
-                    {"char": "好", "pinyin": "hao4", "writting_known": False},
+                    {"char": "爱", "pinyin": "ai4", "writing_known": True},
+                    {"char": "好", "pinyin": "hao4", "writing_known": False},
                 ]
             },
         )
@@ -80,7 +80,7 @@ class TestBulkCreateCharactersEndpoint(unittest.TestCase):
     def test_bulk_create_characters_rejects_more_than_limit(self):
         payload = {
             "characters": [
-                {"char": "爱", "pinyin": "ai4", "writting_known": True}
+                {"char": "爱", "pinyin": "ai4", "writing_known": True}
                 for _ in range(101)
             ]
         }
@@ -101,7 +101,7 @@ class TestBulkCreateCharactersEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/characters/bulk-create",
-            json={"characters": [{"char": "爱", "pinyin": "ai4", "writting_known": True}]},
+            json={"characters": [{"char": "爱", "pinyin": "ai4", "writing_known": True}]},
         )
 
         self.assertEqual(response.status_code, 409)
@@ -117,8 +117,8 @@ class TestBulkCreateCharactersEndpoint(unittest.TestCase):
             "/characters/bulk-create",
             json={
                 "characters": [
-                    {"char": "爱", "pinyin": "ai4", "writting_known": True},
-                    {"char": "爱", "pinyin": "ai4", "writting_known": False},
+                    {"char": "爱", "pinyin": "ai4", "writing_known": True},
+                    {"char": "爱", "pinyin": "ai4", "writing_known": False},
                 ]
             },
         )
@@ -135,7 +135,7 @@ class TestBulkCreateCharactersEndpoint(unittest.TestCase):
     def test_bulk_create_characters_invalid_item_returns_error(self):
         response = self.client.post(
             "/characters/bulk-create",
-            json={"characters": [{"char": "a", "pinyin": "ai4", "writting_known": True}]},
+            json={"characters": [{"char": "a", "pinyin": "ai4", "writing_known": True}]},
         )
 
         self.assertEqual(response.status_code, 400)

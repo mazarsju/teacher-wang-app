@@ -128,7 +128,7 @@ export async function autoSetupVocabularyDeck(options: {
       deck_name: trimmedDeck,
       model_name: trimmedModel,
       fields: {
-        writting: "writting",
+        writing: "writing",
         pinyin: "pinyin",
         definition: "definition",
       },

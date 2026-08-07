@@ -35,7 +35,7 @@ def bulk_create_characters():
             return {"error": f"Item {index} must be an object"}, 400
 
         try:
-            char_value, pinyin_value, writting_known = validate_character_payload(item)
+            char_value, pinyin_value, writing_known = validate_character_payload(item)
         except CharacterValidationError as exc:
             return {"error": f"Item {index}: {exc}"}, 400
 
@@ -47,7 +47,7 @@ def bulk_create_characters():
                 )
             }, 400
         seen_chars.add(char_value)
-        parsed.append((char_value, pinyin_value, writting_known))
+        parsed.append((char_value, pinyin_value, writing_known))
 
     user_id = current_user_id()
 
@@ -63,12 +63,12 @@ def bulk_create_characters():
         }, 409
 
     created_records = []
-    for char_value, pinyin_value, writting_known in parsed:
+    for char_value, pinyin_value, writing_known in parsed:
         char_record = Character(
             user_id=user_id,
             char=char_value,
             pinyin=pinyin_value,
-            writting_known=writting_known,
+            writing_known=writing_known,
         )
         db.session.add(char_record)
         created_records.append(char_record)
@@ -81,7 +81,7 @@ def bulk_create_characters():
                 "char": record.char,
                 "pinyin": record.pinyin,
                 "pinyin_readings": record.pinyin_readings,
-                "writting_known": record.writting_known,
+                "writing_known": record.writing_known,
                 "updated_at": record.updated_at.isoformat(),
             }
             for record in created_records

@@ -10,7 +10,7 @@ def make_word(**kwargs):
     word.word = kwargs.get("word", "爱好")
     word.definition = kwargs.get("definition", "hobby")
     word.pinyin = kwargs.get("pinyin", "ai4 hao4")
-    word.writting_known = kwargs.get("writting_known", True)
+    word.writing_known = kwargs.get("writing_known", True)
     word.anki_voc_sync = kwargs.get("anki_voc_sync", False)
     word.updated_at = MagicMock(
         isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00")
@@ -28,7 +28,7 @@ class TestDbExport(unittest.TestCase):
         )
 
     def test_word_to_csv_row_blank_fields(self):
-        word = make_word(definition=None, pinyin=None, writting_known=False, anki_voc_sync=True)
+        word = make_word(definition=None, pinyin=None, writing_known=False, anki_voc_sync=True)
 
         self.assertEqual(
             word_to_csv_row(word),
@@ -40,14 +40,14 @@ class TestDbExport(unittest.TestCase):
 
         self.assertEqual(
             serialize_database([word]),
-            "word,definition,pinyin,writting_known,synchronized,updated_at\r\n"
+            "word,definition,pinyin,writing_known,synchronized,updated_at\r\n"
             "爱好,hobby,ai4 hao4,true,false,2026-07-12T12:00:00+00:00\r\n",
         )
 
     def test_serialize_database_empty(self):
         self.assertEqual(
             serialize_database([]),
-            "word,definition,pinyin,writting_known,synchronized,updated_at\r\n",
+            "word,definition,pinyin,writing_known,synchronized,updated_at\r\n",
         )
 
 

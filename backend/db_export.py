@@ -3,7 +3,7 @@ import io
 
 from backend.models import Word
 
-CSV_HEADER = ["word", "definition", "pinyin", "writting_known", "synchronized", "updated_at"]
+CSV_HEADER = ["word", "definition", "pinyin", "writing_known", "synchronized", "updated_at"]
 
 
 def word_to_csv_row(word: Word) -> list[str]:
@@ -11,7 +11,7 @@ def word_to_csv_row(word: Word) -> list[str]:
         word.word,
         word.definition or "",
         word.pinyin or "",
-        "true" if word.writting_known else "false",
+        "true" if word.writing_known else "false",
         "true" if word.anki_voc_sync else "false",
         word.updated_at.isoformat(),
     ]

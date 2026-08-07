@@ -23,7 +23,7 @@ describe("buildVocabularyCardTemplates", () => {
   it("builds three card directions", () => {
     const templates = buildVocabularyCardTemplates(["Audio"]);
     expect(templates).toHaveLength(3);
-    expect(templates[0]?.Name).toContain("Writting");
+    expect(templates[0]?.Name).toContain("Writing");
     expect(templates[0]?.Back).toContain("{{Audio}}");
   });
 });

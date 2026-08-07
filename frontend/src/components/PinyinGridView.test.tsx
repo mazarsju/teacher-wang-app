@@ -25,13 +25,13 @@ describe("PinyinGridView", () => {
           {
             char: "爱",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "好",
             pinyin: "hao3",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
         ]}
@@ -51,25 +51,25 @@ describe("PinyinGridView", () => {
           {
             char: "爱",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "艾",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "矮",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "碍",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
         ]}
@@ -87,31 +87,31 @@ describe("PinyinGridView", () => {
           {
             char: "妈",
             pinyin: "ma1",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "麻",
             pinyin: "ma2",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "马",
             pinyin: "ma3",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "骂",
             pinyin: "ma4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "吗",
             pinyin: "ma",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
         ]}
@@ -144,13 +144,13 @@ describe("PinyinGridView", () => {
           {
             char: "爱",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
           {
             char: "好",
             pinyin: "hao3",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
         ]}
@@ -178,7 +178,7 @@ describe("PinyinGridView", () => {
           {
             char: "爱",
             pinyin: "ai4",
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
         ]}
@@ -203,7 +203,7 @@ describe("PinyinGridView", () => {
             char: "的",
             pinyin: "de",
             pinyin_readings: ["de", "di4"],
-            writting_known: true,
+            writing_known: true,
             updated_at: "2026-07-12T12:00:00+00:00",
           },
         ]}

@@ -24,7 +24,7 @@ const defaultAnkiStatus: AnkiStatus = {
       model_name: "",
       fields: {},
     },
-    mandarin_writting: {
+    mandarin_writing: {
       status: "not_configured",
       deck_name: "",
       model_name: "",
@@ -37,19 +37,19 @@ const characters = [
   {
     char: "爱",
     pinyin: "ai4",
-    writting_known: true,
+    writing_known: true,
     updated_at: "2026-07-12T12:00:00+00:00",
   },
   {
     char: "唉",
     pinyin: "ai4",
-    writting_known: false,
+    writing_known: false,
     updated_at: "2026-07-12T12:00:00+00:00",
   },
   {
     char: "好",
     pinyin: "hao3",
-    writting_known: true,
+    writing_known: true,
     updated_at: "2026-07-12T12:00:00+00:00",
   },
 ];
@@ -59,7 +59,7 @@ const words = [
     word: "爱好",
     definition: "hobby",
     pinyin: "ai4 hao3",
-    writting_known: false,
+    writing_known: false,
     updated_at: "2026-07-12T12:00:00+00:00",
     characters: ["爱", "好"],
   },
@@ -174,7 +174,7 @@ describe("KnowledgeBasePage", () => {
       word: `word-${index}`,
       definition: null,
       pinyin: null,
-      writting_known: false,
+      writing_known: false,
       updated_at: "2026-07-12T12:00:00+00:00",
       characters: [] as string[],
     }));
@@ -288,7 +288,7 @@ describe("KnowledgeBasePage", () => {
         if (url.endsWith("/characters/bulk-create") && init?.method === "POST") {
           bulkCreateCharactersBody = JSON.parse(String(init.body));
           const body = bulkCreateCharactersBody as {
-            characters: { char: string; pinyin: string; writting_known: boolean }[];
+            characters: { char: string; pinyin: string; writing_known: boolean }[];
           };
           return Promise.resolve({
             ok: true,
@@ -343,7 +343,7 @@ describe("KnowledgeBasePage", () => {
     });
 
     expect(bulkCreateCharactersBody).toEqual({
-      characters: [{ char: "你", pinyin: "ni3", writting_known: false }],
+      characters: [{ char: "你", pinyin: "ni3", writing_known: false }],
     });
   });
 
@@ -388,10 +388,10 @@ describe("KnowledgeBasePage", () => {
     await enterViewMode(user);
 
     expect(
-      await screen.findByRole("switch", { name: "Writting known" }),
+      await screen.findByRole("switch", { name: "Writing known" }),
     ).toBeChecked();
     expect(
-      screen.getByRole("switch", { name: "Writting not known" }),
+      screen.getByRole("switch", { name: "Writing not known" }),
     ).toBeChecked();
   });
 
@@ -407,7 +407,7 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByText("唉")).toBeInTheDocument();
     expect(screen.getByText("好")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("switch", { name: "Writting known" }));
+    await user.click(screen.getByRole("switch", { name: "Writing known" }));
 
     await waitFor(() => {
       expect(
@@ -417,9 +417,9 @@ describe("KnowledgeBasePage", () => {
     });
     expect(screen.getByText("唉")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("switch", { name: "Writting known" }));
+    await user.click(screen.getByRole("switch", { name: "Writing known" }));
     await user.click(
-      screen.getByRole("switch", { name: "Writting not known" }),
+      screen.getByRole("switch", { name: "Writing not known" }),
     );
 
     await waitFor(() => {
@@ -460,14 +460,14 @@ describe("KnowledgeBasePage", () => {
           deck_name: "Vocab",
           model_name: "Vocab",
           fields: {
-            writting: "writting",
+            writing: "writing",
             pinyin: "pinyin",
             definition: "definition",
           },
         },
-        mandarin_writting: {
+        mandarin_writing: {
           status: "synchronized",
-          deck_name: "Writting",
+          deck_name: "Writing",
           model_name: "Basic",
           fields: { recto: "Front", verso: "Back" },
         },
@@ -490,15 +490,15 @@ describe("KnowledgeBasePage", () => {
             fields: {},
           },
         },
-        mandarin_writting: {
-          kind: "mandarin_writting",
+        mandarin_writing: {
+          kind: "mandarin_writing",
           action: "synchronize_all",
           added: 1,
           ignored: 0,
           failed: 0,
           deck: {
             status: "synchronized",
-            deck_name: "Writting",
+            deck_name: "Writing",
             model_name: "Basic",
             fields: {},
           },
@@ -522,14 +522,14 @@ describe("KnowledgeBasePage", () => {
                 deck_name: "Vocab",
                 model_name: "Vocab",
                 fields: {
-                  writting: "writting",
+                  writing: "writing",
                   pinyin: "pinyin",
                   definition: "definition",
                 },
               },
-              mandarin_writting: {
+              mandarin_writing: {
                 status: "synchronized",
-                deck_name: "Writting",
+                deck_name: "Writing",
                 model_name: "Basic",
                 fields: { recto: "Front", verso: "Back" },
               },
@@ -673,7 +673,7 @@ describe("KnowledgeBasePage", () => {
                   model_name: "",
                   fields: {},
                 },
-                mandarin_writting: {
+                mandarin_writing: {
                   status: "not_configured",
                   deck_name: "",
                   model_name: "",

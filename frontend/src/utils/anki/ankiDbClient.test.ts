@@ -88,7 +88,7 @@ describe("ankiDbClient", () => {
       kind: "mandarin_vocabulary",
       deck_name: "Vocab",
       model_name: "Model",
-      fields: { writting: "a", pinyin: "b", definition: "c" },
+      fields: { writing: "a", pinyin: "b", definition: "c" },
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);

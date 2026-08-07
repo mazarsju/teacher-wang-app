@@ -119,7 +119,7 @@ class TestHskLevel(PostgresTestCase):
                     user_id=self.user_id,
                     char=char,
                     pinyin="x",
-                    writting_known=True,
+                    writing_known=True,
                 )
             )
         db.session.add(HskCharacter(character="学", level=2, frequency=1))
@@ -141,7 +141,7 @@ class TestHskLevel(PostgresTestCase):
                     user_id=other.shortid,
                     char=char,
                     pinyin="x",
-                    writting_known=True,
+                    writing_known=True,
                 )
             )
         db.session.add(HskCharacter(character="学", level=2, frequency=1))

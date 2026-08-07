@@ -1,5 +1,5 @@
 export const VOCABULARY_MANDATORY_FIELDS = [
-  "writting",
+  "writing",
   "pinyin",
   "definition",
 ] as const;
@@ -37,29 +37,29 @@ export function buildVocabularyCardTemplates(
   optionalFields: string[],
 ): Array<{ Name: string; Front: string; Back: string }> {
   const extras = optionalFieldsHtml(optionalFields);
-  const writting = ankiFieldRef("writting");
+  const writing = ankiFieldRef("writing");
   const pinyin = ankiFieldRef("pinyin");
   const definition = ankiFieldRef("definition");
 
   return [
     {
-      Name: "Writting → Pinyin + Definition",
-      Front: `<div class="hanzi">${writting}</div>`,
+      Name: "Writing → Pinyin + Definition",
+      Front: `<div class="hanzi">${writing}</div>`,
       Back: `{{FrontSide}}<hr id=answer>${pinyin}<br>${definition}${extras}`,
     },
     {
-      Name: "Pinyin → Writting + Definition",
+      Name: "Pinyin → Writing + Definition",
       Front: pinyin,
       Back:
         `{{FrontSide}}<hr id=answer>` +
-        `<div class="hanzi">${writting}</div><br>${definition}${extras}`,
+        `<div class="hanzi">${writing}</div><br>${definition}${extras}`,
     },
     {
-      Name: "Definition → Writting + Pinyin",
+      Name: "Definition → Writing + Pinyin",
       Front: definition,
       Back:
         `{{FrontSide}}<hr id=answer>` +
-        `<div class="hanzi">${writting}</div><br>${pinyin}${extras}`,
+        `<div class="hanzi">${writing}</div><br>${pinyin}${extras}`,
     },
   ];
 }

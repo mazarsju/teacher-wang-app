@@ -53,7 +53,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
             word="爱好",
             definition="old",
             pinyin="ai4 hao3",
-            writting_known=False,
+            writing_known=False,
             updated_at=updated_at,
         )
         self.mock_word_cls.query.filter_by.return_value.first.return_value = (
@@ -63,7 +63,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
 
         response = self.client.patch(
             "/words/爱好",
-            json={"definition": "hobby", "pinyin": "ai4 hao3", "writting_known": True},
+            json={"definition": "hobby", "pinyin": "ai4 hao3", "writing_known": True},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -73,7 +73,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
                 "word": "爱好",
                 "definition": "hobby",
                 "pinyin": "ai4 hao3",
-                "writting_known": True,
+                "writing_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
                 "characters": ["爱", "好"],
                 "updated_characters": [],
@@ -82,14 +82,14 @@ class TestUpdateWordEndpoint(unittest.TestCase):
         )
         self.assertEqual(word_record.definition, "hobby")
         self.assertEqual(word_record.pinyin, "ai4 hao3")
-        self.assertTrue(word_record.writting_known)
+        self.assertTrue(word_record.writing_known)
         self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
         self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
-    def test_update_word_rejects_non_boolean_writting_known(self):
+    def test_update_word_rejects_non_boolean_writing_known(self):
         word_record = MagicMock(
-            word="爱好", definition="old", pinyin="ai4 hao3", writting_known=False
+            word="爱好", definition="old", pinyin="ai4 hao3", writing_known=False
         )
         self.mock_word_cls.query.filter_by.return_value.first.return_value = (
             word_record
@@ -97,12 +97,12 @@ class TestUpdateWordEndpoint(unittest.TestCase):
 
         response = self.client.patch(
             "/words/爱好",
-            json={"definition": "hobby", "writting_known": "yes"},
+            json={"definition": "hobby", "writing_known": "yes"},
         )
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
-            response.get_json(), {"error": "writting_known must be a boolean"}
+            response.get_json(), {"error": "writing_known must be a boolean"}
         )
         self.mock_session.commit.assert_not_called()
 
@@ -112,7 +112,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
             word="爱好",
             definition="old",
             pinyin="ai4 hao3",
-            writting_known=False,
+            writing_known=False,
             updated_at=updated_at,
         )
         self.mock_word_cls.query.filter_by.return_value.first.return_value = (

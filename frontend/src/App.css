@@ -1084,12 +1084,12 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   justify-content: center;
 }
 
-.anki-sync-card-writting {
+.anki-sync-card-writing {
   font-size: 1.05rem;
   font-weight: 600;
 }
 
-.anki-sync-card-row--writting {
+.anki-sync-card-row--writing {
   grid-template-columns: 2rem minmax(8rem, 1.6fr) minmax(4rem, 0.8fr);
 }
 

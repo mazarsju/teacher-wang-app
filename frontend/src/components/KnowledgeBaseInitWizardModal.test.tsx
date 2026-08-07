@@ -46,7 +46,7 @@ function defaultFetchResponse(url: URL, init?: RequestInit) {
     const characters = jsonBody(init).characters as {
       char: string;
       pinyin: string;
-      writting_known: boolean;
+      writing_known: boolean;
     }[];
     return Promise.resolve({
       ok: true,
@@ -425,7 +425,7 @@ describe("KnowledgeBaseInitWizardModal", () => {
     );
     expect(bulkCharacterCall).toBeDefined();
     expect(jsonBody(bulkCharacterCall?.[1])).toEqual({
-      characters: [{ char: "爱", pinyin: "ai4", writting_known: false }],
+      characters: [{ char: "爱", pinyin: "ai4", writing_known: false }],
     });
 
     const bulkWordCall = fetchMock.mock.calls.find(([requestInput]) =>

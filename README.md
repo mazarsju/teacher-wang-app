@@ -207,8 +207,8 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) — the only public route |
 | `GET` | `/auth/me` | Current user (`username`, `email`, `plan`, `is_admin`) from the `users` row |
 | `GET` | `/token-usage` | Token history (`total_tokens`, `days`, …) plus `plan`, `available_token`, and `max_allowed_token` (100000 on free, else `null`) |
-| `GET` | `/anki/status` | Mandarin vocabulary/writting deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
-| `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writting deck, deck type, and field mapping |
+| `GET` | `/anki/status` | Mandarin vocabulary/writing deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
+| `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writing deck, deck type, and field mapping |
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
 | `POST` | `/anki/sync/mark-synchronized` | Mark words/characters synchronized after a frontend Anki push (or cancel) |
 | `POST` | `/anki/sync/pull-apply` | Import pull cards into the knowledge base and/or record ignore keys |
@@ -220,7 +220,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
-| `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writting_known` |
+| `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writing_known` |
 | `DELETE` | `/characters/<char>` | Delete a character |
 | `POST` | `/characters/bulk` | Upload a `.txt` file (`multipart/form-data`, field name `file`) |
 | `POST` | `/characters/bulk-create` | Create up to 100 characters at once (`{ "characters": [...] }`) |

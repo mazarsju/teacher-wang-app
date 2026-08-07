@@ -2,7 +2,7 @@ from flask import Blueprint
 
 from backend.conversation_log_storage import get_storage, object_key
 from backend.extensions import db
-from backend.models import Character, IgnoreVocabCard, IgnoreWrittingCard, Word
+from backend.models import Character, IgnoreVocabCard, IgnoreWritingCard, Word
 from backend.user_context import current_user, current_user_id
 
 bp = Blueprint("delete_knowledge_base", __name__)
@@ -14,7 +14,7 @@ def delete_knowledge_base():
     Word.query.filter_by(user_id=current_user_id()).delete()
     Character.query.filter_by(user_id=current_user_id()).delete()
     IgnoreVocabCard.query.filter_by(user_id=current_user_id()).delete()
-    IgnoreWrittingCard.query.filter_by(user_id=current_user_id()).delete()
+    IgnoreWritingCard.query.filter_by(user_id=current_user_id()).delete()
     db.session.commit()
 
     # Chat history (transcripts, correction threads, challenge task progress)

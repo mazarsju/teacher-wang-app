@@ -61,7 +61,7 @@ describe("ankiSetup", () => {
         deck_name: "Vocab",
         model_name: "Model",
         fields: {
-          writting: "Hanzi",
+          writing: "Hanzi",
           pinyin: "Reading",
           definition: "Meaning",
         },
@@ -73,7 +73,7 @@ describe("ankiSetup", () => {
       deckName: "Vocab",
       modelName: "Model",
       fields: {
-        writting: "Hanzi",
+        writing: "Hanzi",
         pinyin: "Reading",
         definition: "Meaning",
       },
@@ -86,7 +86,7 @@ describe("ankiSetup", () => {
     mockModelNames.mockResolvedValue(["Model"]);
     mockModelFieldNames.mockResolvedValue(["Front", "Back"]);
     mockPersist.mockResolvedValue({
-      kind: "mandarin_writting",
+      kind: "mandarin_writing",
       deck: {
         status: "synchronized",
         deck_name: "New",
@@ -96,7 +96,7 @@ describe("ankiSetup", () => {
     });
 
     await setupAnkiDeck({
-      kind: "mandarin_writting",
+      kind: "mandarin_writing",
       deckName: "New",
       modelName: "Model",
       fields: { recto: "Front", verso: "Back" },

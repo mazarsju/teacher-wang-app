@@ -87,7 +87,7 @@ export default function AnkiDeckSetupModal({
     [kind],
   );
   const showVocabularyDeckTypeHelp = kind === "mandarin_vocabulary";
-  const showWritingDeckTypeHelp = kind === "mandarin_writting";
+  const showWritingDeckTypeHelp = kind === "mandarin_writing";
 
   const loadCatalog = useCallback(
     async (deckKind: AnkiDeckKind, saved: AnkiDeckMapping | null) => {

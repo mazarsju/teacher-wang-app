@@ -34,7 +34,7 @@ function setupFetch(overrides: Record<string, () => Promise<unknown>> = {}) {
         const characters = jsonBody(init).characters as {
           char: string;
           pinyin: string;
-          writting_known: boolean;
+          writing_known: boolean;
         }[];
         if (overrides.charactersBulkCreate) {
           return overrides.charactersBulkCreate();
@@ -134,7 +134,7 @@ describe("AddSuggestedWordsModal", () => {
             {
               char: "学",
               pinyin: "xue2",
-              writting_known: true,
+              writing_known: true,
               updated_at: "2026-01-01T00:00:00+00:00",
             },
           ],
@@ -159,7 +159,7 @@ describe("AddSuggestedWordsModal", () => {
       String(input).endsWith("/characters/bulk-create"),
     );
     expect(jsonBody(charactersCall?.[1]).characters).toEqual([
-      { char: "爱", pinyin: "ai4", writting_known: false },
+      { char: "爱", pinyin: "ai4", writing_known: false },
     ]);
 
     const wordsCall = fetchMock.mock.calls.find(([input]: [RequestInfo]) =>

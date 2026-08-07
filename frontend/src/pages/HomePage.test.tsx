@@ -7,13 +7,13 @@ const characters = [
   {
     char: "爱",
     pinyin: "ai4",
-    writting_known: true,
+    writing_known: true,
     updated_at: "2026-07-12T12:00:00+00:00",
   },
   {
     char: "好",
     pinyin: "hao3",
-    writting_known: false,
+    writing_known: false,
     updated_at: "2026-07-12T12:00:00+00:00",
   },
 ];

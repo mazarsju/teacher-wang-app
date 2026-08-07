@@ -16,19 +16,19 @@ class CharacterValidationError(ValueError):
 
 
 def validate_character_payload(data: dict) -> tuple[str, str, bool]:
-    """Validate a single character payload, returning (char, pinyin, writting_known).
+    """Validate a single character payload, returning (char, pinyin, writing_known).
 
     Shared by the single and bulk create-character routes so both enforce
     identical rules.
     """
-    if "char" not in data or "pinyin" not in data or "writting_known" not in data:
+    if "char" not in data or "pinyin" not in data or "writing_known" not in data:
         raise CharacterValidationError(
-            "Missing required fields: char, pinyin, writting_known"
+            "Missing required fields: char, pinyin, writing_known"
         )
 
     char = data["char"]
     pinyin = data["pinyin"]
-    writting_known = data["writting_known"]
+    writing_known = data["writing_known"]
 
     if not isinstance(char, str) or not char.strip():
         raise CharacterValidationError("char must be a non-empty string")
@@ -41,14 +41,14 @@ def validate_character_payload(data: dict) -> tuple[str, str, bool]:
             f"pinyin must be at most {PINYIN_MAX_LENGTH} characters"
         )
 
-    if not isinstance(writting_known, bool):
-        raise CharacterValidationError("writting_known must be a boolean")
+    if not isinstance(writing_known, bool):
+        raise CharacterValidationError("writing_known must be a boolean")
 
     char_value = char.strip()
     if not is_han_character(char_value):
         raise CharacterValidationError("char must be a single Chinese character")
 
-    return char_value, pinyin.strip(), writting_known
+    return char_value, pinyin.strip(), writing_known
 
 
 @bp.post("/characters")
@@ -58,7 +58,7 @@ def create_character():
         return {"error": "Invalid JSON body"}, 400
 
     try:
-        char_value, pinyin_value, writting_known = validate_character_payload(data)
+        char_value, pinyin_value, writing_known = validate_character_payload(data)
     except CharacterValidationError as exc:
         return {"error": str(exc)}, 400
 
@@ -73,7 +73,7 @@ def create_character():
         user_id=user_id,
         char=char_value,
         pinyin=pinyin_value,
-        writting_known=writting_known,
+        writing_known=writing_known,
     )
     db.session.add(char_record)
     db.session.commit()
@@ -83,6 +83,6 @@ def create_character():
         "char": char_record.char,
         "pinyin": char_record.pinyin,
         "pinyin_readings": char_record.pinyin_readings,
-        "writting_known": char_record.writting_known,
+        "writing_known": char_record.writing_known,
         "updated_at": char_record.updated_at.isoformat(),
     }, 201

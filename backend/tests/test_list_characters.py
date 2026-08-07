@@ -27,14 +27,14 @@ class TestListCharactersEndpoint(unittest.TestCase):
             char="爱",
             pinyin="ai",
             pinyin_readings=["ai"],
-            writting_known=True,
+            writing_known=True,
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
         )
         second = MagicMock(
             char="好",
             pinyin="hao",
             pinyin_readings=["hao"],
-            writting_known=False,
+            writing_known=False,
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
         )
         self.scoped_query.order_by.return_value.all.return_value = [
@@ -52,14 +52,14 @@ class TestListCharactersEndpoint(unittest.TestCase):
                     "char": "爱",
                     "pinyin": "ai",
                     "pinyin_readings": ["ai"],
-                    "writting_known": True,
+                    "writing_known": True,
                     "updated_at": updated_at,
                 },
                 {
                     "char": "好",
                     "pinyin": "hao",
                     "pinyin_readings": ["hao"],
-                    "writting_known": False,
+                    "writing_known": False,
                     "updated_at": updated_at,
                 },
             ],
@@ -72,7 +72,7 @@ class TestListCharactersEndpoint(unittest.TestCase):
             char="爱",
             pinyin="ai",
             pinyin_readings=["ai"],
-            writting_known=True,
+            writing_known=True,
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
         )
         limited_query = MagicMock()

@@ -16,7 +16,7 @@ describe("extractMissingCharacterEntries", () => {
   it("pairs each missing Chinese character with its pinyin syllable", () => {
     expect(
       extractMissingCharacterEntries("你好", "ni3 hao3", new Set(["你"])),
-    ).toEqual([{ char: "好", pinyin: "hao3", writting_known: false }]);
+    ).toEqual([{ char: "好", pinyin: "hao3", writing_known: false }]);
   });
 
   it("returns nothing when every character is already known", () => {
@@ -28,21 +28,21 @@ describe("extractMissingCharacterEntries", () => {
   it("ignores non-Chinese characters", () => {
     expect(
       extractMissingCharacterEntries("A想B", "A xiang3 B", new Set([])),
-    ).toEqual([{ char: "想", pinyin: "xiang3", writting_known: false }]);
+    ).toEqual([{ char: "想", pinyin: "xiang3", writing_known: false }]);
   });
 
   it("dedupes repeated characters within the word", () => {
     expect(
       extractMissingCharacterEntries("谢谢", "xie4 xie4", new Set([])),
-    ).toEqual([{ char: "谢", pinyin: "xie4", writting_known: false }]);
+    ).toEqual([{ char: "谢", pinyin: "xie4", writing_known: false }]);
   });
 
   it("resolves each character's syllable even when the pinyin is glued together", () => {
     expect(
       extractMissingCharacterEntries("你A好", "ni3Ahao3", new Set([])),
     ).toEqual([
-      { char: "你", pinyin: "ni3", writting_known: false },
-      { char: "好", pinyin: "hao3", writting_known: false },
+      { char: "你", pinyin: "ni3", writing_known: false },
+      { char: "好", pinyin: "hao3", writing_known: false },
     ]);
   });
 });

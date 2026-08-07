@@ -5,7 +5,7 @@ export type Character = {
   // Optional so existing fixtures/tests that only set `pinyin` keep working;
   // callers that care about variants should fall back to `[pinyin]`.
   pinyin_readings?: string[];
-  writting_known: boolean;
+  writing_known: boolean;
   updated_at: string;
 };
 

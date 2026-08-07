@@ -5,7 +5,7 @@ from backend.user_context import current_user_id
 
 bp = Blueprint("anki", __name__)
 
-VALID_KINDS = frozenset({"mandarin_vocabulary", "mandarin_writting"})
+VALID_KINDS = frozenset({"mandarin_vocabulary", "mandarin_writing"})
 VALID_SYNC_ACTIONS = frozenset({"synchronize_all", "cancel_all", "partial"})
 
 
@@ -29,7 +29,7 @@ def setup_anki_deck():
     fields = data.get("fields")
 
     if kind not in VALID_KINDS:
-        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
+        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writing"'}, 400
 
     if not isinstance(deck_name, str) or deck_name.strip() == "":
         return {"error": "deck_name must be a non-empty string"}, 400
@@ -57,7 +57,7 @@ def setup_anki_deck():
 @bp.get("/anki/sync/data/<kind>")
 def get_sync_data(kind: str):
     if kind not in VALID_KINDS:
-        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
+        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writing"'}, 400
 
     try:
         payload = anki_sync.get_sync_data(current_user_id(), kind)
@@ -85,7 +85,7 @@ def mark_synchronized():
     pull_count = data.get("pull_count")
 
     if kind not in VALID_KINDS:
-        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
+        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writing"'}, 400
 
     if action not in VALID_SYNC_ACTIONS:
         return {
@@ -166,7 +166,7 @@ def pull_apply():
     pull_count_after = data.get("pull_count_after")
 
     if kind not in VALID_KINDS:
-        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writting"'}, 400
+        return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writing"'}, 400
 
     if action not in VALID_SYNC_ACTIONS:
         return {

@@ -60,7 +60,7 @@ const disconnectedStatus: AnkiStatus = {
       model_name: "",
       fields: {},
     },
-    mandarin_writting: {
+    mandarin_writing: {
       status: "not_configured",
       deck_name: "",
       model_name: "",
@@ -258,7 +258,7 @@ describe("PreferencesPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("Mandarin vocabulary")).toBeInTheDocument();
-    expect(screen.getByText("Mandarin writting")).toBeInTheDocument();
+    expect(screen.getByText("Mandarin writing")).toBeInTheDocument();
     expect(screen.getAllByText("Not configured")).toHaveLength(2);
 
     const setupButtons = screen.getAllByRole("button", { name: "Setup" });
@@ -301,7 +301,7 @@ describe("PreferencesPage", () => {
           model_name: "Vocab",
           fields: {},
         },
-        mandarin_writting: {
+        mandarin_writing: {
           status: "not_configured",
           deck_name: "",
           model_name: "",
@@ -368,7 +368,7 @@ describe("PreferencesPage", () => {
       synchronization_status: "not_synchronized",
       pending_push_estimate: 0,
       decks: {
-        mandarin_writting: {
+        mandarin_writing: {
           status: "not_synchronized",
           deck_name: "Characters",
           model_name: "Basic",
@@ -396,7 +396,7 @@ describe("PreferencesPage", () => {
         deck_name: "Words",
         model_name: "Words",
         fields: {
-          writting: "Hanzi",
+          writing: "Hanzi",
           pinyin: "Reading",
           definition: "Meaning",
         },
@@ -412,7 +412,7 @@ describe("PreferencesPage", () => {
             synchronization_status: "not_synchronized",
             pending_push_estimate: 0,
             decks: {
-              mandarin_writting: {
+              mandarin_writing: {
                 status: "not_synchronized",
                 deck_name: "Characters",
                 model_name: "Basic",
@@ -435,7 +435,7 @@ describe("PreferencesPage", () => {
     expect(screen.getByText("Not synchronized")).toBeInTheDocument();
     expect(screen.getByText("Characters")).toBeInTheDocument();
 
-    const writingRow = screen.getByText("Mandarin writting").closest("li");
+    const writingRow = screen.getByText("Mandarin writing").closest("li");
     expect(writingRow).not.toBeNull();
     expect(
       within(writingRow as HTMLElement).getByRole("button", {
@@ -456,7 +456,7 @@ describe("PreferencesPage", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Set up Mandarin writting" }),
+      await screen.findByRole("heading", { name: "Set up Mandarin writing" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Existing deck")).toHaveValue("Characters");
     expect(screen.getByLabelText("Deck type")).toHaveValue("Basic");
@@ -481,8 +481,8 @@ describe("PreferencesPage", () => {
     await user.selectOptions(screen.getByLabelText("Existing deck"), "Words");
     await user.selectOptions(screen.getByLabelText("Deck type"), "Words");
 
-    await screen.findByLabelText(/writting/);
-    await user.selectOptions(screen.getByLabelText(/writting/), "Hanzi");
+    await screen.findByLabelText(/writing/);
+    await user.selectOptions(screen.getByLabelText(/writing/), "Hanzi");
     await user.selectOptions(screen.getByLabelText(/pinyin/), "Reading");
     await user.selectOptions(screen.getByLabelText(/definition/), "Meaning");
     await user.click(screen.getByRole("button", { name: "Save mapping" }));
@@ -493,7 +493,7 @@ describe("PreferencesPage", () => {
         deckName: "Words",
         modelName: "Words",
         fields: {
-          writting: "Hanzi",
+          writing: "Hanzi",
           pinyin: "Reading",
           definition: "Meaning",
         },
@@ -514,12 +514,12 @@ describe("PreferencesPage", () => {
           deck_name: "Vocab",
           model_name: "Vocab",
           fields: {
-            writting: "writting",
+            writing: "writing",
             pinyin: "pinyin",
             definition: "definition",
           },
         },
-        mandarin_writting: {
+        mandarin_writing: {
           status: "not_configured",
           deck_name: "",
           model_name: "",
@@ -537,7 +537,7 @@ describe("PreferencesPage", () => {
       pull_cards: [
         {
           id: "风",
-          writting: "风",
+          writing: "风",
           pinyin: "feng1",
           definition: "wind",
         },
@@ -606,12 +606,12 @@ describe("PreferencesPage", () => {
           deck_name: "Vocab",
           model_name: "Vocab",
           fields: {
-            writting: "writting",
+            writing: "writing",
             pinyin: "pinyin",
             definition: "definition",
           },
         },
-        mandarin_writting: {
+        mandarin_writing: {
           status: "not_configured",
           deck_name: "",
           model_name: "",
@@ -629,7 +629,7 @@ describe("PreferencesPage", () => {
       pull_cards: [
         {
           id: "风水",
-          writting: "风水",
+          writing: "风水",
           pinyin: "",
           definition: "feng shui",
         },
@@ -687,7 +687,7 @@ describe("PreferencesPage", () => {
             {
               char: "爱",
               pinyin: "ai4",
-              writting_known: true,
+              writing_known: true,
               updated_at: "2026-07-12T12:00:00+00:00",
             },
           ],

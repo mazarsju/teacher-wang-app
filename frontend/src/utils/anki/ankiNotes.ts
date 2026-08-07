@@ -4,7 +4,7 @@ import type {
   AnkiFieldKey,
   AnkiPendingCard,
   AnkiPendingVocabularyCard,
-  AnkiPendingWrittingCard,
+  AnkiPendingWritingCard,
 } from "../../types/anki";
 import { versoSignificantPart } from "./ankiHelpers";
 
@@ -12,7 +12,7 @@ export function characterIdsFromVerso(verso: string): string[] {
   return [...versoSignificantPart(verso)].filter(isHanCharacter);
 }
 
-export function characterIdsFromWrittingCards(
+export function characterIdsFromWritingCards(
   cards: Array<{ verso: string }>,
 ): string[] {
   const ids: string[] = [];
@@ -36,7 +36,7 @@ export function syncMarkIdsForCards(
   if (kind === "mandarin_vocabulary") {
     return cards.map((card) => card.id);
   }
-  return characterIdsFromWrittingCards(cards as AnkiPendingWrittingCard[]);
+  return characterIdsFromWritingCards(cards as AnkiPendingWritingCard[]);
 }
 
 export function significantAnkiVersos(versos: Set<string>): Set<string> {
@@ -63,15 +63,15 @@ export function buildAnkiNotes(options: {
     if (options.kind === "mandarin_vocabulary") {
       const vocab = card as AnkiPendingVocabularyCard;
       ankiFields = {
-        [options.fieldMap.writting ?? ""]: vocab.writting,
+        [options.fieldMap.writing ?? ""]: vocab.writing,
         [options.fieldMap.pinyin ?? ""]: vocab.pinyin,
         [options.fieldMap.definition ?? ""]: vocab.definition,
       };
     } else {
-      const writting = card as AnkiPendingWrittingCard;
+      const writing = card as AnkiPendingWritingCard;
       ankiFields = {
-        [options.fieldMap.recto ?? ""]: writting.recto,
-        [options.fieldMap.verso ?? ""]: writting.verso,
+        [options.fieldMap.recto ?? ""]: writing.recto,
+        [options.fieldMap.verso ?? ""]: writing.verso,
       };
     }
     notes.push({

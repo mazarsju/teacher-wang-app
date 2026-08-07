@@ -37,7 +37,7 @@ def list_characters():
             "char": character.char,
             "pinyin": character.pinyin,
             "pinyin_readings": character.pinyin_readings,
-            "writting_known": character.writting_known,
+            "writing_known": character.writing_known,
             "updated_at": character.updated_at.isoformat(),
         }
         for character in character_list

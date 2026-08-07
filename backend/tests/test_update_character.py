@@ -48,7 +48,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
             char="爱",
             pinyin="old",
             pinyin_readings=["ai"],
-            writting_known=False,
+            writing_known=False,
             updated_at=updated_at,
         )
         self.mock_character_cls.query.filter_by.return_value.first.return_value = (
@@ -58,7 +58,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
 
         response = self.client.patch(
             "/characters/爱",
-            json={"pinyin": "ai", "writting_known": True},
+            json={"pinyin": "ai", "writing_known": True},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -68,12 +68,12 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
                 "char": "爱",
                 "pinyin": "ai",
                 "pinyin_readings": ["ai"],
-                "writting_known": True,
+                "writing_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
             },
         )
         self.assertEqual(char_record.pinyin, "ai")
-        self.assertTrue(char_record.writting_known)
+        self.assertTrue(char_record.writing_known)
         self.mock_session.commit.assert_called_once()
         self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
@@ -82,7 +82,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
 
         response = self.client.patch(
             "/characters/爱",
-            json={"pinyin": "ai", "writting_known": True},
+            json={"pinyin": "ai", "writing_known": True},
         )
 
         self.assertEqual(response.status_code, 404)
@@ -95,7 +95,7 @@ class TestUpdateCharacterEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             response.get_json(),
-            {"error": "Missing required fields: pinyin, writting_known"},
+            {"error": "Missing required fields: pinyin, writing_known"},
         )
 
 

@@ -49,7 +49,7 @@ describe("AddWordModal", () => {
       word: "A想B",
       definition: "to think",
       pinyin: "A xiang3 B",
-      writting_known: false,
+      writing_known: false,
     });
   });
 
@@ -133,7 +133,7 @@ describe("AddWordModal", () => {
       word: "爱好",
       definition: "to like",
       pinyin: "ai4 hao3",
-      writting_known: false,
+      writing_known: false,
     });
   });
 
@@ -215,7 +215,7 @@ describe("AddWordModal", () => {
           word: "A想B",
           definition: null,
           pinyin: null,
-          writting_known: false,
+          writing_known: false,
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["A", "想", "B"],
         }}
@@ -240,7 +240,7 @@ describe("AddWordModal", () => {
       word: "A想B",
       definition: "to think",
       pinyin: "A xiang3 B",
-      writting_known: false,
+      writing_known: false,
     });
   });
 
@@ -256,7 +256,7 @@ describe("AddWordModal", () => {
           word: "爱好",
           definition: "old",
           pinyin: "ai4 hao3",
-          writting_known: false,
+          writing_known: false,
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["爱", "好"],
         }}
@@ -276,11 +276,11 @@ describe("AddWordModal", () => {
       word: "爱好",
       definition: "hobby",
       pinyin: "ai4 hao3",
-      writting_known: false,
+      writing_known: false,
     });
   });
 
-  it("toggles writting known and includes it when submitting", async () => {
+  it("toggles writing known and includes it when submitting", async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
 
@@ -304,11 +304,11 @@ describe("AddWordModal", () => {
       word: "爱好",
       definition: "to like",
       pinyin: "ai4 hao3",
-      writting_known: true,
+      writing_known: true,
     });
   });
 
-  it("preloads writting known from the word being edited", () => {
+  it("preloads writing known from the word being edited", () => {
     render(
       <AddWordModal
         mode="edit"
@@ -317,7 +317,7 @@ describe("AddWordModal", () => {
           word: "爱好",
           definition: "old",
           pinyin: "ai4 hao3",
-          writting_known: true,
+          writing_known: true,
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["爱", "好"],
         }}

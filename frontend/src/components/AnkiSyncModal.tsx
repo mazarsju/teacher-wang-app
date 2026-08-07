@@ -6,7 +6,7 @@ import {
   type AnkiPendingCard,
   type AnkiPendingSync,
   type AnkiPendingVocabularyCard,
-  type AnkiPendingWrittingCard,
+  type AnkiPendingWritingCard,
   type AnkiSyncDirection,
   type AnkiSyncResult,
 } from "../types/anki";
@@ -33,16 +33,16 @@ type AnkiSyncModalProps = {
 function isVocabularyCard(
   card: AnkiPendingCard,
 ): card is AnkiPendingVocabularyCard {
-  return "writting" in card;
+  return "writing" in card;
 }
 
-function isWrittingCard(card: AnkiPendingCard): card is AnkiPendingWrittingCard {
+function isWritingCard(card: AnkiPendingCard): card is AnkiPendingWritingCard {
   return "recto" in card;
 }
 
 function cardLabel(card: AnkiPendingCard): string {
   if (isVocabularyCard(card)) {
-    return card.writting;
+    return card.writing;
   }
   return card.verso;
 }
@@ -188,7 +188,7 @@ export default function AnkiSyncModal({
         );
       }
       if (confirmAction.type === "ignore_all") {
-        if (pending.kind === "mandarin_writting") {
+        if (pending.kind === "mandarin_writing") {
           return (
             `This action cannot be undone. All ${cancelAllPushCount} character` +
             `${cancelAllPushCount === 1 ? "" : "s"} with “written known” will be ` +
@@ -209,7 +209,7 @@ export default function AnkiSyncModal({
     }
 
     if (confirmAction.type === "all") {
-      if (pending.kind === "mandarin_writting") {
+      if (pending.kind === "mandarin_writing") {
         return (
           `This action cannot be undone. It will pull all ${pullActionableCount} character` +
           `${pullActionableCount === 1 ? "" : "s"} from Anki and mark them as “written known”.`
@@ -223,7 +223,7 @@ export default function AnkiSyncModal({
     }
     if (confirmAction.type === "ignore_all") {
       const ignoreTotal = pullActionableCount + pullMissing.length;
-      if (pending.kind === "mandarin_writting") {
+      if (pending.kind === "mandarin_writing") {
         return (
           `This action cannot be undone. All ${ignoreTotal} character` +
           `${ignoreTotal === 1 ? "" : "s"} pending for pull (including warnings) ` +
@@ -236,7 +236,7 @@ export default function AnkiSyncModal({
         "will be ignored for future pulls from Anki."
       );
     }
-    if (pending.kind === "mandarin_writting") {
+    if (pending.kind === "mandarin_writing") {
       return (
         `This action cannot be undone. ${selectedCount} character` +
         `${selectedCount === 1 ? "" : "s"} currently selected will be marked as ` +
@@ -270,7 +270,7 @@ export default function AnkiSyncModal({
   }
 
   const label = ANKI_DECK_LABELS[kind];
-  const isWritting = kind === "mandarin_writting";
+  const isWriting = kind === "mandarin_writing";
 
   const toggleCard = (cardId: string) => {
     setSelectedIds((previous) => {
@@ -355,7 +355,7 @@ export default function AnkiSyncModal({
     <>
       <div className="anki-sync-card-row anki-sync-card-row--header">
         <span className="anki-sync-card-check" aria-hidden="true" />
-        <span>Writting</span>
+        <span>Writing</span>
         <span>Pinyin</span>
         <span>Definition</span>
       </div>
@@ -369,10 +369,10 @@ export default function AnkiSyncModal({
                 checked={checked}
                 disabled={isSubmitting}
                 onChange={() => toggleCard(card.id)}
-                aria-label={`Select ${card.writting}`}
+                aria-label={`Select ${card.writing}`}
               />
             </span>
-            <span className="anki-sync-card-writting">{card.writting}</span>
+            <span className="anki-sync-card-writing">{card.writing}</span>
             <span>{card.pinyin}</span>
             <span>{card.definition}</span>
           </label>
@@ -458,7 +458,7 @@ export default function AnkiSyncModal({
                   </button>
                 </div>
 
-                {isWritting && unsyncable.length > 0 && (
+                {isWriting && unsyncable.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
                     <p className="anki-sync-unsyncable-title">
                       Characters that cannot be pushed
@@ -482,13 +482,13 @@ export default function AnkiSyncModal({
                   <p className="anki-sync-panel-count">
                     {formatCount(
                       pullCount,
-                      isWritting ? "character to pull" : "card to pull",
-                      isWritting ? "characters to pull" : "cards to pull",
+                      isWriting ? "character to pull" : "card to pull",
+                      isWriting ? "characters to pull" : "cards to pull",
                     )}
                   </p>
                 </div>
                 <p className="anki-sync-panel-copy">
-                  {isWritting
+                  {isWriting
                     ? "Characters found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”."
                     : "Cards found in this Anki deck that are not yet in your knowledge base."}
                 </p>
@@ -520,7 +520,7 @@ export default function AnkiSyncModal({
                   </button>
                 </div>
 
-                {isWritting && pullMissing.length > 0 && (
+                {isWriting && pullMissing.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
                     <p className="anki-sync-unsyncable-title">
                       Characters not yet in the knowledge base
@@ -538,7 +538,7 @@ export default function AnkiSyncModal({
                   </div>
                 )}
 
-                {!isWritting && pullMissing.length > 0 && (
+                {!isWriting && pullMissing.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
                     <p className="anki-sync-unsyncable-title">
                       Cards that cannot be pulled
@@ -598,19 +598,19 @@ export default function AnkiSyncModal({
               </div>
 
               <div className="anki-sync-card-list" role="list">
-                {isWritting ? (
+                {isWriting ? (
                   <>
-                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writting">
+                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writing">
                       <span className="anki-sync-card-check" aria-hidden="true" />
                       <span>Recto</span>
                       <span>Verso</span>
                     </div>
-                    {pushCards.filter(isWrittingCard).map((card) => {
+                    {pushCards.filter(isWritingCard).map((card) => {
                       const checked = selectedIds.has(card.id);
                       return (
                         <label
                           key={card.id}
-                          className="anki-sync-card-row anki-sync-card-row--writting"
+                          className="anki-sync-card-row anki-sync-card-row--writing"
                           role="listitem"
                         >
                           <span className="anki-sync-card-check">
@@ -623,7 +623,7 @@ export default function AnkiSyncModal({
                             />
                           </span>
                           <span>{card.recto}</span>
-                          <span className="anki-sync-card-writting">
+                          <span className="anki-sync-card-writing">
                             {card.verso}
                           </span>
                         </label>
@@ -665,7 +665,7 @@ export default function AnkiSyncModal({
           {!isLoading && pending !== null && view === "partial-pull" && (
             <>
               <p className="modal-message">
-                {isWritting
+                {isWriting
                   ? "Choose which characters to mark as “written known”. Unselected characters will be ignored for future pulls."
                   : "Choose which cards to pull from Anki. Unselected cards will be ignored for future pulls."}
               </p>
@@ -693,19 +693,19 @@ export default function AnkiSyncModal({
               </div>
 
               <div className="anki-sync-card-list" role="list">
-                {isWritting ? (
+                {isWriting ? (
                   <>
-                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writting">
+                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writing">
                       <span className="anki-sync-card-check" aria-hidden="true" />
                       <span>Pinyin</span>
                       <span>Character</span>
                     </div>
-                    {pullCards.filter(isWrittingCard).map((card) => {
+                    {pullCards.filter(isWritingCard).map((card) => {
                       const checked = selectedIds.has(card.id);
                       return (
                         <label
                           key={card.id}
-                          className="anki-sync-card-row anki-sync-card-row--writting"
+                          className="anki-sync-card-row anki-sync-card-row--writing"
                           role="listitem"
                         >
                           <span className="anki-sync-card-check">
@@ -718,7 +718,7 @@ export default function AnkiSyncModal({
                             />
                           </span>
                           <span>{card.recto}</span>
-                          <span className="anki-sync-card-writting">
+                          <span className="anki-sync-card-writing">
                             {card.verso}
                           </span>
                         </label>

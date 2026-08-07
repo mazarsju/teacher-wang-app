@@ -31,7 +31,7 @@ def bulk_create_words():
             return {"error": f"Item {index} must be an object"}, 400
 
         try:
-            word_text, definition_text, pinyin_text, writting_known = (
+            word_text, definition_text, pinyin_text, writing_known = (
                 validate_word_payload(item)
             )
         except WordValidationError as exc:
@@ -42,7 +42,7 @@ def bulk_create_words():
                 "error": f"Item {index}: word '{word_text}' is duplicated in the request"
             }, 400
         seen_words.add(word_text)
-        parsed.append((word_text, definition_text, pinyin_text, writting_known))
+        parsed.append((word_text, definition_text, pinyin_text, writing_known))
 
     user_id = current_user_id()
 
@@ -57,13 +57,13 @@ def bulk_create_words():
 
     now = utcnow()
     created_records = []
-    for word_text, definition_text, pinyin_text, writting_known in parsed:
+    for word_text, definition_text, pinyin_text, writing_known in parsed:
         word_record = Word(
             user_id=user_id,
             word=word_text,
             definition=definition_text or None,
             pinyin=pinyin_text or None,
-            writting_known=writting_known,
+            writing_known=writing_known,
             updated_at=now,
         )
         db.session.add(word_record)
@@ -79,7 +79,7 @@ def bulk_create_words():
                 "word": record.word,
                 "definition": record.definition,
                 "pinyin": record.pinyin,
-                "writting_known": record.writting_known,
+                "writing_known": record.writing_known,
                 "updated_at": record.updated_at.isoformat(),
                 "characters": list(record.word),
             }

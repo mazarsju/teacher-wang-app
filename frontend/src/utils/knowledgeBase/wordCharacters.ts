@@ -118,7 +118,7 @@ export function buildPinyinFromCharacterMap(
 export type MissingCharacterEntry = {
   char: string;
   pinyin: string;
-  writting_known: boolean;
+  writing_known: boolean;
 };
 
 /**
@@ -152,7 +152,7 @@ export function extractMissingCharacterEntries(
     entries.push({
       char: character,
       pinyin: hanPinyin?.[index] ?? "",
-      writting_known: false,
+      writing_known: false,
     });
   });
 

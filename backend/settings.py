@@ -13,11 +13,11 @@ SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS = "anki_mandarin_vocabulary_fields"
 SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED = (
     "anki_mandarin_vocabulary_pull_ignored"
 )
-SETTING_ANKI_MANDARIN_WRITTING_DECK = "anki_mandarin_writting_deck"
-SETTING_ANKI_MANDARIN_WRITTING_MODEL = "anki_mandarin_writting_model"
-SETTING_ANKI_MANDARIN_WRITTING_FIELDS = "anki_mandarin_writting_fields"
-SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED = (
-    "anki_mandarin_writting_pull_ignored"
+SETTING_ANKI_MANDARIN_WRITING_DECK = "anki_mandarin_writing_deck"
+SETTING_ANKI_MANDARIN_WRITING_MODEL = "anki_mandarin_writing_model"
+SETTING_ANKI_MANDARIN_WRITING_FIELDS = "anki_mandarin_writing_fields"
+SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED = (
+    "anki_mandarin_writing_pull_ignored"
 )
 SETTING_AVAILABLE_TOKEN = "available_token"
 
@@ -31,13 +31,20 @@ FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE = (
 ADMIN_EMAIL = "mazarsju@gmail.com"
 
 LEGACY_SETTING_MIGRATIONS: tuple[tuple[str, str], ...] = (
-    ("anki_character_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
-    ("anki_characters_deck", SETTING_ANKI_MANDARIN_WRITTING_DECK),
-    ("anki_characters_model", SETTING_ANKI_MANDARIN_WRITTING_MODEL),
-    ("anki_characters_fields", SETTING_ANKI_MANDARIN_WRITTING_FIELDS),
+    ("anki_character_deck", SETTING_ANKI_MANDARIN_WRITING_DECK),
+    ("anki_characters_deck", SETTING_ANKI_MANDARIN_WRITING_DECK),
+    ("anki_characters_model", SETTING_ANKI_MANDARIN_WRITING_MODEL),
+    ("anki_characters_fields", SETTING_ANKI_MANDARIN_WRITING_FIELDS),
     ("anki_words_deck", SETTING_ANKI_MANDARIN_VOCABULARY_DECK),
     ("anki_words_model", SETTING_ANKI_MANDARIN_VOCABULARY_MODEL),
     ("anki_words_fields", SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS),
+    ("anki_mandarin_writting_deck", SETTING_ANKI_MANDARIN_WRITING_DECK),
+    ("anki_mandarin_writting_model", SETTING_ANKI_MANDARIN_WRITING_MODEL),
+    ("anki_mandarin_writting_fields", SETTING_ANKI_MANDARIN_WRITING_FIELDS),
+    (
+        "anki_mandarin_writting_pull_ignored",
+        SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED,
+    ),
 )
 
 DEFAULT_SETTINGS: dict[str, str] = {
@@ -47,10 +54,10 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_ANKI_MANDARIN_VOCABULARY_MODEL: "",
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS: "",
     SETTING_ANKI_MANDARIN_VOCABULARY_PULL_IGNORED: "[]",
-    SETTING_ANKI_MANDARIN_WRITTING_DECK: "",
-    SETTING_ANKI_MANDARIN_WRITTING_MODEL: "",
-    SETTING_ANKI_MANDARIN_WRITTING_FIELDS: "",
-    SETTING_ANKI_MANDARIN_WRITTING_PULL_IGNORED: "[]",
+    SETTING_ANKI_MANDARIN_WRITING_DECK: "",
+    SETTING_ANKI_MANDARIN_WRITING_MODEL: "",
+    SETTING_ANKI_MANDARIN_WRITING_FIELDS: "",
+    SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED: "[]",
     SETTING_AVAILABLE_TOKEN: str(FREE_PLAN_MAX_ALLOWED_TOKEN),
 }
 

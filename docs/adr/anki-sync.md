@@ -8,7 +8,7 @@ Accepted
 
 Deck connectivity uses AnkiConnect from the React client (see [anki-connect ADR](./anki-connect.md)). That leaves a second problem: how Teacher Wang’s knowledge-base database and the user’s Anki notes stay aligned without a shared Anki protocol on the backend.
 
-Two mapped decks are supported (`mandarin_vocabulary`, `mandarin_writting`). Preferences store deck name, note type, and field mappings. Sync is user-triggered from the UI (full, cancel, or partial selection), not a continuous background job. Deck field mappings and step-by-step push/pull rules: [sync protocol](../anki/sync-protocol.md).
+Two mapped decks are supported (`mandarin_vocabulary`, `mandarin_writing`). Preferences store deck name, note type, and field mappings. Sync is user-triggered from the UI (full, cancel, or partial selection), not a continuous background job. Deck field mappings and step-by-step push/pull rules: [sync protocol](../anki/sync-protocol.md).
 
 ## Decision
 

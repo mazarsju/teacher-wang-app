@@ -39,11 +39,11 @@ def update_word(word: str):
             return {"error": "pinyin must be at most 64 characters"}, 400
         word_record.pinyin = pinyin.strip() or None if isinstance(pinyin, str) else None
 
-    if "writting_known" in data:
-        writting_known = data["writting_known"]
-        if not isinstance(writting_known, bool):
-            return {"error": "writting_known must be a boolean"}, 400
-        word_record.writting_known = writting_known
+    if "writing_known" in data:
+        writing_known = data["writing_known"]
+        if not isinstance(writing_known, bool):
+            return {"error": "writing_known must be a boolean"}, 400
+        word_record.writing_known = writing_known
 
     word_record.definition = definition.strip() or None
     word_record.updated_at = utcnow()
@@ -55,7 +55,7 @@ def update_word(word: str):
         "word": word_record.word,
         "definition": word_record.definition,
         "pinyin": word_record.pinyin,
-        "writting_known": word_record.writting_known,
+        "writing_known": word_record.writing_known,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_record.word),
         "updated_characters": [

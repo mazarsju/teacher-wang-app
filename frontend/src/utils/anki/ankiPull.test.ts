@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  pairWrittingWithPinyinTokens,
+  pairWritingWithPinyinTokens,
   uniqueCharactersToCreate,
   vocabularyPullCardsFromNotes,
-  writtingPullFromNotes,
+  writingPullFromNotes,
 } from "./ankiPull";
 
-describe("pairWrittingWithPinyinTokens", () => {
+describe("pairWritingWithPinyinTokens", () => {
   it("pairs Han characters with normalized pinyin tokens", () => {
-    expect(pairWrittingWithPinyinTokens("水火", "shui3 huo3")).toEqual([
+    expect(pairWritingWithPinyinTokens("水火", "shui3 huo3")).toEqual([
       ["水", "shui3"],
       ["火", "huo3"],
     ]);
@@ -19,9 +19,9 @@ describe("vocabularyPullCardsFromNotes", () => {
   it("returns pullable cards and skips local/ignored words", () => {
     const result = vocabularyPullCardsFromNotes(
       [
-        { writting: "水", pinyin: "shui3", definition: "water" },
-        { writting: "火", pinyin: "huo3", definition: "fire" },
-        { writting: "风", pinyin: "feng1", definition: "wind" },
+        { writing: "水", pinyin: "shui3", definition: "water" },
+        { writing: "火", pinyin: "huo3", definition: "fire" },
+        { writing: "风", pinyin: "feng1", definition: "wind" },
       ],
       new Set(["水"]),
       new Set(["火"]),
@@ -31,7 +31,7 @@ describe("vocabularyPullCardsFromNotes", () => {
     expect(result.cards).toEqual([
       {
         id: "风",
-        writting: "风",
+        writing: "风",
         pinyin: "feng1",
         definition: "wind",
         characters_to_create: ["风"],
@@ -43,7 +43,7 @@ describe("vocabularyPullCardsFromNotes", () => {
   it("auto-ignores cards longer than 10 characters", () => {
     const long = "一二三四五六七八九十甲";
     const result = vocabularyPullCardsFromNotes(
-      [{ writting: long, pinyin: "", definition: "x" }],
+      [{ writing: long, pinyin: "", definition: "x" }],
       new Set(),
       new Set(),
       new Map(),
@@ -54,7 +54,7 @@ describe("vocabularyPullCardsFromNotes", () => {
 
   it("guesses missing pinyin from the HSK character map, like AddWordModal", () => {
     const result = vocabularyPullCardsFromNotes(
-      [{ writting: "风", pinyin: "", definition: "wind" }],
+      [{ writing: "风", pinyin: "", definition: "wind" }],
       new Set(),
       new Set(),
       new Map(),
@@ -64,7 +64,7 @@ describe("vocabularyPullCardsFromNotes", () => {
     expect(result.cards).toEqual([
       {
         id: "风",
-        writting: "风",
+        writing: "风",
         pinyin: "",
         definition: "wind",
         characters_to_create: ["风"],
@@ -74,7 +74,7 @@ describe("vocabularyPullCardsFromNotes", () => {
 
   it("marks a card missing when neither the field nor the HSK map resolves a character", () => {
     const result = vocabularyPullCardsFromNotes(
-      [{ writting: "风水", pinyin: "feng1 ??", definition: "feng shui" }],
+      [{ writing: "风水", pinyin: "feng1 ??", definition: "feng shui" }],
       new Set(),
       new Set(),
       new Map(),
@@ -89,16 +89,16 @@ describe("vocabularyPullCardsFromNotes", () => {
     const result = vocabularyPullCardsFromNotes(
       [
         {
-          writting: "…好了吗?",
+          writing: "…好了吗?",
           pinyin: "...hao3 le ma?",
           definition: "is it good now?",
         },
         {
-          writting: "...行吗?",
+          writing: "...行吗?",
           pinyin: "...xing2 ma?",
           definition: "is that ok?",
         },
-        { writting: "(公)园", pinyin: "(gong1) yuan2", definition: "park" },
+        { writing: "(公)园", pinyin: "(gong1) yuan2", definition: "park" },
       ],
       new Set(),
       new Set(),
@@ -106,23 +106,23 @@ describe("vocabularyPullCardsFromNotes", () => {
     );
 
     expect(result.missing).toEqual([]);
-    expect(new Set(result.cards.map((card) => card.writting))).toEqual(
+    expect(new Set(result.cards.map((card) => card.writing))).toEqual(
       new Set(["…好了吗?", "...行吗?", "(公)园"]),
     );
     expect(
-      result.cards.find((card) => card.writting === "…好了吗?")
+      result.cards.find((card) => card.writing === "…好了吗?")
         ?.characters_to_create,
     ).toEqual(["好", "了", "吗"]);
     expect(
-      result.cards.find((card) => card.writting === "(公)园")
+      result.cards.find((card) => card.writing === "(公)园")
         ?.characters_to_create,
     ).toEqual(["公", "园"]);
   });
 });
 
-describe("writtingPullFromNotes", () => {
-  it("pulls characters that exist but are not writting_known", () => {
-    const result = writtingPullFromNotes(
+describe("writingPullFromNotes", () => {
+  it("pulls characters that exist but are not writing_known", () => {
+    const result = writingPullFromNotes(
       [{ recto: "water (shui3)", verso: "水" }],
       new Set(),
       new Map([
@@ -131,7 +131,7 @@ describe("writtingPullFromNotes", () => {
           {
             char: "水",
             pinyin: "shui3",
-            writting_known: false,
+            writing_known: false,
             synchronized: false,
           },
         ],
@@ -155,14 +155,14 @@ describe("uniqueCharactersToCreate", () => {
       uniqueCharactersToCreate([
         {
           id: "水火",
-          writting: "水火",
+          writing: "水火",
           pinyin: "shui3 huo3",
           definition: "x",
           characters_to_create: ["水", "火"],
         },
         {
           id: "火",
-          writting: "火",
+          writing: "火",
           pinyin: "huo3",
           definition: "y",
           characters_to_create: ["火"],

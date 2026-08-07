@@ -3,18 +3,18 @@ import { extractToneSyllablesInOrder } from "../knowledgeBase/wordCharacters";
 import { normalizeAnkiPinyinToken } from "../../types/pinyin";
 import type {
   AnkiPendingVocabularyCard,
-  AnkiPendingWrittingCard,
+  AnkiPendingWritingCard,
 } from "../../types/anki";
 import { versoSignificantPart } from "./ankiHelpers";
 
 export type SyncDataCharacter = {
   char: string;
   pinyin: string;
-  writting_known: boolean;
+  writing_known: boolean;
   synchronized: boolean;
 };
 
-export function pairWrittingWithPinyinTokens(
+export function pairWritingWithPinyinTokens(
   wordText: string,
   pinyinField: string,
 ): Array<[string, string | null]> {
@@ -77,7 +77,7 @@ export function charactersToCreateForCard(
   }
 
   const toCreate: string[] = [];
-  for (const [char, cardPinyin] of pairWrittingWithPinyinTokens(
+  for (const [char, cardPinyin] of pairWritingWithPinyinTokens(
     wordText,
     pinyinField,
   )) {
@@ -131,62 +131,62 @@ export function vocabularyPullCardsFromNotes(
   const seenMissing = new Set<string>();
 
   for (const note of notes) {
-    const writting = (note.writting ?? "").trim();
+    const writing = (note.writing ?? "").trim();
     if (
-      writting === "" ||
-      localWords.has(writting) ||
-      ignored.has(writting) ||
-      seen.has(writting) ||
-      seenMissing.has(writting)
+      writing === "" ||
+      localWords.has(writing) ||
+      ignored.has(writing) ||
+      seen.has(writing) ||
+      seenMissing.has(writing)
     ) {
       continue;
     }
-    if (writting.length > 10) {
-      autoIgnore.push(writting);
+    if (writing.length > 10) {
+      autoIgnore.push(writing);
       continue;
     }
-    const hanChars = [...writting].filter(isHanCharacter);
+    const hanChars = [...writing].filter(isHanCharacter);
     if (hanChars.length === 0) {
       continue;
     }
     const pinyin = (note.pinyin ?? "").trim();
     const charactersToCreate = charactersToCreateForCard(
-      writting,
+      writing,
       pinyin,
       characterByChar,
       hskCharacterPinyin,
     );
     if (charactersToCreate === null) {
-      seenMissing.add(writting);
-      missing.push(writting);
+      seenMissing.add(writing);
+      missing.push(writing);
       continue;
     }
-    seen.add(writting);
+    seen.add(writing);
     const definition = (note.definition ?? "").trim().slice(0, 100);
     cards.push({
-      id: writting,
-      writting,
+      id: writing,
+      writing,
       pinyin,
       definition,
       characters_to_create: charactersToCreate,
     });
   }
 
-  cards.sort((a, b) => a.writting.localeCompare(b.writting));
+  cards.sort((a, b) => a.writing.localeCompare(b.writing));
   missing.sort();
   return { cards, missing, autoIgnore };
 }
 
-export function writtingPullFromNotes(
+export function writingPullFromNotes(
   notes: Array<Record<string, string>>,
   ignored: Set<string>,
   characterByChar: Map<string, SyncDataCharacter>,
 ): {
-  pullCards: AnkiPendingWrittingCard[];
+  pullCards: AnkiPendingWritingCard[];
   missing: string[];
   warningRectos: string[];
 } {
-  const pullCards: AnkiPendingWrittingCard[] = [];
+  const pullCards: AnkiPendingWritingCard[] = [];
   const missing: string[] = [];
   const warningRectos: string[] = [];
   const seenPull = new Set<string>();
@@ -216,7 +216,7 @@ export function writtingPullFromNotes(
         }
         continue;
       }
-      if (record.writting_known) {
+      if (record.writing_known) {
         continue;
       }
       if (seenPull.has(char)) {

@@ -9,7 +9,7 @@ type VocabularyThreeDirectionSetupModalProps = {
 };
 
 const DEFAULT_DECK_TYPE_NAME = "mandarin-3-directions";
-const MANDATORY_FIELDS = ["writting", "pinyin", "definition"] as const;
+const MANDATORY_FIELDS = ["writing", "pinyin", "definition"] as const;
 
 export default function VocabularyThreeDirectionSetupModal({
   isOpen,
@@ -129,8 +129,8 @@ export default function VocabularyThreeDirectionSetupModal({
               ))}
             </ul>
             <p className="anki-field-mapping-hint">
-              Directions: writting → pinyin + definition (+ optionals); pinyin →
-              writting + definition (+ optionals); definition → writting +
+              Directions: writing → pinyin + definition (+ optionals); pinyin →
+              writing + definition (+ optionals); definition → writing +
               pinyin (+ optionals).
             </p>
           </fieldset>

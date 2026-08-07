@@ -28,7 +28,7 @@ _TRUNCATE_TABLES = (
     "hsk_characters",
     "settings",
     "ignore_vocab_card",
-    "ignore_writting_card",
+    "ignore_writing_card",
     "token_count",
     "challenge_progress",
 )

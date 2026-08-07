@@ -6,8 +6,8 @@ Orchestration rationale: [anki-sync ADR](../adr/anki-sync.md). AnkiConnect owner
 
 | Kind | Meaning | Push payload | Pull effect |
 | --- | --- | --- | --- |
-| `mandarin_vocabulary` | Vocabulary notes | word → `writting` / `pinyin` / `definition` | Import missing words (and create characters when pinyin allows) |
-| `mandarin_writting` | Writing practice | characters with `writting_known` → `recto` / `verso` | Mark existing characters as `writting_known` |
+| `mandarin_vocabulary` | Vocabulary notes | word → `writing` / `pinyin` / `definition` | Import missing words (and create characters when pinyin allows) |
+| `mandarin_writing` | Writing practice | characters with `writing_known` → `recto` / `verso` | Mark existing characters as `writing_known` |
 
 Preferences store deck name, note type, and field mappings. Sync is user-triggered from the UI (full, cancel, or partial selection), not a continuous background job.
 
@@ -31,11 +31,11 @@ Optional AnkiWeb sync runs after a successful push that added notes (and once af
 ## Push details
 
 1. Backend `GET /anki/sync/data/<kind>` returns:
-   * `push_cards` from rows with `synchronized=False` (writing: only `writting_known` characters);
+   * `push_cards` from rows with `synchronized=False` (writing: only `writing_known` characters);
    * `unsyncable` writing characters that lack an eligible linked word;
    * local word/character snapshot and pull `ignore_keys`.
 2. Frontend loads current Anki notes for the mapped deck/fields.
-3. Cards already present in Anki (same vocabulary `writting`, or writing `verso` key) are auto-marked synchronized — no duplicate notes.
+3. Cards already present in Anki (same vocabulary `writing`, or writing `verso` key) are auto-marked synchronized — no duplicate notes.
 4. Remaining pending cards are shown in the sync UI.
 5. On confirm, frontend `addNotes`, then `POST /anki/sync/mark-synchronized` with succeeded and ignored ids.
 6. Writing push dedupes by `recto` and marks all Han characters on a verso when a note is created or skipped.
@@ -44,11 +44,11 @@ Optional AnkiWeb sync runs after a successful push that added notes (and once af
 
 1. Same sync-data + Anki notes snapshot as push.
 2. Frontend diffs Anki notes against local state:
-   * **Vocabulary** — Anki `writting` not in local words and not ignored; words longer than 10 characters are auto-ignored; cards missing resolvable pinyin for new characters go to `pull_missing`.
-   * **Writing** — Han characters on the verso that exist locally with `writting_known=false` become pull cards; unknown characters are `pull_missing` (cannot invent writing-known state without a KB row).
+   * **Vocabulary** — Anki `writing` not in local words and not ignored; words longer than 10 characters are auto-ignored; cards missing resolvable pinyin for new characters go to `pull_missing`.
+   * **Writing** — Han characters on the verso that exist locally with `writing_known=false` become pull cards; unknown characters are `pull_missing` (cannot invent writing-known state without a KB row).
 3. On confirm, `POST /anki/sync/pull-apply` imports selected cards and stores ignore keys for the rest / cancel path.
 4. Vocabulary import may create character rows from Anki pinyin; a character missing from the card's `pinyin` field is guessed from the HSK master reading (same `hskCharacterPinyin` fallback as `AddWordModal`), then from the user's own already-known reading for that character. A card whose `pinyin` field is non-blank but leaves a character unresolved goes to `pull_missing` up front. `apply_pull` re-derives pinyin server-side regardless — a card is only imported when every character resolves; otherwise it is **not** written to the database, `failed` is incremented, and the offending characters are collected (deduplicated) into the response's `failed_characters`, which the UI surfaces as an error listing those characters. Imported words/characters are stored as already `synchronized=True`.
-5. Writing import only flips `writting_known` (and `synchronized`) on existing characters.
+5. Writing import only flips `writing_known` (and `synchronized`) on existing characters.
 
 ## Status model
 

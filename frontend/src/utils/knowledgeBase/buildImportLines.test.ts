@@ -21,8 +21,8 @@ describe("extractCharacterEntries", () => {
     ]);
 
     expect(entries.sort((a, b) => a.char.localeCompare(b.char))).toEqual([
-      { char: "好", pinyin: "hao4", writting_known: true },
-      { char: "爱", pinyin: "ai4", writting_known: true },
+      { char: "好", pinyin: "hao4", writing_known: true },
+      { char: "爱", pinyin: "ai4", writing_known: true },
     ]);
   });
 
@@ -30,7 +30,7 @@ describe("extractCharacterEntries", () => {
     const entries = extractCharacterEntries([
       { word: "的", pinyin: "de", definition: "of", knownToWrite: false },
     ]);
-    expect(entries).toEqual([{ char: "的", pinyin: "de", writting_known: false }]);
+    expect(entries).toEqual([{ char: "的", pinyin: "de", writing_known: false }]);
   });
 
   it("normalizes Anki-style syllables before assigning them", () => {
@@ -44,8 +44,8 @@ describe("extractCharacterEntries", () => {
     ]);
 
     expect(entries.sort((a, b) => a.char.localeCompare(b.char))).toEqual([
-      { char: "儿", pinyin: "er", writting_known: true },
-      { char: "花", pinyin: "hua1", writting_known: true },
+      { char: "儿", pinyin: "er", writing_known: true },
+      { char: "花", pinyin: "hua1", writing_known: true },
     ]);
   });
 
@@ -57,6 +57,6 @@ describe("extractCharacterEntries", () => {
 
     const aiEntry = entries.find((entry) => entry.char === "爱");
 
-    expect(aiEntry).toEqual({ char: "爱", pinyin: "ai4", writting_known: true });
+    expect(aiEntry).toEqual({ char: "爱", pinyin: "ai4", writing_known: true });
   });
 });

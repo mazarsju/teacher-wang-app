@@ -34,9 +34,9 @@ const CHARACTER_COLUMNS: TableColumn<Character>[] = [
   { key: "char", header: "char" },
   { key: "pinyin", header: "pinyin" },
   {
-    key: "writting_known",
-    header: "writting_known",
-    render: (row) => String(row.writting_known),
+    key: "writing_known",
+    header: "writing_known",
+    render: (row) => String(row.writing_known),
   },
   {
     key: "updated_at",
@@ -58,9 +58,9 @@ const WORD_COLUMNS: TableColumn<Word>[] = [
     render: (row) => row.pinyin ?? "",
   },
   {
-    key: "writting_known",
-    header: "writting_known",
-    render: (row) => String(row.writting_known),
+    key: "writing_known",
+    header: "writing_known",
+    render: (row) => String(row.writing_known),
   },
   {
     key: "updated_at",
@@ -101,7 +101,7 @@ function filterCharactersForView(
   showWritingUnknown: boolean,
 ): Character[] {
   return characters.filter((character) =>
-    character.writting_known ? showWritingKnown : showWritingUnknown,
+    character.writing_known ? showWritingKnown : showWritingUnknown,
   );
 }
 
@@ -316,7 +316,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       const updatedWord = await updateWord(word.word, {
         definition: values.definition,
         pinyin: values.pinyin || null,
-        writting_known: values.writting_known,
+        writing_known: values.writing_known,
       });
       dispatch(upsertWord(updatedWord));
       applyCharacterSyncResult(updatedWord);
@@ -338,7 +338,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         word: values.word,
         definition: values.definition || null,
         pinyin: values.pinyin || null,
-        writting_known: values.writting_known,
+        writing_known: values.writing_known,
       });
       dispatch(upsertWord(createdWord));
       applyCharacterSyncResult(createdWord);
@@ -364,7 +364,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
           decks: {
             ...ankiStatus.decks,
             mandarin_vocabulary: result.mandarin_vocabulary.deck,
-            mandarin_writting: result.mandarin_writting.deck,
+            mandarin_writing: result.mandarin_writing.deck,
           },
         }),
       );
@@ -407,12 +407,12 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         pageMode === "view" ? (
           <div className="page-header-toggles">
             <label className="page-header-toggle">
-              <span className="page-header-toggle-label">Writting known</span>
+              <span className="page-header-toggle-label">Writing known</span>
               <span className="toggle">
                 <input
                   type="checkbox"
                   role="switch"
-                  aria-label="Writting known"
+                  aria-label="Writing known"
                   checked={showWritingKnown}
                   onChange={(event) =>
                     setShowWritingKnown(event.target.checked)
@@ -423,13 +423,13 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             </label>
             <label className="page-header-toggle">
               <span className="page-header-toggle-label">
-                Writting not known
+                Writing not known
               </span>
               <span className="toggle">
                 <input
                   type="checkbox"
                   role="switch"
-                  aria-label="Writting not known"
+                  aria-label="Writing not known"
                   checked={showWritingUnknown}
                   onChange={(event) =>
                     setShowWritingUnknown(event.target.checked)

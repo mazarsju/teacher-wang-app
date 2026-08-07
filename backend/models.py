@@ -62,7 +62,7 @@ class Character(db.Model):
     # keeps `.pinyin` a plain string for every caller, so only this model
     # needs to know the column is stored as an array.
     pinyin_readings = db.Column("pinyin", ARRAY(String(8)), nullable=False)
-    writting_known = db.Column(db.Boolean, nullable=False, default=False)
+    writing_known = db.Column(db.Boolean, nullable=False, default=False)
     synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -91,9 +91,9 @@ class Word(db.Model):
     word = db.Column(String(10), primary_key=True)
     definition = db.Column(String(100), nullable=True)
     pinyin = db.Column(String(64), nullable=True)
-    writting_known = db.Column(db.Boolean, nullable=False, default=False)
+    writing_known = db.Column(db.Boolean, nullable=False, default=False)
     anki_voc_sync = db.Column(db.Boolean, nullable=False, default=False)
-    anki_writting_sync = db.Column(db.Boolean, nullable=False, default=False)
+    anki_writing_sync = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -146,18 +146,18 @@ class Setting(db.Model):
 
 
 class IgnoreVocabCard(db.Model):
-    """Anki vocabulary writting values ignored for pull sync."""
+    """Anki vocabulary writing values ignored for pull sync."""
 
     __tablename__ = "ignore_vocab_card"
 
     user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
-    writting = db.Column(String, primary_key=True)
+    writing = db.Column(String, primary_key=True)
 
 
-class IgnoreWrittingCard(db.Model):
+class IgnoreWritingCard(db.Model):
     """Anki writing recto values ignored for pull sync."""
 
-    __tablename__ = "ignore_writting_card"
+    __tablename__ = "ignore_writing_card"
 
     user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     recto = db.Column(String, primary_key=True)

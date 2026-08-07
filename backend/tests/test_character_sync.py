@@ -122,7 +122,7 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
                 "char": "的",
                 "pinyin": "de",
                 "pinyin_readings": ["de", "di4"],
-                "writting_known": record.writting_known,
+                "writing_known": record.writing_known,
                 "updated_at": record.updated_at.isoformat(),
             },
         )
@@ -134,7 +134,7 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
                 user_id=self.user_id,
                 char="好",
                 pinyin="hao3",
-                writting_known=True,
+                writing_known=True,
                 synchronized=False,
             )
         )
@@ -153,20 +153,20 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
 
         good = Character.query.filter_by(user_id=self.user_id, char="好").one()
         self.assertEqual(good.pinyin_readings, ["hao4"])
-        self.assertTrue(good.writting_known)
+        self.assertTrue(good.writing_known)
         self.assertEqual(
             Character.query.filter_by(user_id=self.user_id, char="爱").one().pinyin_readings,
             ["ai4"],
         )
 
-    def test_sets_writting_known_when_a_word_containing_char_is_known(self):
+    def test_sets_writing_known_when_a_word_containing_char_is_known(self):
         now = utcnow()
         db.session.add(
             Word(
                 user_id=self.user_id,
                 word="你好",
                 pinyin="ni3 hao3",
-                writting_known=True,
+                writing_known=True,
                 updated_at=now,
             )
         )
@@ -175,7 +175,7 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
                 user_id=self.user_id,
                 word="你们",
                 pinyin="ni3 men2",
-                writting_known=False,
+                writing_known=False,
                 updated_at=now,
             )
         )
@@ -185,23 +185,23 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
         db.session.commit()
 
         self.assertTrue(
-            Character.query.filter_by(user_id=self.user_id, char="你").one().writting_known
+            Character.query.filter_by(user_id=self.user_id, char="你").one().writing_known
         )
         self.assertTrue(
-            Character.query.filter_by(user_id=self.user_id, char="好").one().writting_known
+            Character.query.filter_by(user_id=self.user_id, char="好").one().writing_known
         )
         self.assertFalse(
-            Character.query.filter_by(user_id=self.user_id, char="们").one().writting_known
+            Character.query.filter_by(user_id=self.user_id, char="们").one().writing_known
         )
 
-    def test_upgrades_existing_character_to_writting_known(self):
+    def test_upgrades_existing_character_to_writing_known(self):
         now = utcnow()
         db.session.add(
             Character(
                 user_id=self.user_id,
                 char="好",
                 pinyin="hao3",
-                writting_known=False,
+                writing_known=False,
                 synchronized=False,
             )
         )
@@ -210,7 +210,7 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
                 user_id=self.user_id,
                 word="好",
                 pinyin="hao3",
-                writting_known=True,
+                writing_known=True,
                 updated_at=now,
             )
         )
@@ -220,7 +220,7 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
         db.session.commit()
 
         self.assertTrue(
-            Character.query.filter_by(user_id=self.user_id, char="好").one().writting_known
+            Character.query.filter_by(user_id=self.user_id, char="好").one().writing_known
         )
 
     def test_removes_character_and_pinyin_when_no_longer_used(self):

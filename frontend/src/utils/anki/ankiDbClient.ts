@@ -63,18 +63,18 @@ export async function fetchMappedNotes(
   mapping: AnkiDeckMapping,
 ): Promise<Array<Record<string, string>>> {
   if (kind === "mandarin_vocabulary") {
-    const writtingField = (mapping.fields.writting ?? "").trim();
+    const writingField = (mapping.fields.writing ?? "").trim();
     const pinyinField = (mapping.fields.pinyin ?? "").trim();
     const definitionField = (mapping.fields.definition ?? "").trim();
     if (
-      writtingField === "" ||
+      writingField === "" ||
       pinyinField === "" ||
       definitionField === ""
     ) {
       throw new Error("Mapped Anki vocabulary fields are incomplete.");
     }
     return mappedNotesInDeck(mapping.deck_name, {
-      writting: writtingField,
+      writing: writingField,
       pinyin: pinyinField,
       definition: definitionField,
     });

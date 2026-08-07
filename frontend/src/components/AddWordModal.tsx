@@ -9,7 +9,7 @@ export type WordFormValues = {
   word: string;
   definition: string;
   pinyin: string;
-  writting_known: boolean;
+  writing_known: boolean;
 };
 
 type AddWordModalProps = {
@@ -36,7 +36,7 @@ export default function AddWordModal({
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [pinyin, setPinyin] = useState("");
-  const [writtingKnown, setWrittingKnown] = useState(false);
+  const [writingKnown, setWritingKnown] = useState(false);
 
   const existingWordSet = useMemo(
     () => new Set(existingWords),
@@ -52,14 +52,14 @@ export default function AddWordModal({
       setWord(initialWord.word);
       setDefinition(initialWord.definition ?? "");
       setPinyin(initialWord.pinyin ?? "");
-      setWrittingKnown(initialWord.writting_known);
+      setWritingKnown(initialWord.writing_known);
       return;
     }
 
     setWord("");
     setDefinition("");
     setPinyin("");
-    setWrittingKnown(false);
+    setWritingKnown(false);
   }, [isOpen, mode, initialWord]);
 
   if (!isOpen) {
@@ -91,7 +91,7 @@ export default function AddWordModal({
       word: word.trim(),
       definition: definition.trim(),
       pinyin: pinyin.trim(),
-      writting_known: writtingKnown,
+      writing_known: writingKnown,
     });
   }
 
@@ -162,13 +162,13 @@ export default function AddWordModal({
             />
           </label>
           <label className="modal-field-toggle">
-            <span className="modal-field-label">writting known</span>
+            <span className="modal-field-label">writing known</span>
             <span className="toggle">
               <input
                 type="checkbox"
                 role="switch"
-                checked={writtingKnown}
-                onChange={(event) => setWrittingKnown(event.target.checked)}
+                checked={writingKnown}
+                onChange={(event) => setWritingKnown(event.target.checked)}
               />
               <span className="toggle-slider" />
             </span>

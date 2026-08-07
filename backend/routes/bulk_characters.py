@@ -12,7 +12,7 @@ from backend.user_context import current_user_id
 
 bp = Blueprint("bulk_characters", __name__)
 
-CSV_HEADER = ["word", "definition", "pinyin", "writting_known", "synchronized", "updated_at"]
+CSV_HEADER = ["word", "definition", "pinyin", "writing_known", "synchronized", "updated_at"]
 
 
 def _parse_updated_at(value: str) -> datetime | None:
@@ -47,7 +47,7 @@ def bulk_characters():
                 )
             }, 400
 
-        word_text, definition, pinyin, writting_known_raw, synchronized_raw, updated_at_raw = row
+        word_text, definition, pinyin, writing_known_raw, synchronized_raw, updated_at_raw = row
         try:
             updated_at = _parse_updated_at(updated_at_raw)
         except ValueError as exc:
@@ -60,7 +60,7 @@ def bulk_characters():
 
         word_record.definition = definition or None
         word_record.pinyin = pinyin or None
-        word_record.writting_known = writting_known_raw == "true"
+        word_record.writing_known = writing_known_raw == "true"
         word_record.anki_voc_sync = synchronized_raw == "true"
         word_record.updated_at = updated_at if updated_at is not None else utcnow()
 

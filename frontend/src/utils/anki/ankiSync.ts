@@ -25,7 +25,7 @@ import {
 import {
   uniqueCharactersToCreate,
   vocabularyPullCardsFromNotes,
-  writtingPullFromNotes,
+  writingPullFromNotes,
 } from "./ankiPull";
 import type {
   AnkiDeckKind,
@@ -33,7 +33,7 @@ import type {
   AnkiPendingCard,
   AnkiPendingSync,
   AnkiPendingVocabularyCard,
-  AnkiPendingWrittingCard,
+  AnkiPendingWritingCard,
   AnkiQuickSyncResult,
   AnkiStatus,
   AnkiSyncAction,
@@ -101,7 +101,7 @@ async function estimatePullCount(
       );
       return cards.length + missing.length;
     }
-    const { pullCards, missing } = writtingPullFromNotes(
+    const { pullCards, missing } = writingPullFromNotes(
       notes,
       ignored,
       characterByChar,
@@ -125,9 +125,9 @@ export async function fetchAnkiPendingSync(
   const ignored = new Set(data.ignore_keys);
 
   if (kind === "mandarin_vocabulary") {
-    const existingWrittings = new Set(
+    const existingWritings = new Set(
       notes
-        .map((note) => (note.writting ?? "").trim())
+        .map((note) => (note.writing ?? "").trim())
         .filter((value) => value !== ""),
     );
 
@@ -135,7 +135,7 @@ export async function fetchAnkiPendingSync(
     const pendingCards: AnkiPendingCard[] = [];
     for (const card of data.push_cards) {
       const vocab = card as AnkiPendingVocabularyCard;
-      if (existingWrittings.has(vocab.writting)) {
+      if (existingWritings.has(vocab.writing)) {
         alreadyInAnki.push(vocab.id);
       } else {
         pendingCards.push(card);
@@ -195,7 +195,7 @@ export async function fetchAnkiPendingSync(
       .filter((value) => value !== ""),
   );
   const ankiVersoKeys = significantAnkiVersos(existingVersos);
-  const { pullCards, missing, warningRectos } = writtingPullFromNotes(
+  const { pullCards, missing, warningRectos } = writingPullFromNotes(
     notes,
     ignored,
     characterByChar,
@@ -207,16 +207,16 @@ export async function fetchAnkiPendingSync(
   const seenRectos = new Set<string>();
 
   for (const card of data.push_cards) {
-    const writting = card as AnkiPendingWrittingCard;
-    if (ankiVersoKeys.has(writting.verso)) {
-      alreadyInAnki.push(...characterIdsFromVerso(writting.verso));
+    const writing = card as AnkiPendingWritingCard;
+    if (ankiVersoKeys.has(writing.verso)) {
+      alreadyInAnki.push(...characterIdsFromVerso(writing.verso));
       continue;
     }
-    if (seenRectos.has(writting.recto)) {
+    if (seenRectos.has(writing.recto)) {
       continue;
     }
-    seenRectos.add(writting.recto);
-    cards.push(writting);
+    seenRectos.add(writing.recto);
+    cards.push(writing);
   }
 
   if (alreadyInAnki.length > 0) {
@@ -416,8 +416,8 @@ async function runPull(
     }
   } else {
     for (const card of toIgnore) {
-      const writtingCard = card as AnkiPendingWrittingCard;
-      const ankiRecto = String(writtingCard.anki_recto ?? "").trim();
+      const writingCard = card as AnkiPendingWritingCard;
+      const ankiRecto = String(writingCard.anki_recto ?? "").trim();
       ignoreKeys.push(ankiRecto !== "" ? ankiRecto : String(card.id));
     }
     if (action === "cancel_all") {
@@ -449,13 +449,13 @@ export async function runAnkiQuickSync(): Promise<AnkiQuickSyncResult> {
     undefined,
     false,
   );
-  const writting = await runPush(
-    "mandarin_writting",
+  const writing = await runPush(
+    "mandarin_writing",
     "synchronize_all",
     undefined,
     false,
   );
-  const notesAdded = (vocabulary.added ?? 0) + (writting.added ?? 0);
+  const notesAdded = (vocabulary.added ?? 0) + (writing.added ?? 0);
   if (notesAdded > 0) {
     await syncWithAnkiWeb();
   }
@@ -463,7 +463,7 @@ export async function runAnkiQuickSync(): Promise<AnkiQuickSyncResult> {
   const status = await fetchAnkiStatus();
   return {
     mandarin_vocabulary: vocabulary,
-    mandarin_writting: writting,
+    mandarin_writing: writing,
     synchronization_status: status.synchronization_status,
     pending_push_estimate: status.pending_push_estimate,
   };
