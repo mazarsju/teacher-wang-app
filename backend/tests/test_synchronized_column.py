@@ -22,7 +22,8 @@ class TestSynchronizedColumn(PostgresTestCase):
         character = Character.query.filter_by(user_id=self.user_id, char="好").one()
         word = Word.query.filter_by(user_id=self.user_id, word="你好").one()
         self.assertFalse(character.synchronized)
-        self.assertFalse(word.synchronized)
+        self.assertFalse(word.anki_voc_sync)
+        self.assertFalse(word.anki_writting_sync)
 
 
 if __name__ == "__main__":

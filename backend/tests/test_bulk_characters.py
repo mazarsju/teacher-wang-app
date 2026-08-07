@@ -158,7 +158,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         self.assertEqual(record.definition, "hobby")
         self.assertEqual(record.pinyin, "ai4 hao4")
         self.assertEqual(record.writting_known, True)
-        self.assertEqual(record.synchronized, False)
+        self.assertEqual(record.anki_voc_sync, False)
         self.assertEqual(record.updated_at.isoformat(), "2026-07-12T12:00:00+00:00")
 
         self.mock_session.add.assert_called_once_with(record)

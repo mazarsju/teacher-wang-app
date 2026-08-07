@@ -12,7 +12,7 @@ def word_to_csv_row(word: Word) -> list[str]:
         word.definition or "",
         word.pinyin or "",
         "true" if word.writting_known else "false",
-        "true" if word.synchronized else "false",
+        "true" if word.anki_voc_sync else "false",
         word.updated_at.isoformat(),
     ]
 

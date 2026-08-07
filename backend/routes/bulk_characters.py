@@ -61,7 +61,7 @@ def bulk_characters():
         word_record.definition = definition or None
         word_record.pinyin = pinyin or None
         word_record.writting_known = writting_known_raw == "true"
-        word_record.synchronized = synchronized_raw == "true"
+        word_record.anki_voc_sync = synchronized_raw == "true"
         word_record.updated_at = updated_at if updated_at is not None else utcnow()
 
     sync_result = rebuild_characters_from_words(user_id)

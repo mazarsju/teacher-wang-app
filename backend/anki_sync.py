@@ -72,7 +72,7 @@ def _fields_complete(kind: DeckKind, fields: dict[str, str]) -> bool:
 
 def _pending_vocabulary_words(user_id: str) -> list[Word]:
     return (
-        Word.query.filter_by(user_id=user_id, synchronized=False)
+        Word.query.filter_by(user_id=user_id, anki_voc_sync=False)
         .order_by(Word.word)
         .all()
     )
@@ -192,7 +192,7 @@ def _character_ids_from_writting_cards(cards: list[dict[str, Any]]) -> list[str]
 
 def _pending_count_for_kind(user_id: str, kind: DeckKind) -> int:
     if kind == "mandarin_vocabulary":
-        return Word.query.filter_by(user_id=user_id, synchronized=False).count()
+        return Word.query.filter_by(user_id=user_id, anki_voc_sync=False).count()
     if kind == "mandarin_writting":
         return Character.query.filter_by(
             user_id=user_id,
@@ -370,7 +370,7 @@ def _import_vocabulary_card(
         word=word_text,
         definition=definition or None,
         pinyin=stored_pinyin or None,
-        synchronized=True,
+        anki_voc_sync=True,
         updated_at=now,
     )
     db.session.add(word_record)
@@ -399,9 +399,9 @@ def _mark_words_synchronized(user_id: str, word_ids: list[str]) -> int:
     updated = 0
     for word_id in word_ids:
         word = _find_word(user_id, word_id)
-        if word is None or word.synchronized:
+        if word is None or word.anki_voc_sync:
             continue
-        word.synchronized = True
+        word.anki_voc_sync = True
         updated += 1
     db.session.commit()
     return updated

@@ -11,7 +11,7 @@ def make_word(**kwargs):
     word.definition = kwargs.get("definition", "hobby")
     word.pinyin = kwargs.get("pinyin", "ai4 hao4")
     word.writting_known = kwargs.get("writting_known", True)
-    word.synchronized = kwargs.get("synchronized", False)
+    word.anki_voc_sync = kwargs.get("anki_voc_sync", False)
     word.updated_at = MagicMock(
         isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00")
     )
@@ -28,7 +28,7 @@ class TestDbExport(unittest.TestCase):
         )
 
     def test_word_to_csv_row_blank_fields(self):
-        word = make_word(definition=None, pinyin=None, writting_known=False, synchronized=True)
+        word = make_word(definition=None, pinyin=None, writting_known=False, anki_voc_sync=True)
 
         self.assertEqual(
             word_to_csv_row(word),

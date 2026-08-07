@@ -396,7 +396,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 word="火",
                 definition="fire",
-                synchronized=False,
+                anki_voc_sync=False,
             )
         )
         db.session.commit()
@@ -438,7 +438,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 word="水",
                 definition="water",
-                synchronized=False,
+                anki_voc_sync=False,
             )
         )
         db.session.commit()
@@ -472,7 +472,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 word="水",
                 definition="water",
-                synchronized=False,
+                anki_voc_sync=False,
             )
         )
         db.session.add(
@@ -480,7 +480,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 word="火",
                 definition="fire",
-                synchronized=False,
+                anki_voc_sync=False,
             )
         )
         db.session.commit()
@@ -496,10 +496,10 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(
-            Word.query.filter_by(user_id=self.user_id, word="水").one().synchronized
+            Word.query.filter_by(user_id=self.user_id, word="水").one().anki_voc_sync
         )
         self.assertTrue(
-            Word.query.filter_by(user_id=self.user_id, word="火").one().synchronized
+            Word.query.filter_by(user_id=self.user_id, word="火").one().anki_voc_sync
         )
 
     def test_cancel_all_marks_words_synchronized(self):
@@ -523,7 +523,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 user_id=self.user_id,
                 word="猫",
                 definition="cat",
-                synchronized=False,
+                anki_voc_sync=False,
             )
         )
         db.session.commit()
@@ -538,7 +538,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
 
         self.assertEqual(result["ignored"], 1)
         self.assertTrue(
-            Word.query.filter_by(user_id=self.user_id, word="猫").one().synchronized
+            Word.query.filter_by(user_id=self.user_id, word="猫").one().anki_voc_sync
         )
 
     def test_pull_import_vocabulary_card(self):
@@ -575,7 +575,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["characters_added"], 1)
         word = Word.query.filter_by(user_id=self.user_id, word="水").one()
-        self.assertTrue(word.synchronized)
+        self.assertTrue(word.anki_voc_sync)
         self.assertEqual(word.definition, "water")
         character = Character.query.filter_by(user_id=self.user_id, char="水").one()
         self.assertTrue(character.synchronized)
@@ -715,7 +715,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             user_id=self.user_id,
             word="除了。。以外。。",
             definition="except",
-            synchronized=False,
+            anki_voc_sync=False,
         )
         db.session.add(word)
         db.session.commit()

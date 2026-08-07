@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.request import urlopen
 
+from backend.pinyin import is_valid_pinyin, suggest_umlaut_pinyin
+
 COMPLETE_HSK_JSON_URL = (
     "https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/complete.json"
 )
@@ -38,12 +40,29 @@ def make_hsk_word_id(word: str, pinyin: str) -> str:
     return f"{word}|{pinyin}"
 
 
+def _correct_pinyin_syllable(syllable: str) -> str:
+    """Fix known upstream pinyin syntax mistakes in one syllable.
+
+    Erhua suffix split off as its own token (e.g. "r" for 儿) is spelled
+    "er", not "r". Otherwise, retry invalid syllables with u→ü (e.g. "xue2"
+    isn't valid pinyin, "xüe2" is) and keep the original when still unfixable.
+    """
+    tone = syllable[-1] if syllable and syllable[-1] in "1234" else ""
+    base = syllable[:-1] if tone else syllable
+    if base == "r":
+        return "er" + tone
+    if is_valid_pinyin(syllable):
+        return syllable
+    return suggest_umlaut_pinyin(syllable) or syllable
+
+
 def normalize_hsk_numeric_pinyin(numeric: str) -> str:
     """Normalize ``forms.transcriptions.numeric`` to app pinyin form.
 
-    Lowercases each syllable and strips neutral tone ``5`` (app syllables use
-    tones 1–4 or no digit), matching create-character / Anki token style.
-    Syllables stay space-separated for multi-character words.
+    Lowercases each syllable, strips neutral tone ``5`` (app syllables use
+    tones 1–4 or no digit), and corrects known upstream syntax mistakes
+    (see ``_correct_pinyin_syllable``). Syllables stay space-separated for
+    multi-character words.
     """
     syllables: list[str] = []
     for token in numeric.split():
@@ -52,7 +71,7 @@ def normalize_hsk_numeric_pinyin(numeric: str) -> str:
             continue
         if syllable[-1] == _NEUTRAL_TONE:
             syllable = syllable[:-1]
-        syllables.append(syllable)
+        syllables.append(_correct_pinyin_syllable(syllable))
     return " ".join(syllables)
 
 
