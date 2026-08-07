@@ -280,16 +280,12 @@ describe("KnowledgeBaseInitWizardModal", () => {
     );
 
     expect(
-      screen.getByText(/Upload a text file with one character per line/),
+      screen.getByText(/Upload a CSV file with the same columns as your words table/),
     ).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "爱" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "爱好" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "ai4 hao4" })).toBeInTheDocument();
     expect(
-      screen.getByRole("cell", {
-        name: "可爱, 我爱学习, 我爱生气, 爱, 爱好, 爱情, 相爱",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/column names shown above are just for illustration/),
+      screen.getByText(/first line can either be this header row/),
     ).toBeInTheDocument();
 
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
@@ -331,7 +327,11 @@ describe("KnowledgeBaseInitWizardModal", () => {
     const fileInput = document.querySelector(
       ".knowledge-base-import-input",
     ) as HTMLInputElement;
-    const file = new File(["好;hao;3;true;"], "db.csv", { type: "text/csv" });
+    const file = new File(
+      ["好,,hao3,true,false,2026-07-12T12:00:00+00:00"],
+      "db.csv",
+      { type: "text/csv" },
+    );
 
     await user.upload(fileInput, file);
 

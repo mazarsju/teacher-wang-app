@@ -15,7 +15,7 @@ def export_database():
     zip_buffer = io.BytesIO()
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.writestr("teacher-wang-export.txt", content)
+        zip_file.writestr("teacher-wang-export.csv", content)
 
     zip_buffer.seek(0)
 

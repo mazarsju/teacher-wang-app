@@ -51,11 +51,11 @@ class TestExportDatabaseEndpoint(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(response.data)) as zip_file:
             self.assertEqual(
                 zip_file.namelist(),
-                ["teacher-wang-export.txt"],
+                ["teacher-wang-export.csv"],
             )
 
             exported_content = zip_file.read(
-                "teacher-wang-export.txt"
+                "teacher-wang-export.csv"
             ).decode("utf-8")
 
         self.assertEqual(exported_content, "Hello world!")

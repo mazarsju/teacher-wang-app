@@ -1,19 +1,18 @@
+import csv
+import io
 from datetime import datetime
 
 from flask import Blueprint, request
 
-from backend.character_sync import (
-    fill_missing_word_pinyin_from_characters,
-    rebuild_characters_from_words,
-)
+from backend.character_sync import rebuild_characters_from_words
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
-from backend.models import Character, Word, utcnow
+from backend.models import Word, utcnow
 from backend.user_context import current_user_id
 
 bp = Blueprint("bulk_characters", __name__)
 
-LINE_FORMAT = "character;pinyin;tone;is_known;words;updated_at"
+CSV_HEADER = ["word", "definition", "pinyin", "writting_known", "synchronized", "updated_at"]
 
 
 def _parse_updated_at(value: str) -> datetime | None:
@@ -34,57 +33,37 @@ def bulk_characters():
     file_content = uploaded_file.read().decode("utf-8")
     user_id = current_user_id()
 
-    lines = file_content.split("\n")
-    for line in lines:
-        if line.strip() == "":
-            continue
+    rows = [row for row in csv.reader(io.StringIO(file_content)) if row]
+    if rows and rows[0] == CSV_HEADER:
+        rows = rows[1:]
 
-        parts = line.split(";")
-        if len(parts) not in (5, 6):
+    for row in rows:
+        if len(row) != len(CSV_HEADER):
             return {
                 "error": (
                     "Invalid line format. Should have the format "
-                    f"'{LINE_FORMAT}'."
-                    f"(error found in line: {line})"
+                    f"'{','.join(CSV_HEADER)}'."
+                    f"(error found in line: {','.join(row)})"
                 )
             }, 400
 
-        char = parts[0]
-        pinyin = parts[1]
-        tone = parts[2]
-        writting_known = parts[3] == "true"
-        word_strings = [word.strip() for word in parts[4].split(",") if word.strip()]
+        word_text, definition, pinyin, writting_known_raw, synchronized_raw, updated_at_raw = row
         try:
-            updated_at = _parse_updated_at(parts[5]) if len(parts) == 6 else None
+            updated_at = _parse_updated_at(updated_at_raw)
         except ValueError as exc:
-            return {"error": f"{exc} (error found in line: {line})"}, 400
+            return {"error": f"{exc} (error found in line: {','.join(row)})"}, 400
 
-        char_record = Character.query.filter_by(user_id=user_id, char=char).first()
-        if char_record is None:
-            char_kwargs = {
-                "user_id": user_id,
-                "char": char,
-                "pinyin": pinyin + tone,
-                "writting_known": writting_known,
-            }
-            if updated_at is not None:
-                char_kwargs["updated_at"] = updated_at
-            char_record = Character(**char_kwargs)
-            db.session.add(char_record)
-        elif updated_at is not None:
-            char_record.updated_at = updated_at
+        word_record = Word.query.filter_by(user_id=user_id, word=word_text).first()
+        if word_record is None:
+            word_record = Word(user_id=user_id, word=word_text)
+            db.session.add(word_record)
 
-        for word_str in word_strings:
-            word_record = Word.query.filter_by(user_id=user_id, word=word_str).first()
-            if word_record is None:
-                word_record = Word(user_id=user_id, word=word_str, definition="")
-                db.session.add(word_record)
+        word_record.definition = definition or None
+        word_record.pinyin = pinyin or None
+        word_record.writting_known = writting_known_raw == "true"
+        word_record.synchronized = synchronized_raw == "true"
+        word_record.updated_at = updated_at if updated_at is not None else utcnow()
 
-            now = updated_at if updated_at is not None else utcnow()
-            char_record.updated_at = now
-            word_record.updated_at = now
-
-    fill_missing_word_pinyin_from_characters(user_id)
     rebuild_characters_from_words(user_id)
     db.session.commit()
     refresh_current_hsk_level(user_id)

@@ -453,37 +453,38 @@ export default function KnowledgeBaseInitWizardModal({
         {step === "csv" && (
           <>
             <p className="modal-message">
-              Upload a text file with one character per line. Each line
-              lists, separated by semicolons: the character, its pinyin, the
-              tone, whether you already know how to write it (true or
-              false), and example words or short sentences where the
-              character appears, separated by commas. For example:
+              Upload a CSV file with the same columns as your words table:
+              word, definition, pinyin, whether you already know how to
+              write it (true or false), whether it has been synchronized to
+              Anki (true or false), and the last updated date. For example:
             </p>
             <div className="table-wrapper">
               <table className="table table--compact">
                 <thead>
                   <tr>
-                    <th>character</th>
+                    <th>word</th>
+                    <th>definition</th>
                     <th>pinyin</th>
-                    <th>tone</th>
-                    <th>known</th>
-                    <th>examples</th>
+                    <th>writting_known</th>
+                    <th>synchronized</th>
+                    <th>updated_at</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>爱</td>
-                    <td>ai</td>
-                    <td>4</td>
+                    <td>爱好</td>
+                    <td>hobby</td>
+                    <td>ai4 hao4</td>
                     <td>true</td>
-                    <td>可爱, 我爱学习, 我爱生气, 爱, 爱好, 爱情, 相爱</td>
+                    <td>false</td>
+                    <td>2026-07-12T12:00:00+00:00</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="modal-message">
-              The column names shown above are just for illustration — they
-              are not required in the file itself.
+              The first line can either be this header row or your first
+              word.
             </p>
             {importError && <p className="table-error">{importError}</p>}
             <input

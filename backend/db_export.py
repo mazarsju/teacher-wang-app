@@ -1,65 +1,32 @@
-import os
-from pathlib import Path
-from backend.models import Character, Word
+import csv
+import io
 
-VALID_TONES = {"1", "2", "3", "4"}
+from backend.models import Word
 
-
-def split_pinyin(pinyin: str) -> tuple[str, str]:
-    if pinyin and pinyin[-1] in VALID_TONES:
-        return pinyin[:-1], pinyin[-1]
-    return pinyin, ""
+CSV_HEADER = ["word", "definition", "pinyin", "writting_known", "synchronized", "updated_at"]
 
 
-def words_for_character(user_id, char: str, words: list[Word] | None = None) -> list[Word]:
-    """Return the learner's words that contain ``char`` (substring match)."""
-    source = words
-    if source is None:
-        source = Word.query.filter_by(user_id=user_id).all()
-    return [word for word in source if char in word.word]
-
-
-def format_character_line(
-    character: Character,
-    words: list[Word] | None = None,
-) -> str:
-    pinyin_base, tone = split_pinyin(character.pinyin)
-    writting_known = "true" if character.writting_known else "false"
-    linked = words if words is not None else words_for_character(
-        character.user_id, character.char
-    )
-    words_part = ", ".join(word.word for word in linked)
-    updated_at = character.updated_at.isoformat()
-    return (
-        f"{character.char};{pinyin_base};{tone};{writting_known};"
-        f"{words_part};{updated_at}"
-    )
-
-
-def serialize_database(
-    characters: list[Character],
-    words: list[Word] | None = None,
-) -> str:
-    lines = [
-        format_character_line(
-            character,
-            words_for_character(character.user_id, character.char, words),
-        )
-        for character in characters
+def word_to_csv_row(word: Word) -> list[str]:
+    return [
+        word.word,
+        word.definition or "",
+        word.pinyin or "",
+        "true" if word.writting_known else "false",
+        "true" if word.synchronized else "false",
+        word.updated_at.isoformat(),
     ]
-    if not lines:
-        return ""
-    return "\n".join(lines) + "\n"
 
 
-def get_export_database_content(user_id: str, path: Path | None = None) -> bytes:
-    """Export the database and return it to the frontend zipped."""
-    characters = (
-        Character.query.filter_by(user_id=user_id)
-        .order_by(Character.pinyin, Character.char)
-        .all()
-    )
+def serialize_database(words: list[Word]) -> str:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(CSV_HEADER)
+    for word in words:
+        writer.writerow(word_to_csv_row(word))
+    return buffer.getvalue()
+
+
+def get_export_database_content(user_id: str) -> str:
+    """Export the learner's words table as CSV."""
     words = Word.query.filter_by(user_id=user_id).order_by(Word.word).all()
-    content = serialize_database(characters, words)
-
-    return content
+    return serialize_database(words)

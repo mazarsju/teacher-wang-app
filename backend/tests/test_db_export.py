@@ -2,62 +2,52 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock
 
-from backend.db_export import format_character_line, serialize_database, split_pinyin
+from backend.db_export import serialize_database, word_to_csv_row
+
+
+def make_word(**kwargs):
+    word = MagicMock()
+    word.word = kwargs.get("word", "爱好")
+    word.definition = kwargs.get("definition", "hobby")
+    word.pinyin = kwargs.get("pinyin", "ai4 hao4")
+    word.writting_known = kwargs.get("writting_known", True)
+    word.synchronized = kwargs.get("synchronized", False)
+    word.updated_at = MagicMock(
+        isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00")
+    )
+    return word
 
 
 class TestDbExport(unittest.TestCase):
-    def test_split_pinyin_with_tone(self):
-        self.assertEqual(split_pinyin("ai4"), ("ai", "4"))
-        self.assertEqual(split_pinyin("hao3"), ("hao", "3"))
-
-    def test_split_pinyin_without_tone(self):
-        self.assertEqual(split_pinyin("er"), ("er", ""))
-
-    def test_format_character_line(self):
-        character = MagicMock()
-        character.char = "爱"
-        character.pinyin = "ai4"
-        character.writting_known = True
-        character.updated_at = MagicMock(
-            isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00")
-        )
-        first_word = MagicMock()
-        first_word.word = "爱好"
-        second_word = MagicMock()
-        second_word.word = "相爱"
+    def test_word_to_csv_row(self):
+        word = make_word()
 
         self.assertEqual(
-            format_character_line(character, [first_word, second_word]),
-            "爱;ai;4;true;爱好, 相爱;2026-07-12T12:00:00+00:00",
+            word_to_csv_row(word),
+            ["爱好", "hobby", "ai4 hao4", "true", "false", "2026-07-12T12:00:00+00:00"],
         )
 
-    def test_format_character_line_without_words(self):
-        character = MagicMock()
-        character.char = "啊"
-        character.pinyin = "a"
-        character.writting_known = True
-        character.updated_at = MagicMock(
-            isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00")
-        )
+    def test_word_to_csv_row_blank_fields(self):
+        word = make_word(definition=None, pinyin=None, writting_known=False, synchronized=True)
 
         self.assertEqual(
-            format_character_line(character, []),
-            "啊;a;;true;;2026-07-12T12:00:00+00:00",
+            word_to_csv_row(word),
+            ["爱好", "", "", "false", "true", "2026-07-12T12:00:00+00:00"],
         )
 
     def test_serialize_database(self):
-        character = MagicMock()
-        character.user_id = 1
-        character.char = "爱"
-        character.pinyin = "ai4"
-        character.writting_known = True
-        character.updated_at = MagicMock(
-            isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00")
-        )
+        word = make_word()
 
         self.assertEqual(
-            serialize_database([character], []),
-            "爱;ai;4;true;;2026-07-12T12:00:00+00:00\n",
+            serialize_database([word]),
+            "word,definition,pinyin,writting_known,synchronized,updated_at\r\n"
+            "爱好,hobby,ai4 hao4,true,false,2026-07-12T12:00:00+00:00\r\n",
+        )
+
+    def test_serialize_database_empty(self):
+        self.assertEqual(
+            serialize_database([]),
+            "word,definition,pinyin,writting_known,synchronized,updated_at\r\n",
         )
 
 
