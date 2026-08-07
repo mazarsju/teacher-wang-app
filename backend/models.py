@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, Table
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from backend.extensions import db
 
@@ -55,7 +57,11 @@ class Character(db.Model):
 
     user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     char = db.Column(String, primary_key=True)
-    pinyin = db.Column(String(8), nullable=False)
+    # The `pinyin` column is a Postgres array (one reading per element), but
+    # every character still has exactly one reading today. This property
+    # keeps `.pinyin` a plain string for every caller, so only this model
+    # needs to know the column is stored as an array.
+    pinyin_readings = db.Column("pinyin", ARRAY(String(8)), nullable=False)
     writting_known = db.Column(db.Boolean, nullable=False, default=False)
     synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
@@ -64,6 +70,18 @@ class Character(db.Model):
         default=utcnow,
         onupdate=utcnow,
     )
+
+    @hybrid_property
+    def pinyin(self) -> str:
+        return self.pinyin_readings[0] if self.pinyin_readings else ""
+
+    @pinyin.setter
+    def pinyin(self, value: str) -> None:
+        self.pinyin_readings = [value] if value else []
+
+    @pinyin.expression
+    def pinyin(cls):  # noqa: N805 - SQLAlchemy hybrid expression convention
+        return cls.pinyin_readings[1]  # Postgres arrays are 1-indexed
 
 
 class Word(db.Model):
