@@ -47,7 +47,7 @@ Optional AnkiWeb sync runs after a successful push that added notes (and once af
    * **Vocabulary** — Anki `writting` not in local words and not ignored; words longer than 10 characters are auto-ignored; cards missing resolvable pinyin for new characters go to `pull_missing`.
    * **Writing** — Han characters on the verso that exist locally with `writting_known=false` become pull cards; unknown characters are `pull_missing` (cannot invent writing-known state without a KB row).
 3. On confirm, `POST /anki/sync/pull-apply` imports selected cards and stores ignore keys for the rest / cancel path.
-4. Vocabulary import may create character rows from Anki pinyin (and cross-note pinyin guesses); imported words/characters are stored as already `synchronized=True`.
+4. Vocabulary import may create character rows from Anki pinyin; a character missing from the card's `pinyin` field is guessed from the HSK master reading (same `hskCharacterPinyin` fallback as `AddWordModal`) — a card with an unresolvable character goes to `pull_missing` instead. Imported words/characters are stored as already `synchronized=True`.
 5. Writing import only flips `writting_known` (and `synchronized`) on existing characters.
 
 ## Status model

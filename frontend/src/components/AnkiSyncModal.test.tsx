@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AnkiSyncModal from "./AnkiSyncModal";
 import * as ankiApi from "../utils/anki/ankiApi";
+import { renderWithStore } from "../test/renderWithStore";
 import type { AnkiPendingSync, AnkiSyncResult } from "../types/anki";
 
 vi.mock("../utils/anki/ankiApi", () => ({
@@ -82,7 +83,7 @@ describe("AnkiSyncModal", () => {
     runAnkiSync.mockResolvedValue(pushAllResult);
 
     const user = userEvent.setup();
-    render(
+    renderWithStore(
       <AnkiSyncModal
         isOpen
         kind="mandarin_vocabulary"
@@ -104,6 +105,7 @@ describe("AnkiSyncModal", () => {
         kind: "mandarin_vocabulary",
         action: "synchronize_all",
         direction: "push",
+        hskCharacterPinyin: {},
       });
     });
     expect(onSynced).toHaveBeenCalledWith("push");
@@ -120,7 +122,7 @@ describe("AnkiSyncModal", () => {
     });
 
     const user = userEvent.setup();
-    render(
+    renderWithStore(
       <AnkiSyncModal
         isOpen
         kind="mandarin_vocabulary"
@@ -138,6 +140,7 @@ describe("AnkiSyncModal", () => {
         kind: "mandarin_vocabulary",
         action: "synchronize_all",
         direction: "pull",
+        hskCharacterPinyin: {},
       });
     });
     expect(onSynced).toHaveBeenCalledWith("pull");
@@ -154,7 +157,7 @@ describe("AnkiSyncModal", () => {
     });
 
     const user = userEvent.setup();
-    render(
+    renderWithStore(
       <AnkiSyncModal
         isOpen
         kind="mandarin_vocabulary"
@@ -178,6 +181,7 @@ describe("AnkiSyncModal", () => {
         action: "partial",
         direction: "push",
         selectedIds: ["水"],
+        hskCharacterPinyin: {},
       });
     });
     expect(onSynced).toHaveBeenCalledWith("push");
@@ -205,7 +209,7 @@ describe("AnkiSyncModal", () => {
       },
     });
 
-    render(
+    renderWithStore(
       <AnkiSyncModal
         isOpen
         kind="mandarin_writting"

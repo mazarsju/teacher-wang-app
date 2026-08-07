@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildPinyinGuessMap,
   pairWrittingWithPinyinTokens,
   uniqueCharactersToCreate,
   vocabularyPullCardsFromNotes,
@@ -13,16 +12,6 @@ describe("pairWrittingWithPinyinTokens", () => {
       ["水", "shui3"],
       ["火", "huo3"],
     ]);
-  });
-});
-
-describe("buildPinyinGuessMap", () => {
-  it("guesses character pinyin from notes", () => {
-    expect(
-      buildPinyinGuessMap([
-        { writting: "水", pinyin: "shui3", definition: "water" },
-      ]),
-    ).toEqual({ 水: "shui3" });
   });
 });
 
@@ -61,6 +50,39 @@ describe("vocabularyPullCardsFromNotes", () => {
     );
     expect(result.autoIgnore).toEqual([long]);
     expect(result.cards).toEqual([]);
+  });
+
+  it("guesses missing pinyin from the HSK character map, like AddWordModal", () => {
+    const result = vocabularyPullCardsFromNotes(
+      [{ writting: "风", pinyin: "", definition: "wind" }],
+      new Set(),
+      new Set(),
+      new Map(),
+      { 风: "feng1" },
+    );
+
+    expect(result.cards).toEqual([
+      {
+        id: "风",
+        writting: "风",
+        pinyin: "",
+        definition: "wind",
+        characters_to_create: ["风"],
+      },
+    ]);
+  });
+
+  it("marks a card missing when neither the field nor the HSK map resolves a character", () => {
+    const result = vocabularyPullCardsFromNotes(
+      [{ writting: "风水", pinyin: "feng1 ??", definition: "feng shui" }],
+      new Set(),
+      new Set(),
+      new Map(),
+      { 风: "feng1" },
+    );
+
+    expect(result.cards).toEqual([]);
+    expect(result.missing).toEqual(["风水"]);
   });
 });
 

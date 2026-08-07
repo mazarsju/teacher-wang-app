@@ -23,7 +23,6 @@ import {
   syncMarkIdsForCards,
 } from "./ankiNotes";
 import {
-  buildPinyinGuessMap,
   uniqueCharactersToCreate,
   vocabularyPullCardsFromNotes,
   writtingPullFromNotes,
@@ -42,7 +41,9 @@ import type {
   AnkiSyncResult,
 } from "../../types/anki";
 
-export async function fetchAnkiStatus(): Promise<AnkiStatus> {
+export async function fetchAnkiStatus(
+  hskCharacterPinyin: Record<string, string> = {},
+): Promise<AnkiStatus> {
   const [connected, backend] = await Promise.all([
     isConnected(),
     fetchBackendAnkiStatus(),
@@ -59,7 +60,9 @@ export async function fetchAnkiStatus(): Promise<AnkiStatus> {
       try {
         const notes = await fetchMappedNotes(kind, mapping);
         const pullCount =
-          notes.length > 0 ? await estimatePullCount(kind, notes) : 0;
+          notes.length > 0
+            ? await estimatePullCount(kind, notes, hskCharacterPinyin)
+            : 0;
         if (pullCount > 0 && mapping.status === "synchronized") {
           decks[kind] = { ...mapping, status: "not_synchronized" };
         }
@@ -80,6 +83,7 @@ export async function fetchAnkiStatus(): Promise<AnkiStatus> {
 async function estimatePullCount(
   kind: AnkiDeckKind,
   notes: Array<Record<string, string>>,
+  hskCharacterPinyin: Record<string, string>,
 ): Promise<number> {
   try {
     const data = await fetchSyncData(kind);
@@ -93,6 +97,7 @@ async function estimatePullCount(
         new Set(data.local_words),
         ignored,
         characterByChar,
+        hskCharacterPinyin,
       );
       return cards.length + missing.length;
     }
@@ -109,6 +114,7 @@ async function estimatePullCount(
 
 export async function fetchAnkiPendingSync(
   kind: AnkiDeckKind,
+  hskCharacterPinyin: Record<string, string> = {},
 ): Promise<AnkiPendingSync> {
   const data = await fetchSyncData(kind);
   const mapping = data.deck;
@@ -149,6 +155,7 @@ export async function fetchAnkiPendingSync(
         new Set(data.local_words),
         ignored,
         characterByChar,
+        hskCharacterPinyin,
       );
     if (autoIgnore.length > 0) {
       await pullApplyRequest({
@@ -250,10 +257,16 @@ export async function runAnkiSync(options: {
   direction?: AnkiSyncDirection;
   selectedIds?: string[];
   syncToAnkiWeb?: boolean;
+  hskCharacterPinyin?: Record<string, string>;
 }): Promise<AnkiSyncResult> {
   const direction = options.direction ?? "push";
   if (direction === "pull") {
-    return runPull(options.kind, options.action, options.selectedIds);
+    return runPull(
+      options.kind,
+      options.action,
+      options.selectedIds,
+      options.hskCharacterPinyin ?? {},
+    );
   }
   return runPush(
     options.kind,
@@ -360,10 +373,10 @@ async function runPull(
   kind: AnkiDeckKind,
   action: AnkiSyncAction,
   selectedIds: string[] | undefined,
+  hskCharacterPinyin: Record<string, string>,
 ): Promise<AnkiSyncResult> {
-  const pending = await fetchAnkiPendingSync(kind);
+  const pending = await fetchAnkiPendingSync(kind, hskCharacterPinyin);
   const cards = [...(pending.pull_cards ?? [])];
-  const mapping = pending.deck;
 
   let toImport: AnkiPendingCard[];
   let toIgnore: AnkiPendingCard[];
@@ -402,12 +415,7 @@ async function runPull(
         ...(pending.pull_missing ?? []).filter((item) => item.trim() !== ""),
       );
     }
-    try {
-      const notes = await fetchMappedNotes(kind, mapping);
-      pinyinGuesses = buildPinyinGuessMap(notes);
-    } catch {
-      pinyinGuesses = {};
-    }
+    pinyinGuesses = hskCharacterPinyin;
   } else {
     for (const card of toIgnore) {
       const writtingCard = card as AnkiPendingWrittingCard;

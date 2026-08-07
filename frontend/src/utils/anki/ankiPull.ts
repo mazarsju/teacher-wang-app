@@ -32,38 +32,20 @@ export function pairWrittingWithPinyinTokens(
   return pairs;
 }
 
-export function buildPinyinGuessMap(
-  notes: Array<Record<string, string>>,
-): Record<string, string> {
-  const guesses: Record<string, string> = {};
-  for (const note of notes) {
-    const writting = (note.writting ?? "").trim();
-    const pinyinField = (note.pinyin ?? "").trim();
-    if (writting === "" || pinyinField === "") {
-      continue;
-    }
-    for (const [char, pinyin] of pairWrittingWithPinyinTokens(
-      writting,
-      pinyinField,
-    )) {
-      if (pinyin === null || pinyin.length > 8 || char in guesses) {
-        continue;
-      }
-      guesses[char] = pinyin;
-    }
-  }
-  return guesses;
-}
-
+/**
+ * Same fallback as `AddWordModal`'s `buildPinyinFromCharacterMap`: when a
+ * card's pinyin field doesn't cover a character, guess it from the HSK
+ * master reading rather than leaving it unresolved.
+ */
 function resolvedCharPinyin(
   cardPinyin: string | null,
   char: string,
-  guesses: Record<string, string>,
+  hskCharacterPinyin: Record<string, string>,
 ): string | null {
   if (cardPinyin !== null && cardPinyin.length <= 8) {
     return cardPinyin;
   }
-  const guessed = guesses[char];
+  const guessed = hskCharacterPinyin[char];
   if (guessed !== undefined && guessed.length <= 8) {
     return guessed;
   }
@@ -74,7 +56,7 @@ export function charactersToCreateForCard(
   wordText: string,
   pinyinField: string,
   characterByChar: Map<string, SyncDataCharacter>,
-  guesses: Record<string, string>,
+  hskCharacterPinyin: Record<string, string>,
 ): string[] | null {
   const pinyinBlank = pinyinField.trim() === "";
   const toCreate: string[] = [];
@@ -85,7 +67,7 @@ export function charactersToCreateForCard(
     if (characterByChar.has(char)) {
       continue;
     }
-    const pinyin = resolvedCharPinyin(cardPinyin, char, guesses);
+    const pinyin = resolvedCharPinyin(cardPinyin, char, hskCharacterPinyin);
     if (pinyin === null) {
       if (pinyinBlank) {
         continue;
@@ -119,13 +101,12 @@ export function vocabularyPullCardsFromNotes(
   localWords: Set<string>,
   ignored: Set<string>,
   characterByChar: Map<string, SyncDataCharacter>,
+  hskCharacterPinyin: Record<string, string> = {},
 ): {
   cards: AnkiPendingVocabularyCard[];
   missing: string[];
   autoIgnore: string[];
-  guesses: Record<string, string>;
 } {
-  const guesses = buildPinyinGuessMap(notes);
   const cards: AnkiPendingVocabularyCard[] = [];
   const missing: string[] = [];
   const autoIgnore: string[] = [];
@@ -156,7 +137,7 @@ export function vocabularyPullCardsFromNotes(
       writting,
       pinyin,
       characterByChar,
-      guesses,
+      hskCharacterPinyin,
     );
     if (charactersToCreate === null) {
       seenMissing.add(writting);
@@ -176,7 +157,7 @@ export function vocabularyPullCardsFromNotes(
 
   cards.sort((a, b) => a.writting.localeCompare(b.writting));
   missing.sort();
-  return { cards, missing, autoIgnore, guesses };
+  return { cards, missing, autoIgnore };
 }
 
 export function writtingPullFromNotes(

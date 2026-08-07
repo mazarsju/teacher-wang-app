@@ -39,7 +39,7 @@ export const syncAppData = createAsyncThunk(
 
     let ankiStatus = emptyAnkiStatus;
     try {
-      ankiStatus = await fetchAnkiStatus();
+      ankiStatus = await fetchAnkiStatus(hskCharacterPinyin);
     } catch {
       // AnkiConnect may be offline during login/sync.
     }

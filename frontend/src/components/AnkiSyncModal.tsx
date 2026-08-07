@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAppSelector } from "../store/hooks";
 import {
   ANKI_DECK_LABELS,
   type AnkiDeckKind,
@@ -85,6 +86,9 @@ export default function AnkiSyncModal({
   const [view, setView] = useState<SyncView>("overview");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmAction, setConfirmAction] = useState<PendingConfirm>(null);
+  const hskCharacterPinyin = useAppSelector(
+    (state) => state.hskCharacters.pinyinByCharacter,
+  );
 
   useEffect(() => {
     if (!isOpen || kind === null) {
@@ -105,7 +109,7 @@ export default function AnkiSyncModal({
     setView("overview");
     setConfirmAction(null);
 
-    void fetchAnkiPendingSync(kind)
+    void fetchAnkiPendingSync(kind, hskCharacterPinyin)
       .then((payload) => {
         if (!isMounted) {
           return;
@@ -330,6 +334,7 @@ export default function AnkiSyncModal({
           confirmAction.type === "partial"
             ? confirmAction.selectedIds
             : undefined,
+        hskCharacterPinyin,
       });
       setConfirmAction(null);
       onSynced(confirmAction.direction);

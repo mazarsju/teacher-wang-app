@@ -584,6 +584,7 @@ describe("PreferencesPage", () => {
         kind: "mandarin_vocabulary",
         action: "synchronize_all",
         direction: "pull",
+        hskCharacterPinyin: {},
       });
     });
     await waitFor(() => {
