@@ -10,7 +10,7 @@ from backend.chat_agents import CHAT_CHARACTERS, get_character
 
 
 SHARED_PHRASES = (
-    "Can speak only Chinese",
+    "Can speak and understand only Chinese",
     "Do not keep asking follow-up questions",
     "double square brackets",
     "never single brackets",

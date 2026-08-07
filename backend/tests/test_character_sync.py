@@ -87,6 +87,70 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
             ["ai4"],
         )
 
+    def test_sets_writting_known_when_a_word_containing_char_is_known(self):
+        now = utcnow()
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="你好",
+                pinyin="ni3 hao3",
+                writting_known=True,
+                updated_at=now,
+            )
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="你们",
+                pinyin="ni3 men2",
+                writting_known=False,
+                updated_at=now,
+            )
+        )
+        db.session.commit()
+
+        rebuild_characters_from_words(self.user_id)
+        db.session.commit()
+
+        self.assertTrue(
+            Character.query.filter_by(user_id=self.user_id, char="你").one().writting_known
+        )
+        self.assertTrue(
+            Character.query.filter_by(user_id=self.user_id, char="好").one().writting_known
+        )
+        self.assertFalse(
+            Character.query.filter_by(user_id=self.user_id, char="们").one().writting_known
+        )
+
+    def test_upgrades_existing_character_to_writting_known(self):
+        now = utcnow()
+        db.session.add(
+            Character(
+                user_id=self.user_id,
+                char="好",
+                pinyin="hao3",
+                writting_known=False,
+                synchronized=False,
+            )
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="好",
+                pinyin="hao3",
+                writting_known=True,
+                updated_at=now,
+            )
+        )
+        db.session.commit()
+
+        rebuild_characters_from_words(self.user_id)
+        db.session.commit()
+
+        self.assertTrue(
+            Character.query.filter_by(user_id=self.user_id, char="好").one().writting_known
+        )
+
     def test_removes_character_and_pinyin_when_no_longer_used(self):
         now = utcnow()
         db.session.add(

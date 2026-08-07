@@ -124,6 +124,17 @@ def build_character_pinyin_map_from_words(words: list[Word]) -> dict[str, list[s
     return char_readings
 
 
+def build_character_writting_known_map_from_words(words: list[Word]) -> dict[str, bool]:
+    """A character is writting_known if any word containing it is writting_known."""
+    known: dict[str, bool] = {}
+    for word in words:
+        for char in word.word:
+            if not is_han_character(char):
+                continue
+            known[char] = known.get(char, False) or word.writting_known
+    return known
+
+
 def rebuild_characters_from_words(user_id) -> int:
     """Synchronize ``character`` rows with all ``words`` for ``user_id``.
 
@@ -131,6 +142,7 @@ def rebuild_characters_from_words(user_id) -> int:
     """
     words = Word.query.filter_by(user_id=user_id).all()
     target = build_character_pinyin_map_from_words(words)
+    writting_known_map = build_character_writting_known_map_from_words(words)
 
     existing = {
         row.char: row for row in Character.query.filter_by(user_id=user_id).all()
@@ -146,7 +158,7 @@ def rebuild_characters_from_words(user_id) -> int:
                     user_id=user_id,
                     char=char,
                     pinyin_readings=readings,
-                    writting_known=False,
+                    writting_known=writting_known_map.get(char, False),
                     synchronized=False,
                     updated_at=now,
                 )
@@ -156,6 +168,9 @@ def rebuild_characters_from_words(user_id) -> int:
 
         if record.pinyin_readings != readings:
             record.pinyin_readings = readings
+
+        if writting_known_map.get(char, False) and not record.writting_known:
+            record.writting_known = True
 
     for char, record in existing.items():
         if char not in target:
