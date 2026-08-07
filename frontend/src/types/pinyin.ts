@@ -675,6 +675,19 @@ export function replacePinyinAccents(token: string): string {
   return result + tone;
 }
 
+/** Erhua suffix split into its own token (e.g. "r" for 儿) is "er", not "r". */
+export function fixErhuaSyllable(syllable: string): string {
+  const tone =
+    syllable !== "" && ANKI_VALID_TONES.has(syllable[syllable.length - 1] ?? "")
+      ? syllable[syllable.length - 1]!
+      : "";
+  const base = tone ? syllable.slice(0, -1) : syllable;
+  if (base === "r") {
+    return `er${tone}`;
+  }
+  return syllable;
+}
+
 /** Normalize one Anki pinyin syllable to app form (e.g. Qīn → qin1). */
 export function normalizeAnkiPinyinToken(token: string): string | null {
   const trimmed = token.trim();
@@ -682,7 +695,9 @@ export function normalizeAnkiPinyinToken(token: string): string | null {
     return null;
   }
 
-  const candidate = replacePinyinAccents(trimmed).toLowerCase();
+  const candidate = fixErhuaSyllable(
+    replacePinyinAccents(trimmed).toLowerCase(),
+  );
   if (isValidPinyin(candidate)) {
     return candidate;
   }

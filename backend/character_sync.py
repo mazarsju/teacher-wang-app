@@ -40,9 +40,10 @@ def _valid_reading_at(tokens: list[str], index: int) -> str | None:
     token = tokens[index].strip()
     if token == "" or len(token) > PINYIN_MAX_LENGTH:
         return None
-    if not is_valid_pinyin(token):
+    normalized = normalize_anki_pinyin_token(token)
+    if normalized is None or len(normalized) > PINYIN_MAX_LENGTH:
         return None
-    return token.lower()
+    return normalized
 
 
 _PINYIN_START_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzü")
@@ -135,20 +136,14 @@ def _resolved_word_tokens(
         reading = None if field_blank else _valid_reading_at(raw_tokens, index)
         if reading is None:
             anki_reading = anki_by_char.get(char)
-            if (
-                anki_reading is not None
-                and len(anki_reading) <= PINYIN_MAX_LENGTH
-                and is_valid_pinyin(anki_reading)
-            ):
+            if anki_reading is not None and len(anki_reading) <= PINYIN_MAX_LENGTH:
                 reading = anki_reading
             else:
-                guessed = guess_map.get(char)
-                if (
-                    guessed is not None
-                    and len(guessed) <= PINYIN_MAX_LENGTH
-                    and is_valid_pinyin(guessed)
-                ):
-                    reading = guessed
+                guessed_raw = guess_map.get(char)
+                if guessed_raw is not None:
+                    guessed = normalize_anki_pinyin_token(guessed_raw)
+                    if guessed is not None and len(guessed) <= PINYIN_MAX_LENGTH:
+                        reading = guessed
         resolved.append(reading)
 
     return resolved

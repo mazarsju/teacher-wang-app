@@ -7,6 +7,7 @@ import { syncAppData } from "../store/thunks/syncAppData";
 import type { HskWord } from "../types/hskWord";
 import {
   extractCharacterEntries,
+  normalizeImportPinyin,
   type SmartWordRow,
 } from "../utils/knowledgeBase/buildImportLines";
 import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
@@ -287,7 +288,7 @@ export default function KnowledgeBaseInitWizardModal({
       smartWords.map((row) => ({
         word: row.word,
         definition: row.definition.trim().slice(0, 100) || null,
-        pinyin: row.pinyin.trim() || null,
+        pinyin: normalizeImportPinyin(row.pinyin).trim() || null,
       })),
       BULK_BATCH_SIZE,
     );

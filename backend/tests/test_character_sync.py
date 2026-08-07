@@ -314,6 +314,28 @@ class TestBuildWordPinyinForStorage(unittest.TestCase):
             "ai3",
         )
 
+    def test_normalizes_index_aligned_accented_and_umlaut_tokens(self):
+        self.assertEqual(
+            build_word_pinyin_for_storage("水", "shuǐ"),
+            "shui3",
+        )
+        self.assertEqual(
+            build_word_pinyin_for_storage("女", "nue3"),
+            "nüe3",
+        )
+
+    def test_normalizes_erhua_index_aligned_token(self):
+        self.assertEqual(
+            build_word_pinyin_for_storage("儿", "r"),
+            "er",
+        )
+
+    def test_normalizes_guess_map_readings(self):
+        self.assertEqual(
+            build_word_pinyin_for_storage("女", "", {"女": "nue3"}),
+            "nüe3",
+        )
+
 
 class TestUnresolvedWordCharacters(unittest.TestCase):
     def test_empty_when_every_character_resolves(self):

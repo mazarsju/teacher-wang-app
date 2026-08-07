@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isInvalidPinyinSyllable,
   isValidPinyin,
+  normalizeAnkiPinyinToken,
   parsePinyinSyllable,
   parseTone,
   suggestUmlautPinyin,
@@ -95,4 +96,20 @@ describe("suggestUmlautPinyin", () => {
       expect(suggestUmlautPinyin(value)).toBeNull();
     },
   );
+});
+
+describe("normalizeAnkiPinyinToken", () => {
+  it.each([
+    ["Qīn", "qin1"],
+    ["Ai3", "ai3"],
+    ["nue3", "nüe3"],
+    ["r", "er"],
+    ["r2", "er2"],
+  ])("normalizes %s → %s", (value, expected) => {
+    expect(normalizeAnkiPinyinToken(value)).toBe(expected);
+  });
+
+  it.each(["", "xyz9"])("returns null for %s", (value) => {
+    expect(normalizeAnkiPinyinToken(value)).toBeNull();
+  });
 });
