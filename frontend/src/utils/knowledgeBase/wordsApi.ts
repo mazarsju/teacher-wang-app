@@ -19,6 +19,7 @@ export async function createWord(values: {
   word: string;
   definition: string | null;
   pinyin?: string | null;
+  writting_known?: boolean;
 }): Promise<Word> {
   const response = await apiFetch(`${API_BASE}/words`, {
     method: "POST",
@@ -52,7 +53,11 @@ export async function bulkCreateWords(
 
 export async function updateWord(
   word: string,
-  values: { definition: string | null; pinyin?: string | null },
+  values: {
+    definition: string | null;
+    pinyin?: string | null;
+    writting_known?: boolean;
+  },
 ): Promise<Word> {
   const response = await apiFetch(
     `${API_BASE}/words/${encodeURIComponent(word)}`,

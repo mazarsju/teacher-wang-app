@@ -35,6 +35,7 @@ def list_words():
             "word": word.word,
             "definition": word.definition,
             "pinyin": word.pinyin,
+            "writting_known": word.writting_known,
             "updated_at": word.updated_at.isoformat(),
             "characters": list(word.word),
         }

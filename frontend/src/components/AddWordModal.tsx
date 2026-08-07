@@ -9,6 +9,7 @@ export type WordFormValues = {
   word: string;
   definition: string;
   pinyin: string;
+  writting_known: boolean;
 };
 
 type AddWordModalProps = {
@@ -35,6 +36,7 @@ export default function AddWordModal({
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [pinyin, setPinyin] = useState("");
+  const [writtingKnown, setWrittingKnown] = useState(false);
 
   const existingWordSet = useMemo(
     () => new Set(existingWords),
@@ -50,12 +52,14 @@ export default function AddWordModal({
       setWord(initialWord.word);
       setDefinition(initialWord.definition ?? "");
       setPinyin(initialWord.pinyin ?? "");
+      setWrittingKnown(initialWord.writting_known);
       return;
     }
 
     setWord("");
     setDefinition("");
     setPinyin("");
+    setWrittingKnown(false);
   }, [isOpen, mode, initialWord]);
 
   if (!isOpen) {
@@ -87,6 +91,7 @@ export default function AddWordModal({
       word: word.trim(),
       definition: definition.trim(),
       pinyin: pinyin.trim(),
+      writting_known: writtingKnown,
     });
   }
 
@@ -153,6 +158,18 @@ export default function AddWordModal({
               maxLength={100}
               onChange={(event) => setDefinition(event.target.value)}
             />
+          </label>
+          <label className="modal-field-toggle">
+            <span className="modal-field-label">writting known</span>
+            <span className="toggle">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={writtingKnown}
+                onChange={(event) => setWrittingKnown(event.target.checked)}
+              />
+              <span className="toggle-slider" />
+            </span>
           </label>
           <div className="modal-actions">
             <button type="button" className="modal-button-cancel" onClick={onCancel}>

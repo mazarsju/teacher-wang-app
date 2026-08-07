@@ -49,6 +49,7 @@ describe("AddWordModal", () => {
       word: "A想B",
       definition: "to think",
       pinyin: "A xiang3 B",
+      writting_known: false,
     });
   });
 
@@ -132,6 +133,7 @@ describe("AddWordModal", () => {
       word: "爱好",
       definition: "to like",
       pinyin: "ai4 hao3",
+      writting_known: false,
     });
   });
 
@@ -213,6 +215,7 @@ describe("AddWordModal", () => {
           word: "A想B",
           definition: null,
           pinyin: null,
+          writting_known: false,
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["A", "想", "B"],
         }}
@@ -237,6 +240,7 @@ describe("AddWordModal", () => {
       word: "A想B",
       definition: "to think",
       pinyin: "A xiang3 B",
+      writting_known: false,
     });
   });
 
@@ -252,6 +256,7 @@ describe("AddWordModal", () => {
           word: "爱好",
           definition: "old",
           pinyin: "ai4 hao3",
+          writting_known: false,
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["爱", "好"],
         }}
@@ -271,6 +276,58 @@ describe("AddWordModal", () => {
       word: "爱好",
       definition: "hobby",
       pinyin: "ai4 hao3",
+      writting_known: false,
     });
+  });
+
+  it("toggles writting known and includes it when submitting", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
+        onConfirm={onConfirm}
+        onCancel={() => {}}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("words"), "爱好");
+    await user.type(screen.getByLabelText("definition"), "to like");
+    await user.click(screen.getByRole("switch"));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      word: "爱好",
+      definition: "to like",
+      pinyin: "ai4 hao3",
+      writting_known: true,
+    });
+  });
+
+  it("preloads writting known from the word being edited", () => {
+    render(
+      <AddWordModal
+        mode="edit"
+        isOpen
+        initialWord={{
+          word: "爱好",
+          definition: "old",
+          pinyin: "ai4 hao3",
+          writting_known: true,
+          updated_at: "2026-07-12T12:00:00+00:00",
+          characters: ["爱", "好"],
+        }}
+        hskCharacterPinyin={{}}
+        characterPinyin={{}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("switch")).toBeChecked();
   });
 });

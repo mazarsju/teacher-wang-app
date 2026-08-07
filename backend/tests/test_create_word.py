@@ -73,12 +73,52 @@ class TestCreateWordEndpoint(unittest.TestCase):
             word="爱好",
             definition="hobby",
             pinyin="ai4 hao3",
+            writting_known=False,
             updated_at=updated_at,
         )
         self.mock_session.add.assert_called_once()
         self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
         self.mock_refresh.assert_called_once_with(TEST_USER_ID)
+
+    def test_create_word_stores_writting_known(self):
+        updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
+
+        def make_word(**kwargs):
+            record = MagicMock(**kwargs)
+            record.updated_at = updated_at
+            return record
+
+        self.mock_word_cls.side_effect = make_word
+        self.mock_utcnow.return_value = updated_at
+
+        response = self.client.post(
+            "/words",
+            json={"word": "爱好", "definition": "hobby", "writting_known": True},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.get_json()["writting_known"])
+        self.mock_word_cls.assert_called_once_with(
+            user_id=TEST_USER_ID,
+            word="爱好",
+            definition="hobby",
+            pinyin=None,
+            writting_known=True,
+            updated_at=updated_at,
+        )
+
+    def test_create_word_rejects_non_boolean_writting_known(self):
+        response = self.client.post(
+            "/words",
+            json={"word": "爱好", "definition": "hobby", "writting_known": "yes"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json(), {"error": "writting_known must be a boolean"}
+        )
+        self.mock_session.add.assert_not_called()
 
     def test_create_word_without_any_chinese_character_returns_error(self):
         response = self.client.post(

@@ -59,6 +59,7 @@ const words = [
     word: "爱好",
     definition: "hobby",
     pinyin: "ai4 hao3",
+    writting_known: false,
     updated_at: "2026-07-12T12:00:00+00:00",
     characters: ["爱", "好"],
   },
@@ -173,6 +174,7 @@ describe("KnowledgeBasePage", () => {
       word: `word-${index}`,
       definition: null,
       pinyin: null,
+      writting_known: false,
       updated_at: "2026-07-12T12:00:00+00:00",
       characters: [] as string[],
     }));

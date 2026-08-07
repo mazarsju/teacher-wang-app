@@ -91,6 +91,7 @@ class Word(db.Model):
     word = db.Column(String(10), primary_key=True)
     definition = db.Column(String(100), nullable=True)
     pinyin = db.Column(String(64), nullable=True)
+    writting_known = db.Column(db.Boolean, nullable=False, default=False)
     synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),

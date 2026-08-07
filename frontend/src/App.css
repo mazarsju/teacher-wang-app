@@ -2551,9 +2551,11 @@ button.chat-message-severity-badge {
 
 .modal-field-checkbox,
 .modal-field-toggle {
+  display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 .modal-field-toggle .modal-field-label {

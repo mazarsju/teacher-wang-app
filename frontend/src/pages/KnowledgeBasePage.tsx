@@ -57,6 +57,11 @@ const WORD_COLUMNS: TableColumn<Word>[] = [
     render: (row) => row.pinyin ?? "",
   },
   {
+    key: "writting_known",
+    header: "writting_known",
+    render: (row) => String(row.writting_known),
+  },
+  {
     key: "updated_at",
     header: "updated_at",
     render: (row) => formatDateTime(row.updated_at),
@@ -298,6 +303,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       const updatedWord = await updateWord(word.word, {
         definition: values.definition,
         pinyin: values.pinyin || null,
+        writting_known: values.writting_known,
       });
       dispatch(upsertWord(updatedWord));
     } catch (updateError) {
@@ -318,6 +324,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         word: values.word,
         definition: values.definition || null,
         pinyin: values.pinyin || null,
+        writting_known: values.writting_known,
       });
       dispatch(upsertWord(createdWord));
     } catch (addWordError) {
