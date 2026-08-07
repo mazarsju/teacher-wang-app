@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentType } from "react";
 import "./App.css";
+import HelpButton from "./components/HelpButton";
 import Navbar, { type PageId } from "./components/Navbar";
 import AdminPage from "./pages/AdminPage";
 import ChatPage from "./pages/ChatPage";
@@ -86,6 +87,7 @@ export default function App() {
       <main className="app-main">
         <ActivePage onNavigate={setActivePage} />
       </main>
+      <HelpButton />
     </div>
   );
 }

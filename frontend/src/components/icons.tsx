@@ -317,6 +317,24 @@ export function QuestionIcon({ className }: IconProps) {
   );
 }
 
+export function HelpMarkIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9.2 9.3a2.8 2.8 0 1 1 4.3 2.35c-.95.6-1.5 1.1-1.5 2.15" />
+      <circle cx="12" cy="17.9" r="0.1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function WarningIcon({ className }: IconProps) {
   return (
     <svg
