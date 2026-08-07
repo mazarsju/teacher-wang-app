@@ -578,7 +578,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertTrue(word.anki_voc_sync)
         self.assertEqual(word.definition, "water")
         character = Character.query.filter_by(user_id=self.user_id, char="水").one()
-        self.assertTrue(character.synchronized)
+        self.assertFalse(character.writing_known)
 
     def test_pull_imports_vocabulary_cards_with_punctuation_glued_to_pinyin(self):
         from backend.anki_sync import apply_pull, setup_deck
@@ -745,7 +745,6 @@ class TestAnkiSyncHelpers(PostgresTestCase):
                 char="水",
                 pinyin="shui3",
                 writing_known=False,
-                synchronized=True,
             )
         )
         db.session.commit()
@@ -800,7 +799,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
     def test_pull_import_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.extensions import db
-        from backend.models import Word
+        from backend.models import Character, Word
 
         setup_deck(
             self.user_id,
@@ -829,10 +828,19 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             ignore_keys=[],
         )
 
+        # A real Flask request commits or rolls back the session at request
+        # teardown; roll back here to make sure the character rebuild was
+        # actually committed by apply_pull, not just flushed (a flush is
+        # visible within this same transaction either way, so it can't
+        # catch a missing commit on its own).
+        db.session.rollback()
+
         self.assertEqual(result["added"], 1)
         updated = Word.query.filter_by(user_id=self.user_id, word="水").one()
         self.assertTrue(updated.writing_known)
         self.assertTrue(updated.anki_writing_sync)
+        character = Character.query.filter_by(user_id=self.user_id, char="水").one()
+        self.assertTrue(character.writing_known)
 
     def test_pull_writing_card_impossible_when_word_missing(self):
         from backend.anki_sync import apply_pull, setup_deck

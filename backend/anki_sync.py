@@ -525,7 +525,6 @@ def _local_characters(user_id: str) -> list[dict[str, Any]]:
             "char": row.char,
             "pinyin": row.pinyin,
             "writing_known": bool(row.writing_known),
-            "synchronized": bool(row.synchronized),
         }
         for row in Character.query.filter_by(user_id=user_id)
         .order_by(Character.char)
@@ -728,10 +727,6 @@ def apply_pull(
                 row.char for row in Character.query.filter_by(user_id=user_id).all()
             }
             characters_added = len(chars_after - chars_before)
-            for char in chars_after - chars_before:
-                record = _find_character(user_id, char)
-                if record is not None:
-                    record.synchronized = True
         db.session.commit()
         ignored = _add_vocabulary_pull_ignored(user_id, ignore_keys)
     elif kind == "mandarin_writing":
@@ -742,6 +737,7 @@ def apply_pull(
                 failed += 1
         if imported:
             rebuild_characters_from_words(user_id)
+            db.session.commit()
         ignored = _add_writing_pull_ignored(user_id, ignore_keys)
     else:
         raise ValueError(f'Unsupported deck kind "{kind}"')

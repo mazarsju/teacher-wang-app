@@ -63,7 +63,6 @@ class Character(db.Model):
     # needs to know the column is stored as an array.
     pinyin_readings = db.Column("pinyin", ARRAY(String(8)), nullable=False)
     writing_known = db.Column(db.Boolean, nullable=False, default=False)
-    synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

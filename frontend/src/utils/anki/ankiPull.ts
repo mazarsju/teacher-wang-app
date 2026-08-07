@@ -11,7 +11,6 @@ export type SyncDataCharacter = {
   char: string;
   pinyin: string;
   writing_known: boolean;
-  synchronized: boolean;
 };
 
 export function pairWritingWithPinyinTokens(

@@ -277,6 +277,11 @@ def build_character_writing_known_map_from_words(words: list[Word]) -> dict[str,
 def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
     """Synchronize ``character`` rows with all ``words`` for ``user_id``.
 
+    ``words`` is the source of truth: both ``pinyin_readings`` and
+    ``writing_known`` are fully derived here, in either direction (a
+    character reverts to not-writing-known once no remaining word marks it
+    known).
+
     Returns the characters that were created or modified (i.e. whose
     ``updated_at`` changed) and the ids of any characters deleted.
     """
@@ -292,13 +297,13 @@ def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
 
     for char, readings in target.items():
         record = existing.get(char)
+        writing_known = writing_known_map.get(char, False)
         if record is None:
             record = Character(
                 user_id=user_id,
                 char=char,
                 pinyin_readings=readings,
-                writing_known=writing_known_map.get(char, False),
-                synchronized=False,
+                writing_known=writing_known,
                 updated_at=now,
             )
             db.session.add(record)
@@ -310,8 +315,8 @@ def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
             record.pinyin_readings = readings
             changed = True
 
-        if writing_known_map.get(char, False) and not record.writing_known:
-            record.writing_known = True
+        if record.writing_known != writing_known:
+            record.writing_known = writing_known
             changed = True
 
         if changed:
