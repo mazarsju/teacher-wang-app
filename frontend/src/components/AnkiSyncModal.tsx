@@ -8,6 +8,7 @@ import {
   type AnkiPendingVocabularyCard,
   type AnkiPendingWrittingCard,
   type AnkiSyncDirection,
+  type AnkiSyncResult,
 } from "../types/anki";
 import { fetchAnkiPendingSync, runAnkiSync } from "../utils/anki/ankiApi";
 import ConfirmModal from "./ConfirmModal";
@@ -26,7 +27,7 @@ type AnkiSyncModalProps = {
   isOpen: boolean;
   kind: AnkiDeckKind | null;
   onCancel: () => void;
-  onSynced: (direction: AnkiSyncDirection) => void;
+  onSynced: (direction: AnkiSyncDirection, result: AnkiSyncResult) => void;
 };
 
 function isVocabularyCard(
@@ -326,7 +327,7 @@ export default function AnkiSyncModal({
           : confirmAction.type === "ignore_all"
             ? "cancel_all"
             : "partial";
-      await runAnkiSync({
+      const result = await runAnkiSync({
         kind,
         action,
         direction: confirmAction.direction,
@@ -337,7 +338,7 @@ export default function AnkiSyncModal({
         hskCharacterPinyin,
       });
       setConfirmAction(null);
-      onSynced(confirmAction.direction);
+      onSynced(confirmAction.direction, result);
     } catch (submitError: unknown) {
       setConfirmAction(null);
       setError(

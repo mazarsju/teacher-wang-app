@@ -580,6 +580,128 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         character = Character.query.filter_by(user_id=self.user_id, char="水").one()
         self.assertTrue(character.synchronized)
 
+    def test_pull_rejects_vocabulary_card_with_unresolvable_pinyin(self):
+        from backend.anki_sync import apply_pull, setup_deck
+        from backend.models import Word
+
+        setup_deck(
+            self.user_id,
+            "mandarin_vocabulary",
+            "Vocab",
+            model_name="Basic",
+            fields={
+                "writting": "Front",
+                "pinyin": "Back",
+                "definition": "Extra",
+            },
+        )
+
+        result = apply_pull(
+            self.user_id,
+            "mandarin_vocabulary",
+            "synchronize_all",
+            cards=[
+                {
+                    "id": "水",
+                    "writting": "水",
+                    "pinyin": "",
+                    "definition": "water",
+                }
+            ],
+            ignore_keys=[],
+        )
+
+        self.assertEqual(result["added"], 0)
+        self.assertEqual(result["failed"], 1)
+        self.assertEqual(result["failed_characters"], ["水"])
+        self.assertIsNone(
+            Word.query.filter_by(user_id=self.user_id, word="水").first()
+        )
+
+    def test_pull_resolves_vocabulary_card_pinyin_from_guesses(self):
+        from backend.anki_sync import apply_pull, setup_deck
+        from backend.models import Word
+
+        setup_deck(
+            self.user_id,
+            "mandarin_vocabulary",
+            "Vocab",
+            model_name="Basic",
+            fields={
+                "writting": "Front",
+                "pinyin": "Back",
+                "definition": "Extra",
+            },
+        )
+
+        result = apply_pull(
+            self.user_id,
+            "mandarin_vocabulary",
+            "synchronize_all",
+            cards=[
+                {
+                    "id": "水",
+                    "writting": "水",
+                    "pinyin": "",
+                    "definition": "water",
+                }
+            ],
+            ignore_keys=[],
+            pinyin_guesses={"水": "shui3"},
+        )
+
+        self.assertEqual(result["added"], 1)
+        self.assertEqual(result["failed_characters"], [])
+        word = Word.query.filter_by(user_id=self.user_id, word="水").one()
+        self.assertEqual(word.pinyin, "shui3")
+
+    def test_pull_resolves_vocabulary_card_pinyin_from_known_characters(self):
+        from backend.anki_sync import apply_pull, setup_deck
+        from backend.extensions import db
+        from backend.models import Character, Word
+
+        setup_deck(
+            self.user_id,
+            "mandarin_vocabulary",
+            "Vocab",
+            model_name="Basic",
+            fields={
+                "writting": "Front",
+                "pinyin": "Back",
+                "definition": "Extra",
+            },
+        )
+        db.session.add(
+            Character(
+                user_id=self.user_id,
+                char="水",
+                pinyin="shui3",
+                writting_known=False,
+                synchronized=True,
+            )
+        )
+        db.session.commit()
+
+        result = apply_pull(
+            self.user_id,
+            "mandarin_vocabulary",
+            "synchronize_all",
+            cards=[
+                {
+                    "id": "水",
+                    "writting": "水",
+                    "pinyin": "",
+                    "definition": "water",
+                }
+            ],
+            ignore_keys=[],
+        )
+
+        self.assertEqual(result["added"], 1)
+        self.assertEqual(result["failed_characters"], [])
+        word = Word.query.filter_by(user_id=self.user_id, word="水").one()
+        self.assertEqual(word.pinyin, "shui3")
+
     def test_pull_ignore_vocabulary_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.models import IgnoreVocabCard

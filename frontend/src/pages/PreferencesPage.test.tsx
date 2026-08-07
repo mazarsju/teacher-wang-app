@@ -594,6 +594,82 @@ describe("PreferencesPage", () => {
     });
   });
 
+  it("shows the failed characters when a pull can't resolve their pinyin", async () => {
+    const user = userEvent.setup();
+    const connectedStatus: AnkiStatus = {
+      connected: true,
+      synchronization_status: "not_synchronized",
+      pending_push_estimate: 0,
+      decks: {
+        mandarin_vocabulary: {
+          status: "not_synchronized",
+          deck_name: "Vocab",
+          model_name: "Vocab",
+          fields: {
+            writting: "writting",
+            pinyin: "pinyin",
+            definition: "definition",
+          },
+        },
+        mandarin_writting: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+        },
+      },
+    };
+    fetchAnkiStatus.mockResolvedValue(connectedStatus);
+    fetchAnkiPendingSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      count: 0,
+      cards: [],
+      unsyncable: [],
+      pull_count: 1,
+      pull_cards: [
+        {
+          id: "风水",
+          writting: "风水",
+          pinyin: "",
+          definition: "feng shui",
+        },
+      ],
+      deck: connectedStatus.decks.mandarin_vocabulary,
+    });
+    runAnkiSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      action: "synchronize_all",
+      direction: "pull",
+      added: 0,
+      ignored: 0,
+      failed: 1,
+      failed_characters: ["风", "水"],
+      deck: connectedStatus.decks.mandarin_vocabulary,
+    });
+
+    renderWithStore(<PreferencesPage />, {
+      preloadedState: {
+        ...syncedState,
+        anki: { status: connectedStatus },
+      },
+    });
+
+    await screen.findByRole("heading", { name: "Anki synchronization" });
+    const vocabRow = screen.getByText("Mandarin vocabulary").closest("li");
+    expect(vocabRow).not.toBeNull();
+    await user.click(
+      within(vocabRow as HTMLElement).getByRole("button", { name: "Sync" }),
+    );
+
+    await screen.findByText("1 card to pull");
+    await user.click(screen.getByRole("button", { name: "Pull all from Anki" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(
+      await screen.findByText(/wasn't pulled: 风、水/),
+    ).toBeInTheDocument();
+  });
+
   it("deletes the knowledge base from dangerous actions", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
@@ -678,7 +754,7 @@ describe("PreferencesPage", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it.",
+        "Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it. (note: this won't delete your Anki decks)",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("This action is irreversible.")).toBeInTheDocument();

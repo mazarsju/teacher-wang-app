@@ -36,20 +36,42 @@ describe("extractMissingCharacterEntries", () => {
       extractMissingCharacterEntries("谢谢", "xie4 xie4", new Set([])),
     ).toEqual([{ char: "谢", pinyin: "xie4", writting_known: false }]);
   });
+
+  it("resolves each character's syllable even when the pinyin is glued together", () => {
+    expect(
+      extractMissingCharacterEntries("你A好", "ni3Ahao3", new Set([])),
+    ).toEqual([
+      { char: "你", pinyin: "ni3", writting_known: false },
+      { char: "好", pinyin: "hao3", writting_known: false },
+    ]);
+  });
 });
 
 describe("isWordPinyinValid", () => {
-  it("requires one valid syllable per Chinese character", () => {
+  it("requires one valid syllable per Chinese character when the word is pure Chinese", () => {
     expect(isWordPinyinValid("你好", "ni3 hao3")).toBe(true);
     expect(isWordPinyinValid("你好", "ni3")).toBe(false);
     expect(isWordPinyinValid("你好", "notpinyin hao3")).toBe(false);
   });
 
-  it("requires the literal character for each non-Chinese one", () => {
-    expect(isWordPinyinValid("A想B", "A xiang3 B")).toBe(true);
-    expect(isWordPinyinValid("A想B", "a xiang3 B")).toBe(false);
-    expect(isWordPinyinValid("AB想", "A B xiang3")).toBe(true);
-    expect(isWordPinyinValid("AB想", "AB xiang3")).toBe(false);
+  it("rejects glued-together or extra pinyin for a pure Chinese word", () => {
+    expect(isWordPinyinValid("你好", "ni3hao3")).toBe(false);
+    expect(isWordPinyinValid("你好吗", "ni3 hao3")).toBe(false);
+    expect(isWordPinyinValid("你好", "ni3 hao3 ma3")).toBe(false);
+  });
+
+  it("only requires a resolvable syllable per Chinese character once a non-Chinese one is mixed in", () => {
+    expect(isWordPinyinValid("你A好", "ni3 A hao3")).toBe(true);
+    expect(isWordPinyinValid("你A好", "ni3Ahao3")).toBe(true);
+    expect(isWordPinyinValid("你。。好", "ni3..hao3")).toBe(true);
+    expect(isWordPinyinValid("你。。好", "ni3.....hao3")).toBe(true);
+    expect(isWordPinyinValid("你A", "ni3 hao3")).toBe(true);
+    expect(isWordPinyinValid("你好?", "ni3 hao3 ma3")).toBe(true);
+  });
+
+  it("still fails a mixed word when there aren't enough resolvable syllables", () => {
+    expect(isWordPinyinValid("你A", "")).toBe(false);
+    expect(isWordPinyinValid("你A好", "ni3")).toBe(false);
   });
 });
 

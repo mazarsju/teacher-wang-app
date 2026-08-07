@@ -108,18 +108,19 @@ describe("AnkiSyncModal", () => {
         hskCharacterPinyin: {},
       });
     });
-    expect(onSynced).toHaveBeenCalledWith("push");
+    expect(onSynced).toHaveBeenCalledWith("push", pushAllResult);
   });
 
   it("runs pull all from Anki", async () => {
     const onSynced = vi.fn();
     fetchAnkiPendingSync.mockResolvedValue(vocabularyPending);
-    runAnkiSync.mockResolvedValue({
+    const pullResult: AnkiSyncResult = {
       ...pushAllResult,
       action: "synchronize_all",
       direction: "pull",
       added: 1,
-    });
+    };
+    runAnkiSync.mockResolvedValue(pullResult);
 
     const user = userEvent.setup();
     renderWithStore(
@@ -143,18 +144,19 @@ describe("AnkiSyncModal", () => {
         hskCharacterPinyin: {},
       });
     });
-    expect(onSynced).toHaveBeenCalledWith("pull");
+    expect(onSynced).toHaveBeenCalledWith("pull", pullResult);
   });
 
   it("runs partial push with selected cards", async () => {
     const onSynced = vi.fn();
     fetchAnkiPendingSync.mockResolvedValue(vocabularyPending);
-    runAnkiSync.mockResolvedValue({
+    const partialPushResult: AnkiSyncResult = {
       ...pushAllResult,
       action: "partial",
       added: 1,
       ignored: 1,
-    });
+    };
+    runAnkiSync.mockResolvedValue(partialPushResult);
 
     const user = userEvent.setup();
     renderWithStore(
@@ -184,7 +186,7 @@ describe("AnkiSyncModal", () => {
         hskCharacterPinyin: {},
       });
     });
-    expect(onSynced).toHaveBeenCalledWith("push");
+    expect(onSynced).toHaveBeenCalledWith("push", partialPushResult);
   });
 
   it("shows writting unsyncable characters", async () => {

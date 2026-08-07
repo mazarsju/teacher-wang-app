@@ -18,6 +18,7 @@ import {
   type AnkiDeckKind,
   type AnkiDeckStatus,
   type AnkiSyncDirection,
+  type AnkiSyncResult,
 } from "../types/anki";
 import type { UserPlan } from "../types/adminUser";
 import type { TokenUsageSummary } from "../types/tokenUsage";
@@ -123,8 +124,18 @@ export default function PreferencesPage() {
     await refreshAnkiStatus();
   }
 
-  async function handleSyncCompleted(direction: AnkiSyncDirection) {
+  async function handleSyncCompleted(
+    direction: AnkiSyncDirection,
+    result: AnkiSyncResult,
+  ) {
     setSyncKind(null);
+    const failedCharacters = result.failed_characters ?? [];
+    setExtrasError(
+      failedCharacters.length > 0
+        ? "Couldn't determine the pinyin for these characters, so their " +
+            `card wasn't pulled: ${failedCharacters.join("、")}.`
+        : null,
+    );
     if (direction === "pull") {
       // Pull mutates characters/words in Postgres — refresh Redux cache.
       await dispatch(syncAppData()).unwrap();
@@ -430,7 +441,7 @@ export default function PreferencesPage() {
 
       <ConfirmModal
         isOpen={isDeleteKnowledgeBaseConfirmOpen}
-        message="Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it."
+        message="Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it. (note: this won't delete your Anki decks)"
         danger={true}
         onCancel={() => setIsDeleteKnowledgeBaseConfirmOpen(false)}
         onConfirm={() => void handleConfirmDeleteKnowledgeBase()}
@@ -455,7 +466,9 @@ export default function PreferencesPage() {
         isOpen={syncKind !== null}
         kind={syncKind}
         onCancel={() => setSyncKind(null)}
-        onSynced={(direction) => void handleSyncCompleted(direction)}
+        onSynced={(direction, result) =>
+          void handleSyncCompleted(direction, result)
+        }
       />
       <AnkiSyncHelpModal
         isOpen={isSyncHelpOpen}

@@ -146,8 +146,10 @@ export default function AddWordModal({
           </label>
           {showPinyinWarning && (
             <p id="word-pinyin-warning" className="form-warning">
-              Enter one valid pinyin syllable per Chinese character (e.g. hao3),
-              matching any other characters exactly, separated by spaces.
+              Enter one valid pinyin syllable per Chinese character (e.g.
+              hao3), with a tone number. Any non-Chinese characters in the
+              word don&rsquo;t need matching pinyin — spacing and content
+              around them are not checked.
             </p>
           )}
           <label className="modal-field">

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from backend.character_sync import (
     build_word_pinyin_for_storage,
     rebuild_characters_from_words,
+    unresolved_word_characters,
 )
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
@@ -346,23 +348,56 @@ def _add_writting_pull_ignored(user_id: str, rectos: list[str]) -> int:
     return added
 
 
+@dataclass
+class VocabularyImportResult:
+    """Outcome of importing one Anki vocabulary card.
+
+    ``failed_characters`` is only populated when the import failed because
+    the word's pinyin couldn't be re-created (as opposed to e.g. the word
+    already existing), so callers can surface exactly which characters need
+    attention.
+    """
+
+    imported: bool
+    failed_characters: list[str] = field(default_factory=list)
+
+
 def _import_vocabulary_card(
     user_id: str,
     card: dict[str, Any],
     guesses: dict[str, str] | None = None,
-) -> bool:
+) -> VocabularyImportResult:
     word_text = str(card.get("writting") or "").strip()
     han_chars = [char for char in word_text if is_han_character(char)]
     if word_text == "" or not han_chars or len(word_text) > 10:
-        return False
+        return VocabularyImportResult(imported=False)
     if _find_word(user_id, word_text) is not None:
-        return False
+        return VocabularyImportResult(imported=False)
 
     definition = str(card.get("definition") or "").strip()[:100]
     pinyin_field = str(card.get("pinyin") or "")
-    stored_pinyin = build_word_pinyin_for_storage(word_text, pinyin_field, guesses)
-    if pinyin_field.strip() and stored_pinyin is None:
-        return False
+
+    # Guessing falls back to the HSK master reading first (``guesses``, as
+    # supplied by the frontend), then to the reading the user already has
+    # for that character -- both count as "possible to re-create".
+    resolved_guesses = dict(guesses or {})
+    for char in han_chars:
+        if char in resolved_guesses:
+            continue
+        known = _find_character(user_id, char)
+        if known is not None and known.pinyin:
+            resolved_guesses[char] = known.pinyin
+
+    stored_pinyin = build_word_pinyin_for_storage(
+        word_text, pinyin_field, resolved_guesses
+    )
+    if stored_pinyin is None:
+        return VocabularyImportResult(
+            imported=False,
+            failed_characters=unresolved_word_characters(
+                word_text, pinyin_field, resolved_guesses
+            ),
+        )
 
     now = utcnow()
     word_record = Word(
@@ -375,7 +410,7 @@ def _import_vocabulary_card(
     )
     db.session.add(word_record)
     db.session.flush()
-    return True
+    return VocabularyImportResult(imported=True)
 
 
 def _import_writting_pull_card(user_id: str, card: dict[str, Any]) -> bool:
@@ -609,6 +644,7 @@ def _finalize_deck_result(
     failed: int,
     characters_added: int = 0,
     pull_count: int | None = None,
+    failed_characters: list[str] | None = None,
 ) -> dict[str, Any]:
     deck = get_deck_mapping(user_id, kind)
     if pull_count is not None:
@@ -639,6 +675,7 @@ def _finalize_deck_result(
     }
     if direction == "pull":
         result["characters_added"] = characters_added
+        result["failed_characters"] = failed_characters or []
     return result
 
 
@@ -708,6 +745,7 @@ def apply_pull(
     imported = 0
     characters_added = 0
     failed = 0
+    failed_characters: list[str] = []
     guesses = pinyin_guesses or {}
 
     if kind == "mandarin_vocabulary":
@@ -715,14 +753,14 @@ def apply_pull(
             row.char for row in Character.query.filter_by(user_id=user_id).all()
         }
         for card in cards:
-            if _import_vocabulary_card(
-                user_id,
-                card,
-                guesses,
-            ):
+            card_result = _import_vocabulary_card(user_id, card, guesses)
+            if card_result.imported:
                 imported += 1
             else:
                 failed += 1
+                for char in card_result.failed_characters:
+                    if char not in failed_characters:
+                        failed_characters.append(char)
         if imported:
             rebuild_characters_from_words(user_id)
             chars_after = {
@@ -745,9 +783,6 @@ def apply_pull(
     else:
         raise ValueError(f'Unsupported deck kind "{kind}"')
 
-    if failed > 0 and imported == 0 and cards:
-        raise ValueError(f"Failed to import {failed} card(s) from Anki.")
-
     return _finalize_deck_result(
         user_id,
         kind=kind,
@@ -758,6 +793,7 @@ def apply_pull(
         failed=failed,
         characters_added=characters_added,
         pull_count=pull_count_after,
+        failed_characters=failed_characters,
     )
 
 

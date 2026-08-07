@@ -286,9 +286,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   }
 
   // Auto-creates any Chinese character from `word` that isn't in the
-  // database yet, using the pinyin syllable at the same position (word and
-  // pinyin are already one token per character by the time a word form can
-  // be submitted — see AddWordModal's isWordPinyinValid check).
+  // database yet, using each character's resolved pinyin syllable (already
+  // validated by the time a word form can be submitted — see
+  // extractMissingCharacterEntries / AddWordModal's isWordPinyinValid check).
   async function ensureCharactersExist(word: string, pinyin: string) {
     const missingEntries = extractMissingCharacterEntries(
       word,

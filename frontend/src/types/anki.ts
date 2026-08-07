@@ -99,6 +99,7 @@ export type AnkiSyncResult = {
   characters_added?: number;
   ignored: number;
   failed: number;
+  failed_characters?: string[];
   deck: AnkiDeckMapping;
 };
 

@@ -4,8 +4,10 @@ import unittest
 from backend.character_sync import (
     build_character_pinyin_map_from_words,
     build_word_pinyin_for_storage,
+    extract_tone_syllables_in_order,
     rebuild_characters_from_words,
     serialize_character,
+    unresolved_word_characters,
 )
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
@@ -31,6 +33,45 @@ class TestBuildCharacterPinyinMapFromWords(unittest.TestCase):
         readings = build_character_pinyin_map_from_words(words)
 
         self.assertEqual(readings["谢"], ["xie4"])
+
+    def test_resolves_glued_pinyin_for_a_word_with_non_han_characters(self):
+        words = [
+            Word(user_id=1, word="你A好", pinyin="ni3Ahao3", updated_at=utcnow())
+        ]
+
+        readings = build_character_pinyin_map_from_words(words)
+
+        self.assertEqual(readings["你"], ["ni3"])
+        self.assertEqual(readings["好"], ["hao3"])
+
+    def test_skips_a_mixed_word_that_cannot_fully_resolve(self):
+        words = [Word(user_id=1, word="你A", pinyin="", updated_at=utcnow())]
+
+        readings = build_character_pinyin_map_from_words(words)
+
+        self.assertEqual(readings["你"], [])
+
+
+class TestExtractToneSyllablesInOrder(unittest.TestCase):
+    def test_finds_syllables_ignoring_non_chinese_filler(self):
+        self.assertEqual(
+            extract_tone_syllables_in_order("ni3 A hao3", 2), ["ni3", "hao3"]
+        )
+        self.assertEqual(
+            extract_tone_syllables_in_order("ni3Ahao3", 2), ["ni3", "hao3"]
+        )
+        self.assertEqual(
+            extract_tone_syllables_in_order("ni3..hao3", 2), ["ni3", "hao3"]
+        )
+
+    def test_stops_once_enough_syllables_are_found(self):
+        self.assertEqual(extract_tone_syllables_in_order("ni3 hao3", 1), ["ni3"])
+
+    def test_returns_none_when_not_enough_syllables_are_found(self):
+        self.assertIsNone(extract_tone_syllables_in_order("ni3", 2))
+
+    def test_a_bare_uppercase_letter_never_matches(self):
+        self.assertIsNone(extract_tone_syllables_in_order("A", 1))
 
 
 class TestRebuildCharactersFromWords(PostgresTestCase):
@@ -256,14 +297,42 @@ class TestBuildWordPinyinForStorage(unittest.TestCase):
     def test_rejects_unresolved_pinyin(self):
         self.assertIsNone(build_word_pinyin_for_storage("你好", "ni3"))
 
-    def test_allows_blank_pinyin(self):
-        self.assertEqual(build_word_pinyin_for_storage("你好", ""), "")
+    def test_rejects_blank_pinyin_without_a_guess(self):
+        self.assertIsNone(build_word_pinyin_for_storage("你好", ""))
+
+    def test_blank_pinyin_is_resolved_from_guesses(self):
+        self.assertEqual(
+            build_word_pinyin_for_storage(
+                "你好", "", {"你": "ni3", "好": "hao3"}
+            ),
+            "ni3 hao3",
+        )
 
     def test_lowercases_index_aligned_tokens(self):
         self.assertEqual(
             build_word_pinyin_for_storage("爱", "Ai3"),
             "ai3",
         )
+
+
+class TestUnresolvedWordCharacters(unittest.TestCase):
+    def test_empty_when_every_character_resolves(self):
+        self.assertEqual(unresolved_word_characters("你好", "ni3 hao3"), [])
+
+    def test_lists_han_characters_missing_a_reading(self):
+        self.assertEqual(
+            unresolved_word_characters("风水", "feng1 ??", {}),
+            ["水"],
+        )
+
+    def test_resolved_via_guess_is_not_reported(self):
+        self.assertEqual(
+            unresolved_word_characters("风水", "", {"风": "feng1"}),
+            ["水"],
+        )
+
+    def test_deduplicates_repeated_characters(self):
+        self.assertEqual(unresolved_word_characters("水水", ""), ["水"])
 
 
 if __name__ == "__main__":

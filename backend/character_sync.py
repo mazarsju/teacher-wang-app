@@ -45,6 +45,46 @@ def _valid_reading_at(tokens: list[str], index: int) -> str | None:
     return token.lower()
 
 
+_PINYIN_START_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzü")
+_TONE_DIGITS = frozenset("1234")
+
+
+def extract_tone_syllables_in_order(text: str, count: int) -> list[str] | None:
+    """Scan ``text`` for up to ``count`` toned pinyin syllables, in order.
+
+    Mirrors the frontend's ``extractToneSyllablesInOrder``: a syllable is
+    lowercase and ends in a tone digit (1-4); anything else -- letters,
+    digits, punctuation, whitespace -- is skipped. Used to pull each Han
+    character's pinyin out of a word's pinyin field when that field also
+    holds non-Han filler that doesn't need to align with real positions.
+
+    ponytail: same deliberate narrowing as the frontend twin -- requiring a
+    trailing tone digit keeps a stray letter like "A" from being mistaken
+    for the bare pinyin final "a"; a pinyin-shaped substring hiding inside
+    longer filler can still false-match, which is acceptable since the
+    filler itself is intentionally unchecked.
+    """
+    matches: list[str] = []
+    i = 0
+    n = len(text)
+    while i < n and len(matches) < count:
+        if text[i] not in _PINYIN_START_CHARS:
+            i += 1
+            continue
+        matched_length = 0
+        for length in range(min(PINYIN_MAX_LENGTH, n - i), 0, -1):
+            candidate = text[i : i + length]
+            if candidate[-1] in _TONE_DIGITS and is_valid_pinyin(candidate):
+                matched_length = length
+                break
+        if matched_length > 0:
+            matches.append(text[i : i + matched_length])
+            i += matched_length
+        else:
+            i += 1
+    return matches if len(matches) == count else None
+
+
 def pair_han_characters_with_anki_pinyin_tokens(
     word_text: str,
     pinyin_field: str,
@@ -63,36 +103,36 @@ def pair_han_characters_with_anki_pinyin_tokens(
     return pairs
 
 
-def build_word_pinyin_for_storage(
+def _resolved_word_tokens(
     word_text: str,
     pinyin_field: str,
-    guesses: dict[str, str] | None = None,
-) -> str | None:
-    """Build a stored pinyin string with one token per character.
+    guess_map: dict[str, str],
+) -> list[str | None]:
+    """Resolve one token per character: literal for non-Han, syllable for Han.
 
-    Returns ``None`` when ``pinyin_field`` is non-empty but a Han character
-    cannot be assigned a valid syllable (index-aligned token, Anki token, or
-    guess). Returns an empty string when ``pinyin_field`` is blank.
+    A Han syllable comes from the index-aligned field token, then the
+    Anki-paired token, then ``guess_map`` (the HSK master reading, mirroring
+    `AddWordModal`'s fallback). ``None`` marks a position that couldn't be
+    resolved. When ``pinyin_field`` is blank there are no field tokens to
+    align against, so non-Han characters pass through as their own literal.
     """
-    if pinyin_field.strip() == "":
-        return ""
-
-    guess_map = guesses or {}
+    field_blank = pinyin_field.strip() == ""
     raw_tokens = pinyin_field.split()
     anki_by_char = dict(
         pair_han_characters_with_anki_pinyin_tokens(word_text, pinyin_field)
     )
-    tokens: list[str] = []
+    resolved: list[str | None] = []
 
     for index, char in enumerate(word_text):
         if not is_han_character(char):
+            if field_blank:
+                resolved.append(char)
+                continue
             literal = raw_tokens[index] if index < len(raw_tokens) else ""
-            if literal != char:
-                return None
-            tokens.append(char)
+            resolved.append(char if literal == char else None)
             continue
 
-        reading = _valid_reading_at(raw_tokens, index)
+        reading = None if field_blank else _valid_reading_at(raw_tokens, index)
         if reading is None:
             anki_reading = anki_by_char.get(char)
             if (
@@ -109,12 +149,43 @@ def build_word_pinyin_for_storage(
                     and is_valid_pinyin(guessed)
                 ):
                     reading = guessed
+        resolved.append(reading)
 
-        if reading is None:
-            return None
-        tokens.append(reading)
+    return resolved
 
-    return " ".join(tokens)
+
+def build_word_pinyin_for_storage(
+    word_text: str,
+    pinyin_field: str,
+    guesses: dict[str, str] | None = None,
+) -> str | None:
+    """Build a stored pinyin string with one token per character.
+
+    Returns ``None`` when a character can't be resolved (index-aligned
+    token, Anki token, or guess) -- including when ``pinyin_field`` is blank
+    and no guess covers a Han character.
+    """
+    resolved = _resolved_word_tokens(word_text, pinyin_field, guesses or {})
+    if any(token is None for token in resolved):
+        return None
+    return " ".join(resolved)  # type: ignore[arg-type]
+
+
+def unresolved_word_characters(
+    word_text: str,
+    pinyin_field: str,
+    guesses: dict[str, str] | None = None,
+) -> list[str]:
+    """Han characters in ``word_text`` whose pinyin couldn't be resolved."""
+    resolved = _resolved_word_tokens(word_text, pinyin_field, guesses or {})
+    seen: set[str] = set()
+    missing: list[str] = []
+    for char, token in zip(word_text, resolved):
+        if token is not None or not is_han_character(char) or char in seen:
+            continue
+        seen.add(char)
+        missing.append(char)
+    return missing
 
 
 def build_character_pinyin_map_from_words(words: list[Word]) -> dict[str, list[str]]:
@@ -122,26 +193,44 @@ def build_character_pinyin_map_from_words(words: list[Word]) -> dict[str, list[s
 
     Words are processed in ``(updated_at, word)`` order. Within each word,
     characters are scanned left to right; the first occurrence of each Han
-    character picks the syllable at the same index in the word's pinyin field
-    (one space-separated token per character, matching the frontend
-    ``isWordPinyinValid`` rules).
+    character picks its syllable. A word made entirely of Han characters
+    uses the syllable at the same index in the space-separated pinyin field
+    (matching the frontend ``isWordPinyinValid`` rules); a word mixed with
+    non-Han characters instead resolves each Han character's syllable via
+    ``extract_tone_syllables_in_order``, since the field's spacing and
+    non-Han content aren't required to line up positionally there.
     """
     char_readings: dict[str, list[str]] = {}
     ordered_words = sorted(words, key=lambda row: (row.updated_at, row.word))
 
     for word in ordered_words:
-        tokens = (word.pinyin or "").split()
-        seen_in_word: set[str] = set()
+        pinyin_field = word.pinyin or ""
+        han_chars = [char for char in word.word if is_han_character(char)]
+        has_non_han = len(han_chars) < len(word.word)
 
-        for index, char in enumerate(word.word):
+        if has_non_han:
+            han_readings = extract_tone_syllables_in_order(
+                pinyin_field, len(han_chars)
+            )
+        else:
+            tokens = pinyin_field.split()
+            han_readings = [
+                _valid_reading_at(tokens, index) for index in range(len(han_chars))
+            ]
+
+        seen_in_word: set[str] = set()
+        han_index = 0
+
+        for char in word.word:
             if not is_han_character(char):
                 continue
+            reading = han_readings[han_index] if han_readings is not None else None
+            han_index += 1
             if char in seen_in_word:
                 continue
             seen_in_word.add(char)
             char_readings.setdefault(char, [])
 
-            reading = _valid_reading_at(tokens, index)
             if reading is not None and reading not in char_readings[char]:
                 char_readings[char].append(reading)
 

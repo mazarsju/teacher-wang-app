@@ -203,7 +203,7 @@ describe("AddWordModal", () => {
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
   });
 
-  it("matches non-Chinese characters in the word literally against the pinyin", async () => {
+  it("doesn't require non-Chinese characters to match the pinyin literally", async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
 
