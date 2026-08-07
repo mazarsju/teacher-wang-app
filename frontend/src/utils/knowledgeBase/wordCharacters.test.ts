@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPinyinFromCharacterMap,
-  getMissingCharacters,
+  extractMissingCharacterEntries,
   isWordPinyinValid,
   splitWordCharacters,
 } from "./wordCharacters";
@@ -12,15 +12,29 @@ describe("splitWordCharacters", () => {
   });
 });
 
-describe("getMissingCharacters", () => {
-  it("returns characters not in the known set", () => {
-    expect(getMissingCharacters("你好", new Set(["你"]))).toEqual(["好"]);
-    expect(getMissingCharacters("你好", new Set(["你", "好"]))).toEqual([]);
+describe("extractMissingCharacterEntries", () => {
+  it("pairs each missing Chinese character with its pinyin syllable", () => {
+    expect(
+      extractMissingCharacterEntries("你好", "ni3 hao3", new Set(["你"])),
+    ).toEqual([{ char: "好", pinyin: "hao3", writting_known: false }]);
+  });
+
+  it("returns nothing when every character is already known", () => {
+    expect(
+      extractMissingCharacterEntries("你好", "ni3 hao3", new Set(["你", "好"])),
+    ).toEqual([]);
   });
 
   it("ignores non-Chinese characters", () => {
-    expect(getMissingCharacters("A想B", new Set([]))).toEqual(["想"]);
-    expect(getMissingCharacters("A想B", new Set(["想"]))).toEqual([]);
+    expect(
+      extractMissingCharacterEntries("A想B", "A xiang3 B", new Set([])),
+    ).toEqual([{ char: "想", pinyin: "xiang3", writting_known: false }]);
+  });
+
+  it("dedupes repeated characters within the word", () => {
+    expect(
+      extractMissingCharacterEntries("谢谢", "xie4 xie4", new Set([])),
+    ).toEqual([{ char: "谢", pinyin: "xie4", writting_known: false }]);
   });
 });
 

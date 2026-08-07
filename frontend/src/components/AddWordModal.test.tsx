@@ -3,53 +3,6 @@ import userEvent from "@testing-library/user-event";
 import AddWordModal from "./AddWordModal";
 
 describe("AddWordModal", () => {
-  it("shows a warning and disables confirm when a character is missing", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <AddWordModal
-        mode="add"
-        isOpen
-        knownCharacters={["爱"]}
-        hskCharacterPinyin={{}}
-        onConfirm={() => {}}
-        onCancel={() => {}}
-        onAddCharacter={() => {}}
-      />,
-    );
-
-    await user.type(screen.getByLabelText("words"), "爱好");
-
-    expect(
-      screen.getByText(
-        '"好" does not exist yet in the database and needs to be added priorly.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
-  });
-
-  it("calls onAddCharacter from the warning action", async () => {
-    const user = userEvent.setup();
-    const onAddCharacter = vi.fn();
-
-    render(
-      <AddWordModal
-        mode="add"
-        isOpen
-        knownCharacters={["爱"]}
-        hskCharacterPinyin={{}}
-        onConfirm={() => {}}
-        onCancel={() => {}}
-        onAddCharacter={onAddCharacter}
-      />,
-    );
-
-    await user.type(screen.getByLabelText("words"), "爱好");
-    await user.click(screen.getByRole("button", { name: "Add character 好" }));
-
-    expect(onAddCharacter).toHaveBeenCalledWith("好");
-  });
-
   it("shows a warning and disables confirm when the word already exists", async () => {
     const user = userEvent.setup();
 
@@ -57,12 +10,10 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         existingWords={["爱好"]}
         hskCharacterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -74,7 +25,7 @@ describe("AddWordModal", () => {
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
   });
 
-  it("allows non-Chinese characters in the word without a missing-character warning", async () => {
+  it("allows non-Chinese characters in the word", async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
 
@@ -82,20 +33,13 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["想"]}
         hskCharacterPinyin={{ 想: "xiang3" }}
         onConfirm={onConfirm}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
     await user.type(screen.getByLabelText("words"), "A想B");
-
-    expect(
-      screen.queryByText(/does not exist yet in the database/),
-    ).not.toBeInTheDocument();
-
     await user.type(screen.getByLabelText("definition"), "to think");
     await user.click(screen.getByRole("button", { name: "Confirm" }));
 
@@ -113,11 +57,9 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={() => {}}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -133,11 +75,9 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{ 爱: "ai4" }}
         onConfirm={() => {}}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -154,11 +94,9 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={onConfirm}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -180,11 +118,9 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={() => {}}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -202,11 +138,9 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={() => {}}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -222,11 +156,9 @@ describe("AddWordModal", () => {
       <AddWordModal
         mode="add"
         isOpen
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -257,11 +189,9 @@ describe("AddWordModal", () => {
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["A", "想", "B"],
         }}
-        knownCharacters={["想"]}
         hskCharacterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 
@@ -297,11 +227,9 @@ describe("AddWordModal", () => {
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["爱", "好"],
         }}
-        knownCharacters={["爱", "好"]}
         hskCharacterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
-        onAddCharacter={() => {}}
       />,
     );
 

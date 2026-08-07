@@ -47,19 +47,49 @@ export function buildPinyinFromCharacterMap(
     .join(" ");
 }
 
-/** Only Chinese characters need to exist in the database; anything else in
- * the word (e.g. "A" in "A想B") is never a candidate to add there. */
-export function getMissingCharacters(
+export type MissingCharacterEntry = {
+  char: string;
+  pinyin: string;
+  writting_known: boolean;
+};
+
+/**
+ * Chinese characters in `word` that aren't in `knownCharacters` yet, each
+ * paired with the pinyin syllable at the same position — word and pinyin are
+ * already one token per character by the time a word form can be submitted
+ * (see `isWordPinyinValid`). Deduplicated; non-Han characters (e.g. "A" in
+ * "A想B") are never candidates since the character table only holds Han
+ * characters.
+ */
+export function extractMissingCharacterEntries(
   word: string,
+  pinyin: string,
   knownCharacters: Set<string>,
-): string[] {
-  const missing = new Set<string>();
+): MissingCharacterEntry[] {
+  const characters = splitWordCharacters(word);
+  const tokens = pinyin
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token !== "");
 
-  for (const character of splitWordCharacters(word)) {
-    if (isHanCharacter(character) && !knownCharacters.has(character)) {
-      missing.add(character);
+  const seen = new Set<string>();
+  const entries: MissingCharacterEntry[] = [];
+
+  characters.forEach((character, index) => {
+    if (
+      !isHanCharacter(character) ||
+      knownCharacters.has(character) ||
+      seen.has(character)
+    ) {
+      return;
     }
-  }
+    seen.add(character);
+    entries.push({
+      char: character,
+      pinyin: tokens[index] ?? "",
+      writting_known: false,
+    });
+  });
 
-  return [...missing];
+  return entries;
 }

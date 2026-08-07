@@ -25,12 +25,14 @@ import { removeWord, upsertWord } from "../store/slices/wordsSlice";
 import { syncAppData } from "../store/thunks/syncAppData";
 import { runAnkiQuickSync } from "../utils/anki/ankiApi";
 import {
+  bulkCreateCharacters,
   createCharacter,
   deleteCharacter,
   updateCharacter,
 } from "../utils/knowledgeBase/charactersApi";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import { extractMissingCharacterEntries } from "../utils/knowledgeBase/wordCharacters";
 import {
   createWord,
   deleteWord,
@@ -331,6 +333,24 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     }
   }
 
+  // Auto-creates any Chinese character from `word` that isn't in the
+  // database yet, using the pinyin syllable at the same position (word and
+  // pinyin are already one token per character by the time a word form can
+  // be submitted — see AddWordModal's isWordPinyinValid check).
+  async function ensureCharactersExist(word: string, pinyin: string) {
+    const missingEntries = extractMissingCharacterEntries(
+      word,
+      pinyin,
+      new Set(knownCharacters),
+    );
+    if (missingEntries.length === 0) {
+      return;
+    }
+
+    const createdCharacters = await bulkCreateCharacters(missingEntries);
+    createdCharacters.forEach((character) => dispatch(upsertCharacter(character)));
+  }
+
   async function confirmEditWord(values: WordFormValues) {
     if (wordToEdit === null) {
       return;
@@ -340,6 +360,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     setWordToEdit(null);
 
     try {
+      await ensureCharactersExist(values.word, values.pinyin);
       const updatedWord = await updateWord(word.word, {
         definition: values.definition,
         pinyin: values.pinyin || null,
@@ -371,6 +392,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     setIsAddWordModalOpen(false);
 
     try {
+      await ensureCharactersExist(values.word, values.pinyin);
       const createdWord = await createWord({
         word: values.word,
         definition: values.definition || null,
@@ -580,22 +602,18 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       <AddWordModal
         mode="add"
         isOpen={isAddWordModalOpen}
-        knownCharacters={knownCharacters}
         existingWords={existingWords}
         hskCharacterPinyin={hskCharacterPinyin}
         onCancel={() => setIsAddWordModalOpen(false)}
         onConfirm={(values) => void confirmAddWord(values)}
-        onAddCharacter={openAddCharacterModal}
       />
       <AddWordModal
         mode="edit"
         isOpen={wordToEdit !== null}
         initialWord={wordToEdit}
-        knownCharacters={knownCharacters}
         hskCharacterPinyin={hskCharacterPinyin}
         onCancel={() => setWordToEdit(null)}
         onConfirm={(values) => void confirmEditWord(values)}
-        onAddCharacter={openAddCharacterModal}
       />
       <CharacterFormModal
         mode="add"

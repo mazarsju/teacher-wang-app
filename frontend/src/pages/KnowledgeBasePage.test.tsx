@@ -226,6 +226,79 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByRole("cell", { name: "ai4 hao3" })).toBeInTheDocument();
   });
 
+  it("auto-creates only the missing characters when adding a word", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+    await screen.findByRole("button", { name: "Add word" });
+
+    let bulkCreateCharactersBody: unknown = null;
+
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+
+        if (url.endsWith("/characters/bulk-create") && init?.method === "POST") {
+          bulkCreateCharactersBody = JSON.parse(String(init.body));
+          const body = bulkCreateCharactersBody as {
+            characters: { char: string; pinyin: string; writting_known: boolean }[];
+          };
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              characters: body.characters.map((entry) => ({
+                ...entry,
+                updated_at: "2026-08-08T00:00:00+00:00",
+              })),
+            }),
+          });
+        }
+
+        if (url.endsWith("/words") && init?.method === "POST") {
+          const body = JSON.parse(String(init.body)) as {
+            word: string;
+            definition: string | null;
+            pinyin: string | null;
+          };
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              ...body,
+              updated_at: "2026-08-08T00:00:00+00:00",
+              characters: [...body.word],
+            }),
+          });
+        }
+
+        if (matchesApiPath(url, "/characters")) {
+          return Promise.resolve({ ok: true, json: async () => characters });
+        }
+        if (matchesApiPath(url, "/words")) {
+          return Promise.resolve({ ok: true, json: async () => words });
+        }
+
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      },
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add word" }));
+    // "好" already exists in `characters`; only "你" should be auto-created.
+    await user.type(screen.getByLabelText("words"), "你好");
+    await user.clear(screen.getByLabelText("pinyin"));
+    await user.type(screen.getByLabelText("pinyin"), "ni3 hao3");
+    await user.type(screen.getByLabelText("definition"), "hello");
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("cell", { name: "你好" })).toBeInTheDocument();
+    });
+
+    expect(bulkCreateCharactersBody).toEqual({
+      characters: [{ char: "你", pinyin: "ni3", writting_known: false }],
+    });
+  });
+
   it("filters characters by search query", async () => {
     const user = userEvent.setup();
 

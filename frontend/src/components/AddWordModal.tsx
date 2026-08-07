@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { Word } from "../types/word";
 import {
   buildPinyinFromCharacterMap,
-  getMissingCharacters,
   isWordPinyinValid,
 } from "../utils/knowledgeBase/wordCharacters";
 
@@ -16,42 +15,28 @@ type AddWordModalProps = {
   mode: "add" | "edit";
   isOpen: boolean;
   initialWord?: Word | null;
-  knownCharacters: string[];
   existingWords?: string[];
   hskCharacterPinyin: Record<string, string>;
   onConfirm: (values: WordFormValues) => void;
   onCancel: () => void;
-  onAddCharacter: (character: string) => void;
 };
 
 export default function AddWordModal({
   mode,
   isOpen,
   initialWord = null,
-  knownCharacters,
   existingWords = [],
   hskCharacterPinyin,
   onConfirm,
   onCancel,
-  onAddCharacter,
 }: AddWordModalProps) {
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [pinyin, setPinyin] = useState("");
 
-  const knownCharacterSet = useMemo(
-    () => new Set(knownCharacters),
-    [knownCharacters],
-  );
-
   const existingWordSet = useMemo(
     () => new Set(existingWords),
     [existingWords],
-  );
-
-  const missingCharacters = useMemo(
-    () => (mode === "add" ? getMissingCharacters(word, knownCharacterSet) : []),
-    [mode, word, knownCharacterSet],
   );
 
   useEffect(() => {
@@ -87,8 +72,7 @@ export default function AddWordModal({
     trimmedWord === "" ||
     trimmedDefinition === "" ||
     !isPinyinValid ||
-    (mode === "add" &&
-      (missingCharacters.length > 0 || isDuplicateWord));
+    (mode === "add" && isDuplicateWord);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,21 +115,6 @@ export default function AddWordModal({
               }}
             />
           </label>
-          {missingCharacters.map((character) => (
-            <div key={character} className="form-warning-row">
-              <p className="form-warning">
-                &quot;{character}&quot; does not exist yet in the database and
-                needs to be added priorly.
-              </p>
-              <button
-                type="button"
-                className="form-warning-action"
-                onClick={() => onAddCharacter(character)}
-              >
-                Add character {character}
-              </button>
-            </div>
-          ))}
           {isDuplicateWord && (
             <p className="form-warning">
               This word already exists in the database.
