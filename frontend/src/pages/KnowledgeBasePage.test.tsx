@@ -58,6 +58,7 @@ const words = [
   {
     word: "爱好",
     definition: "hobby",
+    pinyin: "ai4 hao3",
     updated_at: "2026-07-12T12:00:00+00:00",
     characters: ["爱", "好"],
   },
@@ -171,6 +172,7 @@ describe("KnowledgeBasePage", () => {
     const manyWords = Array.from({ length: 10 }, (_, index) => ({
       word: `word-${index}`,
       definition: null,
+      pinyin: null,
       updated_at: "2026-07-12T12:00:00+00:00",
       characters: [] as string[],
     }));
@@ -221,6 +223,7 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getAllByRole("cell", { name: "ai4" })).toHaveLength(2);
     expect(screen.getByRole("cell", { name: "爱好" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "hobby" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "ai4 hao3" })).toBeInTheDocument();
   });
 
   it("filters characters by search query", async () => {

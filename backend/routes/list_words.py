@@ -34,6 +34,7 @@ def list_words():
         {
             "word": word.word,
             "definition": word.definition,
+            "pinyin": word.pinyin,
             "updated_at": word.updated_at.isoformat(),
             "characters": list(word.word),
         }

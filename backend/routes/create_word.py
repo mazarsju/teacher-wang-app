@@ -9,14 +9,15 @@ bp = Blueprint("create_word", __name__)
 
 WORD_MAX_LENGTH = 10
 DEFINITION_MAX_LENGTH = 100
+PINYIN_MAX_LENGTH = 64
 
 
 class WordValidationError(ValueError):
     pass
 
 
-def validate_word_payload(data: dict) -> tuple[str, str]:
-    """Validate a single word payload, returning (word, definition).
+def validate_word_payload(data: dict) -> tuple[str, str, str]:
+    """Validate a single word payload, returning (word, definition, pinyin).
 
     Shared by the single and bulk create-word routes so both enforce
     identical rules.
@@ -26,6 +27,7 @@ def validate_word_payload(data: dict) -> tuple[str, str]:
 
     word_value = data["word"]
     definition = data.get("definition", "")
+    pinyin = data.get("pinyin", "")
 
     if not isinstance(word_value, str) or not word_value.strip():
         raise WordValidationError("word must be a non-empty string")
@@ -43,13 +45,22 @@ def validate_word_payload(data: dict) -> tuple[str, str]:
             f"definition must be at most {DEFINITION_MAX_LENGTH} characters"
         )
 
+    if pinyin is not None and not isinstance(pinyin, str):
+        raise WordValidationError("pinyin must be a string")
+
+    if pinyin and len(pinyin.strip()) > PINYIN_MAX_LENGTH:
+        raise WordValidationError(
+            f"pinyin must be at most {PINYIN_MAX_LENGTH} characters"
+        )
+
     word_text = word_value.strip()
     definition_text = definition.strip() if isinstance(definition, str) else ""
+    pinyin_text = pinyin.strip() if isinstance(pinyin, str) else ""
 
     if not is_han_text(word_text):
         raise WordValidationError("word must contain only Chinese characters")
 
-    return word_text, definition_text
+    return word_text, definition_text, pinyin_text
 
 
 @bp.post("/words")
@@ -59,7 +70,7 @@ def create_word():
         return {"error": "Invalid JSON body"}, 400
 
     try:
-        word_text, definition_text = validate_word_payload(data)
+        word_text, definition_text, pinyin_text = validate_word_payload(data)
     except WordValidationError as exc:
         return {"error": str(exc)}, 400
 
@@ -84,6 +95,7 @@ def create_word():
         user_id=user_id,
         word=word_text,
         definition=definition_text or None,
+        pinyin=pinyin_text or None,
         updated_at=now,
     )
     db.session.add(word_record)
@@ -92,6 +104,7 @@ def create_word():
     return {
         "word": word_record.word,
         "definition": word_record.definition,
+        "pinyin": word_record.pinyin,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_text),
     }, 201

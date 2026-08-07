@@ -18,6 +18,7 @@ export async function fetchWords(limit?: number): Promise<Word[]> {
 export async function createWord(values: {
   word: string;
   definition: string | null;
+  pinyin?: string | null;
 }): Promise<Word> {
   const response = await apiFetch(`${API_BASE}/words`, {
     method: "POST",
@@ -33,7 +34,7 @@ export async function createWord(values: {
 }
 
 export async function bulkCreateWords(
-  values: { word: string; definition: string | null }[],
+  values: { word: string; definition: string | null; pinyin?: string | null }[],
 ): Promise<Word[]> {
   const response = await apiFetch(`${API_BASE}/words/bulk-create`, {
     method: "POST",

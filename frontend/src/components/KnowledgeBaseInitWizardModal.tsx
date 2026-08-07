@@ -287,6 +287,7 @@ export default function KnowledgeBaseInitWizardModal({
       smartWords.map((row) => ({
         word: row.word,
         definition: row.definition.trim().slice(0, 100) || null,
+        pinyin: row.pinyin.trim() || null,
       })),
       BULK_BATCH_SIZE,
     );

@@ -72,6 +72,7 @@ class Word(db.Model):
     user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     word = db.Column(String(10), primary_key=True)
     definition = db.Column(String(100), nullable=True)
+    pinyin = db.Column(String(64), nullable=True)
     synchronized = db.Column(db.Boolean, nullable=False, default=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),

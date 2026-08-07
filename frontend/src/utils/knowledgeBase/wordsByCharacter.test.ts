@@ -11,12 +11,14 @@ describe("buildWordsByCharacter", () => {
       {
         word: "爱好",
         definition: "hobby",
+        pinyin: "ai4 hao3",
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱", "好"],
       },
       {
         word: "爱",
         definition: null,
+        pinyin: null,
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱"],
       },
@@ -28,12 +30,14 @@ describe("buildWordsByCharacter", () => {
       {
         word: "爱",
         definition: null,
+        pinyin: null,
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱"],
       },
       {
         word: "爱好",
         definition: "hobby",
+        pinyin: "ai4 hao3",
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱", "好"],
       },
@@ -42,6 +46,7 @@ describe("buildWordsByCharacter", () => {
       {
         word: "爱好",
         definition: "hobby",
+        pinyin: "ai4 hao3",
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱", "好"],
       },
@@ -55,6 +60,7 @@ describe("formatAssociatedWord", () => {
       formatAssociatedWord({
         word: "爱好",
         definition: "hobby",
+        pinyin: "ai4 hao3",
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱", "好"],
       }),
@@ -66,6 +72,7 @@ describe("formatAssociatedWord", () => {
       formatAssociatedWord({
         word: "爱",
         definition: null,
+        pinyin: null,
         updated_at: "2026-07-12T12:00:00+00:00",
         characters: ["爱"],
       }),

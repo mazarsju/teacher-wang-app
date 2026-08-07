@@ -22,14 +22,14 @@ def bulk_create_words():
     if len(items) > MAX_BULK_SIZE:
         return {"error": f"Cannot create more than {MAX_BULK_SIZE} words at once"}, 400
 
-    parsed: list[tuple[str, str]] = []
+    parsed: list[tuple[str, str, str]] = []
     seen_words: set[str] = set()
     for index, item in enumerate(items):
         if not isinstance(item, dict):
             return {"error": f"Item {index} must be an object"}, 400
 
         try:
-            word_text, definition_text = validate_word_payload(item)
+            word_text, definition_text, pinyin_text = validate_word_payload(item)
         except WordValidationError as exc:
             return {"error": f"Item {index}: {exc}"}, 400
 
@@ -38,11 +38,13 @@ def bulk_create_words():
                 "error": f"Item {index}: word '{word_text}' is duplicated in the request"
             }, 400
         seen_words.add(word_text)
-        parsed.append((word_text, definition_text))
+        parsed.append((word_text, definition_text, pinyin_text))
 
     user_id = current_user_id()
 
-    needed_characters = {character for word_text, _ in parsed for character in word_text}
+    needed_characters = {
+        character for word_text, _, _ in parsed for character in word_text
+    }
     existing_characters = {
         row.char
         for row in Character.query.filter_by(user_id=user_id)
@@ -69,11 +71,12 @@ def bulk_create_words():
 
     now = utcnow()
     created_records = []
-    for word_text, definition_text in parsed:
+    for word_text, definition_text, pinyin_text in parsed:
         word_record = Word(
             user_id=user_id,
             word=word_text,
             definition=definition_text or None,
+            pinyin=pinyin_text or None,
             updated_at=now,
         )
         db.session.add(word_record)
@@ -85,6 +88,7 @@ def bulk_create_words():
             {
                 "word": record.word,
                 "definition": record.definition,
+                "pinyin": record.pinyin,
                 "updated_at": record.updated_at.isoformat(),
                 "characters": list(record.word),
             }

@@ -424,7 +424,7 @@ describe("KnowledgeBaseInitWizardModal", () => {
     );
     expect(bulkWordCall).toBeDefined();
     expect(jsonBody(bulkWordCall?.[1])).toEqual({
-      words: [{ word: "爱", definition: "to love" }],
+      words: [{ word: "爱", definition: "to love", pinyin: "ai4" }],
     });
   });
 

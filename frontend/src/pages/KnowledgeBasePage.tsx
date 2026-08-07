@@ -61,6 +61,11 @@ const WORD_COLUMNS: TableColumn<Word>[] = [
     render: (row) => row.definition ?? "",
   },
   {
+    key: "pinyin",
+    header: "pinyin",
+    render: (row) => row.pinyin ?? "",
+  },
+  {
     key: "updated_at",
     header: "updated_at",
     render: (row) => formatDateTime(row.updated_at),

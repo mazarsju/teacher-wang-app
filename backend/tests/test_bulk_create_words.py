@@ -72,7 +72,7 @@ class TestBulkCreateWordsEndpoint(unittest.TestCase):
             "/words/bulk-create",
             json={
                 "words": [
-                    {"word": "爱好", "definition": "hobby"},
+                    {"word": "爱好", "definition": "hobby", "pinyin": "ai4 hao3"},
                     {"word": "爱", "definition": None},
                 ]
             },

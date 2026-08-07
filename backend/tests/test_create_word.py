@@ -66,7 +66,7 @@ class TestCreateWordEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/words",
-            json={"word": "爱好", "definition": "hobby"},
+            json={"word": "爱好", "definition": "hobby", "pinyin": "ai4 hao3"},
         )
 
         self.assertEqual(response.status_code, 201)
@@ -74,6 +74,7 @@ class TestCreateWordEndpoint(unittest.TestCase):
             user_id=TEST_USER_ID,
             word="爱好",
             definition="hobby",
+            pinyin="ai4 hao3",
             updated_at=updated_at,
         )
         self.mock_session.add.assert_called_once()
