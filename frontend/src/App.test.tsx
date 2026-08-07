@@ -81,6 +81,13 @@ function stubAuthenticatedApis(options: { isAdmin?: boolean } = {}) {
         });
       }
 
+      if (url.includes("/hsk-characters")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        });
+      }
+
       if (url.includes("/anki/status")) {
         return Promise.resolve({
           ok: true,

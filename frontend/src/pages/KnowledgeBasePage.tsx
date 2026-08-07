@@ -118,6 +118,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const dispatch = useAppDispatch();
   const characters = useAppSelector((state) => state.characters.items);
   const words = useAppSelector((state) => state.words.items);
+  const hskCharacterPinyin = useAppSelector(
+    (state) => state.hskCharacters.pinyinByCharacter,
+  );
   const ankiStatus = useAppSelector((state) => state.anki.status);
   const syncStatus = useAppSelector((state) => state.sync.status);
   const syncError = useAppSelector((state) => state.sync.error);
@@ -579,6 +582,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         isOpen={isAddWordModalOpen}
         knownCharacters={knownCharacters}
         existingWords={existingWords}
+        hskCharacterPinyin={hskCharacterPinyin}
         onCancel={() => setIsAddWordModalOpen(false)}
         onConfirm={(values) => void confirmAddWord(values)}
         onAddCharacter={openAddCharacterModal}
@@ -588,6 +592,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         isOpen={wordToEdit !== null}
         initialWord={wordToEdit}
         knownCharacters={knownCharacters}
+        hskCharacterPinyin={hskCharacterPinyin}
         onCancel={() => setWordToEdit(null)}
         onConfirm={(values) => void confirmEditWord(values)}
         onAddCharacter={openAddCharacterModal}

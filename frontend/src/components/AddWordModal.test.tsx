@@ -11,6 +11,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["爱"]}
+        hskCharacterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -36,6 +37,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["爱"]}
+        hskCharacterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
         onAddCharacter={onAddCharacter}
@@ -57,6 +59,7 @@ describe("AddWordModal", () => {
         isOpen
         knownCharacters={["爱", "好"]}
         existingWords={["爱好"]}
+        hskCharacterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -80,6 +83,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["想"]}
+        hskCharacterPinyin={{ 想: "xiang3" }}
         onConfirm={onConfirm}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -92,7 +96,6 @@ describe("AddWordModal", () => {
       screen.queryByText(/does not exist yet in the database/),
     ).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText("pinyin"), "A xiang3 B");
     await user.type(screen.getByLabelText("definition"), "to think");
     await user.click(screen.getByRole("button", { name: "Confirm" }));
 
@@ -101,6 +104,46 @@ describe("AddWordModal", () => {
       definition: "to think",
       pinyin: "A xiang3 B",
     });
+  });
+
+  it("auto-fills the pinyin from known HSK character readings while typing the word", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        onAddCharacter={() => {}}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("words"), "爱好");
+
+    expect(screen.getByLabelText("pinyin")).toHaveValue("ai4 hao3");
+  });
+
+  it("auto-fills '??' for Chinese characters missing from the HSK pinyin map", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{ 爱: "ai4" }}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        onAddCharacter={() => {}}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("words"), "爱好");
+
+    expect(screen.getByLabelText("pinyin")).toHaveValue("ai4 ??");
   });
 
   it("submits the word when all characters exist", async () => {
@@ -112,6 +155,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={onConfirm}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -120,7 +164,6 @@ describe("AddWordModal", () => {
 
     await user.type(screen.getByLabelText("words"), "爱好");
     await user.type(screen.getByLabelText("definition"), "to like");
-    await user.type(screen.getByLabelText("pinyin"), "ai4 hao3");
     await user.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(onConfirm).toHaveBeenCalledWith({
@@ -138,6 +181,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={() => {}}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -146,6 +190,7 @@ describe("AddWordModal", () => {
 
     await user.type(screen.getByLabelText("words"), "爱好");
     await user.type(screen.getByLabelText("definition"), "to like");
+    await user.clear(screen.getByLabelText("pinyin"));
 
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
   });
@@ -158,6 +203,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
         onConfirm={() => {}}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -165,7 +211,6 @@ describe("AddWordModal", () => {
     );
 
     await user.type(screen.getByLabelText("words"), "爱好");
-    await user.type(screen.getByLabelText("pinyin"), "ai4 hao3");
 
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
   });
@@ -178,6 +223,7 @@ describe("AddWordModal", () => {
         mode="add"
         isOpen
         knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{}}
         onConfirm={() => {}}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -185,6 +231,7 @@ describe("AddWordModal", () => {
     );
 
     await user.type(screen.getByLabelText("words"), "爱好");
+    await user.clear(screen.getByLabelText("pinyin"));
     await user.type(screen.getByLabelText("pinyin"), "aihao");
 
     expect(
@@ -211,6 +258,7 @@ describe("AddWordModal", () => {
           characters: ["A", "想", "B"],
         }}
         knownCharacters={["想"]}
+        hskCharacterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
         onAddCharacter={() => {}}
@@ -250,6 +298,7 @@ describe("AddWordModal", () => {
           characters: ["爱", "好"],
         }}
         knownCharacters={["爱", "好"]}
+        hskCharacterPinyin={{}}
         onConfirm={onConfirm}
         onCancel={() => {}}
         onAddCharacter={() => {}}

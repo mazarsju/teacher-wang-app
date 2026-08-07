@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
 import * as ankiApi from "../utils/anki/ankiApi";
 import * as charactersApi from "../utils/knowledgeBase/charactersApi";
+import * as hskCharactersApi from "../utils/knowledgeBase/hskCharactersApi";
 import * as hskLevelApi from "../utils/knowledgeBase/hskLevelApi";
 import * as wordsApi from "../utils/knowledgeBase/wordsApi";
 import type { AnkiStatus } from "../types/anki";
@@ -32,6 +33,10 @@ vi.mock("../utils/knowledgeBase/hskLevelApi", () => ({
   fetchHskLevelStatus: vi.fn(),
 }));
 
+vi.mock("../utils/knowledgeBase/hskCharactersApi", () => ({
+  fetchHskCharacters: vi.fn(),
+}));
+
 const fetchAnkiStatus = vi.mocked(ankiApi.fetchAnkiStatus);
 const fetchAnkiDecks = vi.mocked(ankiApi.fetchAnkiDecks);
 const fetchAnkiModels = vi.mocked(ankiApi.fetchAnkiModels);
@@ -42,6 +47,7 @@ const runAnkiSync = vi.mocked(ankiApi.runAnkiSync);
 const fetchCharacters = vi.mocked(charactersApi.fetchCharacters);
 const fetchWords = vi.mocked(wordsApi.fetchWords);
 const fetchHskLevelStatus = vi.mocked(hskLevelApi.fetchHskLevelStatus);
+const fetchHskCharacters = vi.mocked(hskCharactersApi.fetchHskCharacters);
 
 const disconnectedStatus: AnkiStatus = {
   connected: false,
@@ -83,6 +89,7 @@ describe("PreferencesPage", () => {
       total_characters: 300,
       remaining_characters: 300,
     });
+    fetchHskCharacters.mockResolvedValue([]);
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo) => {

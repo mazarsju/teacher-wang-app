@@ -4,6 +4,7 @@ import type { Character } from "../../types/character";
 import type { Word } from "../../types/word";
 import { fetchAnkiStatus } from "../../utils/anki/ankiApi";
 import { fetchCharacters } from "../../utils/knowledgeBase/charactersApi";
+import { fetchHskCharacters } from "../../utils/knowledgeBase/hskCharactersApi";
 import {
   fetchHskLevelStatus,
   type HskLevelStatus,
@@ -14,6 +15,7 @@ export type SyncedAppData = {
   characters: Character[];
   words: Word[];
   hskLevel: HskLevelStatus;
+  hskCharacterPinyin: Record<string, string>;
   ankiStatus: AnkiStatus;
 };
 
@@ -24,11 +26,16 @@ export const resetKnowledgeBaseData = createAction("knowledgeBaseData/reset");
 export const syncAppData = createAsyncThunk(
   "appData/sync",
   async (): Promise<SyncedAppData> => {
-    const [characters, words, hskLevel] = await Promise.all([
+    const [characters, words, hskLevel, hskCharacters] = await Promise.all([
       fetchCharacters(),
       fetchWords(),
       fetchHskLevelStatus(),
+      fetchHskCharacters(),
     ]);
+
+    const hskCharacterPinyin = Object.fromEntries(
+      hskCharacters.map((entry) => [entry.character, entry.most_used_pinyin]),
+    );
 
     let ankiStatus = emptyAnkiStatus;
     try {
@@ -37,6 +44,6 @@ export const syncAppData = createAsyncThunk(
       // AnkiConnect may be offline during login/sync.
     }
 
-    return { characters, words, hskLevel, ankiStatus };
+    return { characters, words, hskLevel, hskCharacterPinyin, ankiStatus };
   },
 );

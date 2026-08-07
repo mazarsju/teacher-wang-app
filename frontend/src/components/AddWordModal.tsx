@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { Word } from "../types/word";
 import {
+  buildPinyinFromCharacterMap,
   getMissingCharacters,
   isWordPinyinValid,
 } from "../utils/knowledgeBase/wordCharacters";
@@ -17,6 +18,7 @@ type AddWordModalProps = {
   initialWord?: Word | null;
   knownCharacters: string[];
   existingWords?: string[];
+  hskCharacterPinyin: Record<string, string>;
   onConfirm: (values: WordFormValues) => void;
   onCancel: () => void;
   onAddCharacter: (character: string) => void;
@@ -28,6 +30,7 @@ export default function AddWordModal({
   initialWord = null,
   knownCharacters,
   existingWords = [],
+  hskCharacterPinyin,
   onConfirm,
   onCancel,
   onAddCharacter,
@@ -121,7 +124,11 @@ export default function AddWordModal({
               value={word}
               readOnly={mode === "edit"}
               maxLength={10}
-              onChange={(event) => setWord(event.target.value)}
+              onChange={(event) => {
+                const newWord = event.target.value;
+                setWord(newWord);
+                setPinyin(buildPinyinFromCharacterMap(newWord, hskCharacterPinyin));
+              }}
             />
           </label>
           {missingCharacters.map((character) => (

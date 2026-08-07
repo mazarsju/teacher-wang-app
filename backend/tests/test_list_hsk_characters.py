@@ -21,8 +21,8 @@ class TestListHskCharactersEndpoint(unittest.TestCase):
         self.mock_hsk_cls.reset_mock()
 
     def test_list_hsk_characters_returns_all_records(self):
-        first = MagicMock(character="爱", level=1, frequency=10)
-        second = MagicMock(character="学", level=2, frequency=50)
+        first = MagicMock(character="爱", level=1, frequency=10, most_used_pinyin="ai4")
+        second = MagicMock(character="学", level=2, frequency=50, most_used_pinyin="xue2")
         self.mock_hsk_cls.query.order_by.return_value.all.return_value = [
             first,
             second,
@@ -34,8 +34,18 @@ class TestListHskCharactersEndpoint(unittest.TestCase):
         self.assertEqual(
             response.get_json(),
             [
-                {"character": "爱", "level": 1, "frequency": 10},
-                {"character": "学", "level": 2, "frequency": 50},
+                {
+                    "character": "爱",
+                    "level": 1,
+                    "frequency": 10,
+                    "most_used_pinyin": "ai4",
+                },
+                {
+                    "character": "学",
+                    "level": 2,
+                    "frequency": 50,
+                    "most_used_pinyin": "xue2",
+                },
             ],
         )
         self.mock_hsk_cls.query.order_by.assert_called_once()

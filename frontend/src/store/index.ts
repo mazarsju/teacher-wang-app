@@ -3,6 +3,7 @@ import ankiReducer from "./slices/ankiSlice";
 import challengeProgressReducer from "./slices/challengeProgressSlice";
 import charactersReducer from "./slices/charactersSlice";
 import hskReducer from "./slices/hskSlice";
+import hskCharactersReducer from "./slices/hskCharactersSlice";
 import syncReducer from "./slices/syncSlice";
 import wordsReducer from "./slices/wordsSlice";
 
@@ -10,6 +11,7 @@ const rootReducer = combineReducers({
   characters: charactersReducer,
   words: wordsReducer,
   hsk: hskReducer,
+  hskCharacters: hskCharactersReducer,
   anki: ankiReducer,
   sync: syncReducer,
   challengeProgress: challengeProgressReducer,

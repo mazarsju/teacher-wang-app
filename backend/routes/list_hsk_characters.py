@@ -15,6 +15,7 @@ def list_hsk_characters():
             "character": entry.character,
             "level": entry.level,
             "frequency": entry.frequency,
+            "most_used_pinyin": entry.most_used_pinyin,
         }
         for entry in entries
     ], 200

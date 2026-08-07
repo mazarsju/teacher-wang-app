@@ -82,6 +82,9 @@ function setupFetch(overrides: Record<string, () => Promise<unknown>> = {}) {
           }),
         });
       }
+      if (matchesApiPath(url.pathname, "/hsk-characters")) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
       if (matchesApiPath(url.pathname, "/anki/status")) {
         return Promise.resolve({ ok: false, json: async () => ({}) });
       }

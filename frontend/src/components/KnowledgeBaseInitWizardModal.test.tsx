@@ -101,6 +101,9 @@ function defaultFetchResponse(url: URL, init?: RequestInit) {
       }),
     });
   }
+  if (matchesApiPath(url.pathname, "/hsk-characters")) {
+    return Promise.resolve({ ok: true, json: async () => [] });
+  }
 
   return Promise.resolve({ ok: false, json: async () => ({}) });
 }
@@ -131,6 +134,9 @@ describe("KnowledgeBaseInitWizardModal", () => {
               completion_ratio: 0,
             }),
           });
+        }
+        if (matchesApiPath(url, "/hsk-characters")) {
+          return Promise.resolve({ ok: true, json: async () => [] });
         }
         if (matchesApiPath(url, "/anki/status")) {
           return Promise.resolve({ ok: false, json: async () => ({}) });
@@ -314,6 +320,9 @@ describe("KnowledgeBaseInitWizardModal", () => {
             completion_ratio: 0,
           }),
         });
+      }
+      if (matchesApiPath(url, "/hsk-characters")) {
+        return Promise.resolve({ ok: true, json: async () => [] });
       }
 
       return Promise.resolve({ ok: false, json: async () => ({}) });
