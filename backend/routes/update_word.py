@@ -57,4 +57,6 @@ def update_word(word: str):
         "pinyin": word_record.pinyin,
         "writting_known": word_record.writting_known,
         "updated_at": word_record.updated_at.isoformat(),
+        "characters": list(word_record.word),
     }, 200
+

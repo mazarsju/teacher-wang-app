@@ -73,6 +73,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
                 "pinyin": "ai4 hao3",
                 "writting_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
+                "characters": ["爱", "好"],
             },
         )
         self.assertEqual(word_record.definition, "hobby")
