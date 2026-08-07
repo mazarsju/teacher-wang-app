@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 from typing import Any, Literal
 
+from backend.character_sync import (
+    build_word_pinyin_for_storage,
+    rebuild_characters_from_words,
+)
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.models import Character, IgnoreVocabCard, IgnoreWrittingCard, Word, utcnow
-from backend.pinyin import normalize_anki_pinyin_token
 from backend.settings import (
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
@@ -343,112 +346,36 @@ def _add_writting_pull_ignored(user_id: str, rectos: list[str]) -> int:
     return added
 
 
-def _pair_writting_with_pinyin_tokens(
-    word_text: str,
-    pinyin_field: str,
-) -> list[tuple[str, str | None]]:
-    tokens = [token for token in pinyin_field.split() if token]
-    pairs: list[tuple[str, str | None]] = []
-    token_idx = 0
-    for char in word_text:
-        if not is_han_character(char):
-            continue
-        raw = tokens[token_idx] if token_idx < len(tokens) else ""
-        token_idx += 1
-        normalized = normalize_anki_pinyin_token(raw) if raw else None
-        pairs.append((char, normalized))
-    return pairs
-
-
-def _resolved_char_pinyin(
-    card_pinyin: str | None,
-    char: str,
-    guesses: dict[str, str],
-) -> str | None:
-    if card_pinyin is not None and len(card_pinyin) <= 8:
-        return card_pinyin
-    guessed = guesses.get(char)
-    if guessed is not None and len(guessed) <= 8:
-        return guessed
-    return None
-
-
-def _ensure_characters_from_pinyin(
-    user_id: str,
-    word_text: str,
-    pinyin_field: str,
-    guesses: dict[str, str] | None = None,
-) -> list[str]:
-    guess_map = guesses or {}
-    created: list[str] = []
-    now = utcnow()
-    for char, card_pinyin in _pair_writting_with_pinyin_tokens(word_text, pinyin_field):
-        if _find_character(user_id, char) is not None:
-            continue
-        pinyin = _resolved_char_pinyin(card_pinyin, char, guess_map)
-        if pinyin is None:
-            continue
-        db.session.add(
-            Character(
-                user_id=user_id,
-                char=char,
-                pinyin=pinyin,
-                writting_known=False,
-                synchronized=True,
-                updated_at=now,
-            )
-        )
-        created.append(char)
-    db.session.flush()
-    return created
-
-
 def _import_vocabulary_card(
     user_id: str,
     card: dict[str, Any],
     guesses: dict[str, str] | None = None,
-) -> tuple[bool, int]:
+) -> bool:
     word_text = str(card.get("writting") or "").strip()
     han_chars = [char for char in word_text if is_han_character(char)]
     if word_text == "" or not han_chars or len(word_text) > 10:
-        return False, 0
+        return False
     if _find_word(user_id, word_text) is not None:
-        return False, 0
+        return False
 
     definition = str(card.get("definition") or "").strip()[:100]
     pinyin_field = str(card.get("pinyin") or "")
-    pinyin_blank = pinyin_field.strip() == ""
-    created_chars = _ensure_characters_from_pinyin(
-        user_id,
-        word_text,
-        pinyin_field,
-        guesses,
-    )
-
-    missing = [
-        char
-        for char in word_text
-        if is_han_character(char) and _find_character(user_id, char) is None
-    ]
-    if missing and not pinyin_blank:
-        for char in created_chars:
-            record = _find_character(user_id, char)
-            if record is not None:
-                db.session.delete(record)
-        db.session.commit()
-        return False, 0
+    stored_pinyin = build_word_pinyin_for_storage(word_text, pinyin_field, guesses)
+    if pinyin_field.strip() and stored_pinyin is None:
+        return False
 
     now = utcnow()
     word_record = Word(
         user_id=user_id,
         word=word_text,
         definition=definition or None,
+        pinyin=stored_pinyin or None,
         synchronized=True,
         updated_at=now,
     )
     db.session.add(word_record)
-    db.session.commit()
-    return True, len(created_chars)
+    db.session.flush()
+    return True
 
 
 def _import_writting_pull_card(user_id: str, card: dict[str, Any]) -> bool:
@@ -784,17 +711,29 @@ def apply_pull(
     guesses = pinyin_guesses or {}
 
     if kind == "mandarin_vocabulary":
+        chars_before = {
+            row.char for row in Character.query.filter_by(user_id=user_id).all()
+        }
         for card in cards:
-            word_created, chars_created = _import_vocabulary_card(
+            if _import_vocabulary_card(
                 user_id,
                 card,
                 guesses,
-            )
-            if word_created:
+            ):
                 imported += 1
-                characters_added += chars_created
             else:
                 failed += 1
+        if imported:
+            rebuild_characters_from_words(user_id)
+            chars_after = {
+                row.char for row in Character.query.filter_by(user_id=user_id).all()
+            }
+            characters_added = len(chars_after - chars_before)
+            for char in chars_after - chars_before:
+                record = _find_character(user_id, char)
+                if record is not None:
+                    record.synchronized = True
+        db.session.commit()
         ignored = _add_vocabulary_pull_ignored(user_id, ignore_keys)
     elif kind == "mandarin_writting":
         for card in cards:

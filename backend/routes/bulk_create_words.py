@@ -1,8 +1,9 @@
 from flask import Blueprint, request
 
-from backend.chinese_validation import is_han_character
+from backend.character_sync import rebuild_characters_from_words
 from backend.extensions import db
-from backend.models import Character, Word, utcnow
+from backend.hsk_level import refresh_current_hsk_level
+from backend.models import Word, utcnow
 from backend.routes.create_word import WordValidationError, validate_word_payload
 from backend.user_context import current_user_id
 
@@ -43,27 +44,6 @@ def bulk_create_words():
 
     user_id = current_user_id()
 
-    needed_characters = {
-        character
-        for word_text, _, _ in parsed
-        for character in word_text
-        if is_han_character(character)
-    }
-    existing_characters = {
-        row.char
-        for row in Character.query.filter_by(user_id=user_id)
-        .filter(Character.char.in_(needed_characters))
-        .all()
-    }
-    missing_characters = needed_characters - existing_characters
-    if missing_characters:
-        return {
-            "error": (
-                f"Character '{sorted(missing_characters)[0]}' does not exist "
-                "in the database"
-            )
-        }, 400
-
     existing_words = {
         row.word
         for row in Word.query.filter_by(user_id=user_id)
@@ -85,7 +65,10 @@ def bulk_create_words():
         )
         db.session.add(word_record)
         created_records.append(word_record)
+
+    rebuild_characters_from_words(user_id)
     db.session.commit()
+    refresh_current_hsk_level(user_id)
 
     return {
         "words": [

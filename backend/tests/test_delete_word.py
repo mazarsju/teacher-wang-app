@@ -27,8 +27,22 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_word_cls = self.word_patcher.start()
         self.addCleanup(self.word_patcher.stop)
 
+        self.rebuild_patcher = patch(
+            "backend.routes.delete_word.rebuild_characters_from_words"
+        )
+        self.mock_rebuild = self.rebuild_patcher.start()
+        self.addCleanup(self.rebuild_patcher.stop)
+
+        self.refresh_patcher = patch(
+            "backend.routes.delete_word.refresh_current_hsk_level"
+        )
+        self.mock_refresh = self.refresh_patcher.start()
+        self.addCleanup(self.refresh_patcher.stop)
+
         self.mock_word_cls.reset_mock()
         self.mock_session.reset_mock()
+        self.mock_rebuild.reset_mock()
+        self.mock_refresh.reset_mock()
 
     def test_delete_word_removes_record_and_links(self):
         word_record = MagicMock()
@@ -45,7 +59,9 @@ class TestDeleteWordEndpoint(unittest.TestCase):
             word="爱好",
         )
         self.mock_session.delete.assert_called_once_with(word_record)
+        self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_delete_missing_word_returns_not_found(self):
         self.mock_word_cls.query.filter_by.return_value.first.return_value = None

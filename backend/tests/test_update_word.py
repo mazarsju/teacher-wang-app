@@ -8,7 +8,7 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
-from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
+from auth_stub import TEST_USER_ID, authenticated_client, patch_request_auth  # noqa: E402
 
 
 class TestUpdateWordEndpoint(unittest.TestCase):
@@ -27,9 +27,23 @@ class TestUpdateWordEndpoint(unittest.TestCase):
         self.mock_utcnow = self.utcnow_patcher.start()
         self.addCleanup(self.utcnow_patcher.stop)
 
+        self.rebuild_patcher = patch(
+            "backend.routes.update_word.rebuild_characters_from_words"
+        )
+        self.mock_rebuild = self.rebuild_patcher.start()
+        self.addCleanup(self.rebuild_patcher.stop)
+
+        self.refresh_patcher = patch(
+            "backend.routes.update_word.refresh_current_hsk_level"
+        )
+        self.mock_refresh = self.refresh_patcher.start()
+        self.addCleanup(self.refresh_patcher.stop)
+
         self.mock_word_cls.reset_mock()
         self.mock_session.reset_mock()
         self.mock_utcnow.reset_mock()
+        self.mock_rebuild.reset_mock()
+        self.mock_refresh.reset_mock()
 
     def test_update_word_updates_record(self):
         updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
@@ -61,7 +75,9 @@ class TestUpdateWordEndpoint(unittest.TestCase):
         )
         self.assertEqual(word_record.definition, "hobby")
         self.assertEqual(word_record.pinyin, "ai4 hao3")
+        self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_update_word_leaves_pinyin_unchanged_when_omitted(self):
         updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))

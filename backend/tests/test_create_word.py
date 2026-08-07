@@ -23,9 +23,17 @@ class TestCreateWordEndpoint(unittest.TestCase):
         self.mock_session = self.session_patcher.start()
         self.addCleanup(self.session_patcher.stop)
 
-        self.character_patcher = patch("backend.routes.create_word.Character")
-        self.mock_character_cls = self.character_patcher.start()
-        self.addCleanup(self.character_patcher.stop)
+        self.rebuild_patcher = patch(
+            "backend.routes.create_word.rebuild_characters_from_words"
+        )
+        self.mock_rebuild = self.rebuild_patcher.start()
+        self.addCleanup(self.rebuild_patcher.stop)
+
+        self.refresh_patcher = patch(
+            "backend.routes.create_word.refresh_current_hsk_level"
+        )
+        self.mock_refresh = self.refresh_patcher.start()
+        self.addCleanup(self.refresh_patcher.stop)
 
         self.word_patcher = patch("backend.routes.create_word.Word")
         self.mock_word_cls = self.word_patcher.start()
@@ -35,26 +43,16 @@ class TestCreateWordEndpoint(unittest.TestCase):
         self.mock_utcnow = self.utcnow_patcher.start()
         self.addCleanup(self.utcnow_patcher.stop)
 
-        self.mock_character_cls.reset_mock()
         self.mock_word_cls.reset_mock()
         self.mock_session.reset_mock()
         self.mock_utcnow.reset_mock()
+        self.mock_rebuild.reset_mock()
+        self.mock_refresh.reset_mock()
 
         self.mock_word_cls.query.filter_by.return_value.first.return_value = None
 
-    def test_create_word_adds_record_and_links(self):
+    def test_create_word_adds_record_and_rebuilds_characters(self):
         updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
-        char_records = {
-            "爱": MagicMock(),
-            "好": MagicMock(),
-        }
-
-        def mock_filter_by(**kwargs):
-            query = MagicMock()
-            query.first.return_value = char_records[kwargs["char"]]
-            return query
-
-        self.mock_character_cls.query.filter_by.side_effect = mock_filter_by
 
         def make_word(**kwargs):
             record = MagicMock(**kwargs)
@@ -78,19 +76,9 @@ class TestCreateWordEndpoint(unittest.TestCase):
             updated_at=updated_at,
         )
         self.mock_session.add.assert_called_once()
+        self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
-
-    def test_create_word_with_missing_character_returns_error(self):
-        self.mock_character_cls.query.filter_by.return_value.first.return_value = None
-
-        response = self.client.post(
-            "/words",
-            json={"word": "爱好", "definition": "hobby"},
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.mock_session.add.assert_not_called()
-        self.mock_session.commit.assert_not_called()
+        self.mock_refresh.assert_called_once_with(TEST_USER_ID)
 
     def test_create_word_without_any_chinese_character_returns_error(self):
         response = self.client.post(
@@ -104,17 +92,11 @@ class TestCreateWordEndpoint(unittest.TestCase):
             {"error": "word must contain at least one Chinese character"},
         )
         self.mock_session.add.assert_not_called()
+        self.mock_rebuild.assert_not_called()
         self.mock_session.commit.assert_not_called()
 
     def test_create_word_allows_non_chinese_characters_mixed_with_chinese(self):
         updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
-
-        def mock_filter_by(**kwargs):
-            query = MagicMock()
-            query.first.return_value = MagicMock() if kwargs["char"] == "想" else None
-            return query
-
-        self.mock_character_cls.query.filter_by.side_effect = mock_filter_by
 
         def make_word(**kwargs):
             record = MagicMock(**kwargs)
@@ -130,9 +112,7 @@ class TestCreateWordEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        self.mock_character_cls.query.filter_by.assert_called_once_with(
-            user_id=TEST_USER_ID, char="想"
-        )
+        self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
 from flask import Blueprint, request
 
+from backend.character_sync import rebuild_characters_from_words
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
-from backend.models import Character, Word, utcnow
+from backend.hsk_level import refresh_current_hsk_level
+from backend.models import Word, utcnow
 from backend.user_context import current_user_id
 
 bp = Blueprint("create_word", __name__)
@@ -75,19 +77,6 @@ def create_word():
         return {"error": str(exc)}, 400
 
     user_id = current_user_id()
-    missing_characters = [
-        character
-        for character in word_text
-        if is_han_character(character)
-        and Character.query.filter_by(user_id=user_id, char=character).first() is None
-    ]
-    if missing_characters:
-        return {
-            "error": (
-                f"Character '{missing_characters[0]}' does not exist in the database"
-            )
-        }, 400
-
     if Word.query.filter_by(user_id=user_id, word=word_text).first() is not None:
         return {"error": "Word already exists"}, 409
 
@@ -100,7 +89,9 @@ def create_word():
         updated_at=now,
     )
     db.session.add(word_record)
+    rebuild_characters_from_words(user_id)
     db.session.commit()
+    refresh_current_hsk_level(user_id)
 
     return {
         "word": word_record.word,

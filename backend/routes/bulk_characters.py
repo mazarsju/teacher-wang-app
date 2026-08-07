@@ -2,6 +2,10 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
+from backend.character_sync import (
+    fill_missing_word_pinyin_from_characters,
+    rebuild_characters_from_words,
+)
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
 from backend.models import Character, Word, utcnow
@@ -80,6 +84,8 @@ def bulk_characters():
             char_record.updated_at = now
             word_record.updated_at = now
 
+    fill_missing_word_pinyin_from_characters(user_id)
+    rebuild_characters_from_words(user_id)
     db.session.commit()
     refresh_current_hsk_level(user_id)
 
