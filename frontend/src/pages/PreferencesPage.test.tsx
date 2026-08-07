@@ -665,10 +665,15 @@ describe("PreferencesPage", () => {
     await user.click(screen.getByRole("button", { name: "Pull all from Anki" }));
     await user.click(screen.getByRole("button", { name: "Confirm" }));
 
+    const warningDialog = await screen.findByRole("dialog");
     expect(
-      await screen.findByText(/wasn't pulled: 风、水/),
+      within(warningDialog).getByRole("heading", { name: "Warning" }),
+    ).toBeInTheDocument();
+    expect(
+      within(warningDialog).getByText(/wasn't pulled: 风、水/),
     ).toBeInTheDocument();
   });
+
 
   it("deletes the knowledge base from dangerous actions", async () => {
     const user = userEvent.setup();

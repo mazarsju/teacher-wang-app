@@ -9,6 +9,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
 import Page from "../components/Page";
 import UpdatePlanModal from "../components/UpdatePlanModal";
+import WarningModal from "../components/WarningModal";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
 import { resetKnowledgeBaseData, syncAppData } from "../store/thunks/syncAppData";
@@ -77,6 +78,9 @@ export default function PreferencesPage() {
     useState(false);
   const [isUpdatePlanModalOpen, setIsUpdatePlanModalOpen] = useState(false);
   const [isChangePlanModalOpen, setIsChangePlanModalOpen] = useState(false);
+  const [pinyinWarningMessage, setPinyinWarningMessage] = useState<string | null>(
+    null,
+  );
 
   const loadTokenUsage = useCallback(async () => {
     setExtrasError(null);
@@ -130,12 +134,12 @@ export default function PreferencesPage() {
   ) {
     setSyncKind(null);
     const failedCharacters = result.failed_characters ?? [];
-    setExtrasError(
-      failedCharacters.length > 0
-        ? "Couldn't determine the pinyin for these characters, so their " +
-            `card wasn't pulled: ${failedCharacters.join("、")}.`
-        : null,
-    );
+    if (failedCharacters.length > 0) {
+      setPinyinWarningMessage(
+        "Couldn't determine the pinyin for these characters, so their " +
+          `card wasn't pulled: ${failedCharacters.join("、")}.`,
+      );
+    }
     if (direction === "pull") {
       // Pull mutates characters/words in Postgres — refresh Redux cache.
       await dispatch(syncAppData()).unwrap();
@@ -439,6 +443,11 @@ export default function PreferencesPage() {
         </section>
       )}
 
+      <WarningModal
+        isOpen={pinyinWarningMessage !== null}
+        message={pinyinWarningMessage ?? ""}
+        onClose={() => setPinyinWarningMessage(null)}
+      />
       <ConfirmModal
         isOpen={isDeleteKnowledgeBaseConfirmOpen}
         message="Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it. (note: this won't delete your Anki decks)"
