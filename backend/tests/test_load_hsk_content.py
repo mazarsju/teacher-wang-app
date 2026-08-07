@@ -43,6 +43,13 @@ class TestHskSource(unittest.TestCase):
         self.assertEqual(normalize_hsk_numeric_pinyin("a5"), "a")
         self.assertEqual(normalize_hsk_numeric_pinyin("ai4 ren5"), "ai4 ren")
 
+    def test_normalize_hsk_numeric_pinyin_corrects_syntax(self) -> None:
+        # "xue3" isn't valid pinyin; "xüe3" is (u→ü retry).
+        self.assertEqual(normalize_hsk_numeric_pinyin("xue3"), "xüe3")
+        # Erhua suffix split into its own syllable is spelled "er", not "r".
+        self.assertEqual(normalize_hsk_numeric_pinyin("wan2 r"), "wan2 er")
+        self.assertEqual(normalize_hsk_numeric_pinyin("hua1 r5"), "hua1 er")
+
     def test_words_by_new_level_expands_forms_and_sorts(self) -> None:
         lists = words_by_new_level(self.entries)
 
