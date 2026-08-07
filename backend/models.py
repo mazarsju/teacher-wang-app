@@ -106,6 +106,7 @@ class HskCharacter(db.Model):
     character = db.Column(String(1), primary_key=True)
     level = db.Column(Integer, nullable=False)
     frequency = db.Column(Integer, nullable=False)
+    most_used_pinyin = db.Column(String(8), nullable=False, default="")
 
     words = db.relationship(
         "HskWord",

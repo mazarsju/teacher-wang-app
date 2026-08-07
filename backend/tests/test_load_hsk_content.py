@@ -7,7 +7,11 @@ from unittest.mock import MagicMock, patch
 
 from backend.extensions import db
 from backend.models import HskCharacter, HskWord, hsk_word_character  # noqa: F401
-from backend.routes.hsk_content_loader import load_hsk_content, reload_hsk_content
+from backend.routes.hsk_content_loader import (
+    _syllable_for_character,
+    load_hsk_content,
+    reload_hsk_content,
+)
 from backend.routes.hsk_source import (
     COMPLETE_HSK_JSON_URL,
     HSK_FALLBACK_PATH,
@@ -163,6 +167,17 @@ class TestHskSource(unittest.TestCase):
         self.assertEqual(entries, load_fallback_hsk_entries(HSK_FALLBACK_PATH))
 
 
+class TestSyllableForCharacter(unittest.TestCase):
+    def test_returns_the_syllable_at_index(self) -> None:
+        self.assertEqual(_syllable_for_character(["ai4", "hao4"], 1), "hao4")
+
+    def test_returns_empty_string_when_index_out_of_range(self) -> None:
+        self.assertEqual(_syllable_for_character(["ai4"], 1), "")
+
+    def test_returns_empty_string_for_oversized_syllable(self) -> None:
+        self.assertEqual(_syllable_for_character(["diàndòngchē"], 0), "")
+
+
 class TestLoadHskContent(PostgresTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -196,11 +211,20 @@ class TestLoadHskContent(PostgresTestCase):
             HskWord.query.filter_by(word="上", pinyin="shang3").one().level, 6
         )
         # Character level follows the lowest effective word reading.
-        self.assertEqual(HskCharacter.query.filter_by(character="上").one().level, 1)
+        above = HskCharacter.query.filter_by(character="上").one()
+        self.assertEqual(above.level, 1)
+        # most_used_pinyin follows the same winning (lowest level, then
+        # frequency) reading: 上/shang4 (level 1) beats 上/shang3 (level 6).
+        self.assertEqual(above.most_used_pinyin, "shang4")
 
         good = HskCharacter.query.filter_by(character="好").one()
         self.assertEqual(good.level, 1)
         self.assertEqual(good.frequency, 100)
+        self.assertEqual(good.most_used_pinyin, "hao4")
+
+        love = HskCharacter.query.filter_by(character="爱").one()
+        # 爱 (frequency 50) wins over 爱好 (frequency 100) at the same level.
+        self.assertEqual(love.most_used_pinyin, "ai4")
 
         hobby = HskWord.query.filter_by(word="爱好").one()
         self.assertEqual(hobby.id, make_hsk_word_id("爱好", "ai4 hao4"))
@@ -217,6 +241,33 @@ class TestLoadHskContent(PostgresTestCase):
         with self.assertRaises(ValueError):
             load_hsk_content(
                 [{"simplified": "A", "level": ["new-1"], "frequency": 1}]
+            )
+
+    def test_load_tolerates_unsplit_transcription(self) -> None:
+        # Real upstream bug: 电动车's "numeric" transcription is the accented
+        # "diàndòngchē" instead of "dian4 dong4 che1" — one token spanning all
+        # three characters. Loading it must not crash the whole reload, and
+        # the malformed reading must not overflow most_used_pinyin's column.
+        load_hsk_content(
+            [
+                {
+                    "simplified": "电动车",
+                    "level": ["new-4"],
+                    "frequency": 26291,
+                    "forms": [
+                        {
+                            "transcriptions": {"numeric": "diàndòngchē"},
+                            "meanings": ["Electric vehicle"],
+                        }
+                    ],
+                }
+            ]
+        )
+
+        for char in "电动车":
+            self.assertEqual(
+                HskCharacter.query.filter_by(character=char).one().most_used_pinyin,
+                "",
             )
 
     def test_reload_clears_existing_rows(self) -> None:

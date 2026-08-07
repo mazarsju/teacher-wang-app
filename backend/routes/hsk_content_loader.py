@@ -6,6 +6,9 @@ from backend.hsk_level_corrections import corrected_hsk_level
 from backend.models import HskCharacter, HskWord, hsk_word_character
 from backend.routes.hsk_source import HskWordForm, load_complete_hsk_entries, words_by_new_level
 
+# Matches HskCharacter.most_used_pinyin's column width.
+MOST_USED_PINYIN_MAX_LENGTH = 8
+
 
 def _forms_with_effective_levels(
     entries: list[dict],
@@ -22,6 +25,20 @@ def _forms_with_effective_levels(
             rows.append((effective, form))
     rows.sort(key=lambda item: (item[0], item[1].frequency, item[1].word, item[1].pinyin))
     return rows
+
+
+def _syllable_for_character(syllables: list[str], index: int) -> str:
+    """The pinyin syllable at ``index``, or "" when missing or malformed.
+
+    A handful of upstream complete-hsk entries ship an un-split transcription
+    (e.g. "diàndòngchē" for 电动车 instead of "dian4 dong4 che1"); treating an
+    oversized token as unknown keeps those rows from breaking the load
+    instead of trying to parse them.
+    """
+    if index >= len(syllables):
+        return ""
+    syllable = syllables[index]
+    return syllable if len(syllable) <= MOST_USED_PINYIN_MAX_LENGTH else ""
 
 
 def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
@@ -63,8 +80,9 @@ def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
             .on_conflict_do_nothing(index_elements=["id"])
         )
 
+        syllables = form.pinyin.split(" ") if form.pinyin else []
         seen_in_word: set[str] = set()
-        for char in form.word:
+        for index, char in enumerate(form.word):
             if char in seen_in_word:
                 continue
             seen_in_word.add(char)
@@ -75,6 +93,7 @@ def load_hsk_content(entries: list[dict] | None = None) -> dict[str, int]:
                     character=char,
                     level=level,
                     frequency=form.frequency,
+                    most_used_pinyin=_syllable_for_character(syllables, index),
                 )
                 .on_conflict_do_nothing(index_elements=["character"])
             )
