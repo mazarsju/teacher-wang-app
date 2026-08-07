@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from backend.character_sync import rebuild_characters_from_words
+from backend.character_sync import rebuild_characters_from_words, serialize_character
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
@@ -96,7 +96,7 @@ def create_word():
         updated_at=now,
     )
     db.session.add(word_record)
-    rebuild_characters_from_words(user_id)
+    sync_result = rebuild_characters_from_words(user_id)
     db.session.commit()
     refresh_current_hsk_level(user_id)
 
@@ -107,4 +107,9 @@ def create_word():
         "writting_known": word_record.writting_known,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_text),
+        "updated_characters": [
+            serialize_character(character)
+            for character in sync_result.updated_characters
+        ],
+        "deleted_char_ids": sync_result.deleted_char_ids,
     }, 201

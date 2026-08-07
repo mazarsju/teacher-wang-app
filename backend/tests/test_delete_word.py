@@ -8,6 +8,7 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from backend.character_sync import CharacterSyncResult  # noqa: E402
 from auth_stub import (  # noqa: E402
     TEST_USER_ID,
     authenticated_client,
@@ -42,6 +43,7 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_word_cls.reset_mock()
         self.mock_session.reset_mock()
         self.mock_rebuild.reset_mock()
+        self.mock_rebuild.return_value = CharacterSyncResult()
         self.mock_refresh.reset_mock()
 
     def test_delete_word_removes_record_and_links(self):
@@ -53,7 +55,10 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         response = self.client.delete("/words/爱好")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"message": "Word deleted"})
+        self.assertEqual(
+            response.get_json(),
+            {"message": "Word deleted", "updated_characters": [], "deleted_char_ids": []},
+        )
         self.mock_word_cls.query.filter_by.assert_called_once_with(
             user_id=TEST_USER_ID,
             word="爱好",

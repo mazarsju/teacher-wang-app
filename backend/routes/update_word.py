@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from backend.character_sync import rebuild_characters_from_words
+from backend.character_sync import rebuild_characters_from_words, serialize_character
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
 from backend.models import Word, utcnow
@@ -47,7 +47,7 @@ def update_word(word: str):
 
     word_record.definition = definition.strip() or None
     word_record.updated_at = utcnow()
-    rebuild_characters_from_words(user_id)
+    sync_result = rebuild_characters_from_words(user_id)
     db.session.commit()
     refresh_current_hsk_level(user_id)
 
@@ -58,5 +58,10 @@ def update_word(word: str):
         "writting_known": word_record.writting_known,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_record.word),
+        "updated_characters": [
+            serialize_character(character)
+            for character in sync_result.updated_characters
+        ],
+        "deleted_char_ids": sync_result.deleted_char_ids,
     }, 200
 

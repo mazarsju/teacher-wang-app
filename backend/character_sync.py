@@ -2,12 +2,35 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
 from backend.pinyin import is_valid_pinyin, normalize_anki_pinyin_token
 
 PINYIN_MAX_LENGTH = 8
+
+
+@dataclass
+class CharacterSyncResult:
+    """Character rows touched by a ``rebuild_characters_from_words`` call.
+
+    Lets callers push incremental updates to the frontend store instead of
+    forcing a full character list refetch after every word change.
+    """
+
+    updated_characters: list[Character] = field(default_factory=list)
+    deleted_char_ids: list[str] = field(default_factory=list)
+
+
+def serialize_character(character: Character) -> dict:
+    return {
+        "char": character.char,
+        "pinyin": character.pinyin,
+        "writting_known": character.writting_known,
+        "updated_at": character.updated_at.isoformat(),
+    }
 
 
 def _valid_reading_at(tokens: list[str], index: int) -> str | None:
@@ -135,10 +158,11 @@ def build_character_writting_known_map_from_words(words: list[Word]) -> dict[str
     return known
 
 
-def rebuild_characters_from_words(user_id) -> int:
+def rebuild_characters_from_words(user_id) -> CharacterSyncResult:
     """Synchronize ``character`` rows with all ``words`` for ``user_id``.
 
-    Returns the number of character rows created.
+    Returns the characters that were created or modified (i.e. whose
+    ``updated_at`` changed) and the ids of any characters deleted.
     """
     words = Word.query.filter_by(user_id=user_id).all()
     target = build_character_pinyin_map_from_words(words)
@@ -147,37 +171,45 @@ def rebuild_characters_from_words(user_id) -> int:
     existing = {
         row.char: row for row in Character.query.filter_by(user_id=user_id).all()
     }
-    created = 0
+    updated_characters: list[Character] = []
     now = utcnow()
 
     for char, readings in target.items():
         record = existing.get(char)
         if record is None:
-            db.session.add(
-                Character(
-                    user_id=user_id,
-                    char=char,
-                    pinyin_readings=readings,
-                    writting_known=writting_known_map.get(char, False),
-                    synchronized=False,
-                    updated_at=now,
-                )
+            record = Character(
+                user_id=user_id,
+                char=char,
+                pinyin_readings=readings,
+                writting_known=writting_known_map.get(char, False),
+                synchronized=False,
+                updated_at=now,
             )
-            created += 1
+            db.session.add(record)
+            updated_characters.append(record)
             continue
 
+        changed = False
         if record.pinyin_readings != readings:
             record.pinyin_readings = readings
+            changed = True
 
         if writting_known_map.get(char, False) and not record.writting_known:
             record.writting_known = True
+            changed = True
 
-    for char, record in existing.items():
-        if char not in target:
-            db.session.delete(record)
+        if changed:
+            updated_characters.append(record)
+
+    deleted_char_ids = [char for char in existing if char not in target]
+    for char in deleted_char_ids:
+        db.session.delete(existing[char])
 
     db.session.flush()
-    return created
+    return CharacterSyncResult(
+        updated_characters=updated_characters,
+        deleted_char_ids=deleted_char_ids,
+    )
 
 
 def fill_missing_word_pinyin_from_characters(user_id) -> None:

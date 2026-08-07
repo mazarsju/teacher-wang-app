@@ -12,6 +12,7 @@ database_module.configure_database = MagicMock()
 sys.modules.pop("backend.app", None)
 
 from backend.app import app  # noqa: E402
+from backend.character_sync import CharacterSyncResult  # noqa: E402
 from auth_stub import (  # noqa: E402
     TEST_USER_ID,
     authenticated_client,
@@ -46,6 +47,7 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         self.mock_word_cls.reset_mock()
         self.mock_session.reset_mock()
         self.mock_rebuild.reset_mock()
+        self.mock_rebuild.return_value = CharacterSyncResult()
         self.mock_refresh.reset_mock()
 
         self.mock_word_cls.query.filter_by.return_value.first.return_value = None
@@ -137,7 +139,10 @@ class TestBulkCharactersEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"message": "File received"})
+        self.assertEqual(
+            response.get_json(),
+            {"message": "File received", "updated_characters": [], "deleted_char_ids": []},
+        )
 
         self.mock_word_cls.query.filter_by.assert_called_once_with(
             user_id=TEST_USER_ID,

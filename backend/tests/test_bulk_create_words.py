@@ -8,6 +8,7 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from backend.character_sync import CharacterSyncResult  # noqa: E402
 from auth_stub import (  # noqa: E402
     TEST_USER_ID,
     authenticated_client,
@@ -47,6 +48,7 @@ class TestBulkCreateWordsEndpoint(unittest.TestCase):
         self.mock_session.reset_mock()
         self.mock_utcnow.reset_mock()
         self.mock_rebuild.reset_mock()
+        self.mock_rebuild.return_value = CharacterSyncResult()
         self.mock_refresh.reset_mock()
 
         self.mock_word_cls.query.filter_by.return_value.filter.return_value.all.return_value = []

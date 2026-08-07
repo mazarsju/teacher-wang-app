@@ -14,7 +14,7 @@ import type { Character } from "../types/character";
 import type { Word } from "../types/word";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
-import { upsertCharacter } from "../store/slices/charactersSlice";
+import { removeCharacter, upsertCharacter } from "../store/slices/charactersSlice";
 import { removeWord, upsertWord } from "../store/slices/wordsSlice";
 import { syncAppData } from "../store/thunks/syncAppData";
 import { runAnkiQuickSync } from "../utils/anki/ankiApi";
@@ -26,6 +26,7 @@ import {
   createWord,
   deleteWord,
   updateWord,
+  type CharacterSyncResult,
 } from "../utils/knowledgeBase/wordsApi";
 import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
 
@@ -252,6 +253,13 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     }
   }
 
+  function applyCharacterSyncResult(result: CharacterSyncResult) {
+    result.updated_characters.forEach((character) =>
+      dispatch(upsertCharacter(character)),
+    );
+    result.deleted_char_ids.forEach((char) => dispatch(removeCharacter(char)));
+  }
+
   async function confirmDeleteWord() {
     if (wordToDelete === null) {
       return;
@@ -261,8 +269,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     setWordToDelete(null);
 
     try {
-      await deleteWord(word.word);
+      const syncResult = await deleteWord(word.word);
       dispatch(removeWord(word.word));
+      applyCharacterSyncResult(syncResult);
     } catch (deleteError) {
       setMutationError(
         deleteError instanceof Error
@@ -306,6 +315,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         writting_known: values.writting_known,
       });
       dispatch(upsertWord(updatedWord));
+      applyCharacterSyncResult(updatedWord);
     } catch (updateError) {
       setMutationError(
         updateError instanceof Error
@@ -327,6 +337,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         writting_known: values.writting_known,
       });
       dispatch(upsertWord(createdWord));
+      applyCharacterSyncResult(createdWord);
     } catch (addWordError) {
       setMutationError(
         addWordError instanceof Error

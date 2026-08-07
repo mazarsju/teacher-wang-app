@@ -8,6 +8,7 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
+from backend.character_sync import CharacterSyncResult  # noqa: E402
 from auth_stub import TEST_USER_ID, authenticated_client, patch_request_auth  # noqa: E402
 
 
@@ -43,6 +44,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
         self.mock_session.reset_mock()
         self.mock_utcnow.reset_mock()
         self.mock_rebuild.reset_mock()
+        self.mock_rebuild.return_value = CharacterSyncResult()
         self.mock_refresh.reset_mock()
 
     def test_update_word_updates_record(self):
@@ -74,6 +76,8 @@ class TestUpdateWordEndpoint(unittest.TestCase):
                 "writting_known": True,
                 "updated_at": "2026-07-12T12:00:00+00:00",
                 "characters": ["爱", "好"],
+                "updated_characters": [],
+                "deleted_char_ids": [],
             },
         )
         self.assertEqual(word_record.definition, "hobby")

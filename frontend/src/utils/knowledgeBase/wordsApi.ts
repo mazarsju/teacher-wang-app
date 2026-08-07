@@ -1,6 +1,12 @@
+import type { Character } from "../../types/character";
 import type { Word } from "../../types/word";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
+
+export type CharacterSyncResult = {
+  updated_characters: Character[];
+  deleted_char_ids: string[];
+};
 
 export async function fetchWords(limit?: number): Promise<Word[]> {
   const query = limit == null ? "" : `?limit=${limit}`;
@@ -20,7 +26,7 @@ export async function createWord(values: {
   definition: string | null;
   pinyin?: string | null;
   writting_known?: boolean;
-}): Promise<Word> {
+}): Promise<Word & CharacterSyncResult> {
   const response = await apiFetch(`${API_BASE}/words`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,7 +37,7 @@ export async function createWord(values: {
     throw new Error("Failed to add word.");
   }
 
-  return (await response.json()) as Word;
+  return (await response.json()) as Word & CharacterSyncResult;
 }
 
 export async function bulkCreateWords(
@@ -58,7 +64,7 @@ export async function updateWord(
     pinyin?: string | null;
     writting_known?: boolean;
   },
-): Promise<Word> {
+): Promise<Word & CharacterSyncResult> {
   const response = await apiFetch(
     `${API_BASE}/words/${encodeURIComponent(word)}`,
     {
@@ -72,10 +78,10 @@ export async function updateWord(
     throw new Error("Failed to update word.");
   }
 
-  return (await response.json()) as Word;
+  return (await response.json()) as Word & CharacterSyncResult;
 }
 
-export async function deleteWord(word: string): Promise<void> {
+export async function deleteWord(word: string): Promise<CharacterSyncResult> {
   const response = await apiFetch(
     `${API_BASE}/words/${encodeURIComponent(word)}`,
     { method: "DELETE" },
@@ -84,4 +90,6 @@ export async function deleteWord(word: string): Promise<void> {
   if (!response.ok) {
     throw new Error("Failed to delete word.");
   }
+
+  return (await response.json()) as CharacterSyncResult;
 }

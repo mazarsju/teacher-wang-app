@@ -4,7 +4,7 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
-from backend.character_sync import rebuild_characters_from_words
+from backend.character_sync import rebuild_characters_from_words, serialize_character
 from backend.extensions import db
 from backend.hsk_level import refresh_current_hsk_level
 from backend.models import Word, utcnow
@@ -64,8 +64,15 @@ def bulk_characters():
         word_record.synchronized = synchronized_raw == "true"
         word_record.updated_at = updated_at if updated_at is not None else utcnow()
 
-    rebuild_characters_from_words(user_id)
+    sync_result = rebuild_characters_from_words(user_id)
     db.session.commit()
     refresh_current_hsk_level(user_id)
 
-    return {"message": "File received"}, 200
+    return {
+        "message": "File received",
+        "updated_characters": [
+            serialize_character(character)
+            for character in sync_result.updated_characters
+        ],
+        "deleted_char_ids": sync_result.deleted_char_ids,
+    }, 200

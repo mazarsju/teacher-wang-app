@@ -46,10 +46,11 @@ class TestRebuildCharactersFromWords(PostgresTestCase):
         )
         db.session.commit()
 
-        created = rebuild_characters_from_words(self.user_id)
+        result = rebuild_characters_from_words(self.user_id)
         db.session.commit()
 
-        self.assertEqual(created, 2)
+        self.assertEqual(len(result.updated_characters), 2)
+        self.assertEqual(result.deleted_char_ids, [])
         love = Character.query.filter_by(user_id=self.user_id, char="爱").one()
         good = Character.query.filter_by(user_id=self.user_id, char="好").one()
         self.assertEqual(love.pinyin_readings, ["ai4"])
