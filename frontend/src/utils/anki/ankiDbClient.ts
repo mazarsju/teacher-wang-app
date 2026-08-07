@@ -22,7 +22,8 @@ export type SyncDataResponse = {
   push_cards: AnkiPendingCard[];
   unsyncable: string[];
   local_words: string[];
-  characters: SyncDataCharacter[];
+  characters?: SyncDataCharacter[];
+  writing_known_words?: string[];
   ignore_keys: string[];
   deck: AnkiDeckMapping;
 };

@@ -800,7 +800,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
     def test_pull_import_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.extensions import db
-        from backend.models import Character
+        from backend.models import Word
 
         setup_deck(
             self.user_id,
@@ -810,12 +810,13 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             fields={"recto": "Front", "verso": "Back"},
         )
         db.session.add(
-            Character(
+            Word(
                 user_id=self.user_id,
-                char="水",
+                word="水",
+                definition="water",
                 pinyin="shui3",
                 writing_known=False,
-                synchronized=False,
+                anki_writing_sync=False,
             )
         )
         db.session.commit()
@@ -824,14 +825,36 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             self.user_id,
             "mandarin_writing",
             "synchronize_all",
-            cards=[{"id": "水", "recto": "shui3", "verso": "水"}],
+            cards=[{"id": "水", "recto": "water (shui3)", "verso": "水"}],
             ignore_keys=[],
         )
 
         self.assertEqual(result["added"], 1)
-        updated = Character.query.filter_by(user_id=self.user_id, char="水").one()
+        updated = Word.query.filter_by(user_id=self.user_id, word="水").one()
         self.assertTrue(updated.writing_known)
-        self.assertTrue(updated.synchronized)
+        self.assertTrue(updated.anki_writing_sync)
+
+    def test_pull_writing_card_impossible_when_word_missing(self):
+        from backend.anki_sync import apply_pull, setup_deck
+
+        setup_deck(
+            self.user_id,
+            "mandarin_writing",
+            "Writing",
+            model_name="Basic",
+            fields={"recto": "Front", "verso": "Back"},
+        )
+
+        result = apply_pull(
+            self.user_id,
+            "mandarin_writing",
+            "synchronize_all",
+            cards=[{"id": "水", "recto": "water (shui3)", "verso": "水"}],
+            ignore_keys=[],
+        )
+
+        self.assertEqual(result["added"], 0)
+        self.assertEqual(result["failed"], 1)
 
     def test_pull_ignore_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck
@@ -862,7 +885,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
     def test_get_sync_data_writing_unsyncable(self):
         from backend.anki_sync import get_sync_data, setup_deck
         from backend.extensions import db
-        from backend.models import Character
+        from backend.models import Word
 
         setup_deck(
             self.user_id,
@@ -872,20 +895,92 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             fields={"recto": "Front", "verso": "Back"},
         )
         db.session.add(
-            Character(
+            Word(
                 user_id=self.user_id,
-                char="孤",
-                pinyin="gu1",
+                word="孤独",
+                definition=None,
+                pinyin="gu1 du2",
                 writing_known=True,
-                synchronized=False,
+                anki_writing_sync=False,
             )
         )
         db.session.commit()
 
         payload = get_sync_data(self.user_id, "mandarin_writing")
 
-        self.assertEqual(payload["unsyncable"], ["孤"])
+        self.assertEqual(payload["unsyncable"], ["孤独"])
         self.assertEqual(payload["push_cards"], [])
+
+    def test_get_sync_data_writing_pending_cards(self):
+        from backend.anki_sync import get_sync_data, setup_deck
+        from backend.extensions import db
+        from backend.models import Word
+
+        setup_deck(
+            self.user_id,
+            "mandarin_writing",
+            "Writing",
+            model_name="Basic",
+            fields={"recto": "Front", "verso": "Back"},
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="水",
+                definition="water",
+                pinyin="shui3",
+                writing_known=True,
+                anki_writing_sync=False,
+            )
+        )
+        db.session.commit()
+
+        payload = get_sync_data(self.user_id, "mandarin_writing")
+
+        self.assertEqual(
+            payload["push_cards"],
+            [{"id": "水", "recto": "water (shui3)", "verso": "水"}],
+        )
+        self.assertEqual(payload["writing_known_words"], ["水"])
+
+    def test_mark_synchronized_marks_writing_words(self):
+        from backend.anki_sync import apply_push_completion, setup_deck
+        from backend.extensions import db
+        from backend.models import Word
+
+        setup_deck(
+            self.user_id,
+            "mandarin_writing",
+            "Writing",
+            model_name="Basic",
+            fields={"recto": "Front", "verso": "Back"},
+        )
+        db.session.add(
+            Word(
+                user_id=self.user_id,
+                word="水",
+                definition="water",
+                pinyin="shui3",
+                writing_known=True,
+                anki_writing_sync=False,
+            )
+        )
+        db.session.commit()
+
+        result = apply_push_completion(
+            self.user_id,
+            "mandarin_writing",
+            "synchronize_all",
+            succeeded_card_ids=["水"],
+            ignore_ids=[],
+        )
+
+        self.assertEqual(result["added"], 1)
+        self.assertTrue(
+            Word.query.filter_by(user_id=self.user_id, word="水")
+            .one()
+            .anki_writing_sync
+        )
 
     def test_vocabulary_card_pinyin_keeps_punctuation(self):
         from backend.anki_sync import vocabulary_card_from_word

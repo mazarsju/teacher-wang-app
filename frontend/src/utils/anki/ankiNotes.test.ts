@@ -1,16 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAnkiNotes,
-  characterIdsFromVerso,
   significantAnkiVersos,
   syncMarkIdsForCards,
 } from "./ankiNotes";
-
-describe("characterIdsFromVerso", () => {
-  it("extracts Han characters before dash annotations", () => {
-    expect(characterIdsFromVerso("你好-note")).toEqual(["你", "好"]);
-  });
-});
 
 describe("significantAnkiVersos", () => {
   it("normalizes verso keys", () => {
@@ -29,12 +22,12 @@ describe("syncMarkIdsForCards", () => {
     ).toEqual(["水"]);
   });
 
-  it("expands writing versos into character ids", () => {
+  it("uses card ids for writing", () => {
     expect(
       syncMarkIdsForCards("mandarin_writing", [
-        { id: "hello (ni3 hao3)", recto: "hello (ni3 hao3)", verso: "你好" },
+        { id: "你好", recto: "hello (ni3 hao3)", verso: "你好" },
       ]),
-    ).toEqual(["你", "好"]);
+    ).toEqual(["你好"]);
   });
 });
 

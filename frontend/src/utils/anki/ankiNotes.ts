@@ -1,4 +1,3 @@
-import { isHanCharacter } from "../knowledgeBase/chineseCharacters";
 import type {
   AnkiDeckKind,
   AnkiFieldKey,
@@ -8,35 +7,11 @@ import type {
 } from "../../types/anki";
 import { versoSignificantPart } from "./ankiHelpers";
 
-export function characterIdsFromVerso(verso: string): string[] {
-  return [...versoSignificantPart(verso)].filter(isHanCharacter);
-}
-
-export function characterIdsFromWritingCards(
-  cards: Array<{ verso: string }>,
-): string[] {
-  const ids: string[] = [];
-  const seen = new Set<string>();
-  for (const card of cards) {
-    for (const charId of characterIdsFromVerso(card.verso)) {
-      if (seen.has(charId)) {
-        continue;
-      }
-      seen.add(charId);
-      ids.push(charId);
-    }
-  }
-  return ids;
-}
-
 export function syncMarkIdsForCards(
-  kind: AnkiDeckKind,
+  _kind: AnkiDeckKind,
   cards: AnkiPendingCard[],
 ): string[] {
-  if (kind === "mandarin_vocabulary") {
-    return cards.map((card) => card.id);
-  }
-  return characterIdsFromWritingCards(cards as AnkiPendingWritingCard[]);
+  return cards.map((card) => card.id);
 }
 
 export function significantAnkiVersos(versos: Set<string>): Set<string> {

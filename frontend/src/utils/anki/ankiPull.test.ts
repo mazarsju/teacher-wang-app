@@ -121,31 +121,46 @@ describe("vocabularyPullCardsFromNotes", () => {
 });
 
 describe("writingPullFromNotes", () => {
-  it("pulls characters that exist but are not writing_known", () => {
+  it("pulls words that exist locally but are not writing_known", () => {
     const result = writingPullFromNotes(
       [{ recto: "water (shui3)", verso: "水" }],
+      new Set(["水"]),
       new Set(),
-      new Map([
-        [
-          "水",
-          {
-            char: "水",
-            pinyin: "shui3",
-            writing_known: false,
-            synchronized: false,
-          },
-        ],
-      ]),
+      new Set(),
     );
 
     expect(result.pullCards).toEqual([
       {
         id: "水",
-        recto: "shui3",
+        recto: "water (shui3)",
         verso: "水",
-        anki_recto: "water (shui3)",
       },
     ]);
+    expect(result.missing).toEqual([]);
+  });
+
+  it("marks a word missing when it doesn't exist locally", () => {
+    const result = writingPullFromNotes(
+      [{ recto: "water (shui3)", verso: "水" }],
+      new Set(),
+      new Set(),
+      new Set(),
+    );
+
+    expect(result.pullCards).toEqual([]);
+    expect(result.missing).toEqual(["水"]);
+  });
+
+  it("skips words already marked writing_known", () => {
+    const result = writingPullFromNotes(
+      [{ recto: "water (shui3)", verso: "水" }],
+      new Set(["水"]),
+      new Set(["水"]),
+      new Set(),
+    );
+
+    expect(result.pullCards).toEqual([]);
+    expect(result.missing).toEqual([]);
   });
 });
 

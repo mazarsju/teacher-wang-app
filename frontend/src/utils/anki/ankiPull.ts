@@ -179,62 +179,40 @@ export function vocabularyPullCardsFromNotes(
 
 export function writingPullFromNotes(
   notes: Array<Record<string, string>>,
+  localWords: Set<string>,
+  writingKnownWords: Set<string>,
   ignored: Set<string>,
-  characterByChar: Map<string, SyncDataCharacter>,
 ): {
   pullCards: AnkiPendingWritingCard[];
   missing: string[];
-  warningRectos: string[];
 } {
   const pullCards: AnkiPendingWritingCard[] = [];
   const missing: string[] = [];
-  const warningRectos: string[] = [];
   const seenPull = new Set<string>();
   const seenMissing = new Set<string>();
-  const seenWarningRecto = new Set<string>();
 
   for (const note of notes) {
-    const recto = (note.recto ?? "").trim();
-    if (recto === "" || ignored.has(recto)) {
+    const verso = versoSignificantPart(note.verso ?? "").trim();
+    if (verso === "" || ignored.has(verso) || seenPull.has(verso)) {
       continue;
     }
-    const verso = versoSignificantPart(note.verso ?? "");
-    let noteHasMissing = false;
-    for (const char of verso) {
-      if (!isHanCharacter(char)) {
-        continue;
+    if (!localWords.has(verso)) {
+      if (!seenMissing.has(verso)) {
+        seenMissing.add(verso);
+        missing.push(verso);
       }
-      if (ignored.has(char)) {
-        continue;
-      }
-      const record = characterByChar.get(char);
-      if (record === undefined) {
-        noteHasMissing = true;
-        if (!seenMissing.has(char)) {
-          seenMissing.add(char);
-          missing.push(char);
-        }
-        continue;
-      }
-      if (record.writing_known) {
-        continue;
-      }
-      if (seenPull.has(char)) {
-        continue;
-      }
-      seenPull.add(char);
-      pullCards.push({
-        id: char,
-        recto: record.pinyin,
-        verso: char,
-        anki_recto: recto,
-      });
+      continue;
     }
-    if (noteHasMissing && !seenWarningRecto.has(recto)) {
-      seenWarningRecto.add(recto);
-      warningRectos.push(recto);
+    if (writingKnownWords.has(verso)) {
+      continue;
     }
+    seenPull.add(verso);
+    pullCards.push({
+      id: verso,
+      recto: (note.recto ?? "").trim(),
+      verso,
+    });
   }
 
-  return { pullCards, missing, warningRectos };
+  return { pullCards, missing };
 }

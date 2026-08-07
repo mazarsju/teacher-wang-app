@@ -87,14 +87,10 @@ def _pending_vocabulary_words(user_id: str) -> list[Word]:
     )
 
 
-def _pending_writing_characters(user_id: str) -> list[Character]:
+def _pending_writing_words(user_id: str) -> list[Word]:
     return (
-        Character.query.filter_by(
-            user_id=user_id,
-            writing_known=True,
-            synchronized=False,
-        )
-        .order_by(Character.char)
+        Word.query.filter_by(user_id=user_id, writing_known=True, anki_writing_sync=False)
+        .order_by(Word.word)
         .all()
     )
 
@@ -133,80 +129,21 @@ def vocabulary_card_from_word(word: Word) -> dict[str, str]:
     }
 
 
-def _is_word_eligible_for_writing(word: Word) -> bool:
-    if word.definition is None or word.definition.strip() == "":
-        return False
-    for char in word.word:
-        character = _find_character(word.user_id, char)
-        if character is None or not character.writing_known:
-            return False
-    return True
-
-
-def _find_writing_word_for_character(character: Character) -> Word | None:
-    candidates = [
-        word
-        for word in Word.query.filter(
-            Word.user_id == character.user_id,
-            Word.word.contains(character.char),
-        ).all()
-        if _is_word_eligible_for_writing(word)
-    ]
-    if not candidates:
-        return None
-    candidates.sort(
-        key=lambda word: (
-            0 if word.word == character.char else 1,
-            len(word.word),
-            word.word,
-        )
-    )
-    return candidates[0]
-
-
-def writing_card_from_character(character: Character) -> dict[str, str] | None:
-    word = _find_writing_word_for_character(character)
-    if word is None:
-        return None
+def writing_card_from_word(word: Word) -> dict[str, str] | None:
     definition = (word.definition or "").strip()
-    pinyin = _vocabulary_card_pinyin(word.user_id, word.word)
+    pinyin = (word.pinyin or "").strip()
+    if definition == "" or pinyin == "":
+        return None
     recto = f"{definition} ({pinyin})"
-    return {
-        "id": recto,
-        "recto": recto,
-        "verso": word.word,
-    }
-
-
-def _verso_significant_part(verso: str) -> str:
-    return verso.split("-", 1)[0]
-
-
-def _character_ids_from_verso(verso: str) -> list[str]:
-    significant = _verso_significant_part(verso)
-    return [char for char in significant if is_han_character(char)]
-
-
-def _character_ids_from_writing_cards(cards: list[dict[str, Any]]) -> list[str]:
-    ids: list[str] = []
-    seen: set[str] = set()
-    for card in cards:
-        for char_id in _character_ids_from_verso(str(card.get("verso") or "")):
-            if char_id in seen:
-                continue
-            seen.add(char_id)
-            ids.append(char_id)
-    return ids
+    return {"id": word.word, "recto": recto, "verso": word.word}
 
 
 def _pending_count_for_kind(user_id: str, kind: DeckKind) -> int:
     if kind == "mandarin_vocabulary":
         return Word.query.filter_by(user_id=user_id, anki_voc_sync=False).count()
     if kind == "mandarin_writing":
-        return Character.query.filter_by(
-            user_id=user_id,
-            writing_known=True,
-            synchronized=False,
+        return Word.query.filter_by(
+            user_id=user_id, writing_known=True, anki_writing_sync=False
         ).count()
     return 0
 
@@ -328,6 +265,9 @@ def _add_vocabulary_pull_ignored(user_id: str, writings: list[str]) -> int:
     return added
 
 
+# ``recto`` stores the ignored word text (verso), not a recto value -- kept
+# for the existing column name/migration rather than renaming for a rename's
+# sake.
 def _get_writing_pull_ignored(user_id: str) -> set[str]:
     return {
         row.recto
@@ -421,16 +361,15 @@ def _import_vocabulary_card(
 
 
 def _import_writing_pull_card(user_id: str, card: dict[str, Any]) -> bool:
-    char = str(card.get("id") or card.get("verso") or "").strip()
-    if char == "" or not is_han_character(char):
+    verso = str(card.get("verso") or card.get("id") or "").strip()
+    if verso == "":
         return False
-    record = _find_character(user_id, char)
-    if record is None:
+    word = _find_word(user_id, verso)
+    if word is None:
         return False
-    now = utcnow()
-    record.writing_known = True
-    record.synchronized = True
-    record.updated_at = now
+    word.writing_known = True
+    word.anki_writing_sync = True
+    word.updated_at = utcnow()
     db.session.commit()
     return True
 
@@ -449,15 +388,15 @@ def _mark_words_synchronized(user_id: str, word_ids: list[str]) -> int:
     return updated
 
 
-def _mark_characters_synchronized(user_id: str, char_ids: list[str]) -> int:
-    if not char_ids:
+def _mark_words_writing_synchronized(user_id: str, word_ids: list[str]) -> int:
+    if not word_ids:
         return 0
     updated = 0
-    for char_id in char_ids:
-        character = _find_character(user_id, char_id)
-        if character is None or character.synchronized:
+    for word_id in word_ids:
+        word = _find_word(user_id, word_id)
+        if word is None or word.anki_writing_sync:
             continue
-        character.synchronized = True
+        word.anki_writing_sync = True
         updated += 1
     db.session.commit()
     return updated
@@ -466,16 +405,14 @@ def _mark_characters_synchronized(user_id: str, char_ids: list[str]) -> int:
 def mark_synchronized(user_id: str, kind: DeckKind, ids: list[str]) -> int:
     if kind == "mandarin_vocabulary":
         return _mark_words_synchronized(user_id, ids)
-    return _mark_characters_synchronized(user_id, ids)
+    return _mark_words_writing_synchronized(user_id, ids)
 
 
 def _sync_mark_ids_for_cards(
     kind: DeckKind,
     cards: list[dict[str, Any]],
 ) -> list[str]:
-    if kind == "mandarin_vocabulary":
-        return [str(card["id"]) for card in cards]
-    return _character_ids_from_writing_cards(cards)
+    return [str(card["id"]) for card in cards]
 
 
 def get_deck_mapping(user_id: str, kind: DeckKind) -> dict[str, Any]:
@@ -573,6 +510,15 @@ def _local_words(user_id: str) -> list[str]:
     ]
 
 
+def _writing_known_words(user_id: str) -> list[str]:
+    return [
+        row.word
+        for row in Word.query.filter_by(user_id=user_id, writing_known=True)
+        .with_entities(Word.word)
+        .all()
+    ]
+
+
 def _local_characters(user_id: str) -> list[dict[str, Any]]:
     return [
         {
@@ -606,15 +552,11 @@ def _vocabulary_push_payload(user_id: str, mapping: dict[str, Any]) -> dict[str,
 def _writing_push_payload(user_id: str, mapping: dict[str, Any]) -> dict[str, Any]:
     cards: list[dict[str, str]] = []
     unsyncable: list[str] = []
-    seen_rectos: set[str] = set()
-    for character in _pending_writing_characters(user_id):
-        card = writing_card_from_character(character)
+    for word in _pending_writing_words(user_id):
+        card = writing_card_from_word(word)
         if card is None:
-            unsyncable.append(character.char)
+            unsyncable.append(word.word)
             continue
-        if card["recto"] in seen_rectos:
-            continue
-        seen_rectos.add(card["recto"])
         cards.append(card)
 
     return {
@@ -622,7 +564,7 @@ def _writing_push_payload(user_id: str, mapping: dict[str, Any]) -> dict[str, An
         "push_cards": cards,
         "unsyncable": unsyncable,
         "local_words": _local_words(user_id),
-        "characters": _local_characters(user_id),
+        "writing_known_words": _writing_known_words(user_id),
         "ignore_keys": sorted(_get_writing_pull_ignored(user_id)),
         "deck": mapping,
     }
@@ -722,10 +664,8 @@ def apply_push_completion(
         added = _mark_words_synchronized(user_id, succeeded_card_ids)
         ignored = _mark_words_synchronized(user_id, ignore_ids)
     else:
-        # Writing cards: ids may be rectos for success list; ignore_ids are char ids.
-        # succeeded_card_ids for writing are character ids derived by the frontend.
-        added = _mark_characters_synchronized(user_id, succeeded_card_ids)
-        ignored = _mark_characters_synchronized(user_id, ignore_ids)
+        added = _mark_words_writing_synchronized(user_id, succeeded_card_ids)
+        ignored = _mark_words_writing_synchronized(user_id, ignore_ids)
 
     return _finalize_deck_result(
         user_id,
@@ -800,6 +740,8 @@ def apply_pull(
                 imported += 1
             else:
                 failed += 1
+        if imported:
+            rebuild_characters_from_words(user_id)
         ignored = _add_writing_pull_ignored(user_id, ignore_keys)
     else:
         raise ValueError(f'Unsupported deck kind "{kind}"')
@@ -816,10 +758,6 @@ def apply_pull(
         pull_count=pull_count_after,
         failed_characters=failed_characters,
     )
-
-
-def character_ids_from_writing_cards(cards: list[dict[str, Any]]) -> list[str]:
-    return _character_ids_from_writing_cards(cards)
 
 
 def sync_mark_ids_for_cards(kind: DeckKind, cards: list[dict[str, Any]]) -> list[str]:

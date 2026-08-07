@@ -50,7 +50,7 @@ Full numbered steps, status model, and quick sync behavior: [sync protocol](../a
 
 * Sync requires Anki Desktop + AnkiConnect on the same machine.
 * Frontend owns non-trivial diff logic; backend and frontend helpers must stay aligned (pinyin pairing, verso significant part, field maps).
-* Writing pull cannot create brand-new characters — vocabulary pull (or manual KB edits) must land first.
+* Writing pull cannot create brand-new words — vocabulary pull (or manual KB edits) must land first.
 * Sticky overall “synchronized” status can hide later drift until the per-deck UI is opened; pending estimates still surface push backlog.
 
 ## Future evolution

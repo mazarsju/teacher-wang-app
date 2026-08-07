@@ -190,7 +190,7 @@ export default function AnkiSyncModal({
       if (confirmAction.type === "ignore_all") {
         if (pending.kind === "mandarin_writing") {
           return (
-            `This action cannot be undone. All ${cancelAllPushCount} character` +
+            `This action cannot be undone. All ${cancelAllPushCount} word` +
             `${cancelAllPushCount === 1 ? "" : "s"} with “written known” will be ` +
             "ignored for future pushes to Anki."
           );
@@ -211,7 +211,7 @@ export default function AnkiSyncModal({
     if (confirmAction.type === "all") {
       if (pending.kind === "mandarin_writing") {
         return (
-          `This action cannot be undone. It will pull all ${pullActionableCount} character` +
+          `This action cannot be undone. It will pull all ${pullActionableCount} word` +
           `${pullActionableCount === 1 ? "" : "s"} from Anki and mark them as “written known”.`
         );
       }
@@ -223,24 +223,17 @@ export default function AnkiSyncModal({
     }
     if (confirmAction.type === "ignore_all") {
       const ignoreTotal = pullActionableCount + pullMissing.length;
-      if (pending.kind === "mandarin_writing") {
-        return (
-          `This action cannot be undone. All ${ignoreTotal} character` +
-          `${ignoreTotal === 1 ? "" : "s"} pending for pull (including warnings) ` +
-          "will be ignored for future pulls from Anki."
-        );
-      }
       return (
         `This action cannot be undone. All ${ignoreTotal} card` +
-        `${ignoreTotal === 1 ? "" : "s"} pending for pull (including warnings) ` +
+        `${ignoreTotal === 1 ? "" : "s"} pending for pull (including unresolved ones) ` +
         "will be ignored for future pulls from Anki."
       );
     }
     if (pending.kind === "mandarin_writing") {
       return (
-        `This action cannot be undone. ${selectedCount} character` +
+        `This action cannot be undone. ${selectedCount} word` +
         `${selectedCount === 1 ? "" : "s"} currently selected will be marked as ` +
-        `“written known”, and ${ignoredCount} character` +
+        `“written known”, and ${ignoredCount} word` +
         `${ignoredCount === 1 ? "" : "s"} not selected will be ignored for future pulls.`
       );
     }
@@ -461,12 +454,11 @@ export default function AnkiSyncModal({
                 {isWriting && unsyncable.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
                     <p className="anki-sync-unsyncable-title">
-                      Characters that cannot be pushed
+                      Words that cannot be pushed
                     </p>
                     <p className="anki-sync-unsyncable-text">
-                      These characters are not connected to a word with a
-                      definition (using only characters marked as “written
-                      known”):{" "}
+                      These words are missing a definition or pinyin, so a
+                      card cannot be built for them:{" "}
                       <span className="anki-sync-unsyncable-chars">
                         {unsyncable.join("、")}
                       </span>
@@ -482,14 +474,14 @@ export default function AnkiSyncModal({
                   <p className="anki-sync-panel-count">
                     {formatCount(
                       pullCount,
-                      isWriting ? "character to pull" : "card to pull",
-                      isWriting ? "characters to pull" : "cards to pull",
+                      isWriting ? "word to pull" : "card to pull",
+                      isWriting ? "words to pull" : "cards to pull",
                     )}
                   </p>
                 </div>
                 <p className="anki-sync-panel-copy">
                   {isWriting
-                    ? "Characters found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”."
+                    ? "Words found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”."
                     : "Cards found in this Anki deck that are not yet in your knowledge base."}
                 </p>
 
@@ -523,13 +515,12 @@ export default function AnkiSyncModal({
                 {isWriting && pullMissing.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
                     <p className="anki-sync-unsyncable-title">
-                      Characters not yet in the knowledge base
+                      Words not yet in the knowledge base
                     </p>
                     <p className="anki-sync-unsyncable-text">
-                      These characters from Anki are not yet part of a known
-                      word. Add them manually in the app, or synchronize the
-                      Mandarin vocabulary deck with a word that includes them
-                      first:{" "}
+                      These words from Anki don’t exist in your knowledge
+                      base yet. Add them manually in the app, or synchronize
+                      the Mandarin vocabulary deck with them first:{" "}
                       <span className="anki-sync-unsyncable-chars">
                         {pullMissing.join("、")}
                       </span>
@@ -666,7 +657,7 @@ export default function AnkiSyncModal({
             <>
               <p className="modal-message">
                 {isWriting
-                  ? "Choose which characters to mark as “written known”. Unselected characters will be ignored for future pulls."
+                  ? "Choose which words to mark as “written known”. Unselected words will be ignored for future pulls."
                   : "Choose which cards to pull from Anki. Unselected cards will be ignored for future pulls."}
               </p>
 
@@ -697,8 +688,8 @@ export default function AnkiSyncModal({
                   <>
                     <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writing">
                       <span className="anki-sync-card-check" aria-hidden="true" />
-                      <span>Pinyin</span>
-                      <span>Character</span>
+                      <span>Recto</span>
+                      <span>Verso</span>
                     </div>
                     {pullCards.filter(isWritingCard).map((card) => {
                       const checked = selectedIds.has(card.id);

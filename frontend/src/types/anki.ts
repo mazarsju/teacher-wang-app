@@ -64,7 +64,6 @@ export type AnkiPendingWritingCard = {
   id: string;
   recto: string;
   verso: string;
-  anki_recto?: string;
 };
 
 export type AnkiPendingCard =
@@ -80,7 +79,6 @@ export type AnkiPendingSync = {
   pull_cards: AnkiPendingCard[];
   pull_characters_to_create_count?: number;
   pull_missing?: string[];
-  pull_warning_rectos?: string[];
   deck: AnkiDeckMapping;
 };
 
