@@ -624,8 +624,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["added"], 3)
-        self.assertEqual(result["failed"], 0)
-        self.assertEqual(result["failed_characters"], [])
+        self.assertEqual(result["failed"], [])
         self.assertEqual(
             Word.query.filter_by(user_id=self.user_id, word="…好了吗?").one().pinyin,
             "… hao3 le ma ?",
@@ -671,8 +670,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["added"], 0)
-        self.assertEqual(result["failed"], 1)
-        self.assertEqual(result["failed_characters"], ["水"])
+        self.assertEqual(result["failed"], ["水"])
         self.assertIsNone(
             Word.query.filter_by(user_id=self.user_id, word="水").first()
         )
@@ -719,7 +717,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["added"], 1)
-        self.assertEqual(result["failed_characters"], [])
+        self.assertEqual(result["failed"], [])
         word = Word.query.filter_by(user_id=self.user_id, word="水").one()
         self.assertEqual(word.pinyin, "shui3")
 
@@ -765,7 +763,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["added"], 1)
-        self.assertEqual(result["failed_characters"], [])
+        self.assertEqual(result["failed"], [])
         word = Word.query.filter_by(user_id=self.user_id, word="水").one()
         self.assertEqual(word.pinyin, "shui3")
 
@@ -862,7 +860,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
         self.assertEqual(result["added"], 0)
-        self.assertEqual(result["failed"], 1)
+        self.assertEqual(result["failed"], ["水"])
 
     def test_pull_ignore_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck

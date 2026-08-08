@@ -594,7 +594,7 @@ describe("PreferencesPage", () => {
     });
   });
 
-  it("shows the failed characters when a pull can't resolve their pinyin", async () => {
+  it("shows the cards that couldn't be synchronized", async () => {
     const user = userEvent.setup();
     const connectedStatus: AnkiStatus = {
       connected: true,
@@ -642,8 +642,7 @@ describe("PreferencesPage", () => {
       direction: "pull",
       added: 0,
       ignored: 0,
-      failed: 1,
-      failed_characters: ["风", "水"],
+      failed: ["风水"],
       deck: connectedStatus.decks.mandarin_vocabulary,
     });
 
@@ -670,7 +669,85 @@ describe("PreferencesPage", () => {
       within(warningDialog).getByRole("heading", { name: "Warning" }),
     ).toBeInTheDocument();
     expect(
-      within(warningDialog).getByText(/wasn't pulled: 风、水/),
+      within(warningDialog).getByText(/couldn't be synchronized: 风水/),
+    ).toBeInTheDocument();
+  });
+
+  it("caps the failed-card list at 10 and mentions the rest", async () => {
+    const user = userEvent.setup();
+    const connectedStatus: AnkiStatus = {
+      connected: true,
+      synchronization_status: "not_synchronized",
+      pending_push_estimate: 0,
+      decks: {
+        mandarin_vocabulary: {
+          status: "not_synchronized",
+          deck_name: "Vocab",
+          model_name: "Vocab",
+          fields: {
+            writing: "writing",
+            pinyin: "pinyin",
+            definition: "definition",
+          },
+        },
+        mandarin_writing: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+        },
+      },
+    };
+    const failedWritings = Array.from({ length: 13 }, (_, index) => `词${index}`);
+    fetchAnkiStatus.mockResolvedValue(connectedStatus);
+    fetchAnkiPendingSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      count: 0,
+      cards: [],
+      unsyncable: [],
+      pull_count: failedWritings.length,
+      pull_cards: failedWritings.map((writing) => ({
+        id: writing,
+        writing,
+        pinyin: "",
+        definition: "",
+      })),
+      deck: connectedStatus.decks.mandarin_vocabulary,
+    });
+    runAnkiSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      action: "synchronize_all",
+      direction: "pull",
+      added: 0,
+      ignored: 0,
+      failed: failedWritings,
+      deck: connectedStatus.decks.mandarin_vocabulary,
+    });
+
+    renderWithStore(<PreferencesPage />, {
+      preloadedState: {
+        ...syncedState,
+        anki: { status: connectedStatus },
+      },
+    });
+
+    await screen.findByRole("heading", { name: "Anki synchronization" });
+    const vocabRow = screen.getByText("Mandarin vocabulary").closest("li");
+    expect(vocabRow).not.toBeNull();
+    await user.click(
+      within(vocabRow as HTMLElement).getByRole("button", { name: "Sync" }),
+    );
+
+    await screen.findByText(`${failedWritings.length} cards to pull`);
+    await user.click(screen.getByRole("button", { name: "Pull all from Anki" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    const warningDialog = await screen.findByRole("dialog");
+    const shown = failedWritings.slice(0, 10).join("、");
+    expect(
+      within(warningDialog).getByText(
+        `These cards couldn't be synchronized: ${shown}, and 3 other cards.`,
+      ),
     ).toBeInTheDocument();
   });
 

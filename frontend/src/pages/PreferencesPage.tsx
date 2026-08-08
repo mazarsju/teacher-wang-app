@@ -47,6 +47,7 @@ function clampPercent(value: number): number {
 
 const USAGE_CHART_WIDTH = 600;
 const USAGE_CHART_HEIGHT = 160;
+const MAX_SHOWN_FAILED_CARDS = 10;
 
 function formatDeckStatus(status: AnkiDeckStatus): string {
   switch (status) {
@@ -78,7 +79,7 @@ export default function PreferencesPage() {
     useState(false);
   const [isUpdatePlanModalOpen, setIsUpdatePlanModalOpen] = useState(false);
   const [isChangePlanModalOpen, setIsChangePlanModalOpen] = useState(false);
-  const [pinyinWarningMessage, setPinyinWarningMessage] = useState<string | null>(
+  const [syncWarningMessage, setSyncWarningMessage] = useState<string | null>(
     null,
   );
 
@@ -133,11 +134,13 @@ export default function PreferencesPage() {
     result: AnkiSyncResult,
   ) {
     setSyncKind(null);
-    const failedCharacters = result.failed_characters ?? [];
-    if (failedCharacters.length > 0) {
-      setPinyinWarningMessage(
-        "Couldn't determine the pinyin for these characters, so their " +
-          `card wasn't pulled: ${failedCharacters.join("、")}.`,
+    const failedCards = Array.isArray(result.failed) ? result.failed : [];
+    if (failedCards.length > 0) {
+      const shown = failedCards.slice(0, MAX_SHOWN_FAILED_CARDS);
+      const remaining = failedCards.length - shown.length;
+      setSyncWarningMessage(
+        `These cards couldn't be synchronized: ${shown.join("、")}` +
+          (remaining > 0 ? `, and ${remaining} other cards.` : "."),
       );
     }
     if (direction === "pull") {
@@ -444,9 +447,9 @@ export default function PreferencesPage() {
       )}
 
       <WarningModal
-        isOpen={pinyinWarningMessage !== null}
-        message={pinyinWarningMessage ?? ""}
-        onClose={() => setPinyinWarningMessage(null)}
+        isOpen={syncWarningMessage !== null}
+        message={syncWarningMessage ?? ""}
+        onClose={() => setSyncWarningMessage(null)}
       />
       <ConfirmModal
         isOpen={isDeleteKnowledgeBaseConfirmOpen}

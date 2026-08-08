@@ -519,8 +519,9 @@ export default function AnkiSyncModal({
                     </p>
                     <p className="anki-sync-unsyncable-text">
                       These words from Anki don’t exist in your knowledge
-                      base yet. Add them manually in the app, or synchronize
-                      the Mandarin vocabulary deck with them first:{" "}
+                      base yet. Add them manually in the app, synchronize
+                      the Mandarin vocabulary deck with them first, or 
+                      ignore them for future pulls:{" "}
                       <span className="anki-sync-unsyncable-chars">
                         {pullMissing.join("、")}
                       </span>
