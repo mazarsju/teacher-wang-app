@@ -1,5 +1,5 @@
 import { isHanCharacter } from "./chineseCharacters";
-import { isValidPinyin } from "../../types/pinyin";
+import { isValidPinyin, normalizeAnkiPinyinToken } from "../../types/pinyin";
 
 export function splitWordCharacters(word: string): string[] {
   return [...word];
@@ -21,6 +21,13 @@ const PINYIN_START_CHAR = /^[a-zü]$/;
  * an embedded pinyin-shaped substring hiding inside longer literal filler
  * can still false-match, which is acceptable since the filler itself is
  * intentionally unchecked.
+ *
+ * Candidates are validated through `normalizeAnkiPinyinToken` (not
+ * `isValidPinyin` directly), since real Anki pinyin fields are almost
+ * always accented ("gōng", "cóng") and `isValidPinyin` only accepts
+ * already-normalized ASCII/tone-digit syllables — checking accented text
+ * against it directly would reject every real syllable. The normalized
+ * (tone-digit) form is what gets returned/stored.
  */
 export function extractToneSyllablesInOrder(
   text: string,
@@ -34,26 +41,29 @@ export function extractToneSyllablesInOrder(
       continue;
     }
     let matchedLength = 0;
+    let matchedToken: string | null = null;
     for (
       let length = Math.min(MAX_PINYIN_SYLLABLE_LENGTH, text.length - i);
       length > 0;
       length -= 1
     ) {
       const candidate = text.slice(i, i + length);
-      // Reject a candidate that only validates because isValidPinyin trims
+      // Reject a candidate that only validates because normalization trims
       // it internally (e.g. "hao3 " -> "hao3"); the exact span must already
       // be clean so a trailing space on a longer candidate can't shadow a
       // clean, shorter match.
       if (/\s$/.test(candidate)) {
         continue;
       }
-      if (isValidPinyin(candidate)) {
+      const normalized = normalizeAnkiPinyinToken(candidate);
+      if (normalized !== null) {
         matchedLength = length;
+        matchedToken = normalized;
         break;
       }
     }
-    if (matchedLength > 0) {
-      matches.push(text.slice(i, i + matchedLength));
+    if (matchedLength > 0 && matchedToken !== null) {
+      matches.push(matchedToken);
       i += matchedLength;
     } else {
       i += 1;

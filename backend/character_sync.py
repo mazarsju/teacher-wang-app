@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from backend.chinese_validation import is_han_character
 from backend.extensions import db
 from backend.models import Character, Word, utcnow
-from backend.pinyin import is_valid_pinyin, normalize_anki_pinyin_token
+from backend.pinyin import normalize_anki_pinyin_token
 
 PINYIN_MAX_LENGTH = 8
 
@@ -65,6 +65,14 @@ def extract_tone_syllables_in_order(text: str, count: int) -> list[str] | None:
     final "a"; a pinyin-shaped substring hiding inside longer filler can
     still false-match, which is acceptable since the filler itself is
     intentionally unchecked.
+
+    Candidates are validated through ``normalize_anki_pinyin_token`` (not
+    ``is_valid_pinyin`` directly), since real Anki pinyin fields are almost
+    always accented ("gōng", "cóng") and ``is_valid_pinyin`` only accepts
+    already-normalized ASCII/tone-digit syllables -- checking accented text
+    against it directly would reject every real syllable. The normalized
+    (tone-digit) form is what gets stored, matching the other resolution
+    path in ``_resolved_word_tokens``.
     """
     matches: list[str] = []
     i = 0
@@ -74,19 +82,22 @@ def extract_tone_syllables_in_order(text: str, count: int) -> list[str] | None:
             i += 1
             continue
         matched_length = 0
+        matched_token: str | None = None
         for length in range(min(PINYIN_MAX_LENGTH, n - i), 0, -1):
             candidate = text[i : i + length]
-            # Reject a candidate that only validates because is_valid_pinyin
+            # Reject a candidate that only validates because normalization
             # trims it internally (e.g. "hao3 " -> "hao3"); the exact span
             # must already be clean so a trailing space on a longer
             # candidate can't shadow a clean, shorter match.
             if candidate[-1].isspace():
                 continue
-            if is_valid_pinyin(candidate):
+            normalized = normalize_anki_pinyin_token(candidate)
+            if normalized is not None:
                 matched_length = length
+                matched_token = normalized
                 break
         if matched_length > 0:
-            matches.append(text[i : i + matched_length])
+            matches.append(matched_token)  # type: ignore[arg-type]
             i += matched_length
         else:
             i += 1
