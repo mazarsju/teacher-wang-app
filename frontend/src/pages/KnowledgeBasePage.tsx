@@ -379,28 +379,8 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     }
   }
 
-  const ankiSyncBanner = showAnkiSyncBanner ? (
-    <div className="anki-sync-banner" role="status">
-      <p className="anki-sync-banner-text">
-        {pendingAnkiPushEstimate} card
-        {pendingAnkiPushEstimate === 1 ? "" : "s"} need to be added in Anki for
-        synchronization.
-      </p>
-      <button
-        type="button"
-        className="anki-sync-banner-button"
-        onClick={() => void handleQuickSynchro()}
-        disabled={isQuickSyncing}
-      >
-        {isQuickSyncing ? "Syncing..." : "Quick synchro"}
-      </button>
-    </div>
-  ) : null;
-
   return (
-    <>
-      {ankiSyncBanner}
-      <Page
+    <Page
       title="Knowledge base"
       fullWidth={pageMode === "view"}
       headerCenter={
@@ -490,6 +470,15 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         )
       }
     >
+      {showAnkiSyncBanner && (
+        <Banner
+          type="warning"
+          message={`${pendingAnkiPushEstimate} card${pendingAnkiPushEstimate === 1 ? "" : "s"} need to be added in Anki for synchronization.`}
+          buttonMessage={isQuickSyncing ? "Syncing..." : "Quick synchro"}
+          actionOnButtonClick={() => void handleQuickSynchro()}
+          disabled={isQuickSyncing}
+        />
+      )}
       {pageMode === "edit" &&
         (words.length < ONBOARDING_WORD_THRESHOLD ? (
           <Banner
@@ -661,6 +650,5 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         </>
       )}
     </Page>
-    </>
   );
 }

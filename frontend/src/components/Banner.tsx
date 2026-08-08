@@ -3,6 +3,7 @@ type BannerProps = {
   message: string;
   buttonMessage: string;
   actionOnButtonClick: () => void;
+  disabled?: boolean;
 };
 
 export default function Banner({
@@ -10,6 +11,7 @@ export default function Banner({
   message,
   buttonMessage,
   actionOnButtonClick,
+  disabled,
 }: BannerProps) {
   return (
     <div className={`app-banner app-banner--${type}`} role="status">
@@ -18,6 +20,7 @@ export default function Banner({
         type="button"
         className="app-banner-button"
         onClick={actionOnButtonClick}
+        disabled={disabled}
       >
         {buttonMessage}
       </button>

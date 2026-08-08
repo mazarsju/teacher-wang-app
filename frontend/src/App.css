@@ -641,61 +641,6 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   margin-top: 2.5rem;
 }
 
-.anki-sync-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0.35rem 1.25rem;
-  border: none;
-  border-bottom: 1px solid #f59e0b;
-  border-radius: 0;
-  background: #fffbeb;
-  box-shadow: 0 1px 2px rgba(146, 64, 14, 0.08);
-}
-
-.app:has(.anki-sync-banner) .navbar {
-  margin-top: 2.1rem;
-}
-
-.anki-sync-banner-text {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  color: #92400e;
-  line-height: 1.3;
-  font-size: 0.85rem;
-}
-
-.anki-sync-banner-button {
-  flex-shrink: 0;
-  border: 1px solid #d97706;
-  border-radius: 0.35rem;
-  background: #ffffff;
-  color: #92400e;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.2rem 0.65rem;
-  line-height: 1.3;
-  cursor: pointer;
-}
-
-.anki-sync-banner-button:hover:not(:disabled) {
-  background: #fff7ed;
-}
-
-.anki-sync-banner-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
 .app-banner {
   display: flex;
   align-items: center;
@@ -730,8 +675,13 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   cursor: pointer;
 }
 
-.app-banner-button:hover {
+.app-banner-button:hover:not(:disabled) {
   background: #dbeafe;
+}
+
+.app-banner-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .app-banner--warning {
