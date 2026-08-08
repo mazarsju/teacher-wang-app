@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for backend/pinyin.py: 88.99%</title>
+    <title>Coverage for backend/pinyin.py: 89.74%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_58284776.png">
     <link rel="stylesheet" href="style_cb_8e611ae1.css" type="text/css">
     <script src="coverage_html_cb_6fb7b396.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>backend/pinyin.py</b>:
-            <span class="pc_cov">88.99%</span>
+            <span class="pc_cov">89.74%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">75 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">68<span class="text"> run</span></button>
+            <span class="text">81 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">74<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">7<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">5<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_b30b2a2b489f4b9c___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.8.0">coverage.py v7.8.0</a>,
-            created at 2026-08-05 14:18 +0000
+            created at 2026-08-08 08:32 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -804,24 +804,33 @@
     <p class="run"><span class="n"><a id="t720" href="#t720">720</a></span><span class="t">    <span class="key">return</span> <span class="nam">result</span> <span class="op">+</span> <span class="nam">tone</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t721" href="#t721">721</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t722" href="#t722">722</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t723" href="#t723">723</a></span><span class="t"><span class="key">def</span> <span class="nam">normalize_anki_pinyin_token</span><span class="op">(</span><span class="nam">token</span><span class="op">:</span> <span class="nam">str</span><span class="op">)</span> <span class="op">-></span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t724" href="#t724">724</a></span><span class="t">    <span class="str">"""Normalize one Anki pinyin syllable to app form (e.g. Q&#299;n &#8594; qin1).</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t725" href="#t725">725</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t726" href="#t726">726</a></span><span class="t"><span class="str">    Returns None when the token cannot be made into valid pinyin.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t727" href="#t727">727</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t728" href="#t728">728</a></span><span class="t">    <span class="nam">trimmed</span> <span class="op">=</span> <span class="nam">token</span><span class="op">.</span><span class="nam">strip</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t729" href="#t729">729</a></span><span class="t">    <span class="key">if</span> <span class="nam">trimmed</span> <span class="op">==</span> <span class="str">""</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t730" href="#t730">730</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t723" href="#t723">723</a></span><span class="t"><span class="key">def</span> <span class="nam">fix_erhua_syllable</span><span class="op">(</span><span class="nam">syllable</span><span class="op">:</span> <span class="nam">str</span><span class="op">)</span> <span class="op">-></span> <span class="nam">str</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t724" href="#t724">724</a></span><span class="t">    <span class="str">"""Erhua suffix split into its own token (e.g. "r" for &#20799;) is "er", not "r"."""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t725" href="#t725">725</a></span><span class="t">    <span class="nam">tone</span> <span class="op">=</span> <span class="nam">syllable</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span> <span class="key">if</span> <span class="nam">syllable</span> <span class="key">and</span> <span class="nam">syllable</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span> <span class="key">in</span> <span class="nam">_VALID_TONES</span> <span class="key">else</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t726" href="#t726">726</a></span><span class="t">    <span class="nam">base</span> <span class="op">=</span> <span class="nam">syllable</span><span class="op">[</span><span class="op">:</span><span class="op">-</span><span class="num">1</span><span class="op">]</span> <span class="key">if</span> <span class="nam">tone</span> <span class="key">else</span> <span class="nam">syllable</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t727" href="#t727">727</a></span><span class="t">    <span class="key">if</span> <span class="nam">base</span> <span class="op">==</span> <span class="str">"r"</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t728" href="#t728">728</a></span><span class="t">        <span class="key">return</span> <span class="str">"er"</span> <span class="op">+</span> <span class="nam">tone</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t729" href="#t729">729</a></span><span class="t">    <span class="key">return</span> <span class="nam">syllable</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t730" href="#t730">730</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t731" href="#t731">731</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t732" href="#t732">732</a></span><span class="t">    <span class="nam">candidate</span> <span class="op">=</span> <span class="nam">replace_pinyin_accents</span><span class="op">(</span><span class="nam">trimmed</span><span class="op">)</span><span class="op">.</span><span class="nam">lower</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t733" href="#t733">733</a></span><span class="t">    <span class="key">if</span> <span class="nam">is_valid_pinyin</span><span class="op">(</span><span class="nam">candidate</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t734" href="#t734">734</a></span><span class="t">        <span class="key">return</span> <span class="nam">candidate</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t735" href="#t735">735</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t736" href="#t736">736</a></span><span class="t">    <span class="nam">umlaut</span> <span class="op">=</span> <span class="nam">suggest_umlaut_pinyin</span><span class="op">(</span><span class="nam">candidate</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t737" href="#t737">737</a></span><span class="t">    <span class="key">if</span> <span class="nam">umlaut</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t738" href="#t738">738</a></span><span class="t">        <span class="key">return</span> <span class="nam">umlaut</span><span class="op">.</span><span class="nam">lower</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t739" href="#t739">739</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t740" href="#t740">740</a></span><span class="t">    <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t732" href="#t732">732</a></span><span class="t"><span class="key">def</span> <span class="nam">normalize_anki_pinyin_token</span><span class="op">(</span><span class="nam">token</span><span class="op">:</span> <span class="nam">str</span><span class="op">)</span> <span class="op">-></span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t733" href="#t733">733</a></span><span class="t">    <span class="str">"""Normalize one Anki pinyin syllable to app form (e.g. Q&#299;n &#8594; qin1).</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t734" href="#t734">734</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t735" href="#t735">735</a></span><span class="t"><span class="str">    Returns None when the token cannot be made into valid pinyin.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t736" href="#t736">736</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t737" href="#t737">737</a></span><span class="t">    <span class="nam">trimmed</span> <span class="op">=</span> <span class="nam">token</span><span class="op">.</span><span class="nam">strip</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t738" href="#t738">738</a></span><span class="t">    <span class="key">if</span> <span class="nam">trimmed</span> <span class="op">==</span> <span class="str">""</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t739" href="#t739">739</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t740" href="#t740">740</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t741" href="#t741">741</a></span><span class="t">    <span class="nam">candidate</span> <span class="op">=</span> <span class="nam">fix_erhua_syllable</span><span class="op">(</span><span class="nam">replace_pinyin_accents</span><span class="op">(</span><span class="nam">trimmed</span><span class="op">)</span><span class="op">.</span><span class="nam">lower</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t742" href="#t742">742</a></span><span class="t">    <span class="key">if</span> <span class="nam">is_valid_pinyin</span><span class="op">(</span><span class="nam">candidate</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t743" href="#t743">743</a></span><span class="t">        <span class="key">return</span> <span class="nam">candidate</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t744" href="#t744">744</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t745" href="#t745">745</a></span><span class="t">    <span class="nam">umlaut</span> <span class="op">=</span> <span class="nam">suggest_umlaut_pinyin</span><span class="op">(</span><span class="nam">candidate</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t746" href="#t746">746</a></span><span class="t">    <span class="key">if</span> <span class="nam">umlaut</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t747" href="#t747">747</a></span><span class="t">        <span class="key">return</span> <span class="nam">umlaut</span><span class="op">.</span><span class="nam">lower</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t748" href="#t748">748</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t749" href="#t749">749</a></span><span class="t">    <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -831,7 +840,7 @@
             <a class="nav" href="z_b30b2a2b489f4b9c___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.8.0">coverage.py v7.8.0</a>,
-            created at 2026-08-05 14:18 +0000
+            created at 2026-08-08 08:32 +0000
         </p>
     </div>
 </footer>

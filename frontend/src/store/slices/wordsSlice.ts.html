@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">44.44% </span>
+                <span class="strong">77.77% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>8/18</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">45.45% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>5/11</span>
+                <span class='fraction'>14/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">50% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>1/2</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">72.72% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>8/11</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">81.25% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>8/16</span>
+                <span class='fraction'>13/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -120,15 +120,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">15x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -136,30 +136,30 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Word } from "../../types/word";
@@ -174,7 +174,7 @@ const initialState: WordsState = {
 };
 &nbsp;
 function sortWords(words: Word[]) {
-  return [...words].sort(<span class="fstat-no" title="function not covered" >(l</span>eft, right) =&gt; <span class="cstat-no" title="statement not covered" >left.word.localeCompare(right.word))</span>;
+  return [...words].sort((left, right) =&gt; left.word.localeCompare(right.word));
 }
 &nbsp;
 const wordsSlice = createSlice({
@@ -184,13 +184,13 @@ const wordsSlice = createSlice({
 <span class="fstat-no" title="function not covered" >    setWords(s</span>tate, action: PayloadAction&lt;Word[]&gt;) {
 <span class="cstat-no" title="statement not covered" >      state.items = sortWords(action.payload);</span>
     },
-<span class="fstat-no" title="function not covered" >    upsertWord(s</span>tate, action: PayloadAction&lt;Word&gt;) {
-      const index = <span class="cstat-no" title="statement not covered" >state.items.findIndex(</span>
-<span class="fstat-no" title="function not covered" >        (i</span>tem) =&gt; <span class="cstat-no" title="statement not covered" >item.word === action.payload.word,</span>
+    upsertWord(state, action: PayloadAction&lt;Word&gt;) {
+      const index = state.items.findIndex(
+        (item) =&gt; item.word === action.payload.word,
       );
-<span class="cstat-no" title="statement not covered" >      if (index === -1) {</span>
-<span class="cstat-no" title="statement not covered" >        state.items = sortWords([...state.items, action.payload]);</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (index === -1) {
+        state.items = sortWords([...state.items, action.payload]);
+        return;
       }
 <span class="cstat-no" title="statement not covered" >      state.items[index] = action.payload;</span>
     },
@@ -217,7 +217,7 @@ export default wordsSlice.reducer;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-05T14:18:30.728Z
+                at 2026-08-08T08:31:42.471Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

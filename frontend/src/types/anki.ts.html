@@ -220,9 +220,7 @@
 <a name='L155'></a><a href='#L155'>155</a>
 <a name='L156'></a><a href='#L156'>156</a>
 <a name='L157'></a><a href='#L157'>157</a>
-<a name='L158'></a><a href='#L158'>158</a>
-<a name='L159'></a><a href='#L159'>159</a>
-<a name='L160'></a><a href='#L160'>160</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L158'></a><a href='#L158'>158</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -251,7 +249,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -336,26 +334,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -379,9 +377,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export type AnkiDeckKind = "mandarin_vocabulary" | "mandarin_writting";
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export type AnkiDeckKind = "mandarin_vocabulary" | "mandarin_writing";
 &nbsp;
 export type AnkiDeckStatus =
   | "not_configured"
@@ -392,9 +388,9 @@ export type AnkiOverallSynchronizationStatus =
   | "not_synchronized"
   | "synchronized";
 &nbsp;
-export type AnkiVocabularyFieldKey = "writting" | "pinyin" | "definition";
-export type AnkiWrittingFieldKey = "recto" | "verso";
-export type AnkiFieldKey = AnkiVocabularyFieldKey | AnkiWrittingFieldKey;
+export type AnkiVocabularyFieldKey = "writing" | "pinyin" | "definition";
+export type AnkiWritingFieldKey = "recto" | "verso";
+export type AnkiFieldKey = AnkiVocabularyFieldKey | AnkiWritingFieldKey;
 &nbsp;
 export type AnkiDeckMapping = {
   status: AnkiDeckStatus;
@@ -421,7 +417,7 @@ export const emptyAnkiStatus: AnkiStatus = {
       model_name: "",
       fields: {},
     },
-    mandarin_writting: {
+    mandarin_writing: {
       status: "not_configured",
       deck_name: "",
       model_name: "",
@@ -437,22 +433,21 @@ export type AnkiDeckSetupResult = {
 &nbsp;
 export type AnkiPendingVocabularyCard = {
   id: string;
-  writting: string;
+  writing: string;
   pinyin: string;
   definition: string;
   characters_to_create?: string[];
 };
 &nbsp;
-export type AnkiPendingWrittingCard = {
+export type AnkiPendingWritingCard = {
   id: string;
   recto: string;
   verso: string;
-  anki_recto?: string;
 };
 &nbsp;
 export type AnkiPendingCard =
   | AnkiPendingVocabularyCard
-  | AnkiPendingWrittingCard;
+  | AnkiPendingWritingCard;
 &nbsp;
 export type AnkiPendingSync = {
   kind: AnkiDeckKind;
@@ -463,7 +458,6 @@ export type AnkiPendingSync = {
   pull_cards: AnkiPendingCard[];
   pull_characters_to_create_count?: number;
   pull_missing?: string[];
-  pull_warning_rectos?: string[];
   deck: AnkiDeckMapping;
 };
 &nbsp;
@@ -481,13 +475,13 @@ export type AnkiSyncResult = {
   added: number;
   characters_added?: number;
   ignored: number;
-  failed: number;
+  failed: number | string[];
   deck: AnkiDeckMapping;
 };
 &nbsp;
 export type AnkiQuickSyncResult = {
   mandarin_vocabulary: AnkiSyncResult;
-  mandarin_writting: AnkiSyncResult;
+  mandarin_writing: AnkiSyncResult;
   synchronization_status: AnkiOverallSynchronizationStatus;
   pending_push_estimate: number;
 };
@@ -499,23 +493,23 @@ export type AnkiLogicalField = {
 &nbsp;
 export const ANKI_DECK_LABELS: Record&lt;AnkiDeckKind, string&gt; = {
   mandarin_vocabulary: "Mandarin vocabulary",
-  mandarin_writting: "Mandarin writting",
+  mandarin_writing: "Mandarin writing",
 };
 &nbsp;
 export const ANKI_DECK_ORDER: AnkiDeckKind[] = [
   "mandarin_vocabulary",
-  "mandarin_writting",
+  "mandarin_writing",
 ];
 &nbsp;
 export const ANKI_DECK_DESCRIPTIONS: Record&lt;AnkiDeckKind, string&gt; = {
-  mandarin_writting:
+  mandarin_writing:
     "This deck is for practicing writing only. It asks you to guess the characters from the definition and pinyin. Only characters with “written known” ticked will be part of this deck.",
   mandarin_vocabulary:
     "This deck is the main deck for practicing vocabulary. It either asks you to guess the character from the pinyin and definition, or the pinyin from the character and definition, or the definition from the character and pinyin.",
 };
 &nbsp;
 export const ANKI_REQUIRED_FIELDS: Record&lt;AnkiDeckKind, AnkiLogicalField[]&gt; = {
-  mandarin_writting: [
+  mandarin_writing: [
     {
       key: "recto",
       description: 'having the syntax "definition (pinyin)"',
@@ -527,7 +521,7 @@ export const ANKI_REQUIRED_FIELDS: Record&lt;AnkiDeckKind, AnkiLogicalField[]&gt
   ],
   mandarin_vocabulary: [
     {
-      key: "writting",
+      key: "writing",
       description: "where you set the chinese characters",
     },
     {
@@ -547,7 +541,7 @@ export const ANKI_REQUIRED_FIELDS: Record&lt;AnkiDeckKind, AnkiLogicalField[]&gt
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-05T14:18:30.728Z
+                at 2026-08-08T08:31:42.471Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
