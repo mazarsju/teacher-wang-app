@@ -9,7 +9,7 @@ bp = Blueprint("suggest_hsk_words", __name__)
 SUGGESTION_LIMIT = 10
 
 
-def _serialize_word(word: HskWord) -> dict:
+def serialize_word(word: HskWord) -> dict:
     return {
         "id": word.id,
         "word": word.word,
@@ -23,4 +23,4 @@ def _serialize_word(word: HskWord) -> dict:
 @bp.get("/hsk-words/suggestions")
 def get_hsk_word_suggestions():
     words = suggested_hsk_words(current_user_id(), limit=SUGGESTION_LIMIT)
-    return {"words": [_serialize_word(word) for word in words]}, 200
+    return {"words": [serialize_word(word) for word in words]}, 200

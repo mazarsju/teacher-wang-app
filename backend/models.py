@@ -162,6 +162,15 @@ class IgnoreWritingCard(db.Model):
     recto = db.Column(String, primary_key=True)
 
 
+class IgnoreHskWord(db.Model):
+    """HSK words ignored from the "words to learn next" suggestions."""
+
+    __tablename__ = "ignore_hsk_words"
+
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
+    writing = db.Column(String, primary_key=True)
+
+
 class ChallengeProgress(db.Model):
     """Whether a user has fully completed a challenge scenario."""
 

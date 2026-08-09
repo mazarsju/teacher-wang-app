@@ -3,7 +3,7 @@ import unittest
 
 from backend.extensions import db
 from backend.hsk_word_picker import pick_next_hsk_word, suggested_hsk_words
-from backend.models import HskWord, Word
+from backend.models import HskWord, IgnoreHskWord, Word
 from postgres_test_case import PostgresTestCase
 
 
@@ -226,6 +226,14 @@ class TestSuggestedHskWords(PostgresTestCase):
 
     def test_excludes_words_already_in_the_users_knowledge_base(self):
         db.session.add(Word(user_id=self.user_id, word="词0", definition="known"))
+        db.session.commit()
+
+        result = suggested_hsk_words(self.user_id, limit=3)
+
+        self.assertEqual([word.word for word in result], ["词1", "词2", "词3"])
+
+    def test_excludes_words_ignored_by_the_user(self):
+        db.session.add(IgnoreHskWord(user_id=self.user_id, writing="词0"))
         db.session.commit()
 
         result = suggested_hsk_words(self.user_id, limit=3)

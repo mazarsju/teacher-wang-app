@@ -83,3 +83,23 @@ export async function getSuggestedHskWords(): Promise<HskWord[]> {
   const payload = (await response.json()) as { words: HskWord[] };
   return payload.words;
 }
+
+/**
+ * Ignore one or more HSK words so they're excluded from future suggestions,
+ * and return the refreshed suggestion list (backfilled to keep it at the
+ * same size).
+ */
+export async function ignoreHskWords(words: string[]): Promise<HskWord[]> {
+  const response = await apiFetch(`${API_BASE}/hsk-words/ignore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ words }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to ignore the word(s).");
+  }
+
+  const payload = (await response.json()) as { words: HskWord[] };
+  return payload.words;
+}

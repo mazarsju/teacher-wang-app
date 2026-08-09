@@ -29,6 +29,7 @@ _TRUNCATE_TABLES = (
     "settings",
     "ignore_vocab_card",
     "ignore_writing_card",
+    "ignore_hsk_words",
     "token_count",
     "challenge_progress",
 )

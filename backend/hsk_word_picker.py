@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from backend.models import HskWord, Word
+from backend.models import HskWord, IgnoreHskWord, Word
 
 MIN_INCREMENT = 1
 RECOGNIZE_GROWTH_THRESHOLD = 10
@@ -39,6 +39,10 @@ def _ordered_unseen_words(user_id: str) -> list[HskWord]:
     at this app's scale; index it (or cache it) if the table grows large.
     """
     known_words = {row.word for row in Word.query.filter_by(user_id=user_id).all()}
+    ignored_words = {
+        row.writing for row in IgnoreHskWord.query.filter_by(user_id=user_id).all()
+    }
+    excluded_words = known_words | ignored_words
 
     seen: set[str] = set()
     ordered: list[HskWord] = []
@@ -48,7 +52,7 @@ def _ordered_unseen_words(user_id: str) -> list[HskWord]:
         HskWord.word.asc(),
         HskWord.pinyin.asc(),
     ):
-        if entry.word in known_words or entry.word in seen:
+        if entry.word in excluded_words or entry.word in seen:
             continue
         seen.add(entry.word)
         ordered.append(entry)

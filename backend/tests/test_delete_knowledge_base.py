@@ -39,6 +39,10 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_ignore_writing_card_query = self.ignore_writing_card_patcher.start()
         self.addCleanup(self.ignore_writing_card_patcher.stop)
 
+        self.ignore_hsk_word_patcher = patch("backend.routes.delete_knowledge_base.IgnoreHskWord.query")
+        self.mock_ignore_hsk_word_query = self.ignore_hsk_word_patcher.start()
+        self.addCleanup(self.ignore_hsk_word_patcher.stop)
+
         self.storage_patcher = patch("backend.routes.delete_knowledge_base.get_storage")
         self.mock_get_storage = self.storage_patcher.start()
         self.addCleanup(self.storage_patcher.stop)
@@ -67,6 +71,7 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_character_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_ignore_vocab_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_ignore_writing_card_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
+        self.mock_ignore_hsk_word_query.filter_by.assert_called_once_with(user_id=TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
 
         # Assert conversation logs (transcripts, threads, challenge task

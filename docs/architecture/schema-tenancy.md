@@ -22,6 +22,7 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 | `settings` | `(user_id, key)` |
 | `ignore_vocab_card` | `(user_id, writing)` |
 | `ignore_writing_card` | `(user_id, recto)` |
+| `ignore_hsk_words` | `(user_id, writing)` |
 | `token_count` | `(user_id, recorded_at, type)` |
 | `challenge_progress` | `(user_id, challenge_scenario)` |
 

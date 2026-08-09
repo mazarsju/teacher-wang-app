@@ -5,7 +5,7 @@ import { syncAppData } from "../store/thunks/syncAppData";
 import type { HskWord } from "../types/hskWord";
 import { extractCharacterEntries } from "../utils/knowledgeBase/buildImportLines";
 import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
-import { getSuggestedHskWords } from "../utils/knowledgeBase/hskWordsApi";
+import { getSuggestedHskWords, ignoreHskWords } from "../utils/knowledgeBase/hskWordsApi";
 import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
 
 type AddSuggestedWordsModalProps = {
@@ -61,6 +61,29 @@ export default function AddSuggestedWordsModal({
       }
       return next;
     });
+  }
+
+  async function handleIgnore(words: string[]) {
+    if (words.length === 0) {
+      return;
+    }
+
+    setError(null);
+    try {
+      const updated = await ignoreHskWords(words);
+      setSuggestions(updated);
+      setSelectedWords((previous) => {
+        const next = new Set(previous);
+        for (const word of words) {
+          next.delete(word);
+        }
+        return next;
+      });
+    } catch (ignoreError) {
+      setError(
+        ignoreError instanceof Error ? ignoreError.message : "Failed to ignore the word(s).",
+      );
+    }
   }
 
   async function handleConfirm() {
@@ -152,7 +175,30 @@ export default function AddSuggestedWordsModal({
             compact
             getRowKey={(row) => row.word}
             emptyMessage="No more words to suggest right now."
+            renderRowActions={(row) => (
+              <button
+                type="button"
+                className="table-ignore-button"
+                onClick={() => void handleIgnore([row.word])}
+              >
+                Ignore
+              </button>
+            )}
           />
+        )}
+
+        {!isLoading && suggestions.length > 0 && (
+          <p className="modal-message suggested-words-ignore-all">
+            None of those words interest you? You can ignore them all so that
+            other words are proposed to you:{" "}
+            <button
+              type="button"
+              className="modal-button-cancel"
+              onClick={() => void handleIgnore(suggestions.map((word) => word.word))}
+            >
+              Ignore all words
+            </button>
+          </p>
         )}
 
         <div className="modal-actions">

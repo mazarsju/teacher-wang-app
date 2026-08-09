@@ -30,6 +30,18 @@ function setupFetch(overrides: Record<string, () => Promise<unknown>> = {}) {
       if (matchesApiPath(url.pathname, "/hsk-words/suggestions")) {
         return Promise.resolve({ ok: true, json: async () => ({ words: SUGGESTIONS }) });
       }
+      if (matchesApiPath(url.pathname, "/hsk-words/ignore") && init?.method === "POST") {
+        if (overrides.ignoreHskWords) {
+          return overrides.ignoreHskWords();
+        }
+        const ignoredWords = jsonBody(init).words as string[];
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            words: SUGGESTIONS.filter((word) => !ignoredWords.includes(word.word)),
+          }),
+        });
+      }
       if (url.pathname.endsWith("/characters/bulk-create") && init?.method === "POST") {
         const characters = jsonBody(init).characters as {
           char: string;
@@ -168,5 +180,68 @@ describe("AddSuggestedWordsModal", () => {
     expect(jsonBody(wordsCall?.[1]).words).toEqual([
       { word: "爱", definition: "love" },
     ]);
+  });
+
+  it("ignoring a word removes it from the list and deselects it", async () => {
+    setupFetch();
+    const user = userEvent.setup();
+
+    renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
+
+    await screen.findByText("爱");
+    const toggles = screen.getAllByRole("switch");
+    await user.click(toggles[0]);
+
+    const ignoreButtons = screen.getAllByRole("button", { name: "Ignore" });
+    await user.click(ignoreButtons[0]);
+
+    await waitFor(() => expect(screen.queryByText("爱")).not.toBeInTheDocument());
+    expect(screen.getByText("学习")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
+
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    const ignoreCall = fetchMock.mock.calls.find(([input]: [RequestInfo]) =>
+      String(input).endsWith("/hsk-words/ignore"),
+    );
+    expect(jsonBody(ignoreCall?.[1])).toEqual({ words: ["爱"] });
+  });
+
+  it("shows an error message when ignoring a word fails", async () => {
+    setupFetch({
+      ignoreHskWords: async () => ({ ok: false, json: async () => ({}) }),
+    });
+    const user = userEvent.setup();
+
+    renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
+
+    await screen.findByText("爱");
+    const ignoreButtons = screen.getAllByRole("button", { name: "Ignore" });
+    await user.click(ignoreButtons[0]);
+
+    expect(await screen.findByText("Failed to ignore the word(s).")).toBeInTheDocument();
+    expect(screen.getByText("爱")).toBeInTheDocument();
+  });
+
+  it("ignoring all words sends every displayed word and empties the list", async () => {
+    setupFetch();
+    const user = userEvent.setup();
+
+    renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
+
+    await screen.findByText("爱");
+    await user.click(screen.getByRole("button", { name: "Ignore all words" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("No more words to suggest right now."),
+      ).toBeInTheDocument(),
+    );
+
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    const ignoreCall = fetchMock.mock.calls.find(([input]: [RequestInfo]) =>
+      String(input).endsWith("/hsk-words/ignore"),
+    );
+    expect(jsonBody(ignoreCall?.[1])).toEqual({ words: ["爱", "学习"] });
+    expect(screen.queryByRole("button", { name: "Ignore all words" })).not.toBeInTheDocument();
   });
 });
