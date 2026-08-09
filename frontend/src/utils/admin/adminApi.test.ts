@@ -1,4 +1,4 @@
-import { fetchUsers, updateUserPlan } from "./adminApi";
+import { deleteUser, fetchUsers, updateUserPlan } from "./adminApi";
 
 describe("adminApi", () => {
   afterEach(() => {
@@ -64,5 +64,22 @@ describe("adminApi", () => {
     await expect(updateUserPlan("1", "pro")).rejects.toThrow(
       "Failed to update user.",
     );
+  });
+
+  it("deletes a user", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(deleteUser("1")).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/users/1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("throws when deleting a user fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+
+    await expect(deleteUser("1")).rejects.toThrow("Failed to delete user.");
   });
 });

@@ -29,3 +29,13 @@ export async function updateUserPlan(
 
   return (await response.json()) as AdminUser;
 }
+
+export async function deleteUser(id: string): Promise<void> {
+  const response = await apiFetch(`${API_BASE}/admin/users/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete user.");
+  }
+}
