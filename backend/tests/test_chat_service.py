@@ -222,7 +222,25 @@ class TestCheckUserGrammar(_FreePlanTokenMixin, unittest.TestCase):
         invoked_messages = mock_llm.invoke.call_args.args[0]
         self.assertIn("Teacher Wang", invoked_messages[0].content)
         self.assertIn("JSON object", invoked_messages[0].content)
-        self.assertEqual(invoked_messages[1].content, "你好")
+        self.assertEqual(invoked_messages[1].content, 'User response: "你好"')
+
+    @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=2)
+    @patch("backend.chat_service.get_llm")
+    def test_check_user_grammar_includes_previous_ai_message(
+        self, mock_get_llm, _mock_level
+    ):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content='{"severity": "none"}')
+        mock_get_llm.return_value = mock_llm
+
+        check_user_grammar("test-user", "巧克力", "你要香草还是巧克力？")
+
+        invoked_messages = mock_llm.invoke.call_args.args[0]
+        self.assertEqual(
+            invoked_messages[1].content,
+            'AI character previous statement: "你要香草还是巧克力？", '
+            'User response: "巧克力"',
+        )
 
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=2)
     @patch("backend.chat_service.get_llm")

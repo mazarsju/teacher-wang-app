@@ -15,6 +15,11 @@ TEACHER_CHARACTER_ID = "teacher-wang"
 GRAMMAR_SEVERITIES = frozenset({"none", "minor", "awkward", "incorrect"})
 GRAMMAR_CHECK_INSTRUCTION = (
     "Check the learner's Chinese message and assign a grammar severity. "
+    "If an AI character previous statement is given, use it as context: a short "
+    "reply (e.g. a single word or noun phrase) that correctly answers the "
+    "question or fills the blank it sets up is grammatically fine on its own "
+    "and should not be marked incorrect for lacking a verb or full sentence "
+    "structure. "
     "Reply with ONLY a JSON object and no other text. "
     "Choose exactly one severity: "
     '"none" (the sentence is grammatically correct), '
@@ -23,7 +28,9 @@ GRAMMAR_CHECK_INSTRUCTION = (
     "misleading, or likely not what the learner meant), "
     '"incorrect" (the sentence is grammatically wrong). '
     'If severity is "none", respond exactly: {"severity": "none"}. '
-    "Otherwise respond exactly: "
+    "Otherwise the \"answer\" field must mix English and Chinese: use English "
+    "to explain the grammar rule or mistake, and Chinese only for the "
+    "corrected example phrase. Respond exactly: "
     '{"severity": "<minor|awkward|incorrect>", '
     '"answer": "<brief correction and explanation>"}.'
 )
@@ -281,11 +288,24 @@ def _extract_json_object(text: str) -> dict:
     return parsed
 
 
-def check_user_grammar(user_id: str, user_message: str) -> GrammarCorrection:
+def check_user_grammar(
+    user_id: str,
+    user_message: str,
+    previous_ai_message: str | None = None,
+) -> GrammarCorrection:
     """Ask Teacher Wang to rate the learner's message grammar severity."""
     content = user_message.strip()
     if content == "":
         raise ValueError("Message content must be a non-empty string")
+
+    previous_ai_message = (previous_ai_message or "").strip()
+    if previous_ai_message:
+        prompt = (
+            f'AI character previous statement: "{previous_ai_message}", '
+            f'User response: "{content}"'
+        )
+    else:
+        prompt = f'User response: "{content}"'
 
     messages = [
         SystemMessage(
@@ -294,7 +314,7 @@ def check_user_grammar(user_id: str, user_message: str) -> GrammarCorrection:
                 f"{GRAMMAR_CHECK_INSTRUCTION}"
             )
         ),
-        HumanMessage(content=content),
+        HumanMessage(content=prompt),
     ]
     raw, token_usage = _invoke_llm(messages)
     parsed = _extract_json_object(raw)

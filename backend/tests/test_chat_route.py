@@ -246,7 +246,7 @@ class TestChatEndpoint(unittest.TestCase):
                 "tokens": {"input": 70, "output": 35, "total": 105},
             },
         )
-        self.mock_grammar.assert_called_once_with(TEST_USER_ID, "我是很好")
+        self.mock_grammar.assert_called_once_with(TEST_USER_ID, "我是很好", None)
         self.mock_create_thread.assert_called_once_with(
             TEST_USER_ID,
             "xiao-ming",
@@ -271,6 +271,33 @@ class TestChatEndpoint(unittest.TestCase):
             TEST_USER_ID,
             input_tokens=70,
             output_tokens=35,
+        )
+
+    def test_chat_passes_previous_assistant_message_to_grammar_check(self):
+        self.mock_generate.return_value = MagicMock(
+            content="好的！",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=50, output_tokens=30),
+        )
+        self.mock_grammar.return_value = MagicMock(
+            severity="none",
+            needs_explanation=False,
+            token_usage=MagicMock(input_tokens=20, output_tokens=5),
+        )
+
+        self.client.post(
+            "/chat",
+            json={
+                "character_id": "xiao-ming",
+                "messages": [
+                    {"role": "assistant", "content": "你要香草还是巧克力？"},
+                    {"role": "user", "content": "巧克力"},
+                ],
+            },
+        )
+
+        self.mock_grammar.assert_called_once_with(
+            TEST_USER_ID, "巧克力", "你要香草还是巧克力？"
         )
 
     def test_thread_chat_stores_messages_under_parent_conversation(self):

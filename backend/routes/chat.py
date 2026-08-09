@@ -198,7 +198,12 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         correction_thread_id = None
 
         if character_id != TEACHER_CHARACTER_ID:
-            correction = check_user_grammar(user_id, last_user_message["content"])
+            previous_ai_message = None
+            if len(normalized_messages) >= 2 and normalized_messages[-2]["role"] == "assistant":
+                previous_ai_message = normalized_messages[-2]["content"]
+            correction = check_user_grammar(
+                user_id, last_user_message["content"], previous_ai_message
+            )
             token_usage = token_usage + correction.token_usage
             if (
                 correction is not None
