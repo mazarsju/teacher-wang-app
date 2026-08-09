@@ -182,6 +182,46 @@ describe("ankiSync", () => {
     expect(mockPullApply).toHaveBeenCalled();
   });
 
+  it("runAnkiSync writing pull sends additional_char for words missing locally", async () => {
+    const writingDeck = {
+      status: "synchronized" as const,
+      deck_name: "W",
+      model_name: "Basic",
+      fields: { recto: "Front", verso: "Back" },
+    };
+    mockFetchSyncData.mockResolvedValue({
+      kind: "mandarin_writing",
+      push_cards: [],
+      unsyncable: [],
+      local_words: [],
+      writing_known_words: [],
+      ignore_keys: [],
+      deck: writingDeck,
+    });
+    mockFetchMappedNotes.mockResolvedValue([
+      { recto: "lonely (gu1 du2)", verso: "孤独" },
+    ]);
+    mockPullApply.mockResolvedValue({
+      kind: "mandarin_writing",
+      action: "cancel_all",
+      direction: "pull",
+      added: 0,
+      ignored: 1,
+      failed: 0,
+      deck: writingDeck,
+    });
+
+    await runAnkiSync({
+      kind: "mandarin_writing",
+      action: "cancel_all",
+      direction: "pull",
+    });
+
+    expect(mockPullApply).toHaveBeenCalledWith(
+      expect.objectContaining({ additional_char: ["孤", "独"] }),
+    );
+  });
+
   it("runAnkiQuickSync pushes both decks then syncs AnkiWeb once", async () => {
     mockFetchSyncData.mockImplementation(async (kind) => ({
       kind,

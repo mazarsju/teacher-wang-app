@@ -23,6 +23,7 @@ import {
 } from "./ankiNotes";
 import {
   uniqueCharactersToCreate,
+  uniqueHanCharactersFromWords,
   vocabularyPullCardsFromNotes,
   writingPullFromNotes,
 } from "./ankiPull";
@@ -418,6 +419,13 @@ async function runPull(
     cards: toImport,
     ignore_keys: ignoreKeys,
     pull_count_after: pullCountAfter,
+    ...(kind === "mandarin_writing"
+      ? {
+          additional_char: uniqueHanCharactersFromWords(
+            pending.pull_missing ?? [],
+          ),
+        }
+      : {}),
   });
 }
 

@@ -223,4 +223,59 @@ describe("AnkiSyncModal", () => {
     expect(await screen.findByText("孤")).toBeInTheDocument();
     expect(screen.getByText("1 card to push")).toBeInTheDocument();
   });
+
+  it("shows an all-set state and hides the action buttons when nothing is pending", async () => {
+    fetchAnkiPendingSync.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      count: 0,
+      cards: [],
+      unsyncable: [],
+      pull_count: 0,
+      pull_cards: [],
+      deck: {
+        status: "synchronized",
+        deck_name: "Vocab",
+        model_name: "Vocab",
+        fields: {
+          writing: "writing",
+          pinyin: "pinyin",
+          definition: "definition",
+        },
+      },
+    });
+
+    renderWithStore(
+      <AnkiSyncModal
+        isOpen
+        kind="mandarin_vocabulary"
+        onCancel={vi.fn()}
+        onSynced={vi.fn()}
+      />,
+    );
+
+    expect(
+      await screen.findByText("You’re all set, nothing to push."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("You’re all set, nothing to pull."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Push all to Anki" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ignore all for push" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Choose what to push" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Pull all from Anki" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ignore all for pull" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Choose what to pull" }),
+    ).not.toBeInTheDocument();
+  });
 });

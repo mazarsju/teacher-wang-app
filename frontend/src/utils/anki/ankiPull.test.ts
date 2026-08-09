@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   pairWritingWithPinyinTokens,
   uniqueCharactersToCreate,
+  uniqueHanCharactersFromWords,
   vocabularyPullCardsFromNotes,
   writingPullFromNotes,
 } from "./ankiPull";
@@ -161,6 +162,16 @@ describe("writingPullFromNotes", () => {
 
     expect(result.pullCards).toEqual([]);
     expect(result.missing).toEqual([]);
+  });
+});
+
+describe("uniqueHanCharactersFromWords", () => {
+  it("dedupes Han characters across words and skips non-Han input", () => {
+    expect(uniqueHanCharactersFromWords(["孤独", "孤单", "abc?"])).toEqual([
+      "孤",
+      "独",
+      "单",
+    ]);
   });
 });
 

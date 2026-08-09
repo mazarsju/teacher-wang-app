@@ -176,6 +176,21 @@ export function vocabularyPullCardsFromNotes(
   return { cards, missing, autoIgnore };
 }
 
+export function uniqueHanCharactersFromWords(words: string[]): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const word of words) {
+    for (const char of word) {
+      if (!isHanCharacter(char) || seen.has(char)) {
+        continue;
+      }
+      seen.add(char);
+      ordered.push(char);
+    }
+  }
+  return ordered;
+}
+
 export function writingPullFromNotes(
   notes: Array<Record<string, string>>,
   localWords: Set<string>,

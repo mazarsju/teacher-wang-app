@@ -97,6 +97,23 @@ def _find_character(user_id: str, char: str) -> Character | None:
     return Character.query.filter_by(user_id=user_id, char=char).first()
 
 
+def _mark_characters_writing_known(user_id: str, chars: list[str]) -> int:
+    """Force ``writing_known`` for characters pulled from Anki verso words
+    that don't exist as a local ``Word`` (so ``rebuild_characters_from_words``
+    can't derive it from the word table)."""
+    updated = 0
+    for char in chars:
+        record = _find_character(user_id, char)
+        if record is None or record.writing_known:
+            continue
+        record.writing_known = True
+        record.updated_at = utcnow()
+        updated += 1
+    if updated:
+        db.session.commit()
+    return updated
+
+
 def _find_word(user_id: str, word: str) -> Word | None:
     return Word.query.filter_by(user_id=user_id, word=word).first()
 
@@ -678,6 +695,7 @@ def apply_pull(
     cards: list[dict[str, Any]],
     ignore_keys: list[str],
     pull_count_after: int | None = None,
+    additional_char: list[str] | None = None,
 ) -> dict[str, Any]:
     imported = 0
     characters_added = 0
@@ -712,6 +730,8 @@ def apply_pull(
         if imported:
             rebuild_characters_from_words(user_id)
             db.session.commit()
+        if additional_char:
+            _mark_characters_writing_known(user_id, additional_char)
         ignored = _add_writing_pull_ignored(user_id, ignore_keys)
     else:
         raise ValueError(f'Unsupported deck kind "{kind}"')

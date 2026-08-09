@@ -164,6 +164,7 @@ def pull_apply():
     cards = data.get("cards", [])
     ignore_keys = data.get("ignore_keys", [])
     pull_count_after = data.get("pull_count_after")
+    additional_char = data.get("additional_char", [])
 
     if kind not in VALID_KINDS:
         return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writing"'}, 400
@@ -183,6 +184,11 @@ def pull_apply():
     ):
         return {"error": "ignore_keys must be an array of strings"}, 400
 
+    if not isinstance(additional_char, list) or not all(
+        isinstance(item, str) for item in additional_char
+    ):
+        return {"error": "additional_char must be an array of strings"}, 400
+
     if pull_count_after is not None and (
         not isinstance(pull_count_after, int) or isinstance(pull_count_after, bool)
     ):
@@ -196,6 +202,7 @@ def pull_apply():
             cards=cards,
             ignore_keys=ignore_keys,
             pull_count_after=pull_count_after,
+            additional_char=additional_char,
         )
     except ValueError as exc:
         return {"error": str(exc)}, 400

@@ -252,10 +252,7 @@ export async function isConnected(): Promise<boolean> {
   try {
     await deckNames();
     return true;
-  } catch (error) {
-    if (error instanceof AnkiConnectError) {
-      return false;
-    }
+  } catch {
     return false;
   }
 }

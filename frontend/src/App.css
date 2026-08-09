@@ -1043,6 +1043,30 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   grid-template-columns: 2rem minmax(8rem, 1.6fr) minmax(4rem, 0.8fr);
 }
 
+.anki-sync-all-set {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.75rem;
+  background: #f0fdf4;
+}
+
+.anki-sync-all-set-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+.anki-sync-all-set-text {
+  margin: 0;
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .anki-sync-unsyncable {
   margin-top: 1rem;
   padding: 0.85rem 1rem;

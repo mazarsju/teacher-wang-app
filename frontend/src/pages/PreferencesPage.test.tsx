@@ -259,7 +259,7 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Mandarin vocabulary")).toBeInTheDocument();
     expect(screen.getByText("Mandarin writing")).toBeInTheDocument();
-    expect(screen.getAllByText("Not configured")).toHaveLength(2);
+    expect(screen.getAllByText("Not connected")).toHaveLength(2);
 
     const setupButtons = screen.getAllByRole("button", { name: "Setup" });
     expect(setupButtons).toHaveLength(2);

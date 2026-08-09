@@ -862,6 +862,41 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(result["added"], 0)
         self.assertEqual(result["failed"], ["水"])
 
+    def test_pull_apply_marks_additional_characters_writing_known(self):
+        from backend.anki_sync import apply_pull, setup_deck
+        from backend.extensions import db
+        from backend.models import Character
+
+        setup_deck(
+            self.user_id,
+            "mandarin_writing",
+            "Writing",
+            model_name="Basic",
+            fields={"recto": "Front", "verso": "Back"},
+        )
+        db.session.add(
+            Character(
+                user_id=self.user_id,
+                char="孤",
+                pinyin="gu1",
+                writing_known=False,
+            )
+        )
+        db.session.commit()
+
+        result = apply_pull(
+            self.user_id,
+            "mandarin_writing",
+            "cancel_all",
+            cards=[],
+            ignore_keys=["孤独"],
+            additional_char=["孤"],
+        )
+
+        self.assertEqual(result["added"], 0)
+        character = Character.query.filter_by(user_id=self.user_id, char="孤").one()
+        self.assertTrue(character.writing_known)
+
     def test_pull_ignore_writing_card(self):
         from backend.anki_sync import apply_pull, setup_deck
         from backend.models import IgnoreWritingCard

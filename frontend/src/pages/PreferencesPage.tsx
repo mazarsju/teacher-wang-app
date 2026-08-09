@@ -104,6 +104,10 @@ export default function PreferencesPage() {
     void loadTokenUsage();
   }, [loadTokenUsage]);
 
+  useEffect(() => {
+    void refreshAnkiStatus();
+  }, []);
+
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
     (!hasSyncedData &&
@@ -239,7 +243,6 @@ export default function PreferencesPage() {
             Map your knowledge-base characters and words to Anki decks through
             AnkiConnect.
           </p>
-
           {!ankiStatus.connected && (
             <Banner
               type="warning"
@@ -261,14 +264,19 @@ export default function PreferencesPage() {
           <ul className="anki-deck-list">
             {deckRows.map(({ kind, label }) => {
               const mapping = ankiStatus.decks[kind];
+              const statusClass = ankiStatus.connected
+                ? mapping.status
+                : "not_synchronized";
               return (
                 <li key={kind} className="anki-deck-row">
                   <div className="anki-deck-row-main">
                     <span className="anki-deck-name">{label}</span>
                     <span
-                      className={`anki-deck-status anki-deck-status--${mapping.status}`}
+                      className={`anki-deck-status anki-deck-status--${statusClass}`}
                     >
-                      {formatDeckStatus(mapping.status)}
+                      {ankiStatus.connected
+                        ? formatDeckStatus(mapping.status)
+                        : "Not connected"}
                     </span>
                     {mapping.deck_name !== "" && (
                       <span className="anki-deck-mapped-name">

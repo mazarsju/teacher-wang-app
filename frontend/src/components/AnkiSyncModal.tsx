@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppSelector } from "../store/hooks";
+import { CheckIcon } from "./icons";
 import {
   ANKI_DECK_LABELS,
   type AnkiDeckKind,
@@ -162,6 +163,8 @@ export default function AnkiSyncModal({
   const unsyncable = pending?.unsyncable ?? [];
   const cancelAllPushCount = pushCount + unsyncable.length;
   const canIgnoreAllPush = cancelAllPushCount > 0;
+  const nothingToPush = !canIgnoreAllPush;
+  const nothingToPull = !canIgnoreAllPull;
   const selectedCount = selectedIds.size;
   const activeCardCount =
     view === "partial-pull" ? pullActionableCount : pushCount;
@@ -417,39 +420,48 @@ export default function AnkiSyncModal({
                   them so they are not offered again.
                 </p>
 
-                <div className="anki-sync-actions">
-                  <button
-                    type="button"
-                    className="modal-button-confirm-primary"
-                    disabled={pushCount === 0 || isSubmitting}
-                    onClick={() =>
-                      setConfirmAction({ direction: "push", type: "all" })
-                    }
-                  >
-                    Push all to Anki
-                  </button>
-                  <button
-                    type="button"
-                    className="modal-button-confirm"
-                    disabled={!canIgnoreAllPush || isSubmitting}
-                    onClick={() =>
-                      setConfirmAction({
-                        direction: "push",
-                        type: "ignore_all",
-                      })
-                    }
-                  >
-                    Ignore all for push
-                  </button>
-                  <button
-                    type="button"
-                    className="page-add-button"
-                    disabled={pushCount === 0 || isSubmitting}
-                    onClick={openPartialPush}
-                  >
-                    Choose what to push
-                  </button>
-                </div>
+                {nothingToPush ? (
+                  <div className="anki-sync-all-set" role="status">
+                    <CheckIcon className="anki-sync-all-set-icon" />
+                    <p className="anki-sync-all-set-text">
+                      You’re all set, nothing to push.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="anki-sync-actions">
+                    <button
+                      type="button"
+                      className="modal-button-confirm-primary"
+                      disabled={pushCount === 0 || isSubmitting}
+                      onClick={() =>
+                        setConfirmAction({ direction: "push", type: "all" })
+                      }
+                    >
+                      Push all to Anki
+                    </button>
+                    <button
+                      type="button"
+                      className="modal-button-confirm"
+                      disabled={!canIgnoreAllPush || isSubmitting}
+                      onClick={() =>
+                        setConfirmAction({
+                          direction: "push",
+                          type: "ignore_all",
+                        })
+                      }
+                    >
+                      Ignore all for push
+                    </button>
+                    <button
+                      type="button"
+                      className="page-add-button"
+                      disabled={pushCount === 0 || isSubmitting}
+                      onClick={openPartialPush}
+                    >
+                      Choose what to push
+                    </button>
+                  </div>
+                )}
 
                 {isWriting && unsyncable.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
@@ -485,32 +497,41 @@ export default function AnkiSyncModal({
                     : "Cards found in this Anki deck that are not yet in your knowledge base."}
                 </p>
 
-                <div className="anki-sync-actions">
-                  <button
-                    type="button"
-                    className="modal-button-confirm-primary"
-                    disabled={pullActionableCount === 0 || isSubmitting}
-                    onClick={() => handlePullAction("all")}
-                  >
-                    Pull all from Anki
-                  </button>
-                  <button
-                    type="button"
-                    className="modal-button-confirm"
-                    disabled={!canIgnoreAllPull || isSubmitting}
-                    onClick={() => handlePullAction("ignore_all")}
-                  >
-                    Ignore all for pull
-                  </button>
-                  <button
-                    type="button"
-                    className="page-add-button"
-                    disabled={pullActionableCount === 0 || isSubmitting}
-                    onClick={() => handlePullAction("partial")}
-                  >
-                    Choose what to pull
-                  </button>
-                </div>
+                {nothingToPull ? (
+                  <div className="anki-sync-all-set" role="status">
+                    <CheckIcon className="anki-sync-all-set-icon" />
+                    <p className="anki-sync-all-set-text">
+                      You’re all set, nothing to pull.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="anki-sync-actions">
+                    <button
+                      type="button"
+                      className="modal-button-confirm-primary"
+                      disabled={pullActionableCount === 0 || isSubmitting}
+                      onClick={() => handlePullAction("all")}
+                    >
+                      Pull all from Anki
+                    </button>
+                    <button
+                      type="button"
+                      className="modal-button-confirm"
+                      disabled={!canIgnoreAllPull || isSubmitting}
+                      onClick={() => handlePullAction("ignore_all")}
+                    >
+                      Ignore all for pull
+                    </button>
+                    <button
+                      type="button"
+                      className="page-add-button"
+                      disabled={pullActionableCount === 0 || isSubmitting}
+                      onClick={() => handlePullAction("partial")}
+                    >
+                      Choose what to pull
+                    </button>
+                  </div>
+                )}
 
                 {isWriting && pullMissing.length > 0 && (
                   <div className="anki-sync-unsyncable" role="note">
