@@ -284,7 +284,6 @@ describe("ChatPage", () => {
       screen.getByLabelText("Introduce yourself by name"),
     ).toBeDisabled();
     expect(screen.getByLabelText("Tell them your age")).toBeDisabled();
-    expect(screen.getByLabelText("Say goodbye")).toBeDisabled();
   });
 
   it("closes the chat modal", async () => {

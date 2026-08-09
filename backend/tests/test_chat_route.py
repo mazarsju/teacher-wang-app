@@ -487,23 +487,22 @@ class TestChatEndpoint(unittest.TestCase):
 
     def test_challenge_completion_hands_history_to_unlocked_character(self):
         self.mock_challenge_reply.return_value = MagicMock(
-            content="再见，很高兴认识你！",
+            content="哦，你18岁啊。",
             unknown_characters=[],
-            completed_task_ids=["say-goodbye"],
+            completed_task_ids=["say-age"],
             judge_conversation=[],
             token_usage=MagicMock(input_tokens=10, output_tokens=5),
         )
         self.mock_load_tasks.return_value = [
             "greet-friend",
             "introduce-name",
-            "say-age",
         ]
 
         response = self.client.post(
             "/chat",
             json={
                 "character_id": "challenge-new-friend",
-                "messages": [{"role": "user", "content": "再见"}],
+                "messages": [{"role": "user", "content": "我18岁"}],
             },
         )
 

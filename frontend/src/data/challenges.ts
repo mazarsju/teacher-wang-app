@@ -95,7 +95,6 @@ export const NEW_FRIEND_CHALLENGE: Challenge = {
     { id: "greet-friend", label: "Say hi to your new friend" },
     { id: "introduce-name", label: "Introduce yourself by name" },
     { id: "say-age", label: "Tell them your age" },
-    { id: "say-goodbye", label: "Say goodbye" },
   ],
   hskLevel: 0,
 };

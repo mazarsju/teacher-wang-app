@@ -3,6 +3,7 @@ import unittest
 from types import SimpleNamespace
 
 from backend.extensions import db
+from backend.challenge_progress import has_completed_challenge
 from backend.hsk_level import (
     HSK_LEVEL_COMPLETION_RATIO,
     HSK_MAX_LEVEL,
@@ -131,6 +132,65 @@ class TestHskLevel(PostgresTestCase):
         self.assertEqual(level, 1)
         self.assertEqual(get_setting(self.user_id, SETTING_LEVEL), "1")
         self.assertEqual(get_chat_speaking_hsk_level(self.user_id), 2)
+
+    def test_refresh_auto_completes_new_friend_challenge_at_level_2(self):
+        level_one = [
+            SimpleNamespace(character=chr(0x4E00 + index), level=1, frequency=index)
+            for index in range(10)
+        ]
+        level_two = [
+            SimpleNamespace(character=chr(0x5000 + index), level=2, frequency=index)
+            for index in range(10)
+        ]
+        for entry in (*level_one, *level_two):
+            db.session.add(
+                HskCharacter(
+                    character=entry.character,
+                    level=entry.level,
+                    frequency=entry.frequency,
+                )
+            )
+            db.session.add(
+                Character(
+                    user_id=self.user_id,
+                    char=entry.character,
+                    pinyin="x",
+                    writing_known=True,
+                )
+            )
+        # Enough unlearned level-3 characters (>15% of levels 1-3 combined)
+        # caps the computed level at 2.
+        for index in range(5):
+            db.session.add(
+                HskCharacter(character=chr(0x6000 + index), level=3, frequency=index)
+            )
+        db.session.commit()
+
+        self.assertFalse(has_completed_challenge(self.user_id, "challenge-new-friend"))
+
+        level = refresh_current_hsk_level(self.user_id)
+
+        self.assertEqual(level, 2)
+        self.assertTrue(has_completed_challenge(self.user_id, "challenge-new-friend"))
+
+    def test_refresh_does_not_complete_new_friend_challenge_below_level_2(self):
+        for char in ("爱", "好", "八"):
+            db.session.add(HskCharacter(character=char, level=1, frequency=1))
+            db.session.add(
+                Character(
+                    user_id=self.user_id,
+                    char=char,
+                    pinyin="x",
+                    writing_known=True,
+                )
+            )
+        # An unlearned level-2 character keeps the computed level at 1.
+        db.session.add(HskCharacter(character="学", level=2, frequency=1))
+        db.session.commit()
+
+        refresh_current_hsk_level(self.user_id)
+
+        self.assertFalse(has_completed_challenge(self.user_id, "challenge-new-friend"))
 
     def test_level_only_counts_the_requesting_user_characters(self):
         other = create_test_user("other-user", "other", "other@example.com")

@@ -331,9 +331,9 @@ NEW_FRIEND = ChallengeScenario(
     role_summary=(
         "You are the learner's new Chinese friend, meeting them for the "
         "first time. Help them practice a basic self-introduction in "
-        "Mandarin: greeting, saying their name, saying their age, and "
-        "saying goodbye. Do not introduce yourself by name until right "
-        "after the learner has introduced theirs."
+        "Mandarin: greeting, saying their name, and saying their age. "
+        "Do not introduce yourself by name until right after the learner "
+        "has introduced theirs."
     ),
     initial_situation=(
         "You and the learner have just met for the first time. You have not "
@@ -355,13 +355,10 @@ NEW_FRIEND = ChallengeScenario(
         "then the learner must introduce themselves by saying their name "
         "(e.g. 我叫..., 我是...); immediately after they do, introduce "
         "yourself as 小明 (e.g. 我叫小明 / 我是小明);",
-        "then the learner must tell you their age (e.g. 我...岁, 我今年...岁);",
-        "only after that may they say goodbye to end the conversation "
-        "(e.g. 再见, 拜拜).",
+        "then the learner must tell you their age (e.g. 我...岁, 我今年...岁).",
     ),
     out_of_order_examples=(
-        "telling their age before introducing their name, or saying "
-        "goodbye before introducing themselves and their age"
+        "telling their age before introducing their name"
     ),
     mid_flow_tips=(
         "When they introduce their name, respond warmly and introduce "
@@ -373,7 +370,7 @@ NEW_FRIEND = ChallengeScenario(
         "[[Xiao Ming leaves]][[Xiao Ming waves goodbye]]"
         "再见，很高兴认识你！"
     ),
-    leave_when_examples="for example the learner has said goodbye",
+    leave_when_examples="for example the introduction is complete",
 )
 
 CHALLENGE_SCENARIOS: dict[str, ChallengeScenario] = {

@@ -5,11 +5,16 @@ from __future__ import annotations
 import math
 from typing import Protocol, TypedDict
 
+from backend.challenge_progress import mark_challenge_completed
 from backend.models import Character, HskCharacter
 from backend.settings import get_level, set_level
 
 HSK_MAX_LEVEL = 7
 HSK_LEVEL_COMPLETION_RATIO = 0.85
+
+# Reaching this level implies enough basic vocabulary that the "meeting a new
+# friend" beginner scenario is trivially satisfied, so it's auto-completed.
+AUTO_COMPLETE_CHALLENGE_AT_LEVEL = {"challenge-new-friend": 2}
 
 
 class HskVocabularyEntry(Protocol):
@@ -135,6 +140,10 @@ def refresh_current_hsk_level(user_id: str, *, commit: bool = True) -> int | Non
     """Recompute the learner's HSK level and persist it in their settings."""
     level = compute_current_hsk_level(user_id=user_id)
     set_level(user_id, level, commit=commit)
+    if level is not None:
+        for challenge_scenario, required_level in AUTO_COMPLETE_CHALLENGE_AT_LEVEL.items():
+            if level >= required_level:
+                mark_challenge_completed(user_id, challenge_scenario, commit=commit)
     return level
 
 
