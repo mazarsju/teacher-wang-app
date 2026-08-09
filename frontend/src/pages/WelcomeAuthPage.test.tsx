@@ -74,7 +74,7 @@ describe("WelcomeAuthPage", () => {
       screen.getByText("Teacher Wang", { selector: ".welcome-auth-brand-mark" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Practice Mandarin with characters you already know/i),
+      screen.getByText(/Chat, track knowledge, and climb HSK\./i),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
     expect(screen.getByLabelText("Username")).toBeInTheDocument();

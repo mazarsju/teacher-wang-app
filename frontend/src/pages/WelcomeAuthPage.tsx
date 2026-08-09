@@ -14,12 +14,45 @@ import {
   requestPasswordReset,
 } from "../utils/auth/passwordResetApi";
 import logo from "../assets/logo.png";
+import homeScreenshot from "../assets/screenshots/01-home.png";
+import knowledgeBaseViewScreenshot from "../assets/screenshots/02-knowledge-base-view.png";
+import knowledgeBaseEditScreenshot from "../assets/screenshots/03-knowledge-base-edit.png";
+import chatScreenshot from "../assets/screenshots/04-chat.png";
+import chatChallengeScreenshot from "../assets/screenshots/05-chat-challenge-waiter.png";
+import ankiSyncImage from "../assets/screenshots/anki-sync.png";
 
 export type WelcomeAuthMode = "login" | "signup" | "confirm" | "forgot" | "reset";
 
 type WelcomeAuthPageProps = {
   onAuthenticated: () => void;
 };
+
+const FEATURES = [
+  {
+    images: [homeScreenshot],
+    title: "Track your progress",
+    description:
+      "See at a glance where you stand on the HSK ladder — and exactly which characters still stand between you and the next level.",
+  },
+  {
+    images: [knowledgeBaseEditScreenshot, knowledgeBaseViewScreenshot],
+    title: "Build your knowledge base",
+    description:
+      "Add words in a clean edit view — matching characters are created automatically — then browse your vocabulary grouped by pinyin.",
+  },
+  {
+    images: [ankiSyncImage],
+    title: "Sync with Anki",
+    description:
+      "Push new words straight into your Anki decks and pull back the cards you've already mastered — one sync keeps them in lockstep.",
+  },
+  {
+    images: [chatScreenshot, chatChallengeScreenshot],
+    title: "Practice with AI agents",
+    description:
+      "Step into real scenes: role-play with characters like the waiter, clear the checklist, and win the challenge in Mandarin.",
+  },
+];
 
 function authErrorMessage(error: unknown): string {
   if (error instanceof CognitoAuthError) {
@@ -62,6 +95,7 @@ export default function WelcomeAuthPage({
   onAuthenticated,
 }: WelcomeAuthPageProps) {
   const [mode, setMode] = useState<WelcomeAuthMode>("login");
+  const [showFeatures, setShowFeatures] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -276,9 +310,15 @@ export default function WelcomeAuthPage({
             <p className="welcome-auth-brand-mark">Teacher Wang</p>
           </div>
           <p className="welcome-auth-tagline">
-            Practice Mandarin with characters you already know — chat, track
-            your knowledge base, and grow toward the next HSK level.
+            Chat, track knowledge, and climb HSK.
           </p>
+          <button
+            type="button"
+            className="welcome-auth-discover-button"
+            onClick={() => setShowFeatures(true)}
+          >
+            Discover the features →
+          </button>
         </header>
 
         <form className="welcome-auth-form" onSubmit={handleSubmit} noValidate>
@@ -452,6 +492,38 @@ export default function WelcomeAuthPage({
             </p>
           )}
         </form>
+      </div>
+
+      <div
+        className={`feature-showcase${showFeatures ? " feature-showcase-open" : ""}`}
+        aria-hidden={!showFeatures}
+      >
+        <div className="feature-showcase-inner">
+          <button
+            type="button"
+            className="feature-showcase-back"
+            onClick={() => setShowFeatures(false)}
+            tabIndex={showFeatures ? 0 : -1}
+          >
+            ← Back
+          </button>
+          <h2 className="feature-showcase-title">
+            Everything you need to learn Mandarin
+          </h2>
+          <div className="feature-showcase-list">
+            {FEATURES.map((feature) => (
+              <article className="feature-showcase-card" key={feature.title}>
+                <div className="feature-showcase-images">
+                  {feature.images.map((image) => (
+                    <img src={image} alt="" key={image} />
+                  ))}
+                </div>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
