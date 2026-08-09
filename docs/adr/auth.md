@@ -53,7 +53,7 @@ Credentials must not live as reversible secrets in application tables. Infra and
 
 ### API protection (Flask)
 
-* A `before_request` hook protects **every** route. Only `OPTIONS` (CORS preflight) and `GET /health` are public.
+* A `before_request` hook protects **every** route. Public exceptions are `OPTIONS` (CORS preflight), `GET /health`, and the two password-reset routes in `PUBLIC_PATHS` (`backend/user_context.py`) — reached before the user has a session.
 * Protected routes require an `Authorization: Bearer <access_token>` JWT. Flask verifies it against the User Pool JWKS (issuer, audience/client id, expiry, signature). Invalid or missing tokens → `401`.
 * Clients may also send the ID token in an `X-Id-Token` header. When present it is verified (`token_use=id`, `aud=client_id`) and its `email` claim is mirrored into the `users` row.
 * The tenant is resolved before the view runs, so handlers read it from `current_user_id()` instead of re-parsing claims.
@@ -95,6 +95,7 @@ Browser
 
 * Cognito User Pool / app client / optional Google IdP are provisioned in **teacher-wang-infra**; Flask verifies access tokens via JWKS (`backend/auth.py`) and resolves the tenant in `backend/user_context.py`.
 * The welcome screen signs in / signs up via Cognito `USER_PASSWORD_AUTH` / `SignUp` (`frontend/src/utils/auth/cognitoAuth.ts`); tokens live in `sessionStorage` and are attached by `frontend/src/utils/auth/apiFetch.ts`.
+* **Forgot password:** the welcome screen only collects an email, but Cognito's `ForgotPassword`/`ConfirmForgotPassword` need the Cognito **username**. `POST /auth/forgot-password` and `POST /auth/reset-password` (`backend/routes/auth_password_reset.py`) bridge email → username via the `users` table, then call the unauthenticated Cognito actions directly (`backend/cognito_public.py`, same no-credential HTTP pattern as `cognitoAuth.ts`). The email lookup never reveals whether an account exists — both endpoints return a generic response either way.
 * Every request now pays a JWKS-cached signature check plus one `users` upsert; a busy session writes `last_connexion` on each call.
 * Local and CI need Cognito env vars (or mocks) for protected routes — see `.env.example` (`COGNITO_*` backend, `VITE_COGNITO_*` frontend). Route unit tests stub verification through `backend/tests/auth_stub.py`.
 * Migration away from Cognito later is painful (hashes not exportable)—accept re-registration or a dual-run plan if that ever matters.

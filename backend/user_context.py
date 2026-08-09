@@ -1,6 +1,7 @@
 """Per-request authentication and tenant resolution.
 
-Every request except ``OPTIONS`` and ``/health`` must carry a Cognito access
+Every request except ``OPTIONS``, ``/health`` and the password-reset routes
+(reached before the user has a session) must carry a Cognito access
 token. The verified ``sub`` claim identifies the account: it is upserted into
 ``users`` and the row's ``shortid`` is exposed through ``current_user_id()``,
 which every query on a private table must filter on.
@@ -22,7 +23,9 @@ from backend.extensions import db
 from backend.models import DEFAULT_USER_PLAN, User, utcnow
 
 ID_TOKEN_HEADER = "X-Id-Token"
-PUBLIC_PATHS = frozenset({"/health"})
+PUBLIC_PATHS = frozenset(
+    {"/health", "/auth/forgot-password", "/auth/reset-password"}
+)
 
 
 def _is_public_request() -> bool:

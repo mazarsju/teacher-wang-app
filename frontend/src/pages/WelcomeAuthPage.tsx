@@ -9,9 +9,13 @@ import {
   completeOAuthRedirectIfPresent,
   startGoogleSignIn,
 } from "../utils/auth/cognitoOAuth";
+import {
+  confirmPasswordReset,
+  requestPasswordReset,
+} from "../utils/auth/passwordResetApi";
 import logo from "../assets/logo.png";
 
-export type WelcomeAuthMode = "login" | "signup" | "confirm";
+export type WelcomeAuthMode = "login" | "signup" | "confirm" | "forgot" | "reset";
 
 type WelcomeAuthPageProps = {
   onAuthenticated: () => void;
@@ -99,22 +103,32 @@ export default function WelcomeAuthPage({
     };
   }, [onAuthenticated]);
 
+  const isLogin = mode === "login";
   const isSignup = mode === "signup";
   const isConfirm = mode === "confirm";
-  const showGoogle = !isConfirm;
+  const isForgot = mode === "forgot";
+  const isReset = mode === "reset";
+  const showGoogle = isLogin || isSignup;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
     const trimmedUsername = username.trim();
-    if (!trimmedUsername || !password) {
+    const trimmedEmail = email.trim();
+    if (isLogin && (!trimmedUsername || !password)) {
       return;
     }
-    if (isSignup && !email.trim()) {
+    if (isSignup && (!trimmedUsername || !password || !trimmedEmail)) {
       return;
     }
-    if (isConfirm && !confirmationCode.trim()) {
+    if (isConfirm && (!trimmedUsername || !password || !confirmationCode.trim())) {
+      return;
+    }
+    if (isForgot && !trimmedEmail) {
+      return;
+    }
+    if (isReset && (!trimmedEmail || !confirmationCode.trim() || !password)) {
       return;
     }
 
@@ -129,7 +143,7 @@ export default function WelcomeAuthPage({
       if (mode === "signup") {
         const result = await signUpWithPassword(
           trimmedUsername,
-          email.trim(),
+          trimmedEmail,
           password,
         );
         if (result.userConfirmed) {
@@ -146,12 +160,33 @@ export default function WelcomeAuthPage({
         return;
       }
 
-      await confirmSignUpAndSignIn(
-        trimmedUsername,
-        confirmationCode,
-        password,
-      );
-      onAuthenticated();
+      if (mode === "confirm") {
+        await confirmSignUpAndSignIn(
+          trimmedUsername,
+          confirmationCode,
+          password,
+        );
+        onAuthenticated();
+        return;
+      }
+
+      if (mode === "forgot") {
+        await requestPasswordReset(trimmedEmail);
+        setConfirmationCode("");
+        setPassword("");
+        setCodeHint(
+          "If an account with that email exists, a reset code has been sent.",
+        );
+        setMode("reset");
+        return;
+      }
+
+      await confirmPasswordReset(trimmedEmail, confirmationCode.trim(), password);
+      setPassword("");
+      setConfirmationCode("");
+      setEmail("");
+      setCodeHint("Password updated. Log in with your new password.");
+      setMode("login");
     } catch (submitError: unknown) {
       setError(authErrorMessage(submitError));
     } finally {
@@ -173,6 +208,7 @@ export default function WelcomeAuthPage({
   function switchToLogin() {
     setMode("login");
     setError(null);
+    setPassword("");
     setConfirmationCode("");
     setCodeHint(null);
   }
@@ -184,17 +220,33 @@ export default function WelcomeAuthPage({
     setCodeHint(null);
   }
 
-  const formTitle = isConfirm
-    ? "Confirm your email"
-    : isSignup
-      ? "Create your account"
-      : "Welcome back";
+  function switchToForgot() {
+    setMode("forgot");
+    setError(null);
+    setPassword("");
+    setConfirmationCode("");
+    setCodeHint(null);
+  }
 
-  const submitLabel = isConfirm
-    ? "Confirm and log in"
-    : isSignup
-      ? "Create account"
-      : "Log in";
+  const formTitle = isReset
+    ? "Set a new password"
+    : isForgot
+      ? "Reset your password"
+      : isConfirm
+        ? "Confirm your email"
+        : isSignup
+          ? "Create your account"
+          : "Welcome back";
+
+  const submitLabel = isReset
+    ? "Update password"
+    : isForgot
+      ? "Send reset code"
+      : isConfirm
+        ? "Confirm and log in"
+        : isSignup
+          ? "Create account"
+          : "Log in";
 
   if (isHandlingOAuth) {
     return (
@@ -232,11 +284,9 @@ export default function WelcomeAuthPage({
         <form className="welcome-auth-form" onSubmit={handleSubmit} noValidate>
           <h1 className="welcome-auth-form-title">{formTitle}</h1>
 
-          {isConfirm && codeHint ? (
-            <p className="welcome-auth-hint">{codeHint}</p>
-          ) : null}
+          {codeHint ? <p className="welcome-auth-hint">{codeHint}</p> : null}
 
-          {!isConfirm ? (
+          {isLogin || isSignup ? (
             <label className="welcome-auth-field">
               <span className="welcome-auth-label">Username</span>
               <input
@@ -249,13 +299,13 @@ export default function WelcomeAuthPage({
                 disabled={isSubmitting}
               />
             </label>
-          ) : (
+          ) : isConfirm ? (
             <p className="welcome-auth-hint">
               Username: <strong>{username.trim()}</strong>
             </p>
-          )}
+          ) : null}
 
-          {isSignup ? (
+          {isSignup || isForgot ? (
             <label className="welcome-auth-field">
               <span className="welcome-auth-label">Email</span>
               <input
@@ -268,9 +318,13 @@ export default function WelcomeAuthPage({
                 disabled={isSubmitting}
               />
             </label>
+          ) : isReset ? (
+            <p className="welcome-auth-hint">
+              Resetting password for <strong>{email.trim()}</strong>.
+            </p>
           ) : null}
 
-          {isConfirm ? (
+          {isConfirm || isReset ? (
             <label className="welcome-auth-field">
               <span className="welcome-auth-label">Confirmation code</span>
               <input
@@ -284,20 +338,37 @@ export default function WelcomeAuthPage({
                 disabled={isSubmitting}
               />
             </label>
-          ) : (
+          ) : null}
+
+          {isLogin || isSignup || isReset ? (
             <label className="welcome-auth-field">
-              <span className="welcome-auth-label">Password</span>
+              <span className="welcome-auth-label">
+                {isReset ? "New password" : "Password"}
+              </span>
               <input
                 type="password"
                 name="password"
-                autoComplete={isSignup ? "new-password" : "current-password"}
+                autoComplete={isSignup || isReset ? "new-password" : "current-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 disabled={isSubmitting}
               />
             </label>
-          )}
+          ) : null}
+
+          {isLogin ? (
+            <p className="welcome-auth-switch">
+              <button
+                type="button"
+                className="welcome-auth-switch-button"
+                onClick={switchToForgot}
+                disabled={isSubmitting}
+              >
+                Forgot your password?
+              </button>
+            </p>
+          ) : null}
 
           {error ? (
             <p className="welcome-auth-error" role="alert">
@@ -335,6 +406,17 @@ export default function WelcomeAuthPage({
           {isConfirm ? (
             <p className="welcome-auth-switch">
               Wrong account?{" "}
+              <button
+                type="button"
+                className="welcome-auth-switch-button"
+                onClick={switchToLogin}
+                disabled={isSubmitting}
+              >
+                Back to log in
+              </button>
+            </p>
+          ) : isForgot || isReset ? (
+            <p className="welcome-auth-switch">
               <button
                 type="button"
                 className="welcome-auth-switch-button"

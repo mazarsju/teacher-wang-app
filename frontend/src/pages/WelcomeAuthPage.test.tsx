@@ -8,12 +8,16 @@ const {
   confirmSignUpAndSignIn,
   startGoogleSignIn,
   completeOAuthRedirectIfPresent,
+  requestPasswordReset,
+  confirmPasswordReset,
 } = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
   signUpWithPassword: vi.fn(),
   confirmSignUpAndSignIn: vi.fn(),
   startGoogleSignIn: vi.fn(),
   completeOAuthRedirectIfPresent: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  confirmPasswordReset: vi.fn(),
 }));
 
 vi.mock("../utils/auth/cognitoAuth", async (importOriginal) => {
@@ -32,6 +36,11 @@ vi.mock("../utils/auth/cognitoOAuth", () => ({
   completeOAuthRedirectIfPresent,
 }));
 
+vi.mock("../utils/auth/passwordResetApi", () => ({
+  requestPasswordReset,
+  confirmPasswordReset,
+}));
+
 describe("WelcomeAuthPage", () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
@@ -39,6 +48,10 @@ describe("WelcomeAuthPage", () => {
     confirmSignUpAndSignIn.mockReset();
     startGoogleSignIn.mockReset();
     completeOAuthRedirectIfPresent.mockReset();
+    requestPasswordReset.mockReset();
+    confirmPasswordReset.mockReset();
+    requestPasswordReset.mockResolvedValue(undefined);
+    confirmPasswordReset.mockResolvedValue(undefined);
     completeOAuthRedirectIfPresent.mockResolvedValue(null);
     startGoogleSignIn.mockResolvedValue(undefined);
     signInWithPassword.mockResolvedValue({
@@ -236,5 +249,70 @@ describe("WelcomeAuthPage", () => {
 
     expect(screen.getByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+  });
+
+  it("walks through the forgot-password flow end to end", async () => {
+    const user = userEvent.setup();
+    render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Forgot your password?" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Reset your password" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Username")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Email"), "learner@example.com");
+    await user.click(screen.getByRole("button", { name: "Send reset code" }));
+
+    await waitFor(() => {
+      expect(requestPasswordReset).toHaveBeenCalledWith("learner@example.com");
+    });
+    expect(
+      await screen.findByRole("heading", { name: "Set a new password" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/If an account with that email exists/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/learner@example\.com/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Confirmation code"), "654321");
+    await user.type(screen.getByLabelText("New password"), "BrandNew1!");
+    await user.click(screen.getByRole("button", { name: "Update password" }));
+
+    await waitFor(() => {
+      expect(confirmPasswordReset).toHaveBeenCalledWith(
+        "learner@example.com",
+        "654321",
+        "BrandNew1!",
+      );
+    });
+    expect(
+      await screen.findByRole("heading", { name: "Welcome back" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Password updated/i)).toBeInTheDocument();
+  });
+
+  it("shows an error when requesting a reset code fails", async () => {
+    const user = userEvent.setup();
+    requestPasswordReset.mockRejectedValueOnce(new Error("Something broke."));
+    render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Forgot your password?" }));
+    await user.type(screen.getByLabelText("Email"), "learner@example.com");
+    await user.click(screen.getByRole("button", { name: "Send reset code" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Something broke.");
+  });
+
+  it("returns to login from the forgot-password screen", async () => {
+    const user = userEvent.setup();
+    render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Forgot your password?" }));
+    await user.click(screen.getByRole("button", { name: "Back to log in" }));
+
+    expect(screen.getByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
   });
 });

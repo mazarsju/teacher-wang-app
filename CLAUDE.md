@@ -39,7 +39,7 @@ Applies to: `backend/**/*.py`.
 
 Rationale: `docs/adr/data-isolation.md`, `docs/adr/auth.md`. Schema catalog: `docs/architecture/schema-tenancy.md`.
 
-- Auth is global via `before_request` in `backend/user_context.py`. Do not add per-route auth decorators. Public routes: `OPTIONS` and `/health` only.
+- Auth is global via `before_request` in `backend/user_context.py`. Do not add per-route auth decorators. Public routes: `OPTIONS`, `/health`, and the entries in `PUBLIC_PATHS` (pre-session routes like password reset) only.
 - Read the tenant with `current_user_id()` (returns `users.shortid`); never re-parse JWT claims in a view.
 - Every query on a private table must filter by `user_id`; every insert must set it; updates/deletes must match on it. There is no RLS backstop yet.
 - Service functions take `user_id` as their first argument (do not reach into `flask.g`).
