@@ -15,7 +15,12 @@ def list_users():
     users = User.query.order_by(User.email).all()
     return {
         "users": [
-            {"id": str(user.shortid), "email": user.email, "plan": user.plan}
+            {
+                "id": str(user.shortid),
+                "email": user.email,
+                "plan": user.plan,
+                "last_connection": user.last_connection.isoformat(),
+            }
             for user in users
         ]
     }, 200

@@ -18,8 +18,18 @@ describe("AdminPage", () => {
 
   it("lists users with their plan", async () => {
     fetchUsers.mockResolvedValue([
-      { id: "1", email: "a@example.com", plan: "free" },
-      { id: "2", email: "b@example.com", plan: "pro" },
+      {
+        id: "1",
+        email: "a@example.com",
+        plan: "free",
+        last_connection: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "2",
+        email: "b@example.com",
+        plan: "pro",
+        last_connection: "2026-02-02T00:00:00Z",
+      },
     ]);
 
     render(<AdminPage />);
@@ -33,12 +43,18 @@ describe("AdminPage", () => {
   it("upgrades a user's plan and reflects the response", async () => {
     const user = userEvent.setup();
     fetchUsers.mockResolvedValue([
-      { id: "1", email: "a@example.com", plan: "free" },
+      {
+        id: "1",
+        email: "a@example.com",
+        plan: "free",
+        last_connection: "2026-01-01T00:00:00Z",
+      },
     ]);
     updateUserPlan.mockResolvedValue({
       id: "1",
       email: "a@example.com",
       plan: "pro",
+      last_connection: "2026-01-01T00:00:00Z",
     });
 
     render(<AdminPage />);

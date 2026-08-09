@@ -1,5 +1,6 @@
 import bootstrap  # noqa: F401
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import backend.database as database_module
@@ -26,9 +27,15 @@ class TestListUsersEndpoint(unittest.TestCase):
 
     def test_admin_can_list_users(self):
         self.mock_current_user.return_value = MagicMock(email="mazarsju@gmail.com")
+        last_seen_a = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        last_seen_b = datetime(2026, 2, 2, tzinfo=timezone.utc)
         self.mock_user_cls.query.order_by.return_value.all.return_value = [
-            MagicMock(shortid=1, email="a@example.com", plan="free"),
-            MagicMock(shortid=2, email="b@example.com", plan="pro"),
+            MagicMock(
+                shortid=1, email="a@example.com", plan="free", last_connection=last_seen_a
+            ),
+            MagicMock(
+                shortid=2, email="b@example.com", plan="pro", last_connection=last_seen_b
+            ),
         ]
 
         response = self.client.get("/admin/users")
@@ -38,8 +45,18 @@ class TestListUsersEndpoint(unittest.TestCase):
             response.get_json(),
             {
                 "users": [
-                    {"id": "1", "email": "a@example.com", "plan": "free"},
-                    {"id": "2", "email": "b@example.com", "plan": "pro"},
+                    {
+                        "id": "1",
+                        "email": "a@example.com",
+                        "plan": "free",
+                        "last_connection": last_seen_a.isoformat(),
+                    },
+                    {
+                        "id": "2",
+                        "email": "b@example.com",
+                        "plan": "pro",
+                        "last_connection": last_seen_b.isoformat(),
+                    },
                 ]
             },
         )

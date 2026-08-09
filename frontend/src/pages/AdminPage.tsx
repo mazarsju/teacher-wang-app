@@ -7,6 +7,11 @@ import { fetchUsers, updateUserPlan } from "../utils/admin/adminApi";
 const USER_COLUMNS: TableColumn<AdminUser>[] = [
   { key: "email", header: "Email" },
   { key: "plan", header: "Plan" },
+  {
+    key: "last_connection",
+    header: "Last connection",
+    render: (row) => new Date(row.last_connection).toLocaleString(),
+  },
 ];
 
 export default function AdminPage() {
