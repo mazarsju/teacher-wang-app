@@ -9,6 +9,7 @@ import {
   completeOAuthRedirectIfPresent,
   startGoogleSignIn,
 } from "../utils/auth/cognitoOAuth";
+import logo from "../assets/logo.png";
 
 export type WelcomeAuthMode = "login" | "signup" | "confirm";
 
@@ -218,7 +219,10 @@ export default function WelcomeAuthPage({
 
       <div className="welcome-auth-content">
         <header className="welcome-auth-brand">
-          <p className="welcome-auth-brand-mark">Teacher Wang</p>
+          <div className="welcome-auth-brand-row">
+            <img className="welcome-auth-logo" src={logo} alt="" />
+            <p className="welcome-auth-brand-mark">Teacher Wang</p>
+          </div>
           <p className="welcome-auth-tagline">
             Practice Mandarin with characters you already know — chat, track
             your knowledge base, and grow toward the next HSK level.

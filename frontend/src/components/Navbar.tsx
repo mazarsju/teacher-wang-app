@@ -6,6 +6,7 @@ import {
   SettingsIcon,
 } from "./icons";
 import ProfileMenu from "./ProfileMenu";
+import logo from "../assets/logo.png";
 
 export type PageId =
   | "home"
@@ -52,7 +53,7 @@ export default function Navbar({
       <div className="navbar-inner">
         <div className="navbar-nav-group">
           <div className="navbar-brand">
-            <span className="navbar-brand-glyph">学</span>
+            <img className="navbar-brand-logo" src={logo} alt="" />
             <span className="navbar-brand-text">Teacher Wang</span>
           </div>
           <ul className="navbar-list">
