@@ -289,6 +289,7 @@ export default function KnowledgeBaseInitWizardModal({
         word: row.word,
         definition: row.definition.trim().slice(0, 100) || null,
         pinyin: normalizeImportPinyin(row.pinyin).trim() || null,
+        writing_known: row.knownToWrite,
       })),
       BULK_BATCH_SIZE,
     );

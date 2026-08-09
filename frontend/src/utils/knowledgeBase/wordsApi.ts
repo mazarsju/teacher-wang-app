@@ -41,7 +41,12 @@ export async function createWord(values: {
 }
 
 export async function bulkCreateWords(
-  values: { word: string; definition: string | null; pinyin?: string | null }[],
+  values: {
+    word: string;
+    definition: string | null;
+    pinyin?: string | null;
+    writing_known?: boolean;
+  }[],
 ): Promise<Word[]> {
   const response = await apiFetch(`${API_BASE}/words/bulk-create`, {
     method: "POST",
