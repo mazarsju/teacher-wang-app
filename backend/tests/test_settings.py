@@ -10,8 +10,10 @@ from backend.settings import (
     SETTING_LEVEL,
     ensure_default_settings,
     get_setting,
+    get_smart_ai_enabled,
     reset_available_token,
     set_setting,
+    set_smart_ai_enabled,
 )
 from postgres_test_case import PostgresTestCase, create_test_user
 
@@ -55,6 +57,24 @@ class TestSettings(PostgresTestCase):
             get_setting(self.user_id, SETTING_AVAILABLE_TOKEN),
             str(PRO_PLAN_TOKEN_GRANT),
         )
+
+    def test_smart_ai_defaults_to_enabled(self):
+        self.assertTrue(get_smart_ai_enabled(self.user_id))
+
+    def test_smart_ai_can_be_disabled_and_reenabled(self):
+        set_smart_ai_enabled(self.user_id, False)
+        self.assertFalse(get_smart_ai_enabled(self.user_id))
+
+        set_smart_ai_enabled(self.user_id, True)
+        self.assertTrue(get_smart_ai_enabled(self.user_id))
+
+    def test_smart_ai_setting_is_isolated_per_user(self):
+        other = create_test_user("other-user", "other", "other@example.com")
+        set_smart_ai_enabled(self.user_id, False)
+        set_smart_ai_enabled(other.shortid, True)
+
+        self.assertFalse(get_smart_ai_enabled(self.user_id))
+        self.assertTrue(get_smart_ai_enabled(other.shortid))
 
 
 if __name__ == "__main__":

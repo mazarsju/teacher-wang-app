@@ -117,6 +117,13 @@ describe("PreferencesPage", () => {
           });
         }
 
+        if (url.endsWith("/preferences/smart-ai")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ enabled: true }),
+          });
+        }
+
         return Promise.resolve({
           ok: false,
           json: async () => ({}),
@@ -161,6 +168,82 @@ describe("PreferencesPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the Smart AI toggle enabled by default with a short description", async () => {
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    await screen.findByRole("heading", { name: "AI usage" });
+    const toggle = await screen.findByRole("checkbox", { name: "Smart AI" });
+    expect(toggle).toBeChecked();
+    expect(
+      screen.getByText(
+        "Smarter answers, at the cost of a bit more time and usage.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("turns Smart AI off and persists the change", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const toggle = await screen.findByRole("checkbox", { name: "Smart AI" });
+    expect(toggle).toBeChecked();
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/smart-ai") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ enabled: false }),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    await user.click(toggle);
+
+    await waitFor(() => expect(toggle).not.toBeChecked());
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/preferences/smart-ai"),
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ enabled: false }),
+      }),
+    );
+  });
+
+  it("reverts the Smart AI toggle if saving the preference fails", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const toggle = await screen.findByRole("checkbox", { name: "Smart AI" });
+    expect(toggle).toBeChecked();
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/smart-ai") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    await user.click(toggle);
+
+    await waitFor(() => expect(toggle).toBeChecked());
+  });
+
   it("prompts to update the plan once the monthly AI usage allowance is reached", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(fetch);
@@ -178,6 +261,13 @@ describe("PreferencesPage", () => {
             max_allowed_token: 100000,
             days: [{ date: "2026-07-24", tokens: 100000 }],
           }),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+
+      if (url.endsWith("/preferences/smart-ai")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ enabled: true }),
         }) as unknown as ReturnType<typeof fetch>;
       }
 
@@ -819,6 +909,13 @@ describe("PreferencesPage", () => {
           return Promise.resolve({
             ok: true,
             json: async () => ({ message: "Knowledge base deleted" }),
+          });
+        }
+
+        if (url.endsWith("/preferences/smart-ai")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ enabled: true }),
           });
         }
 

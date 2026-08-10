@@ -55,11 +55,16 @@ class _FreePlanTokenMixin:
 
 
 class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=3)
     @patch("backend.chat_service.get_llm")
     def test_generate_chat_reply_returns_assistant_message(
-        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+        self,
+        mock_get_llm,
+        _mock_speaking_level,
+        mock_character_cls,
+        _mock_smart_ai_enabled,
     ):
         mock_character_cls.query.filter_by.return_value.all.return_value = [
             MagicMock(char="你"),
@@ -144,10 +149,11 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertIn("世", rephrase_prompt)
         self.assertIn("界", rephrase_prompt)
 
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=1)
     @patch("backend.chat_service.get_llm")
     def test_skips_retry_when_disabled_for_character(
-        self, mock_get_llm, _mock_speaking_level
+        self, mock_get_llm, _mock_speaking_level, _mock_smart_ai_enabled
     ):
         mock_llm = MagicMock()
         mock_llm.invoke.side_effect = [
@@ -207,11 +213,16 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         )
         self.assertEqual(mock_llm.invoke.call_count, 4)
 
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=3)
     @patch("backend.chat_service.get_llm")
     def test_always_on_behaviors_apply_even_when_planner_omits_them(
-        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+        self,
+        mock_get_llm,
+        _mock_speaking_level,
+        mock_character_cls,
+        _mock_smart_ai_enabled,
     ):
         mock_character_cls.query.filter_by.return_value.all.return_value = []
         mock_llm = MagicMock()
@@ -236,11 +247,16 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         for always_on_id in ALWAYS_ON_BEHAVIOR_IDS:
             self.assertIn(always_on_id, validator_prompt)
 
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=3)
     @patch("backend.chat_service.get_llm")
     def test_retries_once_and_keeps_improved_attempt(
-        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+        self,
+        mock_get_llm,
+        _mock_speaking_level,
+        mock_character_cls,
+        _mock_smart_ai_enabled,
     ):
         mock_character_cls.query.filter_by.return_value.all.return_value = []
         mock_llm = MagicMock()
@@ -274,11 +290,16 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertIn("unrelated story instead of first", revision_prompt)
         self.assertIn("Direct Question Answering", revision_prompt)
 
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=3)
     @patch("backend.chat_service.get_llm")
     def test_retry_keeps_original_when_revision_does_not_improve(
-        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+        self,
+        mock_get_llm,
+        _mock_speaking_level,
+        mock_character_cls,
+        _mock_smart_ai_enabled,
     ):
         mock_character_cls.query.filter_by.return_value.all.return_value = []
         mock_llm = MagicMock()
@@ -304,6 +325,32 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertEqual(reply.content, "original reply")
         self.assertEqual(reply.behavior_failures, ["BHV-01"])
         self.assertEqual(mock_llm.invoke.call_count, 5)
+
+    @patch("backend.settings.get_smart_ai_enabled", return_value=False)
+    @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=3)
+    @patch("backend.chat_service.get_llm")
+    def test_skips_planner_and_validator_when_smart_ai_disabled(
+        self, mock_get_llm, _mock_speaking_level, _mock_smart_ai_enabled
+    ):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="你好！")
+        mock_get_llm.return_value = mock_llm
+
+        reply = generate_chat_reply(
+            "test-user",
+            "teacher-wang",
+            [{"role": "user", "content": "你好"}],
+        )
+
+        self.assertEqual(reply.content, "你好！")
+        self.assertEqual(reply.behavior_ids, [])
+        self.assertEqual(reply.behavior_failures, [])
+        mock_llm.invoke.assert_called_once()
+
+        system_prompt = mock_llm.invoke.call_args.args[0][0].content
+        self.assertIn("Teacher Wang", system_prompt)
+        self.assertIn("Teaching strategy for HSK 3", system_prompt)
+        self.assertNotIn("Apply these teaching requirements", system_prompt)
 
     def test_generate_chat_reply_rejects_unknown_character(self):
         with self.assertRaises(ValueError):

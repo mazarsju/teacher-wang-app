@@ -619,23 +619,25 @@ def generate_chat_reply(
 
     if character_id == TEACHER_CHARACTER_ID and revision_instruction is None:
         from backend.hsk_level import get_chat_speaking_hsk_level
+        from backend.settings import get_smart_ai_enabled
 
         strategy = get_teaching_strategy(get_chat_speaking_hsk_level(user_id))
         strategy_block = strategy.as_instructions()
         system_prompt = f"{get_character(character_id)['system_prompt']}\n\n{strategy_block}"
 
-        planned_ids, plan_usage = select_behaviors(
-            messages[-1]["content"],
-            _format_conversation_context(messages),
-            strategy_block,
-        )
-        token_usage = token_usage + plan_usage
-        # Behaviors that apply to every turn are guaranteed here rather than
-        # left to the planner's judgment call.
-        behavior_ids = list(dict.fromkeys([*ALWAYS_ON_BEHAVIOR_IDS, *planned_ids]))
-        behavior_block = _behavior_requirements_block(behavior_ids)
-        if behavior_block:
-            system_prompt = f"{system_prompt}\n\n{behavior_block}"
+        if get_smart_ai_enabled(user_id):
+            planned_ids, plan_usage = select_behaviors(
+                messages[-1]["content"],
+                _format_conversation_context(messages),
+                strategy_block,
+            )
+            token_usage = token_usage + plan_usage
+            # Behaviors that apply to every turn are guaranteed here rather
+            # than left to the planner's judgment call.
+            behavior_ids = list(dict.fromkeys([*ALWAYS_ON_BEHAVIOR_IDS, *planned_ids]))
+            behavior_block = _behavior_requirements_block(behavior_ids)
+            if behavior_block:
+                system_prompt = f"{system_prompt}\n\n{behavior_block}"
     else:
         system_prompt = get_system_prompt(user_id, character_id)
 
@@ -760,6 +762,8 @@ def generate_challenge_reply(
     tasks: list[dict[str, str]],
 ) -> ChallengeReplyResult:
     """Generate a challenge reply, allowing one coherence revision from the judge."""
+    from backend.settings import get_smart_ai_enabled
+
     reply = generate_chat_reply(user_id, character_id, messages)
     token_usage = reply.token_usage
     judge_conversation: list[dict[str, str]] = []
@@ -771,7 +775,9 @@ def generate_challenge_reply(
     judgment = judge_challenge_progress(conversation_for_judge, tasks)
     token_usage = token_usage + judgment.token_usage
 
-    if not judgment.coherent:
+    # Task-completion detection always runs; only the coherence-revision
+    # round trip is gated behind Smart AI.
+    if not judgment.coherent and get_smart_ai_enabled(user_id):
         assert judgment.incoherence_reason is not None
         refused_reply = reply.content
         judge_conversation.append({"role": "assistant", "content": refused_reply})

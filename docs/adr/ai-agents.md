@@ -78,6 +78,33 @@ After the character agent replies in a challenge, a **Challenge Judge** reviews 
 
 The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`: it starts with the refused character reply, then the judge’s feedback (and a second judge note if the revision is still incoherent). The final character reply is only in `message.content`, not duplicated there. Only that final reply is stored in the learner-facing history.
 
+### Smart AI toggle (light vs. full pipeline)
+
+Learners can turn **Smart AI** off from Preferences → AI usage. The setting
+(`smart_ai_enabled` in `backend/settings.py`, default **on**) is read
+directly by `chat_service.py`; it is a plain boolean check, not something
+the planner or any model reasons about.
+
+When Smart AI is **off**:
+
+* **Teacher Wang** skips the planner, every behavior from
+  [architecture/teacher-wang-behaviors.md](../architecture/teacher-wang-behaviors.md)
+  — including the three marked "always-on" above (bilingual balance,
+  encouragement, response formatting) — the validator, and the retry. The
+  reply becomes a single LLM call using only the base persona plus the
+  Teaching Strategy. HSK-level language adaptation is unaffected either way,
+  since it costs no extra call and isn't part of the toggle.
+* **Challenges** still run the Challenge Judge to detect completed tasks —
+  that is core functionality, not an "extra" — but skip the coherence-check
+  revision round trip. An incoherent reply is sent as-is instead of being
+  revised once.
+* **Grammar severity checking** on non–Teacher-Wang conversations is
+  unaffected either way; it was never part of Smart AI.
+
+Net effect: a Teacher Wang turn drops from up to 5 LLM calls to 1, and a
+challenge turn drops from up to 4 (character + judge + revision + re-judge)
+to 2 (character + judge, never revised).
+
 ### Interaction overview
 
 ```text

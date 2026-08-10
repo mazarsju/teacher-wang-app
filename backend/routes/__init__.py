@@ -28,6 +28,7 @@ def register_routes(app: Flask) -> None:
         list_users,
         list_words,
         pick_hsk_word,
+        smart_ai_preference,
         suggest_hsk_words,
         token_usage,
         update_character,
@@ -68,3 +69,4 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(list_users.bp)
     app.register_blueprint(update_user.bp)
     app.register_blueprint(delete_user.bp)
+    app.register_blueprint(smart_ai_preference.bp)

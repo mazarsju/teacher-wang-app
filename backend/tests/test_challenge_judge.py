@@ -146,9 +146,12 @@ class TestChallengeJudge(_FreePlanTokenMixin, unittest.TestCase):
 
 
 class TestGenerateChallengeReply(unittest.TestCase):
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.judge_challenge_progress")
     @patch("backend.chat_service.generate_chat_reply")
-    def test_coherent_reply_skips_revision(self, mock_generate, mock_judge):
+    def test_coherent_reply_skips_revision(
+        self, mock_generate, mock_judge, _mock_smart_ai_enabled
+    ):
         mock_generate.return_value = MagicMock(
             content="您好，请问需要什么？",
             unknown_characters=[],
@@ -182,9 +185,12 @@ class TestGenerateChallengeReply(unittest.TestCase):
         mock_generate.assert_called_once()
         mock_judge.assert_called_once()
 
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.judge_challenge_progress")
     @patch("backend.chat_service.generate_chat_reply")
-    def test_incoherent_reply_is_revised_once(self, mock_generate, mock_judge):
+    def test_incoherent_reply_is_revised_once(
+        self, mock_generate, mock_judge, _mock_smart_ai_enabled
+    ):
         mock_generate.side_effect = [
             MagicMock(
                 content="好的，一共五十块。",
@@ -240,9 +246,12 @@ class TestGenerateChallengeReply(unittest.TestCase):
         self.assertIn("Payment was accepted before ordering.", revision_kwargs["revision_instruction"])
         self.assertEqual(mock_judge.call_count, 2)
 
+    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.chat_service.judge_challenge_progress")
     @patch("backend.chat_service.generate_chat_reply")
-    def test_second_incoherence_is_accepted_anyway(self, mock_generate, mock_judge):
+    def test_second_incoherence_is_accepted_anyway(
+        self, mock_generate, mock_judge, _mock_smart_ai_enabled
+    ):
         mock_generate.side_effect = [
             MagicMock(
                 content="first bad reply",
@@ -302,6 +311,39 @@ class TestGenerateChallengeReply(unittest.TestCase):
         )
         self.assertEqual(mock_generate.call_count, 2)
         self.assertEqual(mock_judge.call_count, 2)
+
+    @patch("backend.settings.get_smart_ai_enabled", return_value=False)
+    @patch("backend.chat_service.judge_challenge_progress")
+    @patch("backend.chat_service.generate_chat_reply")
+    def test_incoherent_reply_is_accepted_without_revision_when_smart_ai_disabled(
+        self, mock_generate, mock_judge, _mock_smart_ai_enabled
+    ):
+        mock_generate.return_value = MagicMock(
+            content="好的，一共五十块。",
+            unknown_characters=[],
+            token_usage=LlmTokenUsage(input_tokens=10, output_tokens=5),
+        )
+        mock_judge.return_value = ChallengeJudgeResult(
+            completed_task_ids=["pay-bill"],
+            coherent=False,
+            incoherence_reason="Payment was accepted before ordering.",
+            token_usage=LlmTokenUsage(input_tokens=8, output_tokens=3),
+        )
+
+        result = generate_challenge_reply(
+            "test-user",
+            "challenge-restaurant",
+            [{"role": "user", "content": "买单"}],
+            TASKS,
+        )
+
+        # Task-completion detection still ran; only the revision round trip
+        # was skipped.
+        self.assertEqual(result.content, "好的，一共五十块。")
+        self.assertEqual(result.completed_task_ids, ["pay-bill"])
+        self.assertEqual(result.judge_conversation, [])
+        mock_generate.assert_called_once()
+        mock_judge.assert_called_once()
 
 
 if __name__ == "__main__":

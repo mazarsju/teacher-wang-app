@@ -61,6 +61,15 @@ Leaving those to the planner's per-turn judgment proved unreliable, so
 includes them unconditionally — the planner is only consulted for the
 remaining, conversation-dependent behaviors.
 
+This entire pipeline is itself conditional on the learner's **Smart AI**
+setting (Preferences → AI usage, default on). When Smart AI is off, no
+behavior below is planned, injected, or validated — not even the three
+marked "always-on" — because the planner and validator never run at all.
+Teacher Wang's reply then comes from a single call using only its base
+persona and the [Teaching Strategy](teacher-wang-teaching-strategy.md),
+which is unaffected by the toggle since it adds no extra call. See
+[adr/ai-agents.md](../adr/ai-agents.md) for the full comparison.
+
 ## Behavior index
 
 | ID | Title |

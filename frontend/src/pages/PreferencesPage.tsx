@@ -25,6 +25,10 @@ import type { UserPlan } from "../types/adminUser";
 import type { TokenUsageSummary } from "../types/tokenUsage";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
 import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
+import {
+  fetchSmartAiPreference,
+  updateSmartAiPreference,
+} from "../utils/aiChat/smartAiApi";
 import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
 
 function formatDayLabel(isoDate: string): string {
@@ -69,6 +73,9 @@ export default function PreferencesPage() {
 
   const [tokenUsage, setTokenUsage] = useState<TokenUsageSummary | null>(null);
   const [isTokenUsageLoading, setIsTokenUsageLoading] = useState(true);
+  const [isSmartAiEnabled, setIsSmartAiEnabled] = useState(true);
+  const [isSmartAiLoading, setIsSmartAiLoading] = useState(true);
+  const [isSmartAiSaving, setIsSmartAiSaving] = useState(false);
   const [extrasError, setExtrasError] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isSyncHelpOpen, setIsSyncHelpOpen] = useState(false);
@@ -100,9 +107,46 @@ export default function PreferencesPage() {
     }
   }, []);
 
+  const loadSmartAiPreference = useCallback(async () => {
+    try {
+      const preference = await fetchSmartAiPreference();
+      setIsSmartAiEnabled(preference.enabled);
+    } catch (loadError) {
+      setExtrasError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Failed to load the Smart AI preference.",
+      );
+    } finally {
+      setIsSmartAiLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadTokenUsage();
   }, [loadTokenUsage]);
+
+  useEffect(() => {
+    void loadSmartAiPreference();
+  }, [loadSmartAiPreference]);
+
+  async function handleToggleSmartAi(nextEnabled: boolean) {
+    const previousEnabled = isSmartAiEnabled;
+    setIsSmartAiEnabled(nextEnabled);
+    setIsSmartAiSaving(true);
+    try {
+      await updateSmartAiPreference(nextEnabled);
+    } catch (toggleError) {
+      setIsSmartAiEnabled(previousEnabled);
+      setExtrasError(
+        toggleError instanceof Error
+          ? toggleError.message
+          : "Failed to update the Smart AI preference.",
+      );
+    } finally {
+      setIsSmartAiSaving(false);
+    }
+  }
 
   useEffect(() => {
     void refreshAnkiStatus();
@@ -320,6 +364,29 @@ export default function PreferencesPage() {
             How much of your monthly AI allowance chat and grammar-check calls
             have used.
           </p>
+
+          {!isSmartAiLoading && (
+            <div className="preferences-toggle-row">
+              <span className="preferences-toggle-row-label">
+                <span className="preferences-toggle-row-title">Smart AI</span>
+                <p className="preferences-toggle-row-description">
+                  Smarter answers, at the cost of a bit more time and usage.
+                </p>
+              </span>
+              <label className="preferences-toggle" aria-label="Smart AI">
+                <input
+                  type="checkbox"
+                  checked={isSmartAiEnabled}
+                  disabled={isSmartAiSaving}
+                  onChange={(event) =>
+                    void handleToggleSmartAi(event.target.checked)
+                  }
+                />
+                <span className="preferences-toggle-track" />
+                <span className="preferences-toggle-thumb" />
+              </label>
+            </div>
+          )}
 
           <div className="preferences-usage-progress">
             <div className="preferences-usage-progress-header">

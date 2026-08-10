@@ -20,6 +20,7 @@ SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED = (
     "anki_mandarin_writing_pull_ignored"
 )
 SETTING_AVAILABLE_TOKEN = "available_token"
+SETTING_SMART_AI_ENABLED = "smart_ai_enabled"
 
 FREE_PLAN_MAX_ALLOWED_TOKEN = 100_000
 PRO_PLAN_TOKEN_GRANT = 10_000_000
@@ -59,6 +60,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_ANKI_MANDARIN_WRITING_FIELDS: "",
     SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED: "[]",
     SETTING_AVAILABLE_TOKEN: str(FREE_PLAN_MAX_ALLOWED_TOKEN),
+    SETTING_SMART_AI_ENABLED: "true",
 }
 
 def get_setting(user_id: str, key: str, default: str = "") -> str:
@@ -115,6 +117,20 @@ def set_level(user_id: str, level: int | None, *, commit: bool = True) -> None:
         user_id,
         SETTING_LEVEL,
         "" if level is None else str(level),
+        commit=commit,
+    )
+
+
+def get_smart_ai_enabled(user_id: str) -> bool:
+    return get_setting(user_id, SETTING_SMART_AI_ENABLED, "true") == "true"
+
+
+def set_smart_ai_enabled(user_id: str, enabled: bool, *, commit: bool = True) -> None:
+    ensure_default_settings(user_id, commit=False)
+    set_setting(
+        user_id,
+        SETTING_SMART_AI_ENABLED,
+        "true" if enabled else "false",
         commit=commit,
     )
 

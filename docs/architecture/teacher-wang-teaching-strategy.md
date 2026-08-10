@@ -25,6 +25,14 @@ behavior planner (as context for which behaviors it selects) and the
 response generator (as concrete instructions), so both reason from one
 shared, stable representation instead of two independently drifting prompts.
 
+Unlike the planner/generator/validator pipeline in
+[teacher-wang-behaviors.md](teacher-wang-behaviors.md), the Teaching Strategy
+adds no extra LLM call — it is plain text assembled in code. It is therefore
+**not** part of the learner's Smart AI toggle: it applies every Teacher Wang
+turn regardless of whether Smart AI is on or off. When Smart AI is off, the
+planner never runs, so the strategy text only reaches the generator, not a
+planner — see [adr/ai-agents.md](../adr/ai-agents.md).
+
 ## Levels
 
 | Level | Title | Language balance |
