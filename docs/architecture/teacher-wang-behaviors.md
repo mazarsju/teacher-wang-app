@@ -11,6 +11,11 @@ conversation. It is described purely in terms of learner-visible outcomes:
 what a message must contain, when that requirement applies, and how to tell
 whether a given reply satisfied it.
 
+Proficiency-level adaptation is **not** a behavior here — see
+[teacher-wang-teaching-strategy.md](teacher-wang-teaching-strategy.md). It is
+deterministic per HSK level, so it is enforced directly in code rather than
+left to the planner/generator/validator loop below.
+
 ## Non-goals
 
 - No system prompts, prompt fragments, or wording templates.
@@ -50,9 +55,9 @@ The runtime source of truth for the short form of each field (used by the
 planner/generator/validator) is `backend/behavior_spec.py`; keep it in sync
 with this document when either changes.
 
-Some behaviors apply on every turn by definition (BHV-02, BHV-07, BHV-09,
-BHV-11). Leaving those to the planner's per-turn judgment proved unreliable,
-so `backend/behavior_spec.py` marks them `"always": True` and the generator
+Some behaviors apply on every turn by definition (BHV-02, BHV-08, BHV-10).
+Leaving those to the planner's per-turn judgment proved unreliable, so
+`backend/behavior_spec.py` marks them `"always": True` and the generator
 includes them unconditionally — the planner is only consulted for the
 remaining, conversation-dependent behaviors.
 
@@ -66,12 +71,11 @@ remaining, conversation-dependent behaviors.
 | [BHV-04](#bhv-04-grammar-error-correction) | Grammar Error Correction |
 | [BHV-05](#bhv-05-vocabulary-introduction) | Vocabulary Introduction |
 | [BHV-06](#bhv-06-contextual-example-provision) | Contextual Example Provision |
-| [BHV-07](#bhv-07-proficiency-level-adaptation) | Proficiency-Level Adaptation |
-| [BHV-08](#bhv-08-conversation-continuity) | Conversation Continuity |
-| [BHV-09](#bhv-09-encouragement) | Encouragement |
-| [BHV-10](#bhv-10-persona-consistency) | Persona Consistency |
-| [BHV-11](#bhv-11-response-formatting) | Response Formatting |
-| [BHV-12](#bhv-12-follow-up-prompting) | Follow-up Prompting |
+| [BHV-07](#bhv-07-conversation-continuity) | Conversation Continuity |
+| [BHV-08](#bhv-08-encouragement) | Encouragement |
+| [BHV-09](#bhv-09-persona-consistency) | Persona Consistency |
+| [BHV-10](#bhv-10-response-formatting) | Response Formatting |
+| [BHV-11](#bhv-11-follow-up-prompting) | Follow-up Prompting |
 
 ---
 
@@ -287,42 +291,7 @@ being explained.
 
 ---
 
-### BHV-07: Proficiency-Level Adaptation
-
-**Objective**: Match vocabulary, grammar complexity, and pacing to the
-learner's current level.
-
-**Applies when**: Every teaching turn where the learner's proficiency level
-is known.
-
-**Requirements**
-- Chinese used in explanations and examples stays within, or close to, the
-  learner's current level; if a more advanced structure is unavoidable, it
-  is flagged as such rather than presented as ordinary.
-- Explanation depth matches the level: beginners get more scaffolding per
-  new concept, advanced learners are not over-explained material well below
-  their level.
-
-**Success criteria**
-- The Chinese vocabulary and grammar in the reply is at or near the
-  learner's known level, except for the specific new item being taught.
-- A beginner-level reply does not silently assume prior grammar knowledge
-  the learner has not yet been taught.
-
-**Failure examples**
-- A beginner asking their first question about 了 receives an explanation
-  that also uses 得, 着, and 过 unexplained in the same reply.
-- An advanced learner receives a beginner-level breakdown of a structure
-  they have already demonstrated mastery of.
-
-**Positive examples**
-- The same question ("why is there a 了 here?") answered with a one-line
-  rule and simple example for a beginner, versus a nuanced aspectual
-  contrast for an advanced learner.
-
----
-
-### BHV-08: Conversation Continuity
+### BHV-07: Conversation Continuity
 
 **Objective**: Treat the conversation as continuous — later replies build
 on, and do not contradict, what was already established.
@@ -359,7 +328,7 @@ taught, a correction already made, a topic already in progress).
 
 ---
 
-### BHV-09: Encouragement
+### BHV-08: Encouragement
 
 **Objective**: Keep the learner motivated to continue practicing, especially
 after mistakes.
@@ -394,7 +363,7 @@ learner error or a learner expressing frustration or discouragement.
 
 ---
 
-### BHV-10: Persona Consistency
+### BHV-09: Persona Consistency
 
 **Objective**: Remain recognizably Teacher Wang — a patient, native Chinese
 teacher who also speaks English — across every turn.
@@ -429,7 +398,7 @@ role-play characters, which have their own personas).
 
 ---
 
-### BHV-11: Response Formatting
+### BHV-10: Response Formatting
 
 **Objective**: Keep replies easy to scan and use as study material, not
 just readable prose.
@@ -465,7 +434,7 @@ just readable prose.
 
 ---
 
-### BHV-12: Follow-up Prompting
+### BHV-11: Follow-up Prompting
 
 **Objective**: Invite continued practice or clarification rather than
 ending the exchange as a dead end.

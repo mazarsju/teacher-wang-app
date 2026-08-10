@@ -35,6 +35,37 @@ For every non–Teacher Wang conversation, Teacher Wang silently reviews the lea
 
 The API returns `{"severity": "…"}` (plus `answer` when severity is not `none`). The UI shows a badge on the user message for every level: a non-clickable green check for `none`, and clickable orange/red icons for `minor` / `awkward` / `incorrect`. Opening a note starts a Teacher Wang side thread with the short correction so the learner can ask follow-up questions without leaving the main chat. Severity is also stored on the conversation log so badges survive history reload.
 
+### Behavior planner, generator, and validator (Teacher Wang)
+
+When the character is Teacher Wang itself (not a role-play character), the
+reply is produced by three extra collaborating calls on top of the base
+character agent, described in
+[architecture/teacher-wang-behaviors.md](../architecture/teacher-wang-behaviors.md):
+
+1. **Planner** — given the learner's message and conversation so far, selects
+   which teaching *behaviors* (answering directly, explaining grammar,
+   correcting an error, …) apply to this turn.
+2. **Generator** — the character agent call, whose system prompt is Teacher
+   Wang's base persona plus the selected behaviors' requirements. A few
+   behaviors that apply to every turn (bilingual balance, encouragement,
+   response formatting) are unioned in unconditionally rather than left to
+   the planner, since per-turn selection of "always true" behaviors proved
+   unreliable.
+3. **Validator** — checks the generated reply against the selected
+   behaviors' success criteria and logs any failures; it does not currently
+   block or trigger a retry.
+
+Proficiency-level adaptation is handled separately by the **Teaching
+Strategy** (`backend/teaching_strategy.py`,
+[architecture/teacher-wang-teaching-strategy.md](../architecture/teacher-wang-teaching-strategy.md)):
+a deterministic, code-defined mapping from the learner's HSK level to
+language balance, pinyin/translation policy, vocabulary scope, and
+encouragement style. It is not planner-selected — the learner's level is
+known in advance, so there is nothing for a planner to judge — and its
+rendered instructions are given to both the planner (as context) and the
+generator (as concrete instructions), replacing what used to be a generic
+"answer at HSK N" sentence.
+
 ### Challenge judge
 
 After the character agent replies in a challenge, a **Challenge Judge** reviews the full turn and does two jobs:
@@ -103,7 +134,7 @@ User
 
 ### Drawbacks
 
-* One user turn can cost several LLM calls (grammar + character + retries + judge + optional revision).
+* One user turn can cost several LLM calls (grammar + character + retries + judge + optional revision); for Teacher Wang specifically, up to three more (planner + generator + validator).
 * Judge/character revision quality depends on structured JSON parsing from the model.
 * Adding a new challenge requires persona prompt, tasks, and judge-compatible task ids to stay aligned — mitigated by the Cursor **create-challenge** skill (`.cursor/skills/create-challenge/`), which wires one `character_id` through backend + frontend with shared task ids and mandatory agent rules.
 

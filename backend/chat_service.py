@@ -10,6 +10,7 @@ from backend.chat_agents import get_character, get_system_prompt
 from backend.chinese_validation import extract_han_characters
 from backend.llm import get_llm
 from backend.models import Character
+from backend.teaching_strategy import get_teaching_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -504,13 +505,15 @@ def _dedup_known_ids(raw_ids, known_ids: frozenset[str]) -> list[str]:
 
 
 def select_behaviors(
-    user_message: str, conversation_context: str = ""
+    user_message: str, conversation_context: str = "", strategy_context: str = ""
 ) -> tuple[list[str], LlmTokenUsage]:
     """Plan which behavior specification IDs apply to this learner turn."""
     system = BEHAVIOR_PLANNER_SYSTEM_PROMPT + _format_behavior_catalog(BEHAVIORS)
     prompt = f'Learner\'s latest message: "{user_message}"'
     if conversation_context:
         prompt = f"Conversation so far:\n{conversation_context}\n\n{prompt}"
+    if strategy_context:
+        prompt = f"{strategy_context}\n\n{prompt}"
 
     raw, token_usage = _invoke_llm(
         [SystemMessage(content=system), HumanMessage(content=prompt)]
@@ -565,13 +568,20 @@ def generate_chat_reply(
             "previous_assistant_reply and revision_instruction must be provided together"
         )
 
-    system_prompt = get_system_prompt(user_id, character_id)
     token_usage = LlmTokenUsage()
     behavior_ids: list[str] = []
 
     if character_id == TEACHER_CHARACTER_ID and revision_instruction is None:
+        from backend.hsk_level import get_chat_speaking_hsk_level
+
+        strategy = get_teaching_strategy(get_chat_speaking_hsk_level(user_id))
+        strategy_block = strategy.as_instructions()
+        system_prompt = f"{get_character(character_id)['system_prompt']}\n\n{strategy_block}"
+
         planned_ids, plan_usage = select_behaviors(
-            messages[-1]["content"], _format_conversation_context(messages)
+            messages[-1]["content"],
+            _format_conversation_context(messages),
+            strategy_block,
         )
         token_usage = token_usage + plan_usage
         # Behaviors that apply to every turn are guaranteed here rather than
@@ -580,6 +590,8 @@ def generate_chat_reply(
         behavior_block = _behavior_requirements_block(behavior_ids)
         if behavior_block:
             system_prompt = f"{system_prompt}\n\n{behavior_block}"
+    else:
+        system_prompt = get_system_prompt(user_id, character_id)
 
     langchain_messages = [SystemMessage(content=system_prompt)]
 

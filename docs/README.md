@@ -64,6 +64,7 @@ Example header:
 | Push/pull sync steps | [anki/sync-protocol.md](anki/sync-protocol.md) |
 | Chat agents / challenges | [adr/ai-agents.md](adr/ai-agents.md), skill `create-challenge` |
 | Teacher Wang teaching behaviors (for planner/generator/validator) | [architecture/teacher-wang-behaviors.md](architecture/teacher-wang-behaviors.md) |
+| Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
 | Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |
 | Product screenshots | [screenshots/](screenshots/) |

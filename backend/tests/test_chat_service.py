@@ -92,7 +92,7 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         generator_messages = mock_llm.invoke.call_args_list[1].args[0]
         self.assertIn("Teacher Wang", generator_messages[0].content)
         self.assertIn(
-            "understandable by an HSK 3 level student",
+            "Teaching strategy for HSK 3 (Balanced bilingual teaching)",
             generator_messages[0].content,
         )
         self.assertIn("Direct Question Answering", generator_messages[0].content)
@@ -101,6 +101,9 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
 
         validator_messages = mock_llm.invoke.call_args_list[2].args[0]
         self.assertIn("Behavior Validator", validator_messages[0].content)
+
+        planner_prompt = planner_messages[1].content
+        self.assertIn("Teaching strategy for HSK 3", planner_prompt)
 
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=1)

@@ -3,6 +3,10 @@
 Short-form mirror of docs/architecture/teacher-wang-behaviors.md, used by the
 planner/generator/validator in chat_service.py. Keep in sync with that
 document when either changes.
+
+Proficiency-level adaptation is handled by backend/teaching_strategy.py
+instead of a behavior here: it is deterministic per HSK level, not something
+that benefits from the planner's per-turn judgment call.
 """
 
 BEHAVIORS = [
@@ -97,22 +101,6 @@ BEHAVIORS = [
     },
     {
         "id": "BHV-07",
-        "title": "Proficiency-Level Adaptation",
-        "objective": "Match vocabulary, grammar complexity, and pacing to the learner's current level.",
-        "applies_when": "Always",
-        "always": True,
-        "requirements": (
-            "Keep Chinese used near the learner's level, flagging any "
-            "unavoidable more-advanced structure; match explanation depth "
-            "to level."
-        ),
-        "success_criteria": (
-            "The vocabulary/grammar in the reply is at or near the "
-            "learner's known level except for the new item being taught."
-        ),
-    },
-    {
-        "id": "BHV-08",
         "title": "Conversation Continuity",
         "objective": "Treat the conversation as continuous rather than a series of disconnected turns.",
         "applies_when": "The current message follows prior turns that established relevant facts.",
@@ -127,7 +115,7 @@ BEHAVIORS = [
         ),
     },
     {
-        "id": "BHV-09",
+        "id": "BHV-08",
         "title": "Encouragement",
         "objective": "Keep the learner motivated to continue practicing, especially after mistakes.",
         "applies_when": "Always, especially after a learner error or expressed frustration.",
@@ -143,7 +131,7 @@ BEHAVIORS = [
         ),
     },
     {
-        "id": "BHV-10",
+        "id": "BHV-09",
         "title": "Persona Consistency",
         "objective": "Remain recognizably Teacher Wang across every turn.",
         "applies_when": "Every turn in a Teacher Wang conversation.",
@@ -158,7 +146,7 @@ BEHAVIORS = [
         ),
     },
     {
-        "id": "BHV-11",
+        "id": "BHV-10",
         "title": "Response Formatting",
         "objective": "Keep replies easy to scan and use as study material.",
         "applies_when": "Always",
@@ -174,7 +162,7 @@ BEHAVIORS = [
         ),
     },
     {
-        "id": "BHV-12",
+        "id": "BHV-11",
         "title": "Follow-up Prompting",
         "objective": "Invite continued practice or clarification rather than ending on a dead end.",
         "applies_when": "The reply fully answers the question and the topic has natural room for extension.",
