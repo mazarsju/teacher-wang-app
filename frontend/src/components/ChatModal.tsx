@@ -76,6 +76,23 @@ function hasCorrectionThread(message: ChatMessage): boolean {
   );
 }
 
+const MARKDOWN_INLINE_PATTERN = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
+
+function renderFormattedText(text: string) {
+  return text.split(MARKDOWN_INLINE_PATTERN).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 function getCorrectionThreadMessages(message: ChatMessage): ChatMessage[] {
   if (message.correctionThread && message.correctionThread.length > 0) {
     return message.correctionThread;
@@ -532,7 +549,7 @@ export default function ChatModal({
                                   key={`${segmentIndex}-${segment.text}`}
                                   className="chat-message chat-message--assistant"
                                 >
-                                  {segment.text}
+                                  {renderFormattedText(segment.text)}
                                 </div>
                               ),
                             )}
@@ -567,7 +584,7 @@ export default function ChatModal({
                               : "chat-message chat-message--assistant"
                           }
                         >
-                          {chatMessage.content}
+                          {renderFormattedText(chatMessage.content)}
                         </div>
                       </div>
                     </li>

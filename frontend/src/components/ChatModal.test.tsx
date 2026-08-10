@@ -555,6 +555,52 @@ describe("ChatModal", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders markdown emphasis in message content as HTML", async () => {
+    const user = userEvent.setup();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [] }),
+          });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: {
+                role: "assistant",
+                content: "This is **correct** and `很好`!",
+              },
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "你好");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(
+      await screen.findByText("correct", { selector: "strong" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("很好", { selector: "code" })).toBeInTheDocument();
+  });
+
   it("renders stage directions found anywhere in an assistant message", async () => {
     const user = userEvent.setup();
     const waiter: ChatCharacter = {
