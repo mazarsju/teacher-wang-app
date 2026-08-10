@@ -236,6 +236,53 @@ class TestChatEndpoint(unittest.TestCase):
             response.get_json()["final_prompt"], "teacher wang system prompt"
         )
 
+    def test_chat_includes_behaviors_when_debug_mode_true(self):
+        self.mock_generate.return_value = MagicMock(
+            content="你好，很高兴认识你。",
+            unknown_characters=[],
+            system_prompt="teacher wang system prompt",
+            token_usage=MagicMock(input_tokens=30, output_tokens=12),
+            behavior_ids=["BHV-01", "BHV-10"],
+            behavior_failures=["BHV-10"],
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+                "debug_mode": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["behaviors"],
+            {"selected": ["BHV-01", "BHV-10"], "failed": ["BHV-10"]},
+        )
+
+    def test_chat_omits_behaviors_when_none_selected(self):
+        self.mock_generate.return_value = MagicMock(
+            content="你好，很高兴认识你。",
+            unknown_characters=[],
+            system_prompt="teacher wang system prompt",
+            token_usage=MagicMock(input_tokens=30, output_tokens=12),
+            behavior_ids=[],
+            behavior_failures=[],
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+                "debug_mode": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("behaviors", response.get_json())
+
     def test_chat_rejects_non_boolean_debug_mode(self):
         response = self.client.post(
             "/chat",

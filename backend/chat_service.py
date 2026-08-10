@@ -1,13 +1,17 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
+import logging
 import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
+from backend.behavior_spec import ALWAYS_ON_BEHAVIOR_IDS, BEHAVIORS, BEHAVIOR_IDS
 from backend.chat_agents import get_character, get_system_prompt
 from backend.chinese_validation import extract_han_characters
 from backend.llm import get_llm
 from backend.models import Character
+
+logger = logging.getLogger(__name__)
 
 VALID_ROLES = {"user", "assistant"}
 MAX_REPHRASE_ATTEMPTS = 3
@@ -65,6 +69,8 @@ class ChatReplyResult:
     unknown_characters: list[list[str]]
     system_prompt: str
     token_usage: LlmTokenUsage = LlmTokenUsage()
+    behavior_ids: list[str] = field(default_factory=list)
+    behavior_failures: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -448,6 +454,101 @@ def judge_challenge_progress(
     )
 
 
+BEHAVIOR_PLANNER_SYSTEM_PROMPT = (
+    "You are the Behavior Planner for Teacher Wang, a Mandarin teaching "
+    "agent. Given the learner's latest message and the conversation so "
+    "far, decide which of the following behaviors apply to this turn. "
+    'Reply with ONLY a JSON object: {"behavior_ids": ["BHV-01", ...]}, '
+    "including every behavior whose 'Applies when' condition is met and "
+    "omitting the rest.\n\nBehavior catalog:\n"
+)
+
+BEHAVIOR_VALIDATOR_SYSTEM_PROMPT = (
+    "You are the Behavior Validator for Teacher Wang, a Mandarin teaching "
+    "agent. You are given a generated reply and the behaviors that were "
+    "selected as applicable to it. For each behavior, check whether the "
+    "reply satisfies its success criteria. Reply with ONLY a JSON object: "
+    '{"failed_behavior_ids": ["BHV-01", ...]}, listing only the behaviors '
+    "the reply fails to satisfy. Use an empty list if it satisfies all of "
+    "them."
+)
+
+
+def _format_behavior_catalog(behaviors: list[dict]) -> str:
+    return "\n".join(
+        f"- {behavior['id']} ({behavior['title']}): {behavior['objective']} "
+        f"Applies when: {behavior['applies_when']}"
+        for behavior in behaviors
+    )
+
+
+def _format_behavior_criteria(behaviors: list[dict]) -> str:
+    return "\n".join(
+        f"- {behavior['id']} ({behavior['title']}): {behavior['success_criteria']}"
+        for behavior in behaviors
+    )
+
+
+def _format_conversation_context(messages: list[dict[str, str]]) -> str:
+    return "\n".join(f"{message['role']}: {message['content']}" for message in messages[:-1])
+
+
+def _dedup_known_ids(raw_ids, known_ids: frozenset[str]) -> list[str]:
+    if not isinstance(raw_ids, list):
+        return []
+    return [
+        behavior_id
+        for behavior_id in dict.fromkeys(raw_ids)
+        if behavior_id in known_ids
+    ]
+
+
+def select_behaviors(
+    user_message: str, conversation_context: str = ""
+) -> tuple[list[str], LlmTokenUsage]:
+    """Plan which behavior specification IDs apply to this learner turn."""
+    system = BEHAVIOR_PLANNER_SYSTEM_PROMPT + _format_behavior_catalog(BEHAVIORS)
+    prompt = f'Learner\'s latest message: "{user_message}"'
+    if conversation_context:
+        prompt = f"Conversation so far:\n{conversation_context}\n\n{prompt}"
+
+    raw, token_usage = _invoke_llm(
+        [SystemMessage(content=system), HumanMessage(content=prompt)]
+    )
+    parsed = _extract_json_object(raw)
+    return _dedup_known_ids(parsed.get("behavior_ids"), BEHAVIOR_IDS), token_usage
+
+
+def _behavior_requirements_block(behavior_ids: list[str]) -> str:
+    selected = [behavior for behavior in BEHAVIORS if behavior["id"] in behavior_ids]
+    if not selected:
+        return ""
+    lines = "\n".join(f"- {behavior['title']}: {behavior['requirements']}" for behavior in selected)
+    return f"Apply these teaching requirements in your reply:\n{lines}"
+
+
+def validate_behaviors(
+    reply_content: str, behavior_ids: list[str]
+) -> tuple[list[str], LlmTokenUsage]:
+    """Check a generated reply against the selected behaviors' success criteria."""
+    selected = [behavior for behavior in BEHAVIORS if behavior["id"] in behavior_ids]
+    if not selected:
+        return [], LlmTokenUsage()
+
+    prompt = (
+        f'Reply to check:\n"""\n{reply_content}\n"""\n\n'
+        f"Behaviors to check against:\n{_format_behavior_criteria(selected)}"
+    )
+    raw, token_usage = _invoke_llm(
+        [
+            SystemMessage(content=BEHAVIOR_VALIDATOR_SYSTEM_PROMPT),
+            HumanMessage(content=prompt),
+        ]
+    )
+    parsed = _extract_json_object(raw)
+    return _dedup_known_ids(parsed.get("failed_behavior_ids"), BEHAVIOR_IDS), token_usage
+
+
 def generate_chat_reply(
     user_id: str,
     character_id: str,
@@ -465,6 +566,21 @@ def generate_chat_reply(
         )
 
     system_prompt = get_system_prompt(user_id, character_id)
+    token_usage = LlmTokenUsage()
+    behavior_ids: list[str] = []
+
+    if character_id == TEACHER_CHARACTER_ID and revision_instruction is None:
+        planned_ids, plan_usage = select_behaviors(
+            messages[-1]["content"], _format_conversation_context(messages)
+        )
+        token_usage = token_usage + plan_usage
+        # Behaviors that apply to every turn are guaranteed here rather than
+        # left to the planner's judgment call.
+        behavior_ids = list(dict.fromkeys([*ALWAYS_ON_BEHAVIOR_IDS, *planned_ids]))
+        behavior_block = _behavior_requirements_block(behavior_ids)
+        if behavior_block:
+            system_prompt = f"{system_prompt}\n\n{behavior_block}"
+
     langchain_messages = [SystemMessage(content=system_prompt)]
 
     for message in messages:
@@ -494,7 +610,19 @@ def generate_chat_reply(
         langchain_messages.append(HumanMessage(content=instruction))
 
     character = get_character(character_id)
-    reply, token_usage = _invoke_llm(langchain_messages)
+    reply, reply_usage = _invoke_llm(langchain_messages)
+    token_usage = token_usage + reply_usage
+
+    behavior_failures: list[str] = []
+    if behavior_ids:
+        behavior_failures, validate_usage = validate_behaviors(reply, behavior_ids)
+        token_usage = token_usage + validate_usage
+        if behavior_failures:
+            logger.warning(
+                "Teacher Wang reply failed behaviors %s for user %s",
+                behavior_failures,
+                user_id,
+            )
 
     if not character.get("retry_unknown_characters", False):
         return ChatReplyResult(
@@ -502,6 +630,8 @@ def generate_chat_reply(
             unknown_characters=[],
             system_prompt=system_prompt,
             token_usage=token_usage,
+            behavior_ids=behavior_ids,
+            behavior_failures=behavior_failures,
         )
 
     known_characters = _known_characters(user_id)

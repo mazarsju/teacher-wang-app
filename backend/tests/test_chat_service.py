@@ -7,12 +7,15 @@ import backend.database as database_module
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
+from backend.behavior_spec import ALWAYS_ON_BEHAVIOR_IDS, get_behavior  # noqa: E402
 from backend.chat_service import (  # noqa: E402
     GrammarCorrection,
     LlmTokenUsage,
     check_user_grammar,
     find_unknown_characters,
     generate_chat_reply,
+    select_behaviors,
+    validate_behaviors,
 )
 
 
@@ -63,7 +66,11 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             MagicMock(char="好"),
         ]
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="你好！")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content='{"behavior_ids": ["BHV-01"]}'),
+            MagicMock(content="你好！"),
+            MagicMock(content='{"failed_behavior_ids": []}'),
+        ]
         mock_get_llm.return_value = mock_llm
 
         reply = generate_chat_reply(
@@ -74,15 +81,26 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
 
         self.assertEqual(reply.content, "你好！")
         self.assertEqual(reply.unknown_characters, [])
-        mock_llm.invoke.assert_called_once()
-        invoked_messages = mock_llm.invoke.call_args.args[0]
-        self.assertIn("Teacher Wang", invoked_messages[0].content)
+        self.assertEqual(reply.behavior_ids, [*ALWAYS_ON_BEHAVIOR_IDS, "BHV-01"])
+        self.assertEqual(reply.behavior_failures, [])
+        self.assertEqual(mock_llm.invoke.call_count, 3)
+
+        planner_messages = mock_llm.invoke.call_args_list[0].args[0]
+        self.assertIn("Behavior Planner", planner_messages[0].content)
+        self.assertIn("BHV-01", planner_messages[0].content)
+
+        generator_messages = mock_llm.invoke.call_args_list[1].args[0]
+        self.assertIn("Teacher Wang", generator_messages[0].content)
         self.assertIn(
             "understandable by an HSK 3 level student",
-            invoked_messages[0].content,
+            generator_messages[0].content,
         )
-        self.assertEqual(invoked_messages[1].content, "你好")
-        self.assertEqual(reply.system_prompt, invoked_messages[0].content)
+        self.assertIn("Direct Question Answering", generator_messages[0].content)
+        self.assertEqual(generator_messages[1].content, "你好")
+        self.assertEqual(reply.system_prompt, generator_messages[0].content)
+
+        validator_messages = mock_llm.invoke.call_args_list[2].args[0]
+        self.assertIn("Behavior Validator", validator_messages[0].content)
 
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=1)
@@ -129,7 +147,11 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self, mock_get_llm, _mock_speaking_level
     ):
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="你好世界")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content='{"behavior_ids": []}'),
+            MagicMock(content="你好世界"),
+            MagicMock(content='{"failed_behavior_ids": []}'),
+        ]
         mock_get_llm.return_value = mock_llm
 
         reply = generate_chat_reply(
@@ -140,7 +162,10 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
 
         self.assertEqual(reply.content, "你好世界")
         self.assertEqual(reply.unknown_characters, [])
-        mock_llm.invoke.assert_called_once()
+        # The planner selected nothing, but always-on behaviors still apply.
+        self.assertEqual(reply.behavior_ids, list(ALWAYS_ON_BEHAVIOR_IDS))
+        self.assertEqual(reply.behavior_failures, [])
+        self.assertEqual(mock_llm.invoke.call_count, 3)
 
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=1)
@@ -179,6 +204,35 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         )
         self.assertEqual(mock_llm.invoke.call_count, 4)
 
+    @patch("backend.chat_service.Character")
+    @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=3)
+    @patch("backend.chat_service.get_llm")
+    def test_always_on_behaviors_apply_even_when_planner_omits_them(
+        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+    ):
+        mock_character_cls.query.filter_by.return_value.all.return_value = []
+        mock_llm = MagicMock()
+        mock_llm.invoke.side_effect = [
+            MagicMock(content='{"behavior_ids": []}'),
+            MagicMock(content="你好！"),
+            MagicMock(content='{"failed_behavior_ids": []}'),
+        ]
+        mock_get_llm.return_value = mock_llm
+
+        reply = generate_chat_reply(
+            "test-user",
+            "teacher-wang",
+            [{"role": "user", "content": "你好"}],
+        )
+
+        self.assertEqual(reply.behavior_ids, list(ALWAYS_ON_BEHAVIOR_IDS))
+        for always_on_id in ALWAYS_ON_BEHAVIOR_IDS:
+            self.assertIn(get_behavior(always_on_id)["title"], reply.system_prompt)
+
+        validator_prompt = mock_llm.invoke.call_args_list[2].args[0][-1].content
+        for always_on_id in ALWAYS_ON_BEHAVIOR_IDS:
+            self.assertIn(always_on_id, validator_prompt)
+
     def test_generate_chat_reply_rejects_unknown_character(self):
         with self.assertRaises(ValueError):
             generate_chat_reply(
@@ -195,6 +249,43 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
                 "xiao-ming",
                 [{"role": "assistant", "content": "你好"}],
             )
+
+
+class TestBehaviorPipeline(_FreePlanTokenMixin, unittest.TestCase):
+    @patch("backend.chat_service.get_llm")
+    def test_select_behaviors_dedupes_and_drops_unknown_ids(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content='{"behavior_ids": ["BHV-01", "BHV-99", "BHV-01"]}'
+        )
+        mock_get_llm.return_value = mock_llm
+
+        behavior_ids, _usage = select_behaviors("你好吗？")
+
+        self.assertEqual(behavior_ids, ["BHV-01"])
+
+    @patch("backend.chat_service.get_llm")
+    def test_validate_behaviors_returns_failed_ids(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content='{"failed_behavior_ids": ["BHV-02"]}'
+        )
+        mock_get_llm.return_value = mock_llm
+
+        failed_ids, _usage = validate_behaviors("reply text", ["BHV-01", "BHV-02"])
+
+        self.assertEqual(failed_ids, ["BHV-02"])
+
+    @patch("backend.chat_service.get_llm")
+    def test_validate_behaviors_skips_llm_call_when_none_selected(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_get_llm.return_value = mock_llm
+
+        failed_ids, usage = validate_behaviors("reply text", [])
+
+        self.assertEqual(failed_ids, [])
+        self.assertEqual(usage, LlmTokenUsage())
+        mock_llm.invoke.assert_not_called()
 
 
 class TestCheckUserGrammar(_FreePlanTokenMixin, unittest.TestCase):

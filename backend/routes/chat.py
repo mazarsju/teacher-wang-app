@@ -191,6 +191,11 @@ def _handle_thread_chat(
         response["unknown_characters"] = reply.unknown_characters
     if debug_mode:
         response["final_prompt"] = reply.system_prompt
+        if isinstance(reply.behavior_ids, list) and reply.behavior_ids:
+            response["behaviors"] = {
+                "selected": reply.behavior_ids,
+                "failed": reply.behavior_failures,
+            }
 
     return response, 200
 
@@ -204,6 +209,7 @@ def _handle_main_chat(
     token_usage = LlmTokenUsage()
     completed_task_ids: list[str] | None = None
     judge_conversation: list[dict[str, str]] | None = None
+    behavior_report: dict | None = None
     user_id = current_user_id()
     log_user_id = current_user().id
 
@@ -276,6 +282,11 @@ def _handle_main_chat(
             reply_content = reply.content
             reply_unknown_characters = reply.unknown_characters
             final_prompt = reply.system_prompt
+            if isinstance(reply.behavior_ids, list) and reply.behavior_ids:
+                behavior_report = {
+                    "selected": reply.behavior_ids,
+                    "failed": reply.behavior_failures,
+                }
 
         append_message(log_user_id, character_id, "assistant", reply_content)
 
@@ -314,6 +325,8 @@ def _handle_main_chat(
         if judge_conversation:
             response["judge_conversation"] = judge_conversation
         response["final_prompt"] = final_prompt
+        if behavior_report:
+            response["behaviors"] = behavior_report
 
     return response, 200
 
