@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
+
 from backend.extensions import db
 from backend.models import Setting
 
@@ -95,13 +98,23 @@ def ensure_default_settings(user_id: str, *, commit: bool = True) -> None:
         elif legacy is not None:
             db.session.delete(legacy)
 
+    # INSERT .. ON CONFLICT so parallel login requests do not 500 on the PK.
     for key, default_value in DEFAULT_SETTINGS.items():
-        if db.session.get(Setting, (user_id, key)) is None:
-            db.session.add(Setting(user_id=user_id, key=key, value=default_value))
-    if commit:
-        db.session.commit()
-    else:
-        db.session.flush()
+        db.session.execute(
+            insert(Setting)
+            .values(user_id=user_id, key=key, value=default_value)
+            .on_conflict_do_nothing(index_elements=["user_id", "key"])
+        )
+    try:
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
+    except IntegrityError:
+        # Legacy rename races (or a peer commit) — defaults are already present.
+        db.session.rollback()
+        if not commit:
+            raise
 
 
 def get_level(user_id: str) -> int | None:

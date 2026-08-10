@@ -187,6 +187,27 @@ class TestEnsureCurrentUser(PostgresTestCase):
 
         self.assertEqual(user.username, COGNITO_SUB)
 
+    def test_rematches_cognito_sub_when_username_already_exists(self):
+        from backend.extensions import db
+
+        with self._request():
+            g.cognito_claims = ACCESS_CLAIMS
+            g.cognito_sub = COGNITO_SUB
+            original = ensure_current_user()
+            original_shortid = original.shortid
+
+        new_sub = "cognito-sub-rotated"
+        with self._request():
+            g.cognito_claims = {**ACCESS_CLAIMS, "sub": new_sub}
+            g.cognito_sub = new_sub
+            rematched = ensure_current_user()
+
+        self.assertEqual(rematched.id, new_sub)
+        self.assertEqual(rematched.shortid, original_shortid)
+        self.assertEqual(rematched.username, "wang")
+        self.assertEqual(User.query.filter_by(username="wang").count(), 1)
+        self.assertIsNone(db.session.get(User, COGNITO_SUB))
+
 
 class TestCurrentUserId(PostgresTestCase):
     def test_raises_outside_an_authenticated_request(self):

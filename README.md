@@ -183,7 +183,7 @@ curl -X POST -F "file=@db.txt" \
 | Key / variable | Description |
 | --- | --- |
 | `LLM_API_KEY` | API key for the LLM provider |
-| `LLM_MODEL` | Model name to use (for example `gpt-4o-mini`) |
+| `LLM_MODEL` | Model name to use (for example `gpt-5.6-luna`) |
 
 - **Production / ECS:** set these as task-definition secrets / environment variables in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra).
 - **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/llm_config.py` as a convenience fallback).

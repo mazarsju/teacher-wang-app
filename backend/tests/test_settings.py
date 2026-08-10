@@ -34,6 +34,43 @@ class TestSettings(PostgresTestCase):
             str(FREE_PLAN_MAX_ALLOWED_TOKEN),
         )
 
+    def test_ensure_default_settings_is_idempotent(self):
+        ensure_default_settings(self.user_id)
+        ensure_default_settings(self.user_id)
+        self.assertEqual(Setting.query.count(), len(DEFAULT_SETTINGS))
+
+    def test_ensure_default_settings_survives_concurrent_seed(self):
+        import threading
+
+        Setting.query.filter_by(user_id=self.user_id).delete()
+        from backend.extensions import db
+
+        db.session.commit()
+
+        errors: list[BaseException] = []
+        barrier = threading.Barrier(4)
+
+        def worker():
+            with self.app.app_context():
+                try:
+                    barrier.wait(timeout=5)
+                    ensure_default_settings(self.user_id)
+                except BaseException as exc:  # noqa: BLE001 - collect any worker failure
+                    errors.append(exc)
+                    db.session.rollback()
+
+        threads = [threading.Thread(target=worker) for _ in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            Setting.query.filter_by(user_id=self.user_id).count(),
+            len(DEFAULT_SETTINGS),
+        )
+
     def test_settings_are_isolated_per_user(self):
         other = create_test_user("other-user", "other", "other@example.com")
         set_setting(self.user_id, SETTING_LEVEL, "3", commit=True)

@@ -49,7 +49,7 @@ Credentials must not live as reversible secrets in application tables. Infra and
 
 * Cognito is the source of truth for **credentials**.
 * On every successful authenticated request, `ensure_current_user()` upserts the `users` row keyed by the Cognito `sub`, mirroring `username` and `email` for app queries and display, and refreshing `last_connexion`.
-* The `sub` **is** the tenant id: there is no separate internal user UUID. Domain ownership is described in the data-isolation decision—not in this document.
+* If the Cognito `sub` is new but the username already exists (typical after a User Pool recreate for the same Google/local account), the row’s `id` is rematched to the new `sub` while keeping `shortid` so private data stays attached. Tenant key details: [data isolation](./data-isolation.md).
 
 ### API protection (Flask)
 

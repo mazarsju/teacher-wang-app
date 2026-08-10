@@ -12,6 +12,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from flask import Flask, g, jsonify, request
+from sqlalchemy import text
 
 from backend.auth import (
     AuthError,
@@ -60,6 +61,28 @@ def _placeholder_email(sub: str) -> str:
     return f"{sub}@users.local"
 
 
+def _rematch_user_sub(existing: User, new_sub: str) -> User:
+    """Move ``users.id`` to a new Cognito ``sub`` while keeping ``shortid``.
+
+    Cognito can mint a fresh ``sub`` for the same username after a User Pool
+    recreate; private tables FK to ``shortid``, so rematching is safe.
+    """
+    old_id = existing.id
+    if old_id == new_sub:
+        return existing
+    # Drop the stale identity-map entry before rewriting the PK in SQL.
+    db.session.expunge(existing)
+    db.session.execute(
+        text("UPDATE users SET id = :new_id WHERE id = :old_id"),
+        {"new_id": new_sub, "old_id": old_id},
+    )
+    db.session.commit()
+    user = db.session.get(User, new_sub)
+    if user is None:
+        raise RuntimeError("Failed to rematch Cognito subject onto users row")
+    return user
+
+
 def ensure_current_user() -> User:
     """Upsert the ``users`` row for the authenticated Cognito subject."""
     claims = getattr(g, "cognito_claims", None) or {}
@@ -69,31 +92,39 @@ def ensure_current_user() -> User:
 
     user = db.session.get(User, sub)
     if user is None:
-        user = User(
-            id=sub,
-            username=username,
-            email=email or _placeholder_email(sub),
-            plan=DEFAULT_USER_PLAN,
-            last_connection=utcnow(),
-        )
-        db.session.add(user)
-        db.session.commit()
-        _ensure_user_defaults(user.shortid)
-    else:
-        user.username = username
-        if email is not None:
-            user.email = email
-        previous_connection = user.last_connection
-        new_connection = utcnow()
-        user.last_connection = new_connection
-        db.session.commit()
-        # Seed any newly introduced default keys (e.g. available_token).
-        _ensure_user_defaults(user.shortid)
-        if (previous_connection.year, previous_connection.month) < (
-            new_connection.year,
-            new_connection.month,
-        ):
-            _reset_monthly_tokens(user)
+        # Same Cognito username, different sub (e.g. User Pool recreate).
+        existing = User.query.filter_by(username=username).one_or_none()
+        if existing is not None:
+            user = _rematch_user_sub(existing, sub)
+        else:
+            user = User(
+                id=sub,
+                username=username,
+                email=email or _placeholder_email(sub),
+                plan=DEFAULT_USER_PLAN,
+                last_connection=utcnow(),
+            )
+            db.session.add(user)
+            db.session.commit()
+            _ensure_user_defaults(user.shortid)
+            g.current_user = user
+            g.current_user_id = user.shortid
+            return user
+
+    previous_connection = user.last_connection
+    user.username = username
+    if email is not None:
+        user.email = email
+    new_connection = utcnow()
+    user.last_connection = new_connection
+    db.session.commit()
+    # Seed any newly introduced default keys (e.g. available_token).
+    _ensure_user_defaults(user.shortid)
+    if (previous_connection.year, previous_connection.month) < (
+        new_connection.year,
+        new_connection.month,
+    ):
+        _reset_monthly_tokens(user)
 
     g.current_user = user
     g.current_user_id = user.shortid
