@@ -16,20 +16,29 @@ class CognitoAdminError(Exception):
         self.message = message
 
 
-def delete_cognito_user(sub: str) -> None:
-    """Delete the Cognito account identified by its ``sub`` claim, if any."""
+def delete_cognito_user(username: str) -> None:
+    """Delete the Cognito account identified by its Cognito username, if any.
+
+    Cognito ``AdminDeleteUser`` takes the pool username (stored on
+    ``users.username``), not the ``sub`` claim. The ECS task role must allow
+    ``cognito-idp:AdminDeleteUser`` on the User Pool.
+    """
     config = load_cognito_config()
     if config is None:
         raise CognitoAdminError("Cognito is not configured on this server")
 
     import boto3
-    from botocore.exceptions import ClientError
+    from botocore.exceptions import BotoCoreError, ClientError
 
     client = boto3.client("cognito-idp", region_name=config.region)
     try:
-        client.admin_delete_user(UserPoolId=config.user_pool_id, Username=sub)
+        client.admin_delete_user(
+            UserPoolId=config.user_pool_id, Username=username
+        )
     except ClientError as exc:
         code = exc.response.get("Error", {}).get("Code", "")
         if code == "UserNotFoundException":
             return
+        raise CognitoAdminError(str(exc)) from exc
+    except BotoCoreError as exc:
         raise CognitoAdminError(str(exc)) from exc

@@ -57,8 +57,16 @@ class TestDeleteUserEndpoint(unittest.TestCase):
             self.addCleanup(patcher.stop)
             setattr(self, f"mock_{name}", mock_cls)
 
-    def _target(self, shortid=1, sub="target-sub", email="a@example.com"):
-        target = MagicMock(shortid=shortid, id=sub, email=email)
+    def _target(
+        self,
+        shortid=1,
+        sub="target-sub",
+        username="target-user",
+        email="a@example.com",
+    ):
+        target = MagicMock(
+            shortid=shortid, id=sub, username=username, email=email
+        )
         self.mock_user_cls.query.filter_by.return_value.first.return_value = target
         return target
 
@@ -70,7 +78,7 @@ class TestDeleteUserEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"message": "User deleted"})
 
-        self.mock_delete_cognito_user.assert_called_once_with(target.id)
+        self.mock_delete_cognito_user.assert_called_once_with(target.username)
         for name in (
             "Character",
             "Word",
