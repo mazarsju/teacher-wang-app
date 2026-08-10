@@ -152,6 +152,7 @@ class TestGenerateChallengeReply(unittest.TestCase):
         mock_generate.return_value = MagicMock(
             content="您好，请问需要什么？",
             unknown_characters=[],
+            system_prompt="system prompt text",
             token_usage=LlmTokenUsage(input_tokens=10, output_tokens=5),
         )
         mock_judge.return_value = ChallengeJudgeResult(
@@ -174,6 +175,7 @@ class TestGenerateChallengeReply(unittest.TestCase):
                 unknown_characters=[],
                 completed_task_ids=["call-waiter"],
                 judge_conversation=[],
+                system_prompt="system prompt text",
                 token_usage=LlmTokenUsage(input_tokens=18, output_tokens=7),
             ),
         )

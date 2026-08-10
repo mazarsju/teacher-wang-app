@@ -31,6 +31,7 @@ from backend.conversation_logs import (
     should_append_user_message,
     thread_exists,
 )
+from backend.settings import ADMIN_EMAIL
 from backend.token_usage import record_token_usage
 from backend.user_context import current_user, current_user_id
 
@@ -91,9 +92,15 @@ def chat():
     messages = data.get("messages")
     parent_character_id = data.get("parent_character_id")
     thread_id = data.get("thread_id")
+    debug_mode = data.get("debug_mode")
 
     if not isinstance(character_id, str) or character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
+
+    if debug_mode is None:
+        debug_mode = current_user().email == ADMIN_EMAIL
+    elif not isinstance(debug_mode, bool):
+        return {"error": "debug_mode must be a boolean"}, 400
 
     normalized_messages, error_response = _normalize_messages(messages)
     if error_response is not None:
@@ -124,9 +131,10 @@ def chat():
             thread_id,
             character_id,
             normalized_messages,
+            debug_mode,
         )
 
-    return _handle_main_chat(character_id, normalized_messages)
+    return _handle_main_chat(character_id, normalized_messages, debug_mode)
 
 
 def _handle_thread_chat(
@@ -134,6 +142,7 @@ def _handle_thread_chat(
     thread_id: str,
     character_id: str,
     normalized_messages: list[dict[str, str]],
+    debug_mode: bool,
 ):
     last_user_message = normalized_messages[-1]
     token_usage = LlmTokenUsage()
@@ -180,11 +189,17 @@ def _handle_thread_chat(
     }
     if reply.unknown_characters:
         response["unknown_characters"] = reply.unknown_characters
+    if debug_mode:
+        response["final_prompt"] = reply.system_prompt
 
     return response, 200
 
 
-def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str]]):
+def _handle_main_chat(
+    character_id: str,
+    normalized_messages: list[dict[str, str]],
+    debug_mode: bool,
+):
     last_user_message = normalized_messages[-1]
     token_usage = LlmTokenUsage()
     completed_task_ids: list[str] | None = None
@@ -254,11 +269,13 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
             save_completed_task_ids(log_user_id, character_id, completed_task_ids)
             if challenge_reply.judge_conversation:
                 judge_conversation = challenge_reply.judge_conversation
+            final_prompt = challenge_reply.system_prompt
         else:
             reply = generate_chat_reply(user_id, character_id, normalized_messages)
             token_usage = token_usage + reply.token_usage
             reply_content = reply.content
             reply_unknown_characters = reply.unknown_characters
+            final_prompt = reply.system_prompt
 
         append_message(log_user_id, character_id, "assistant", reply_content)
 
@@ -293,8 +310,10 @@ def _handle_main_chat(character_id: str, normalized_messages: list[dict[str, str
         response["correction"] = correction_payload or correction.to_dict()
     if completed_task_ids is not None:
         response["completed_task_ids"] = completed_task_ids
-    if judge_conversation:
-        response["judge_conversation"] = judge_conversation
+    if debug_mode:
+        if judge_conversation:
+            response["judge_conversation"] = judge_conversation
+        response["final_prompt"] = final_prompt
 
     return response, 200
 

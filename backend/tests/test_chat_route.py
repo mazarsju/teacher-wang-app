@@ -195,6 +195,84 @@ class TestChatEndpoint(unittest.TestCase):
             output_tokens=12,
         )
 
+    def test_chat_omits_final_prompt_by_default(self):
+        self.mock_generate.return_value = MagicMock(
+            content="你好，很高兴认识你。",
+            unknown_characters=[],
+            system_prompt="teacher wang system prompt",
+            token_usage=MagicMock(input_tokens=30, output_tokens=12),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("final_prompt", response.get_json())
+
+    def test_chat_includes_final_prompt_when_debug_mode_true(self):
+        self.mock_generate.return_value = MagicMock(
+            content="你好，很高兴认识你。",
+            unknown_characters=[],
+            system_prompt="teacher wang system prompt",
+            token_usage=MagicMock(input_tokens=30, output_tokens=12),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+                "debug_mode": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["final_prompt"], "teacher wang system prompt"
+        )
+
+    def test_chat_rejects_non_boolean_debug_mode(self):
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+                "debug_mode": "yes",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    @patch("backend.routes.chat.current_user")
+    def test_chat_debug_mode_defaults_true_for_admin_email(self, mock_current_user):
+        mock_current_user.return_value = MagicMock(
+            id=TEST_USER_ID, email="mazarsju@gmail.com"
+        )
+        self.mock_generate.return_value = MagicMock(
+            content="你好，很高兴认识你。",
+            unknown_characters=[],
+            system_prompt="teacher wang system prompt",
+            token_usage=MagicMock(input_tokens=30, output_tokens=12),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["final_prompt"], "teacher wang system prompt"
+        )
+
     def test_chat_includes_correction_thread_for_non_teacher_chats(self):
         self.mock_generate.return_value = MagicMock(
             content="我也很好！",
@@ -611,6 +689,7 @@ class TestChatEndpoint(unittest.TestCase):
                     ),
                 },
             ],
+            system_prompt="challenge system prompt",
             token_usage=MagicMock(input_tokens=40, output_tokens=20),
         )
 
@@ -619,12 +698,14 @@ class TestChatEndpoint(unittest.TestCase):
             json={
                 "character_id": "challenge-restaurant",
                 "messages": [{"role": "user", "content": "买单"}],
+                "debug_mode": True,
             },
         )
 
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(payload["message"]["content"], "请先点菜。")
+        self.assertEqual(payload["final_prompt"], "challenge system prompt")
         self.assertEqual(
             payload["judge_conversation"],
             [

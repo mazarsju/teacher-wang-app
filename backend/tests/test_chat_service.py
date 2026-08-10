@@ -8,7 +8,6 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.chat_service import (  # noqa: E402
-    ChatReplyResult,
     GrammarCorrection,
     LlmTokenUsage,
     check_user_grammar,
@@ -73,10 +72,8 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             [{"role": "user", "content": "你好"}],
         )
 
-        self.assertEqual(
-            reply,
-            ChatReplyResult(content="你好！", unknown_characters=[]),
-        )
+        self.assertEqual(reply.content, "你好！")
+        self.assertEqual(reply.unknown_characters, [])
         mock_llm.invoke.assert_called_once()
         invoked_messages = mock_llm.invoke.call_args.args[0]
         self.assertIn("Teacher Wang", invoked_messages[0].content)
@@ -85,6 +82,7 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             invoked_messages[0].content,
         )
         self.assertEqual(invoked_messages[1].content, "你好")
+        self.assertEqual(reply.system_prompt, invoked_messages[0].content)
 
     @patch("backend.chat_service.Character")
     @patch("backend.hsk_level.get_chat_speaking_hsk_level", return_value=1)
@@ -115,13 +113,10 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             [{"role": "user", "content": "你好"}],
         )
 
+        self.assertEqual(reply.content, "你好！")
+        self.assertEqual(reply.unknown_characters, [])
         self.assertEqual(
-            reply,
-            ChatReplyResult(
-                content="你好！",
-                unknown_characters=[],
-                token_usage=LlmTokenUsage(input_tokens=22, output_tokens=7),
-            ),
+            reply.token_usage, LlmTokenUsage(input_tokens=22, output_tokens=7)
         )
         self.assertEqual(mock_llm.invoke.call_count, 2)
         rephrase_prompt = mock_llm.invoke.call_args_list[1].args[0][-1].content
@@ -143,10 +138,8 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             [{"role": "user", "content": "你好"}],
         )
 
-        self.assertEqual(
-            reply,
-            ChatReplyResult(content="你好世界", unknown_characters=[]),
-        )
+        self.assertEqual(reply.content, "你好世界")
+        self.assertEqual(reply.unknown_characters, [])
         mock_llm.invoke.assert_called_once()
 
     @patch("backend.chat_service.Character")
@@ -174,17 +167,15 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             [{"role": "user", "content": "你好"}],
         )
 
+        self.assertEqual(reply.content, "你好啊")
         self.assertEqual(
-            reply,
-            ChatReplyResult(
-                content="你好啊",
-                unknown_characters=[
-                    ["世", "界"],
-                    ["啊"],
-                    ["吗", "呢"],
-                    ["世", "啊", "界"],
-                ],
-            ),
+            reply.unknown_characters,
+            [
+                ["世", "界"],
+                ["啊"],
+                ["吗", "呢"],
+                ["世", "啊", "界"],
+            ],
         )
         self.assertEqual(mock_llm.invoke.call_count, 4)
 

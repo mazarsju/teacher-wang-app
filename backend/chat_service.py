@@ -63,6 +63,7 @@ class LlmTokenUsage:
 class ChatReplyResult:
     content: str
     unknown_characters: list[list[str]]
+    system_prompt: str
     token_usage: LlmTokenUsage = LlmTokenUsage()
 
 
@@ -97,6 +98,7 @@ class ChallengeReplyResult:
     unknown_characters: list[list[str]]
     completed_task_ids: list[str]
     judge_conversation: list[dict[str, str]]
+    system_prompt: str
     token_usage: LlmTokenUsage = LlmTokenUsage()
 
 
@@ -462,9 +464,8 @@ def generate_chat_reply(
             "previous_assistant_reply and revision_instruction must be provided together"
         )
 
-    langchain_messages = [
-        SystemMessage(content=get_system_prompt(user_id, character_id))
-    ]
+    system_prompt = get_system_prompt(user_id, character_id)
+    langchain_messages = [SystemMessage(content=system_prompt)]
 
     for message in messages:
         role = message["role"]
@@ -499,6 +500,7 @@ def generate_chat_reply(
         return ChatReplyResult(
             content=reply,
             unknown_characters=[],
+            system_prompt=system_prompt,
             token_usage=token_usage,
         )
 
@@ -528,6 +530,7 @@ def generate_chat_reply(
         unknown_characters=(
             [unknowns for _, unknowns in attempts] if best_unknowns else []
         ),
+        system_prompt=system_prompt,
         token_usage=token_usage,
     )
 
@@ -599,5 +602,6 @@ def generate_challenge_reply(
         unknown_characters=reply.unknown_characters,
         completed_task_ids=judgment.completed_task_ids,
         judge_conversation=judge_conversation,
+        system_prompt=reply.system_prompt,
         token_usage=token_usage,
     )
