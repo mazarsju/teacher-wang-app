@@ -52,8 +52,11 @@ character agent, described in
    the planner, since per-turn selection of "always true" behaviors proved
    unreliable.
 3. **Validator** — checks the generated reply against the selected
-   behaviors' success criteria and logs any failures; it does not currently
-   block or trigger a retry.
+   behaviors' success criteria. If any fail, it explains what was wrong per
+   behavior and the generator gets one revision attempt, given that specific
+   feedback. The revised reply is re-validated; whichever of the two
+   attempts has fewer unresolved failures is kept (ties keep the original).
+   The generator never gets a second revision — one retry only.
 
 Proficiency-level adaptation is handled separately by the **Teaching
 Strategy** (`backend/teaching_strategy.py`,
@@ -134,7 +137,7 @@ User
 
 ### Drawbacks
 
-* One user turn can cost several LLM calls (grammar + character + retries + judge + optional revision); for Teacher Wang specifically, up to three more (planner + generator + validator).
+* One user turn can cost several LLM calls (grammar + character + retries + judge + optional revision); for Teacher Wang specifically, up to five more (planner + generator + validator, plus one revision generator + re-validator if the validator flagged a problem).
 * Judge/character revision quality depends on structured JSON parsing from the model.
 * Adding a new challenge requires persona prompt, tasks, and judge-compatible task ids to stay aligned — mitigated by the Cursor **create-challenge** skill (`.cursor/skills/create-challenge/`), which wires one `character_id` through backend + frontend with shared task ids and mandatory agent rules.
 

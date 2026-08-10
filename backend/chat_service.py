@@ -5,7 +5,12 @@ import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from backend.behavior_spec import ALWAYS_ON_BEHAVIOR_IDS, BEHAVIORS, BEHAVIOR_IDS
+from backend.behavior_spec import (
+    ALWAYS_ON_BEHAVIOR_IDS,
+    BEHAVIORS,
+    BEHAVIOR_IDS,
+    get_behavior,
+)
 from backend.chat_agents import get_character, get_system_prompt
 from backend.chinese_validation import extract_han_characters
 from backend.llm import get_llm
@@ -469,9 +474,10 @@ BEHAVIOR_VALIDATOR_SYSTEM_PROMPT = (
     "agent. You are given a generated reply and the behaviors that were "
     "selected as applicable to it. For each behavior, check whether the "
     "reply satisfies its success criteria. Reply with ONLY a JSON object: "
-    '{"failed_behavior_ids": ["BHV-01", ...]}, listing only the behaviors '
-    "the reply fails to satisfy. Use an empty list if it satisfies all of "
-    "them."
+    '{"failures": [{"id": "BHV-01", "reason": "<brief, specific, '
+    'actionable explanation of what is wrong and what to change>"}, ...]}, '
+    "listing only the behaviors the reply fails to satisfy. Use an empty "
+    "list if it satisfies all of them."
 )
 
 
@@ -530,13 +536,34 @@ def _behavior_requirements_block(behavior_ids: list[str]) -> str:
     return f"Apply these teaching requirements in your reply:\n{lines}"
 
 
+def _parse_behavior_failures(raw_failures) -> tuple[list[str], dict[str, str]]:
+    if not isinstance(raw_failures, list):
+        return [], {}
+
+    failed_ids: list[str] = []
+    reasons: dict[str, str] = {}
+    for item in raw_failures:
+        if not isinstance(item, dict):
+            continue
+        behavior_id = item.get("id")
+        if behavior_id not in BEHAVIOR_IDS or behavior_id in reasons:
+            continue
+        reason = item.get("reason")
+        failed_ids.append(behavior_id)
+        reasons[behavior_id] = reason.strip() if isinstance(reason, str) else ""
+    return failed_ids, reasons
+
+
 def validate_behaviors(
     reply_content: str, behavior_ids: list[str]
-) -> tuple[list[str], LlmTokenUsage]:
-    """Check a generated reply against the selected behaviors' success criteria."""
+) -> tuple[list[str], dict[str, str], LlmTokenUsage]:
+    """Check a generated reply against the selected behaviors' success criteria.
+
+    Returns the failed behavior IDs, a reason per failed ID, and token usage.
+    """
     selected = [behavior for behavior in BEHAVIORS if behavior["id"] in behavior_ids]
     if not selected:
-        return [], LlmTokenUsage()
+        return [], {}, LlmTokenUsage()
 
     prompt = (
         f'Reply to check:\n"""\n{reply_content}\n"""\n\n'
@@ -549,7 +576,26 @@ def validate_behaviors(
         ]
     )
     parsed = _extract_json_object(raw)
-    return _dedup_known_ids(parsed.get("failed_behavior_ids"), BEHAVIOR_IDS), token_usage
+    failed_ids, reasons = _parse_behavior_failures(parsed.get("failures"))
+    return failed_ids, reasons, token_usage
+
+
+def _behavior_revision_instruction(
+    failed_ids: list[str], failure_reasons: dict[str, str]
+) -> str:
+    lines = []
+    for behavior_id in failed_ids:
+        behavior = get_behavior(behavior_id)
+        reason = failure_reasons.get(behavior_id, "")
+        detail = f" {reason}" if reason else ""
+        lines.append(f"- {behavior['title']}: {behavior['requirements']}{detail}")
+    return (
+        "The Behavior Validator found problems with your previous reply:\n"
+        + "\n".join(lines)
+        + "\n\nRevise your reply to fix these specific issues. Keep "
+        "everything else the same, stay in character, and reply with only "
+        "your revised message."
+    )
 
 
 def generate_chat_reply(
@@ -627,14 +673,44 @@ def generate_chat_reply(
 
     behavior_failures: list[str] = []
     if behavior_ids:
-        behavior_failures, validate_usage = validate_behaviors(reply, behavior_ids)
+        behavior_failures, failure_reasons, validate_usage = validate_behaviors(
+            reply, behavior_ids
+        )
         token_usage = token_usage + validate_usage
+
         if behavior_failures:
             logger.warning(
-                "Teacher Wang reply failed behaviors %s for user %s",
+                "Teacher Wang reply failed behaviors %s for user %s; retrying once",
                 behavior_failures,
                 user_id,
             )
+            revision_prompt = _behavior_revision_instruction(
+                behavior_failures, failure_reasons
+            )
+            langchain_messages.append(AIMessage(content=reply))
+            langchain_messages.append(HumanMessage(content=revision_prompt))
+
+            revised_reply, revise_usage = _invoke_llm(langchain_messages)
+            token_usage = token_usage + revise_usage
+
+            revised_failures, _revised_reasons, revalidate_usage = validate_behaviors(
+                revised_reply, behavior_ids
+            )
+            token_usage = token_usage + revalidate_usage
+
+            # Keep whichever attempt has fewer unresolved issues; ties favor
+            # the original attempt (it was already checked once).
+            if len(revised_failures) < len(behavior_failures):
+                reply = revised_reply
+                behavior_failures = revised_failures
+
+            if behavior_failures:
+                logger.warning(
+                    "Teacher Wang reply still failed behaviors %s for user %s "
+                    "after retry",
+                    behavior_failures,
+                    user_id,
+                )
 
     if not character.get("retry_unknown_characters", False):
         return ChatReplyResult(

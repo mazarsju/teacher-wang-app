@@ -32,7 +32,7 @@ implementation, it does not belong here.
 | --- | --- |
 | Planner | Select which behavior IDs are relevant to a given user message. |
 | Response generator | Produce a reply that satisfies the selected behaviors' requirements. |
-| Validator | Check a produced reply against the success criteria of each activated behavior, independent of how it was produced. |
+| Validator | Check a produced reply against the success criteria of each activated behavior, independent of how it was produced, and explain what's wrong per failed behavior so the generator can retry once. |
 
 ## Behavior structure
 
