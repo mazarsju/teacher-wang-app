@@ -1767,6 +1767,13 @@ h1, h2, h3, .modal-title, .page-header h1, .chat-section-title, .home-hsk-title,
   border: 1px solid var(--app-border-light);
 }
 
+.chat-message-heading {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .chat-message-stage {
   margin: 0;
   padding: 0.2rem 0.75rem;
