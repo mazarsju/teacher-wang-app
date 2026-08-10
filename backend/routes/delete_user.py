@@ -45,9 +45,10 @@ def delete_user(user_id: int):
         IgnoreWritingCard,
         IgnoreHskWord,
         ChallengeProgress,
-        TokenCount,
+        TokenCount
     ):
         model.query.filter_by(user_id=target.shortid).delete()
+    User.query.filter_by(shortid=target.shortid).delete()
     get_storage().delete_prefix(object_key(target.id, ""))
     db.session.delete(target)
     db.session.commit()
