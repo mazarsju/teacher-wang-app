@@ -22,6 +22,8 @@ Wherever possible, the character also tries to use only Han characters from the 
 
 Teacher Wang itself does not run the unknown-character retry loop (`retry_unknown_characters: false`).
 
+For the Teacher Wang persona specifically, `generate_chat_reply` caps the history sent to the LLM to the **last 3 messages** (`backend/chat_service.py`, `messages = messages[-3:]`). This is a naive window, not conversation compaction — it will need to be replaced with real history summarization once longer memory is needed for that chat.
+
 ### Teacher agent (grammar)
 
 For every non–Teacher Wang conversation, Teacher Wang silently reviews the learner’s latest Chinese message and assigns a **severity**:

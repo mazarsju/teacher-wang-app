@@ -615,6 +615,12 @@ def generate_chat_reply(
             "previous_assistant_reply and revision_instruction must be provided together"
         )
 
+    if character_id == TEACHER_CHARACTER_ID:
+        # ponytail: naive last-3 cap to bound context size; replace with real
+        # history compaction (e.g. summarizing older turns) when longer memory
+        # is needed for the Teacher Wang chat.
+        messages = messages[-3:]
+
     token_usage = LlmTokenUsage()
     behavior_ids: list[str] = []
 
