@@ -51,7 +51,8 @@ character agent, described in
    response formatting) are unioned in unconditionally rather than left to
    the planner, since per-turn selection of "always true" behaviors proved
    unreliable.
-3. **Validator** — checks the generated reply against the selected
+3. **Validator** — (deactivated for now. Should change BEHAVIOR_CHECK_ENABLED
+   flag to put it back) checks the generated reply against the selected
    behaviors' success criteria. If any fail, it explains what was wrong per
    behavior and the generator gets one revision attempt, given that specific
    feedback. The revised reply is re-validated; whichever of the two

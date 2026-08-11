@@ -19,6 +19,7 @@ from backend.teaching_strategy import get_teaching_strategy
 
 logger = logging.getLogger(__name__)
 
+BEHAVIOR_CHECK_ENABLED = False
 VALID_ROLES = {"user", "assistant"}
 MAX_REPHRASE_ATTEMPTS = 3
 TEACHER_CHARACTER_ID = "teacher-wang"
@@ -674,7 +675,7 @@ def generate_chat_reply(
     token_usage = token_usage + reply_usage
 
     behavior_failures: list[str] = []
-    if behavior_ids:
+    if behavior_ids and BEHAVIOR_CHECK_ENABLED:
         behavior_failures, failure_reasons, validate_usage = validate_behaviors(
             reply, behavior_ids
         )
