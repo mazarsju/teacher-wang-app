@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatCharacter } from "./ChatCharacterCard";
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
+import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
 import ConfirmModal from "./ConfirmModal";
 import {
@@ -662,13 +663,12 @@ export default function ChatModal({
                   disabled={isClearing}
                   onChange={(event) => setMessage(event.target.value)}
                 />
-                <button
-                  type="submit"
-                  className="page-add-button"
+                <Button
+                  kind="confirm"
+                  htmlType="submit"
+                  text={isSending ? "Sending..." : "Send"}
                   disabled={isSending || isClearing || message.trim() === ""}
-                >
-                  {isSending ? "Sending..." : "Send"}
-                </button>
+                />
               </div>
             </form>
           )}

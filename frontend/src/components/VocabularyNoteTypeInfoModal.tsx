@@ -1,3 +1,4 @@
+import Button from "./Button";
 import { InfoIcon } from "./icons";
 import styles from "./VocabularyNoteTypeInfoModal.module.css";
 
@@ -44,20 +45,12 @@ export default function VocabularyNoteTypeInfoModal({
           automatically with the mandatory fields and optional extras.
         </p>
         <div className={`modal-actions ${styles.ankiNoteTypeInfoActions}`}>
-          <button
-            type="button"
-            className="modal-button-cancel"
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
+          <Button kind="cancel" text="Close" onClick={onClose} />
+          <Button
+            kind="confirm"
+            text="Automatically create a 3-directions deck type"
             onClick={onCreateAutomatically}
-          >
-            Automatically create a 3-directions deck type
-          </button>
+          />
         </div>
       </div>
     </div>

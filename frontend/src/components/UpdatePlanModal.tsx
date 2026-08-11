@@ -1,3 +1,5 @@
+import Button from "./Button";
+
 const ISSUES_URL = "https://github.com/mazarsju/teacher-wang-app/issues";
 
 type UpdatePlanModalProps = {
@@ -33,13 +35,7 @@ export default function UpdatePlanModal({ isOpen, onClose }: UpdatePlanModalProp
           and I&apos;ll set you up!
         </p>
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <Button kind="confirm" text="Close" onClick={onClose} />
         </div>
       </div>
     </div>

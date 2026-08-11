@@ -5,22 +5,19 @@
   margin-bottom: 1.5rem;
 }
 
+/* Layered on top of Button's btn/btn-cancel/btn-modal classes. */
 .wizard-option-button {
   padding: 0.85rem 1rem;
-  border: 1px solid var(--app-border);
-  border-radius: 0.55rem;
   background: var(--app-surface);
-  color: var(--app-ink);
-  font-size: 0.95rem;
-  font-weight: 500;
   text-align: left;
-  cursor: pointer;
+  justify-content: flex-start;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.wizard-option-button:hover {
+:global(.btn).wizard-option-button:hover {
   border-color: var(--app-sea);
   box-shadow: 0 8px 20px rgba(6, 24, 36, 0.08);
+  background: var(--app-surface);
 }
 
 .wizard-option-button:focus-visible {

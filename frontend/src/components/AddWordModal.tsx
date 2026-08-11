@@ -4,6 +4,7 @@ import {
   buildPinyinFromCharacterMap,
   isWordPinyinValid,
 } from "../utils/knowledgeBase/wordCharacters";
+import Button from "./Button";
 import styles from "./AddWordModal.module.css";
 
 export type WordFormValues = {
@@ -175,16 +176,13 @@ export default function AddWordModal({
             </span>
           </label>
           <div className="modal-actions">
-            <button type="button" className="modal-button-cancel" onClick={onCancel}>
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="modal-button-confirm-primary"
+            <Button kind="cancel" text="Cancel" onClick={onCancel} />
+            <Button
+              kind="confirm"
+              text="Confirm"
+              htmlType="submit"
               disabled={isConfirmDisabled}
-            >
-              Confirm
-            </button>
+            />
           </div>
         </form>
       </div>

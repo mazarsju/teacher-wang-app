@@ -1,3 +1,4 @@
+import Button from "./Button";
 import vocabularyNoteTypeStyles from "./VocabularyNoteTypeInfoModal.module.css";
 
 type AnkiSyncHelpModalProps = {
@@ -43,13 +44,7 @@ export default function AnkiSyncHelpModal({
           </li>
         </ul>
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <Button kind="confirm" text="Close" onClick={onClose} />
         </div>
       </div>
     </div>

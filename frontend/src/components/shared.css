@@ -1,83 +1,3 @@
-.page-add-button {
-  margin-top: 0;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--app-sea);
-  border-radius: 0.55rem;
-  background: transparent;
-  color: var(--app-sea);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.18s ease, transform 0.18s ease;
-}
-
-.page-add-button:hover {
-  background-color: var(--app-border-light);
-}
-
-.page-add-button:active {
-  transform: translateY(1px);
-}
-
-.page-mode-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0;
-  padding: 0.625rem 1rem;
-  border: 1px solid var(--app-border);
-  border-radius: 0.55rem;
-  background-color: var(--app-surface);
-  color: var(--app-ink);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  backdrop-filter: blur(10px);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.page-mode-button:hover {
-  background-color: var(--app-border-light);
-}
-
-.page-mode-button-icon {
-  width: 1rem;
-  height: 1rem;
-}
-
-.page-mode-button--danger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0;
-  padding: 0.625rem 1rem;
-  border: 1px solid var(--app-danger);
-  border-radius: 0.55rem;
-  background: transparent;
-  color: var(--app-danger);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  backdrop-filter: blur(10px);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.page-mode-button--danger:hover {
-  background-color: #fef2f2;
-}
-
-.modal-button-confirm--danger {
-  border-color: var(--app-danger);
-  color: var(--app-danger);
-}
-
-.modal-button-confirm--danger:hover {
-  background-color: #fef2f2;
-}
-
 .modal-message--danger {
   color: var(--app-danger);
   font-style: italic;
@@ -289,65 +209,142 @@
   gap: 0.75rem;
 }
 
-.modal-button-cancel, .modal-button-confirm, .modal-button-confirm-primary {
+/* ---------------------------------------------------------------------
+ * Button (see Button.tsx) — the app's only button design system.
+ * kind = semantic color (cancel/confirm/danger), variant = context sizing.
+ * ------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   margin-top: 0;
-  padding: 0.625rem 1rem;
   border-radius: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.modal-button-cancel {
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.btn-cancel {
   border: 1px solid var(--app-border);
   background: transparent;
   color: var(--app-ink);
-  transition: background-color 0.15s ease;
 }
 
-.modal-button-cancel:hover {
-  background: var(--app-border-light);
-}
-
-.modal-button-confirm {
-  border: 1px solid #dc2626;
-  background: transparent;
-  color: #dc2626;
-  transition: background-color 0.18s ease, transform 0.18s ease;
-}
-
-.modal-button-confirm:hover {
-  background-color: #fef2f2;
-}
-
-.modal-button-confirm:active {
-  transform: translateY(1px);
-}
-
-.modal-button-confirm-primary {
-  border: 1px solid var(--app-sea);
-  background: transparent;
-  color: var(--app-sea);
-  transition: background-color 0.18s ease, transform 0.18s ease;
-}
-
-.modal-button-confirm-primary:hover {
+.btn-cancel:hover:not(:disabled) {
   background-color: var(--app-border-light);
 }
 
-.modal-button-confirm-primary:active {
-  transform: translateY(1px);
+.btn-confirm {
+  border: 1px solid var(--app-sea);
+  background: transparent;
+  color: var(--app-sea);
 }
 
-.modal-button-confirm-primary:disabled {
-  border-color: #d1d5db;
-  color: #9ca3af;
-  cursor: not-allowed;
-  transform: none;
+.btn-confirm:hover:not(:disabled) {
+  background-color: var(--app-border-light);
 }
 
-.modal-button-confirm-primary:disabled:hover {
-  background-color: transparent;
+.btn-danger {
+  border: 1px solid var(--app-danger);
+  background: transparent;
+  color: var(--app-danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #fef2f2;
+}
+
+.btn-page {
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.btn-modal {
+  padding: 0.625rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.btn-banner {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.btn-table {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Small table-row actions read better filled than outlined. */
+.btn-table.btn-confirm {
+  border: none;
+  background-color: var(--app-sea);
+  color: #ffffff;
+}
+
+.btn-table.btn-confirm:hover:not(:disabled) {
+  background-color: var(--app-sea-hover);
+}
+
+.btn-table.btn-danger {
+  border: none;
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.btn-table.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.btn-confirmation {
+  padding: 0.625rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* The one place a filled/heavy button is intentional: the actual
+   validation button of a yes/no confirmation dialog (see ConfirmModal). */
+.btn-confirmation.btn-confirm {
+  border: none;
+  background-color: var(--app-sea);
+  color: #ffffff;
+}
+
+.btn-confirmation.btn-confirm:hover:not(:disabled) {
+  background-color: var(--app-sea-hover);
+}
+
+.btn-confirmation.btn-danger {
+  border: none;
+  background-color: var(--app-danger);
+  color: #ffffff;
+}
+
+.btn-confirmation.btn-danger:hover:not(:disabled) {
+  background-color: var(--app-danger-hover);
 }
 
 .table-error {

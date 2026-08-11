@@ -1,3 +1,4 @@
+import Button from "./Button";
 import { WarningIcon } from "./icons";
 import styles from "./WarningModal.module.css";
 
@@ -35,13 +36,7 @@ export default function WarningModal({
           {message}
         </p>
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
-            onClick={onClose}
-          >
-            OK
-          </button>
+          <Button kind="confirm" text="OK" onClick={onClose} />
         </div>
       </div>
     </div>

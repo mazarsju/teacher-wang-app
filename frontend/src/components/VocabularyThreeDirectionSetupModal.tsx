@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { AnkiDeckSetupResult } from "../types/anki";
 import { autoSetupVocabularyDeck } from "../utils/anki/ankiApi";
 import ankiDeckSetupStyles from "./AnkiDeckSetupModal.module.css";
+import Button from "./Button";
 import styles from "./VocabularyThreeDirectionSetupModal.module.css";
 
 type VocabularyThreeDirectionSetupModalProps = {
@@ -155,39 +156,28 @@ export default function VocabularyThreeDirectionSetupModal({
                     updateOptionalField(index, event.target.value)
                   }
                 />
-                <button
-                  type="button"
-                  className="modal-button-cancel"
+                <Button
+                  kind="cancel"
+                  text="Remove"
                   onClick={() => removeOptionalField(index)}
-                >
-                  Remove
-                </button>
+                />
               </div>
             ))}
-            <button
-              type="button"
-              className="page-add-button"
+            <Button
+              kind="confirm"
+              text="Add optional field"
               onClick={() => setOptionalFields((current) => [...current, ""])}
-            >
-              Add optional field
-            </button>
+            />
           </fieldset>
 
           <div className="modal-actions">
-            <button
-              type="button"
-              className="modal-button-cancel"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="modal-button-confirm-primary"
+            <Button kind="cancel" text="Cancel" onClick={onCancel} />
+            <Button
+              kind="confirm"
+              htmlType="submit"
+              text={isSaving ? "Creating…" : "Create and map"}
               disabled={isConfirmDisabled}
-            >
-              {isSaving ? "Creating…" : "Create and map"}
-            </button>
+            />
           </div>
         </form>
       </div>

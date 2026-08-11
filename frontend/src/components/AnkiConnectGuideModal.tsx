@@ -1,3 +1,4 @@
+import Button from "./Button";
 import styles from "./AnkiConnectGuideModal.module.css";
 
 type GuideStep = {
@@ -106,13 +107,7 @@ export default function AnkiConnectGuideModal({
         </ol>
 
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
-            onClick={onClose}
-          >
-            Close and check connection
-          </button>
+          <Button kind="confirm" text="Close and check connection" onClick={onClose} />
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
 import Page from "../components/Page";
 import Table, { type TableColumn } from "../components/Table";
@@ -109,15 +110,14 @@ export default function AdminPage() {
                 <option value="free">free</option>
                 <option value="pro">pro</option>
               </select>
-              <button
-                type="button"
-                className="button--danger"
-                aria-label={`Delete ${row.email}`}
+              <Button
+                kind="danger"
+                variant="table"
+                text="Delete"
+                ariaLabel={`Delete ${row.email}`}
                 disabled={deletingId === row.id}
                 onClick={() => setUserPendingDelete(row)}
-              >
-                Delete
-              </button>
+              />
             </>
           )}
         />

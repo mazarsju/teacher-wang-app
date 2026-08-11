@@ -7,6 +7,7 @@ import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppSelector } from "../store/hooks";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
+import Button from "../components/Button";
 import characterWordsStyles from "../components/CharacterWordsModal.module.css";
 import styles from "./HomePage.module.css";
 
@@ -121,13 +122,12 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               <div className={styles.homeHskProgressFooter}>
                 <p className={styles.homeHskProgressLabel}>{hskProgressLabel}</p>
                 {hskLevelStatus.next_level !== null && (
-                  <button
-                    type="button"
-                    className={styles.homeHskMissingButton}
+                  <Button
+                    kind="cancel"
+                    text="Missing characters"
                     onClick={() => setIsMissingModalOpen(true)}
-                  >
-                    Missing characters
-                  </button>
+                    className={styles.homeHskMissingButton}
+                  />
                 )}
               </div>
             </div>
@@ -181,13 +181,11 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                   </p>
                 </div>
                 <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="modal-button-cancel"
+                  <Button
+                    kind="cancel"
+                    text="Close"
                     onClick={() => setIsHskInfoOpen(false)}
-                  >
-                    Close
-                  </button>
+                  />
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import type { Word } from "../types/word";
 import { formatAssociatedWord } from "../utils/knowledgeBase/wordsByCharacter";
+import Button from "./Button";
 import styles from "./CharacterWordsModal.module.css";
 
 type CharacterWordsModalProps = {
@@ -40,9 +41,7 @@ export default function CharacterWordsModal({
           </ul>
         </div>
         <div className="modal-actions">
-          <button type="button" className="modal-button-cancel" onClick={onClose}>
-            Close
-          </button>
+          <Button kind="cancel" text="Close" onClick={onClose} />
         </div>
       </div>
     </div>

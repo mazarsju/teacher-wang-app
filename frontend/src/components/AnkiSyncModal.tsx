@@ -12,6 +12,7 @@ import {
   type AnkiSyncResult,
 } from "../types/anki";
 import { fetchAnkiPendingSync, runAnkiSync } from "../utils/anki/ankiApi";
+import Button from "./Button";
 import ConfirmModal from "./ConfirmModal";
 import styles from "./AnkiSyncModal.module.css";
 
@@ -409,7 +410,7 @@ export default function AnkiSyncModal({
                 Anki. Pull imports Anki cards into the app.
               </p>
 
-              <section className={`${styles.ankiSyncPanel} ${styles.ankiSyncPanelPush}`}>
+              <section className={`${styles.ankiSyncPanel}`}>
                 <div className={styles.ankiSyncPanelHeader}>
                   <h3 className={styles.ankiSyncPanelTitle}>Push to Anki</h3>
                   <p className={styles.ankiSyncPanelCount}>
@@ -430,19 +431,17 @@ export default function AnkiSyncModal({
                   </div>
                 ) : (
                   <div className={styles.ankiSyncActions}>
-                    <button
-                      type="button"
-                      className="modal-button-confirm-primary"
+                    <Button
+                      kind="confirm"
+                      text="Push all to Anki"
                       disabled={pushCount === 0 || isSubmitting}
                       onClick={() =>
                         setConfirmAction({ direction: "push", type: "all" })
                       }
-                    >
-                      Push all to Anki
-                    </button>
-                    <button
-                      type="button"
-                      className="modal-button-confirm"
+                    />
+                    <Button
+                      kind="danger"
+                      text="Ignore all for push"
                       disabled={!canIgnoreAllPush || isSubmitting}
                       onClick={() =>
                         setConfirmAction({
@@ -450,17 +449,13 @@ export default function AnkiSyncModal({
                           type: "ignore_all",
                         })
                       }
-                    >
-                      Ignore all for push
-                    </button>
-                    <button
-                      type="button"
-                      className="page-add-button"
+                    />
+                    <Button
+                      kind="confirm"
+                      text="Choose what to push"
                       disabled={pushCount === 0 || isSubmitting}
                       onClick={openPartialPush}
-                    >
-                      Choose what to push
-                    </button>
+                    />
                   </div>
                 )}
 
@@ -481,7 +476,7 @@ export default function AnkiSyncModal({
                 )}
               </section>
 
-              <section className={`${styles.ankiSyncPanel} ${styles.ankiSyncPanelPull}`}>
+              <section className={`${styles.ankiSyncPanel}`}>
                 <div className={styles.ankiSyncPanelHeader}>
                   <h3 className={styles.ankiSyncPanelTitle}>Pull from Anki</h3>
                   <p className={styles.ankiSyncPanelCount}>
@@ -507,30 +502,24 @@ export default function AnkiSyncModal({
                   </div>
                 ) : (
                   <div className={styles.ankiSyncActions}>
-                    <button
-                      type="button"
-                      className="modal-button-confirm-primary"
+                    <Button
+                      kind="confirm"
+                      text="Pull all from Anki"
                       disabled={pullActionableCount === 0 || isSubmitting}
                       onClick={() => handlePullAction("all")}
-                    >
-                      Pull all from Anki
-                    </button>
-                    <button
-                      type="button"
-                      className="modal-button-confirm"
+                    />
+                    <Button
+                      kind="danger"
+                      text="Ignore all for pull"
                       disabled={!canIgnoreAllPull || isSubmitting}
                       onClick={() => handlePullAction("ignore_all")}
-                    >
-                      Ignore all for pull
-                    </button>
-                    <button
-                      type="button"
-                      className="page-add-button"
+                    />
+                    <Button
+                      kind="confirm"
+                      text="Choose what to pull"
                       disabled={pullActionableCount === 0 || isSubmitting}
                       onClick={() => handlePullAction("partial")}
-                    >
-                      Choose what to pull
-                    </button>
+                    />
                   </div>
                 )}
 
@@ -570,14 +559,12 @@ export default function AnkiSyncModal({
               </section>
 
               <div className={`modal-actions ${styles.ankiSyncFooter}`}>
-                <button
-                  type="button"
-                  className="modal-button-cancel"
+                <Button
+                  kind="cancel"
+                  text="Close"
                   disabled={isSubmitting}
                   onClick={onCancel}
-                >
-                  Close
-                </button>
+                />
               </div>
             </>
           )}
@@ -590,22 +577,18 @@ export default function AnkiSyncModal({
               </p>
 
               <div className={styles.ankiSyncPartialToolbar}>
-                <button
-                  type="button"
-                  className="page-add-button"
+                <Button
+                  kind="confirm"
+                  text="Select all"
                   onClick={() => selectAll(pushCards)}
                   disabled={isSubmitting}
-                >
-                  Select all
-                </button>
-                <button
-                  type="button"
-                  className="page-add-button"
+                />
+                <Button
+                  kind="confirm"
+                  text="Unselect all"
                   onClick={unselectAll}
                   disabled={isSubmitting}
-                >
-                  Unselect all
-                </button>
+                />
                 <span className={styles.ankiSyncPartialCount}>
                   {selectedCount} of {pushCount} selected
                 </span>
@@ -650,17 +633,15 @@ export default function AnkiSyncModal({
               </div>
 
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="modal-button-cancel"
+                <Button
+                  kind="cancel"
+                  text="Back"
                   disabled={isSubmitting}
                   onClick={() => setView("overview")}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  className="modal-button-confirm-primary"
+                />
+                <Button
+                  kind="confirm"
+                  text="Confirm push"
                   disabled={isSubmitting}
                   onClick={() =>
                     setConfirmAction({
@@ -669,9 +650,7 @@ export default function AnkiSyncModal({
                       selectedIds: Array.from(selectedIds),
                     })
                   }
-                >
-                  Confirm push
-                </button>
+                />
               </div>
             </>
           )}
@@ -685,22 +664,18 @@ export default function AnkiSyncModal({
               </p>
 
               <div className={styles.ankiSyncPartialToolbar}>
-                <button
-                  type="button"
-                  className="page-add-button"
+                <Button
+                  kind="confirm"
+                  text="Select all"
                   onClick={() => selectAll(pullCards)}
                   disabled={isSubmitting}
-                >
-                  Select all
-                </button>
-                <button
-                  type="button"
-                  className="page-add-button"
+                />
+                <Button
+                  kind="confirm"
+                  text="Unselect all"
                   onClick={unselectAll}
                   disabled={isSubmitting}
-                >
-                  Unselect all
-                </button>
+                />
                 <span className={styles.ankiSyncPartialCount}>
                   {selectedCount} of {pullActionableCount} selected
                 </span>
@@ -745,17 +720,15 @@ export default function AnkiSyncModal({
               </div>
 
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="modal-button-cancel"
+                <Button
+                  kind="cancel"
+                  text="Back"
                   disabled={isSubmitting}
                   onClick={() => setView("overview")}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  className="modal-button-confirm-primary"
+                />
+                <Button
+                  kind="confirm"
+                  text="Confirm pull"
                   disabled={isSubmitting}
                   onClick={() =>
                     setConfirmAction({
@@ -764,22 +737,14 @@ export default function AnkiSyncModal({
                       selectedIds: Array.from(selectedIds),
                     })
                   }
-                >
-                  Confirm pull
-                </button>
+                />
               </div>
             </>
           )}
 
           {!isLoading && error !== null && pending === null && (
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
-                onClick={onCancel}
-              >
-                Close
-              </button>
+              <Button kind="cancel" text="Close" onClick={onCancel} />
             </div>
           )}
         </div>

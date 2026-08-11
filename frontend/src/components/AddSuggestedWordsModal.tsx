@@ -7,8 +7,8 @@ import { extractCharacterEntries } from "../utils/knowledgeBase/buildImportLines
 import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
 import { getSuggestedHskWords, ignoreHskWords } from "../utils/knowledgeBase/hskWordsApi";
 import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
+import Button from "./Button";
 import kbInitWizardStyles from "./KnowledgeBaseInitWizardModal.module.css";
-import tableStyles from "./Table.module.css";
 import styles from "./AddSuggestedWordsModal.module.css";
 
 type AddSuggestedWordsModalProps = {
@@ -179,13 +179,12 @@ export default function AddSuggestedWordsModal({
             getRowKey={(row) => row.word}
             emptyMessage="No more words to suggest right now."
             renderRowActions={(row) => (
-              <button
-                type="button"
-                className={tableStyles.tableIgnoreButton}
+              <Button
+                kind="confirm"
+                variant="table"
+                text="Ignore"
                 onClick={() => void handleIgnore([row.word])}
-              >
-                Ignore
-              </button>
+              />
             )}
           />
         )}
@@ -194,33 +193,27 @@ export default function AddSuggestedWordsModal({
           <p className={`modal-message ${styles.suggestedWordsIgnoreAll}`}>
             None of those words interest you? You can ignore them all so that
             other words are proposed to you:{" "}
-            <button
-              type="button"
-              className="modal-button-cancel"
+            <Button
+              kind="cancel"
+              text="Ignore all words"
               onClick={() => void handleIgnore(suggestions.map((word) => word.word))}
-            >
-              Ignore all words
-            </button>
+            />
           </p>
         )}
 
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-cancel"
+          <Button
+            kind="cancel"
+            text="Cancel"
             onClick={onClose}
             disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
+          />
+          <Button
+            kind="confirm"
+            text="Confirm"
             onClick={() => void handleConfirm()}
             disabled={selectedWords.size === 0 || isSubmitting}
-          >
-            Confirm
-          </button>
+          />
         </div>
       </div>
     </div>

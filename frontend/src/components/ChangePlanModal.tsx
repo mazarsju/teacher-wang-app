@@ -5,6 +5,7 @@ import {
   WarningIcon,
 } from "../components/icons";
 import type { UserPlan } from "../types/adminUser";
+import Button from "./Button";
 import styles from "./ChangePlanModal.module.css";
 
 type ChangePlanModalProps = {
@@ -97,13 +98,11 @@ export default function ChangePlanModal({
                         Current plan
                       </span>
                     ) : (
-                      <button
-                        type="button"
-                        className="modal-button-confirm-primary"
+                      <Button
+                        kind="confirm"
+                        text={`Switch to ${plan.name}`}
                         onClick={onSwitchPlan}
-                      >
-                        Switch to {plan.name}
-                      </button>
+                      />
                     )}
                   </div>
                 </div>
@@ -132,13 +131,7 @@ export default function ChangePlanModal({
         </div>
 
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-cancel"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <Button kind="cancel" text="Close" onClick={onClose} />
         </div>
       </div>
     </div>

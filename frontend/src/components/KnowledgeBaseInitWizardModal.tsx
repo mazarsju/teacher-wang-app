@@ -20,6 +20,7 @@ import {
 } from "../utils/knowledgeBase/hskWordsApi";
 import { importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
+import Button from "./Button";
 import kbPageStyles from "../pages/KnowledgeBasePage.module.css";
 import tableStyles from "./Table.module.css";
 import styles from "./KnowledgeBaseInitWizardModal.module.css";
@@ -364,43 +365,33 @@ export default function KnowledgeBaseInitWizardModal({
         {step === "choose" && (
           <>
             <div className={styles.wizardOptionList}>
-              <button
-                type="button"
-                className={styles.wizardOptionButton}
+              <Button
+                kind="cancel"
+                text="Add characters and words one by one, manually"
                 onClick={() => setStep("manual-info")}
-              >
-                Add characters and words one by one, manually
-              </button>
-              <button
-                type="button"
                 className={styles.wizardOptionButton}
+              />
+              <Button
+                kind="cancel"
+                text="Upload an existing knowledge base (CSV)"
                 onClick={() => setStep("csv")}
-              >
-                Upload an existing knowledge base (CSV)
-              </button>
-              <button
-                type="button"
                 className={styles.wizardOptionButton}
+              />
+              <Button
+                kind="cancel"
+                text="Import data from an Anki deck"
                 onClick={() => setStep("anki-info")}
-              >
-                Import data from an Anki deck
-              </button>
-              <button
-                type="button"
                 className={styles.wizardOptionButton}
+              />
+              <Button
+                kind="cancel"
+                text="Smart creation based on what you already know"
                 onClick={startSmartCreation}
-              >
-                Smart creation based on what you already know
-              </button>
+                className={styles.wizardOptionButton}
+              />
             </div>
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
-                onClick={resetAndClose}
-              >
-                Close
-              </button>
+              <Button kind="cancel" text="Close" onClick={resetAndClose} />
             </div>
           </>
         )}
@@ -412,20 +403,12 @@ export default function KnowledgeBaseInitWizardModal({
               manually create what you want.
             </p>
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
-                onClick={() => setStep("choose")}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="modal-button-confirm-primary"
+              <Button kind="cancel" text="Back" onClick={() => setStep("choose")} />
+              <Button
+                kind="confirm"
+                text="Go to Knowledge base"
                 onClick={goToKnowledgeBase}
-              >
-                Go to Knowledge base
-              </button>
+              />
             </div>
           </>
         )}
@@ -437,20 +420,12 @@ export default function KnowledgeBaseInitWizardModal({
               section.
             </p>
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
-                onClick={() => setStep("choose")}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="modal-button-confirm-primary"
+              <Button kind="cancel" text="Back" onClick={() => setStep("choose")} />
+              <Button
+                kind="confirm"
+                text="Go to Preferences"
                 onClick={goToPreferences}
-              >
-                Go to Preferences
-              </button>
+              />
             </div>
           </>
         )}
@@ -500,22 +475,14 @@ export default function KnowledgeBaseInitWizardModal({
               onChange={(event) => void handleImport(event)}
             />
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
-                onClick={() => setStep("choose")}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="modal-button-confirm-primary"
+              <Button kind="cancel" text="Back" onClick={() => setStep("choose")} />
+              <Button
+                kind="confirm"
+                text="Import"
+                icon={<ImportIcon />}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isImporting}
-              >
-                <ImportIcon className="page-mode-button-icon" />
-                Import
-              </button>
+              />
             </div>
           </>
         )}
@@ -548,30 +515,24 @@ export default function KnowledgeBaseInitWizardModal({
                 )}
                 {pickError && <p className="table-error">{pickError}</p>}
                 <div className={styles.wizardWordPickerActions}>
-                  <button
-                    type="button"
-                    className="modal-button-cancel"
+                  <Button
+                    kind="cancel"
+                    text="Don't know it"
                     onClick={handleDontKnowWord}
                     disabled={!candidateWord || isPickingWord}
-                  >
-                    Don't know it
-                  </button>
-                  <button
-                    type="button"
-                    className="modal-button-cancel"
+                  />
+                  <Button
+                    kind="cancel"
+                    text="Can recognize it"
                     onClick={handleCanRecognizeWord}
                     disabled={!candidateWord || isPickingWord}
-                  >
-                    Can recognize it
-                  </button>
-                  <button
-                    type="button"
-                    className="modal-button-cancel"
+                  />
+                  <Button
+                    kind="cancel"
+                    text="Can write it"
                     onClick={handleCanWriteWord}
                     disabled={!candidateWord || isPickingWord || hasRecognizedOnly}
-                  >
-                    Can write it
-                  </button>
+                  />
                 </div>
               </div>
             )}
@@ -583,13 +544,12 @@ export default function KnowledgeBaseInitWizardModal({
               getRowKey={(row) => row.word}
               emptyMessage="No words picked yet."
               renderRowActions={(row) => (
-                <button
-                  type="button"
-                  className={tableStyles.tableDeleteButton}
+                <Button
+                  kind="danger"
+                  variant="table"
+                  text="Remove"
                   onClick={() => removeSmartWord(row.word)}
-                >
-                  Remove
-                </button>
+                />
               )}
             />
 
@@ -606,22 +566,18 @@ export default function KnowledgeBaseInitWizardModal({
             )}
             <div style={{ height: "10px" }} />
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
+              <Button
+                kind="cancel"
+                text="Cancel"
                 onClick={() => setStep("choose")}
                 disabled={isSmartSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="modal-button-confirm-primary"
+              />
+              <Button
+                kind="confirm"
+                text="Confirm"
                 onClick={() => void confirmSmartCreation()}
                 disabled={smartWords.length === 0 || isSmartSubmitting}
-              >
-                Confirm
-              </button>
+              />
             </div>
           </>
         )}

@@ -14,6 +14,7 @@ import {
   fetchAnkiModels,
   setupAnkiDeck,
 } from "../utils/anki/ankiApi";
+import Button from "./Button";
 import { InfoIcon } from "./icons";
 import VocabularyNoteTypeInfoModal from "./VocabularyNoteTypeInfoModal";
 import VocabularyThreeDirectionSetupModal from "./VocabularyThreeDirectionSetupModal";
@@ -427,20 +428,13 @@ export default function AnkiDeckSetupModal({
               </fieldset>
 
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="modal-button-cancel"
-                  onClick={onCancel}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="modal-button-confirm-primary"
+                <Button kind="cancel" text="Cancel" onClick={onCancel} />
+                <Button
+                  kind="confirm"
+                  htmlType="submit"
+                  text={isSaving ? "Saving…" : "Save mapping"}
                   disabled={isConfirmDisabled}
-                >
-                  {isSaving ? "Saving…" : "Save mapping"}
-                </button>
+                />
               </div>
             </form>
           )}

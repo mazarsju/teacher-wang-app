@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import AddSuggestedWordsModal from "../components/AddSuggestedWordsModal";
 import AddWordModal, { type WordFormValues } from "../components/AddWordModal";
-import CharacterWordsModal from "../components/CharacterWordsModal";
 import Banner from "../components/Banner";
+import Button from "../components/Button";
+import CharacterWordsModal from "../components/CharacterWordsModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
@@ -426,34 +427,31 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       }
       headerAction={
         pageMode === "view" ? (
-          <button
-            type="button"
-            className="page-mode-button"
+          <Button
+            kind="cancel"
+            variant="page"
+            text="Modify"
+            icon={<PenIcon />}
             onClick={() => setPageMode("edit")}
-          >
-            <PenIcon className="page-mode-button-icon" />
-            Modify
-          </button>
+          />
         ) : (
           <div className={pageStyles.pageHeaderActions}>
-            <button
-              type="button"
-              className="page-mode-button"
+            <Button
+              kind="cancel"
+              variant="page"
+              text="Export"
+              icon={<ExportIcon />}
               onClick={() => void handleExportDatabase()}
               disabled={isExporting}
-            >
-              <ExportIcon className="page-mode-button-icon" />
-              Export
-            </button>
-            <button
-              type="button"
-              className="page-mode-button"
+            />
+            <Button
+              kind="cancel"
+              variant="page"
+              text="Import"
+              icon={<ImportIcon />}
               onClick={() => importInputRef.current?.click()}
               disabled={isImporting}
-            >
-              <ImportIcon className="page-mode-button-icon" />
-              Import
-            </button>
+            />
             <input
               ref={importInputRef}
               type="file"
@@ -461,14 +459,13 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               className={styles.knowledgeBaseImportInput}
               onChange={(event) => void handleImportDatabase(event)}
             />
-            <button
-              type="button"
-              className="page-mode-button"
+            <Button
+              kind="cancel"
+              variant="page"
+              text="View"
+              icon={<EyeIcon />}
               onClick={switchToViewMode}
-            >
-              <EyeIcon className="page-mode-button-icon" />
-              View
-            </button>
+            />
           </div>
         )
       }
@@ -574,13 +571,12 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
           <section className={styles.knowledgeBaseSection}>
             <div className={styles.knowledgeBaseSectionHeader}>
               <h2 className={styles.knowledgeBaseSectionTitle}>Words</h2>
-              <button
-                type="button"
-                className="page-add-button"
+              <Button
+                kind="confirm"
+                variant="page"
+                text="Add word"
                 onClick={() => setIsAddWordModalOpen(true)}
-              >
-                Add word
-              </button>
+              />
             </div>
             <label className={styles.searchBar}>
               <span className={styles.searchBarLabel}>Search</span>
@@ -604,20 +600,18 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               }
               renderRowActions={(row) => (
                 <div className={tableStyles.tableRowActions}>
-                  <button
-                    type="button"
-                    className={tableStyles.tableEditButton}
+                  <Button
+                    kind="confirm"
+                    variant="table"
+                    text="Edit"
                     onClick={() => setWordToEdit(row)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className={tableStyles.tableDeleteButton}
+                  />
+                  <Button
+                    kind="danger"
+                    variant="table"
+                    text="Delete"
                     onClick={() => setWordToDelete(row)}
-                  >
-                    Delete
-                  </button>
+                  />
                 </div>
               )}
             />

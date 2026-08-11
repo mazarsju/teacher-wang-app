@@ -1,3 +1,5 @@
+import Button from "./Button";
+
 type WritingDeckTypeInfoModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -28,13 +30,7 @@ export default function WritingDeckTypeInfoModal({
           fine.
         </p>
         <div className="modal-actions">
-          <button
-            type="button"
-            className="modal-button-confirm-primary"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <Button kind="confirm" text="Close" onClick={onClose} />
         </div>
       </div>
     </div>

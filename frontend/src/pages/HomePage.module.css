@@ -96,18 +96,19 @@
   margin-top: 0.625rem;
 }
 
-.home-hsk-missing-button {
+/* Layered on top of Button's btn/btn-cancel/btn-page classes. */
+:global(.btn).home-hsk-missing-button {
   padding: 0.25rem 0.625rem;
-  border: 1px solid #f59e0b;
+  border-color: #f59e0b;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.7);
   color: #b45309;
   font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
+  backdrop-filter: none;
 }
 
-.home-hsk-missing-button:hover {
+:global(.btn).home-hsk-missing-button:hover {
   background: #ffffff;
   border-color: #d97706;
 }

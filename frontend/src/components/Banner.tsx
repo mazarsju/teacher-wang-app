@@ -1,3 +1,4 @@
+import Button from "./Button";
 import styles from "./Banner.module.css";
 
 type BannerProps = {
@@ -21,14 +22,13 @@ export default function Banner({
       role="status"
     >
       <p className={styles.appBannerText}>{message}</p>
-      <button
-        type="button"
-        className={styles.appBannerButton}
+      <Button
+        kind="confirm"
+        variant="banner"
+        text={buttonMessage}
         onClick={actionOnButtonClick}
         disabled={disabled}
-      >
-        {buttonMessage}
-      </button>
+      />
     </div>
   );
 }

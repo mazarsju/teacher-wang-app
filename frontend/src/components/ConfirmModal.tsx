@@ -1,3 +1,5 @@
+import Button from "./Button";
+
 type ConfirmModalProps = {
   isOpen: boolean;
   message: string;
@@ -35,16 +37,13 @@ export default function ConfirmModal({
           </p>
         )}
         <div className="modal-actions">
-          <button type="button" className="modal-button-cancel" onClick={onCancel}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={`${danger ? "button--danger" : ""}`}
+          <Button kind="cancel" text="Cancel" onClick={onCancel} />
+          <Button
+            kind={danger ? "danger" : "confirm"}
+            variant="confirmation"
+            text="Confirm"
             onClick={onConfirm}
-          >
-            Confirm
-          </button>
+          />
         </div>
       </div>
     </div>

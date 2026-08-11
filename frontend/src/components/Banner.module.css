@@ -19,26 +19,15 @@
   font-size: 0.95rem;
 }
 
-.app-banner-button {
+.app-banner :global(.btn-confirm) {
   flex-shrink: 0;
-  border: 1px solid #2563eb;
-  border-radius: 0.5rem;
+  border-color: #2563eb;
   background: #ffffff;
   color: #1e40af;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.45rem 0.85rem;
-  cursor: pointer;
 }
 
-.app-banner-button:hover:not(:disabled) {
+.app-banner :global(.btn-confirm):hover:not(:disabled) {
   background: #dbeafe;
-}
-
-.app-banner-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 
 .app-banner--warning {
@@ -50,11 +39,11 @@
   color: #92400e;
 }
 
-.app-banner--warning .app-banner-button {
+.app-banner--warning :global(.btn-confirm) {
   border-color: #d97706;
   color: #92400e;
 }
 
-.app-banner--warning .app-banner-button:hover {
+.app-banner--warning :global(.btn-confirm):hover:not(:disabled) {
   background: #fef3c7;
 }

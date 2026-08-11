@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/apiBase";
 import { apiFetch } from "../utils/auth/apiFetch";
+import Button from "./Button";
 import characterWordsStyles from "./CharacterWordsModal.module.css";
 import styles from "./MissingHskCharactersModal.module.css";
 
@@ -147,9 +148,7 @@ export default function MissingHskCharactersModal({
             )}
           </div>
           <div className="modal-actions">
-            <button type="button" className="modal-button-cancel" onClick={onClose}>
-              Close
-            </button>
+            <Button kind="cancel" text="Close" onClick={onClose} />
           </div>
         </div>
       </div>
@@ -187,13 +186,7 @@ export default function MissingHskCharactersModal({
               )}
             </div>
             <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-button-cancel"
-                onClick={closeWordsModal}
-              >
-                Close
-              </button>
+              <Button kind="cancel" text="Close" onClick={closeWordsModal} />
             </div>
           </div>
         </div>

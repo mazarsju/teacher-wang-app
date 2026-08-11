@@ -4,6 +4,7 @@ import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncHelpModal from "../components/AnkiSyncHelpModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
 import Banner from "../components/Banner";
+import Button from "../components/Button";
 import ChangePlanModal from "../components/ChangePlanModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
@@ -30,7 +31,6 @@ import {
   updateSmartAiPreference,
 } from "../utils/aiChat/smartAiApi";
 import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
-import chatModalStyles from "../components/ChatModal.module.css";
 import styles from "./PreferencesPage.module.css";
 
 function formatDayLabel(isoDate: string): string {
@@ -271,13 +271,12 @@ export default function PreferencesPage() {
               You&apos;re on the{" "}
               <b>{currentPlan === "pro" ? "Pro" : "Free"}</b> plan.
             </span>
-            <button
-              type="button"
-              className="page-add-button"
+            <Button
+              kind="confirm"
+              variant="page"
+              text="Compare plans"
               onClick={() => setIsChangePlanModalOpen(true)}
-            >
-              Compare plans
-            </button>
+            />
           </p>
         </section>
       )}
@@ -332,25 +331,23 @@ export default function PreferencesPage() {
                   </div>
                   <div className={styles.ankiDeckRowActions}>
                     {mapping.status !== "not_configured" && (
-                      <button
-                        type="button"
-                        className={`page-add-button ${styles.ankiDeckActionButton}`}
+                      <Button
+                        kind="confirm"
+                        variant="page"
+                        text="Sync"
+                        icon={<SyncIcon />}
                         disabled={!ankiStatus.connected}
                         onClick={() => setSyncKind(kind)}
-                      >
-                        <SyncIcon className={styles.ankiDeckActionIcon} />
-                        Sync
-                      </button>
+                      />
                     )}
-                    <button
-                      type="button"
-                      className={`page-add-button ${styles.ankiDeckActionButton}`}
+                    <Button
+                      kind="confirm"
+                      variant="page"
+                      text="Setup"
+                      icon={<SettingsIcon />}
                       disabled={!ankiStatus.connected}
                       onClick={() => setSetupKind(kind)}
-                    >
-                      <SettingsIcon className={styles.ankiDeckActionIcon} />
-                      Setup
-                    </button>
+                    />
                   </div>
                 </li>
               );
@@ -511,15 +508,14 @@ export default function PreferencesPage() {
             These actions are irreversible. Export your knowledge base first if
             you may need it later.
           </p>
-          <button
-            type="button"
-            className="page-mode-button--danger"
+          <Button
+            kind="danger"
+            variant="page"
+            text="Delete knowledge base"
+            icon={<TrashIcon />}
             onClick={() => setIsDeleteKnowledgeBaseConfirmOpen(true)}
             disabled={isDeletingKnowledgeBase}
-          >
-            <TrashIcon className={chatModalStyles.chatModalClearIcon} />
-            Delete knowledge base
-          </button>
+          />
         </section>
       )}
 
