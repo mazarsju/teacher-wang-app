@@ -40,8 +40,12 @@ build_push_backend() {
   local repo="$1"
 
   echo "→ Building and pushing backend (${PLATFORM}) → ${repo}:latest and :${GIT_SHA}"
+  # Disable attestations: with them enabled, multi-tag --push can leave :latest on
+  # the provenance stub instead of the real image (ECS then redeploys the wrong digest).
   docker buildx build \
     --platform "${PLATFORM}" \
+    --provenance=false \
+    --sbom=false \
     -f backend/Dockerfile \
     -t "${repo}:latest" \
     -t "${repo}:${GIT_SHA}" \
@@ -61,6 +65,8 @@ build_push_frontend() {
   echo "  Vite Cognito build-args: pool=${COGNITO_USER_POOL_ID} client=${COGNITO_APP_CLIENT_ID}"
   docker buildx build \
     --platform "${PLATFORM}" \
+    --provenance=false \
+    --sbom=false \
     -f frontend/Dockerfile \
     --build-arg "VITE_COGNITO_REGION=${COGNITO_REGION:-${AWS_REGION:-}}" \
     --build-arg "VITE_COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}" \

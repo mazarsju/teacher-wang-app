@@ -77,7 +77,9 @@ ECS rollout continues asynchronously after the script returns.
    ECR URLs, and public Cognito ids → exports `ECR_*` / `COGNITO_*`.
 4. Logs into ECR (`REGISTRY="${ECR_BACKEND%%/*}"` — no nested quotes).
 5. Runs `./scripts/push-ecr.sh` (tags `:latest` and `:<git-sha>`; frontend gets
-   `VITE_COGNITO_*` build-args). Backend Cognito still comes from the ECS task def.
+   `VITE_COGNITO_*` build-args; buildx uses `--provenance=false --sbom=false` so
+   `:latest` cannot land on an attestation stub). Backend Cognito still comes from
+   the ECS task def.
 6. Forces a new ECS deployment for the matching service(s).
 
 ### 4. Report back
@@ -98,6 +100,7 @@ paste AWS access keys, secret keys, or `docker login` passwords into the chat.
 | Huge frontend build context (~100MB+) | Root `.dockerignore` must exclude `**/node_modules/` (frontend/.dockerignore is ignored when context is `.`) |
 | ECS tasks fail to start after push | Images must exist before / right after `enable_ecs = true`; platform must be `linux/arm64` |
 | New image in ECR but app unchanged | ECS does not watch `:latest`; need `--force-new-deployment` (wrapper step 6) |
+| `:latest` digest is tiny / attestation-only; git SHA tag is fine | Default buildx provenance left `:latest` on the stub — `push-ecr.sh` must use `--provenance=false --sbom=false`; retag the real index/image as `:latest` and force redeploy |
 
 ## Out of scope
 
