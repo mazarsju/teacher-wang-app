@@ -103,8 +103,8 @@ function renderFormattedText(text: string) {
   return lines.map((line, lineIndex) => {
     const headerMatch = line.match(MARKDOWN_HEADER_PATTERN);
     if (headerMatch) {
-      const HeadingTag =
-        `h${headerMatch[1].length}` as keyof JSX.IntrinsicElements;
+      const level = Math.min(headerMatch[1].length, 6);
+      const HeadingTag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
       return (
         <HeadingTag key={lineIndex} className="chat-message-heading">
           {renderInlineFormattedText(headerMatch[2], String(lineIndex))}
