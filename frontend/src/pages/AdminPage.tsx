@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
+import { SyncIcon } from "../components/icons";
 import Page from "../components/Page";
 import Table, { type TableColumn } from "../components/Table";
 import type { AdminUser, UserPlan } from "../types/adminUser";
-import { deleteUser, fetchUsers, updateUserPlan } from "../utils/admin/adminApi";
+import {
+  deleteUser,
+  fetchUsers,
+  reloadHskContent,
+  updateUserPlan,
+} from "../utils/admin/adminApi";
+import styles from "./AdminPage.module.css";
 
 const USER_COLUMNS: TableColumn<AdminUser>[] = [
   { key: "email", header: "Email" },
@@ -25,6 +32,8 @@ export default function AdminPage() {
   const [userPendingDelete, setUserPendingDelete] = useState<AdminUser | null>(
     null,
   );
+  const [isReloadingHsk, setIsReloadingHsk] = useState(false);
+  const [isReloadHskConfirmOpen, setIsReloadHskConfirmOpen] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setError(null);
@@ -87,6 +96,23 @@ export default function AdminPage() {
     }
   }
 
+  async function handleConfirmReloadHsk() {
+    setIsReloadHskConfirmOpen(false);
+    setIsReloadingHsk(true);
+    setError(null);
+    try {
+      await reloadHskContent();
+    } catch (reloadError) {
+      setError(
+        reloadError instanceof Error
+          ? reloadError.message
+          : "Failed to reload the HSK database.",
+      );
+    } finally {
+      setIsReloadingHsk(false);
+    }
+  }
+
   return (
     <Page title="Admin">
       {isLoading && <p>Loading users...</p>}
@@ -122,12 +148,36 @@ export default function AdminPage() {
           )}
         />
       )}
+      {!isLoading && (
+        <section className={`admin-section ${styles.adminSectionHsk}`}>
+          <h2 className={styles.adminSectionTitle}>HSK database</h2>
+          <p className={styles.adminSectionDescription}>
+            Fully reload the shared HSK words and characters tables from the
+            upstream complete-hsk data. This is shared across every user.
+          </p>
+          <Button
+            kind="danger"
+            variant="page"
+            text={isReloadingHsk ? "Reloading..." : "Reload HSK database"}
+            icon={<SyncIcon />}
+            disabled={isReloadingHsk}
+            onClick={() => setIsReloadHskConfirmOpen(true)}
+          />
+        </section>
+      )}
       <ConfirmModal
         isOpen={userPendingDelete !== null}
         message={`Are you sure you want to delete ${userPendingDelete?.email}? This will remove all their data and their account.`}
         danger={true}
         onCancel={() => setUserPendingDelete(null)}
         onConfirm={() => void handleConfirmDelete()}
+      />
+      <ConfirmModal
+        isOpen={isReloadHskConfirmOpen}
+        message="Are you sure you want to reload the HSK database? This clears and re-downloads the shared HSK words and characters tables."
+        danger={true}
+        onCancel={() => setIsReloadHskConfirmOpen(false)}
+        onConfirm={() => void handleConfirmReloadHsk()}
       />
     </Page>
   );

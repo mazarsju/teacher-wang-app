@@ -39,3 +39,13 @@ export async function deleteUser(id: string): Promise<void> {
     throw new Error("Failed to delete user.");
   }
 }
+
+export async function reloadHskContent(): Promise<void> {
+  const response = await apiFetch(`${API_BASE}/admin/hsk/reload`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to reload the HSK database.");
+  }
+}

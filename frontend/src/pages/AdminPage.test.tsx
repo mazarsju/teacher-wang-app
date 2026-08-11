@@ -7,11 +7,13 @@ vi.mock("../utils/admin/adminApi", () => ({
   fetchUsers: vi.fn(),
   updateUserPlan: vi.fn(),
   deleteUser: vi.fn(),
+  reloadHskContent: vi.fn(),
 }));
 
 const fetchUsers = vi.mocked(adminApi.fetchUsers);
 const updateUserPlan = vi.mocked(adminApi.updateUserPlan);
 const deleteUser = vi.mocked(adminApi.deleteUser);
+const reloadHskContent = vi.mocked(adminApi.reloadHskContent);
 
 describe("AdminPage", () => {
   beforeEach(() => {
@@ -124,5 +126,58 @@ describe("AdminPage", () => {
 
     expect(deleteUser).not.toHaveBeenCalled();
     expect(screen.getByText("a@example.com")).toBeInTheDocument();
+  });
+
+  it("reloads the HSK database after confirming", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    reloadHskContent.mockResolvedValue(undefined);
+
+    render(<AdminPage />);
+
+    await screen.findByText("HSK database");
+    await user.click(
+      screen.getByRole("button", { name: "Reload HSK database" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(reloadHskContent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("cancelling the HSK reload confirmation does not call the API", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+
+    render(<AdminPage />);
+
+    await screen.findByText("HSK database");
+    await user.click(
+      screen.getByRole("button", { name: "Reload HSK database" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(reloadHskContent).not.toHaveBeenCalled();
+  });
+
+  it("shows an error when reloading the HSK database fails", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    reloadHskContent.mockRejectedValue(
+      new Error("Failed to reload the HSK database."),
+    );
+
+    render(<AdminPage />);
+
+    await screen.findByText("HSK database");
+    await user.click(
+      screen.getByRole("button", { name: "Reload HSK database" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(
+      await screen.findByText("Failed to reload the HSK database."),
+    ).toBeInTheDocument();
   });
 });

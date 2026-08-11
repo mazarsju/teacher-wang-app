@@ -1,0 +1,16 @@
+.admin-section--hsk {
+  margin-top: 2.5rem;
+}
+
+.admin-section-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.admin-section-description {
+  margin: 0 0 1.25rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
