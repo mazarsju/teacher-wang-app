@@ -1,0 +1,118 @@
+.pinyin-grid-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.pinyin-grid-wrapper {
+  overflow: auto;
+  max-height: calc(100vh - 12rem);
+  width: 100%;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.5rem;
+  background: var(--app-surface);
+  backdrop-filter: blur(10px);
+}
+
+.pinyin-grid {
+  width: 100%;
+  min-width: 100%;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+.pinyin-grid th, .pinyin-grid td {
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--app-border-light);
+  border-right: 1px solid var(--app-border-light);
+  text-align: center;
+  vertical-align: top;
+}
+
+.pinyin-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--app-sea);
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.pinyin-grid-corner-col {
+  min-width: 4.5rem;
+}
+
+.pinyin-grid-final-col {
+  width: auto;
+}
+
+.pinyin-grid-corner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 4.5rem;
+  background: var(--app-sea);
+  color: #ffffff;
+}
+
+.pinyin-grid-row-header {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 4.5rem;
+  background: var(--app-sea);
+  font-weight: 600;
+  color: #ffffff;
+  text-align: left;
+}
+
+.pinyin-grid tbody td {
+  color: #111827;
+}
+
+.pinyin-grid-cell-invalid {
+  background: #f3f4f6;
+}
+
+.pinyin-grid-cell-highlight {
+  background: #fef9c3;
+}
+
+.pinyin-grid-char-tone-1 {
+  color: #f59e0b;
+}
+
+.pinyin-grid-char-tone-2 {
+  color: #16a34a;
+}
+
+.pinyin-grid-char-tone-3 {
+  color: #2563eb;
+}
+
+.pinyin-grid-char-tone-4 {
+  color: #dc2626;
+}
+
+.pinyin-grid-char-tone-none {
+  color: #000000;
+}
+
+.pinyin-grid-char-clickable {
+  cursor: pointer;
+}
+
+.pinyin-grid-cell-content {
+  display: inline-block;
+  width: 100%;
+}
+
+.pinyin-grid-cell-line {
+  display: block;
+  line-height: 1.4;
+  white-space: nowrap;
+}

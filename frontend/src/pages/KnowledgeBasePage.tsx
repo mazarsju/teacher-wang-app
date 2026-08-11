@@ -29,6 +29,9 @@ import {
   type CharacterSyncResult,
 } from "../utils/knowledgeBase/wordsApi";
 import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
+import pageStyles from "../components/Page.module.css";
+import tableStyles from "../components/Table.module.css";
+import styles from "./KnowledgeBasePage.module.css";
 
 const CHARACTER_COLUMNS: TableColumn<Character>[] = [
   { key: "char", header: "char" },
@@ -385,9 +388,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       fullWidth={pageMode === "view"}
       headerCenter={
         pageMode === "view" ? (
-          <div className="page-header-toggles">
-            <label className="page-header-toggle">
-              <span className="page-header-toggle-label">Writing known</span>
+          <div className={styles.pageHeaderToggles}>
+            <label className={styles.pageHeaderToggle}>
+              <span className={styles.pageHeaderToggleLabel}>Writing known</span>
               <span className="toggle">
                 <input
                   type="checkbox"
@@ -401,8 +404,8 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
                 <span className="toggle-slider" />
               </span>
             </label>
-            <label className="page-header-toggle">
-              <span className="page-header-toggle-label">
+            <label className={styles.pageHeaderToggle}>
+              <span className={styles.pageHeaderToggleLabel}>
                 Writing not known
               </span>
               <span className="toggle">
@@ -432,7 +435,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             Modify
           </button>
         ) : (
-          <div className="page-header-actions">
+          <div className={pageStyles.pageHeaderActions}>
             <button
               type="button"
               className="page-mode-button"
@@ -455,7 +458,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               ref={importInputRef}
               type="file"
               accept=".txt,text/plain"
-              className="knowledge-base-import-input"
+              className={styles.knowledgeBaseImportInput}
               onChange={(event) => void handleImportDatabase(event)}
             />
             <button
@@ -534,7 +537,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       {pageMode === "edit" && (
         <>
       {statusMessage && (
-        <p className="knowledge-base-status-message">{statusMessage}</p>
+        <p className={styles.knowledgeBaseStatusMessage}>{statusMessage}</p>
       )}
       <AddWordModal
         mode="add"
@@ -568,9 +571,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       {error && <p className="table-error">{error}</p>}
       {!isLoading && !error && (
         <>
-          <section className="knowledge-base-section">
-            <div className="knowledge-base-section-header">
-              <h2 className="knowledge-base-section-title">Words</h2>
+          <section className={styles.knowledgeBaseSection}>
+            <div className={styles.knowledgeBaseSectionHeader}>
+              <h2 className={styles.knowledgeBaseSectionTitle}>Words</h2>
               <button
                 type="button"
                 className="page-add-button"
@@ -579,8 +582,8 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
                 Add word
               </button>
             </div>
-            <label className="search-bar">
-              <span className="search-bar-label">Search</span>
+            <label className={styles.searchBar}>
+              <span className={styles.searchBarLabel}>Search</span>
               <input
                 type="search"
                 value={wordSearchQuery}
@@ -600,17 +603,17 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
                   : "No words match your search."
               }
               renderRowActions={(row) => (
-                <div className="table-row-actions">
+                <div className={tableStyles.tableRowActions}>
                   <button
                     type="button"
-                    className="table-edit-button"
+                    className={tableStyles.tableEditButton}
                     onClick={() => setWordToEdit(row)}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
-                    className="table-delete-button"
+                    className={tableStyles.tableDeleteButton}
                     onClick={() => setWordToDelete(row)}
                   >
                     Delete
@@ -619,12 +622,12 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               )}
             />
           </section>
-          <section className="knowledge-base-section">
-            <div className="knowledge-base-section-header">
-              <h2 className="knowledge-base-section-title">Characters</h2>
+          <section className={styles.knowledgeBaseSection}>
+            <div className={styles.knowledgeBaseSectionHeader}>
+              <h2 className={styles.knowledgeBaseSectionTitle}>Characters</h2>
             </div>
-            <label className="search-bar">
-              <span className="search-bar-label">Search</span>
+            <label className={styles.searchBar}>
+              <span className={styles.searchBarLabel}>Search</span>
               <input
                 type="search"
                 value={characterSearchQuery}

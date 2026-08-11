@@ -1,3 +1,5 @@
+import styles from "./AnkiConnectGuideModal.module.css";
+
 type GuideStep = {
   title: string;
   description: string;
@@ -64,7 +66,7 @@ export default function AnkiConnectGuideModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-dialog anki-guide-modal"
+        className={`modal-dialog ${styles.ankiGuideModal}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="anki-connect-guide-title"
@@ -78,20 +80,20 @@ export default function AnkiConnectGuideModal({
           these steps, then close this guide to re-check the connection.
         </p>
 
-        <ol className="anki-guide-steps">
+        <ol className={styles.ankiGuideSteps}>
           {GUIDE_STEPS.map((step, index) => (
-            <li key={step.title} className="anki-guide-step">
-              <div className="anki-guide-step-header">
+            <li key={step.title} className={styles.ankiGuideStep}>
+              <div className={styles.ankiGuideStepHeader}>
                 <div>
-                  <h3 className="anki-guide-step-title"><span className="anki-guide-step-number">{index + 1}</span>&nbsp;{step.title}</h3>
-                  <p className="anki-guide-step-description">
+                  <h3 className={styles.ankiGuideStepTitle}><span className={styles.ankiGuideStepNumber}>{index + 1}</span>&nbsp;{step.title}</h3>
+                  <p className={styles.ankiGuideStepDescription}>
                     {step.description}
                   </p>
                 </div>
               </div>
               {step.imageSrc && (
                 <img
-                  className="anki-guide-step-image"
+                  className={styles.ankiGuideStepImage}
                   src={step.imageSrc}
                   alt={step.imageAlt ?? ""}
                   onError={(event) => {

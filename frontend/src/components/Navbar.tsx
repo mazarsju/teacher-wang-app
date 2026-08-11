@@ -7,6 +7,7 @@ import {
 } from "./icons";
 import ProfileMenu from "./ProfileMenu";
 import logo from "../assets/logo.png";
+import styles from "./Navbar.module.css";
 
 export type PageId =
   | "home"
@@ -49,14 +50,14 @@ export default function Navbar({
 }: NavbarProps) {
   const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
   return (
-    <nav className="navbar" aria-label="Main navigation">
-      <div className="navbar-inner">
-        <div className="navbar-nav-group">
-          <div className="navbar-brand">
-            <img className="navbar-brand-logo" src={logo} alt="" />
+    <nav className={styles.navbar} aria-label="Main navigation">
+      <div className={styles.navbarInner}>
+        <div className={styles.navbarNavGroup}>
+          <div className={styles.navbarBrand}>
+            <img className={styles.navbarBrandLogo} src={logo} alt="" />
             <span className="navbar-brand-text">Teacher Wang</span>
           </div>
-          <ul className="navbar-list">
+          <ul className={styles.navbarList}>
             {navItems.map(({ id, label, icon: Icon }) => {
               const isActive = activePage === id;
 
@@ -64,11 +65,11 @@ export default function Navbar({
                 <li key={id}>
                   <button
                     type="button"
-                    className={`navbar-tab${isActive ? " navbar-tab--active" : ""}`}
+                    className={`${styles.navbarTab}${isActive ? ` ${styles.navbarTabActive}` : ""}`}
                     aria-current={isActive ? "page" : undefined}
                     onClick={() => onPageChange(id)}
                   >
-                    <Icon className="navbar-icon" />
+                    <Icon className={styles.navbarIcon} />
                     <span>{label}</span>
                   </button>
                 </li>

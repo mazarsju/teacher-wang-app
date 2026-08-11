@@ -1,0 +1,18 @@
+.character-words-modal-content {
+  margin-bottom: 1rem;
+}
+
+.character-words-modal-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.character-words-modal-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}

@@ -1,4 +1,5 @@
 import { InfoIcon } from "./icons";
+import styles from "./VocabularyNoteTypeInfoModal.module.css";
 
 type VocabularyNoteTypeInfoModalProps = {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export default function VocabularyNoteTypeInfoModal({
         aria-labelledby="vocabulary-note-type-info-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="anki-note-type-info-header">
+        <div className={styles.ankiNoteTypeInfoHeader}>
           <h2 id="vocabulary-note-type-info-title" className="modal-title">
             Vocabulary deck type
           </h2>
@@ -33,7 +34,7 @@ export default function VocabularyNoteTypeInfoModal({
         <p className="home-hsk-info-text">
           This deck type should have 3 directions:
         </p>
-        <ol className="anki-note-type-directions">
+        <ol className={styles.ankiNoteTypeDirections}>
           <li>asking writing → guessing pinyin + definition</li>
           <li>asking pinyin → guessing writing + definition</li>
           <li>asking definition → guessing writing + pinyin</li>
@@ -42,7 +43,7 @@ export default function VocabularyNoteTypeInfoModal({
           If you do not already have such a deck type in Anki, you can create one
           automatically with the mandatory fields and optional extras.
         </p>
-        <div className="modal-actions anki-note-type-info-actions">
+        <div className={`modal-actions ${styles.ankiNoteTypeInfoActions}`}>
           <button
             type="button"
             className="modal-button-cancel"

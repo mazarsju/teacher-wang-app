@@ -1,0 +1,66 @@
+.anki-setup-modal {
+  max-width: 34rem;
+  max-height: min(90vh, 48rem);
+  overflow-y: auto;
+}
+
+.anki-setup-description {
+  white-space: pre-wrap;
+}
+
+.anki-field-mapping {
+  margin: 0;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.anki-field-mapping-legend {
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.anki-field-mapping-hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.anki-field-description {
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.anki-note-type-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.anki-note-type-label-row :global(.modal-field-label) {
+  margin: 0;
+}
+
+.anki-deck-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.55rem;
+  background: #ffffff;
+  color: var(--app-ink);
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, outline 0.15s ease;
+}
+
+.anki-deck-select:focus {
+  outline: 2px solid var(--app-focus);
+  border-color: var(--app-sea);
+}

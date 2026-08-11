@@ -5,6 +5,7 @@ import {
   WarningIcon,
 } from "../components/icons";
 import type { UserPlan } from "../types/adminUser";
+import styles from "./ChangePlanModal.module.css";
 
 type ChangePlanModalProps = {
   isOpen: boolean;
@@ -79,20 +80,20 @@ export default function ChangePlanModal({
           Compare plans
         </h2>
 
-        <div className="plan-comparison">
+        <div className={styles.planComparison}>
           {PLANS.map((plan) => {
             const isCurrent = plan.id === currentPlan;
             return (
               <div
                 key={plan.id}
-                className={`plan-card${isCurrent ? " plan-card--current" : ""}`}
+                className={`${styles.planCard}${isCurrent ? ` ${styles.planCardCurrent}` : ""}`}
               >
-                <div className="plan-card-header">
-                  <h3 className="plan-card-name">{plan.name}</h3>
-                  <p className="plan-card-price">{plan.price}</p>
-                  <div className="plan-card-cta">
+                <div className={styles.planCardHeader}>
+                  <h3 className={styles.planCardName}>{plan.name}</h3>
+                  <p className={styles.planCardPrice}>{plan.price}</p>
+                  <div className={styles.planCardCta}>
                     {isCurrent ? (
-                      <span className="plan-card-current-label">
+                      <span className={styles.planCardCurrentLabel}>
                         Current plan
                       </span>
                     ) : (
@@ -106,18 +107,18 @@ export default function ChangePlanModal({
                     )}
                   </div>
                 </div>
-                <ul className="plan-card-features">
+                <ul className={styles.planCardFeatures}>
                   {PLAN_FEATURES.map((feature) => {
                     const cell = plan.id === "free" ? feature.free : feature.pro;
                     const Icon = FEATURE_ICONS[cell.icon];
                     return (
                       <li key={feature.label}>
-                        <span className="plan-card-feature-label">
+                        <span className={styles.planCardFeatureLabel}>
                           {feature.label}
                         </span>
-                        <span className="plan-card-feature-value">
+                        <span className={styles.planCardFeatureValue}>
                           <Icon
-                            className={`plan-feature-icon plan-feature-icon--${cell.icon}`}
+                            className={`${styles.planFeatureIcon} ${styles[`plan-feature-icon--${cell.icon}`]}`}
                           />
                           {cell.text}
                         </span>

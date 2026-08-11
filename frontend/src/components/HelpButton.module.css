@@ -1,0 +1,56 @@
+.help-button {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 60;
+}
+
+.help-button-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--app-sea);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.help-button-trigger:hover {
+  background: var(--app-sea-hover);
+  transform: scale(1.15);
+}
+
+.help-button-trigger-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.help-button-bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.6rem);
+  width: 15rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.help-button-bubble a {
+  color: var(--app-sea);
+  font-weight: 600;
+}
+
+.help-button-bubble p {
+  margin: 0;
+}

@@ -7,6 +7,8 @@ import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppSelector } from "../store/hooks";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
+import characterWordsStyles from "../components/CharacterWordsModal.module.css";
+import styles from "./HomePage.module.css";
 
 const ONBOARDING_WORD_THRESHOLD = 10;
 
@@ -82,16 +84,16 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       {error && <p className="table-error">{error}</p>}
       {!isLoading && !error && hskLevelStatus !== null && (
         <>
-          <section className="home-hsk-card" aria-label="HSK level">
-            <div className="home-hsk-badge">
-              <span className="home-hsk-badge-label">HSK</span>
-              <span className="home-hsk-badge-level">
+          <section className={styles.homeHskCard} aria-label="HSK level">
+            <div className={styles.homeHskBadge}>
+              <span className={styles.homeHskBadgeLabel}>HSK</span>
+              <span className={styles.homeHskBadgeLevel}>
                 {hskLevelStatus.current_level ?? "—"}
               </span>
             </div>
-            <div className="home-hsk-content">
-              <div className="home-hsk-title-row">
-                <p className="home-hsk-title">{hskTitle}</p>
+            <div className={styles.homeHskContent}>
+              <div className={styles.homeHskTitleRow}>
+                <p className={styles.homeHskTitle}>{hskTitle}</p>
                 <button
                   type="button"
                   className="home-hsk-info-button"
@@ -102,7 +104,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 </button>
               </div>
               <div
-                className="home-hsk-progress-track"
+                className={styles.homeHskProgressTrack}
                 role="progressbar"
                 aria-valuenow={Math.round(hskLevelStatus.progress_to_next_level)}
                 aria-valuemin={0}
@@ -110,18 +112,18 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 aria-label="Progress to next HSK level"
               >
                 <div
-                  className="home-hsk-progress-fill"
+                  className={styles.homeHskProgressFill}
                   style={{
                     width: `${hskLevelStatus.progress_to_next_level}%`,
                   }}
                 />
               </div>
-              <div className="home-hsk-progress-footer">
-                <p className="home-hsk-progress-label">{hskProgressLabel}</p>
+              <div className={styles.homeHskProgressFooter}>
+                <p className={styles.homeHskProgressLabel}>{hskProgressLabel}</p>
                 {hskLevelStatus.next_level !== null && (
                   <button
                     type="button"
-                    className="home-hsk-missing-button"
+                    className={styles.homeHskMissingButton}
                     onClick={() => setIsMissingModalOpen(true)}
                   >
                     Missing characters
@@ -131,24 +133,24 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             </div>
           </section>
 
-          <div className="home-metrics">
-            <div className="home-metric-card">
-              <p className="home-metric-value">{recognizedCount}</p>
-              <p className="home-metric-label">
+          <div className={styles.homeMetrics}>
+            <div className={styles.homeMetricCard}>
+              <p className={styles.homeMetricValue}>{recognizedCount}</p>
+              <p className={styles.homeMetricLabel}>
                 Characters you are able to recognize
               </p>
             </div>
-            <div className="home-metric-card">
-              <p className="home-metric-value">{writingCount}</p>
-              <p className="home-metric-label">Characters you can write</p>
+            <div className={styles.homeMetricCard}>
+              <p className={styles.homeMetricValue}>{writingCount}</p>
+              <p className={styles.homeMetricLabel}>Characters you can write</p>
             </div>
           </div>
 
           {motivationMessages.length > 0 && (
-            <ul className="home-motivation-list">
+            <ul className={styles.homeMotivationList}>
               {motivationMessages.map((message) => (
-                <li key={message} className="home-motivation-item">
-                  <TrophyIcon className="home-motivation-icon" />
+                <li key={message} className={styles.homeMotivationItem}>
+                  <TrophyIcon className={styles.homeMotivationIcon} />
                   <span>{message}</span>
                 </li>
               ))}
@@ -167,7 +169,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 <h2 id="hsk-level-info-title" className="modal-title">
                   How HSK level is estimated
                 </h2>
-                <div className="character-words-modal-content">
+                <div className={characterWordsStyles.characterWordsModalContent}>
                   <p className="home-hsk-info-text">
                     This HSK level is an estimate based on the characters you know.
                     A level counts as reached when you know at least{" "}

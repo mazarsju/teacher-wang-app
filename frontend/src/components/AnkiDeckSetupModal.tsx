@@ -18,6 +18,7 @@ import { InfoIcon } from "./icons";
 import VocabularyNoteTypeInfoModal from "./VocabularyNoteTypeInfoModal";
 import VocabularyThreeDirectionSetupModal from "./VocabularyThreeDirectionSetupModal";
 import WritingDeckTypeInfoModal from "./WritingDeckTypeInfoModal";
+import styles from "./AnkiDeckSetupModal.module.css";
 
 type AnkiDeckSetupModalProps = {
   isOpen: boolean;
@@ -280,7 +281,7 @@ export default function AnkiDeckSetupModal({
     <>
       <div className="modal-overlay" onClick={onCancel}>
         <div
-          className="modal-dialog anki-setup-modal"
+          className={`modal-dialog ${styles.ankiSetupModal}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="anki-deck-setup-title"
@@ -289,7 +290,7 @@ export default function AnkiDeckSetupModal({
           <h2 id="anki-deck-setup-title" className="modal-title">
             Set up {ANKI_DECK_LABELS[deckKind]}
           </h2>
-          <p className="modal-message anki-setup-description">
+          <p className={`modal-message ${styles.ankiSetupDescription}`}>
             {ANKI_DECK_DESCRIPTIONS[deckKind]}
           </p>
 
@@ -324,7 +325,7 @@ export default function AnkiDeckSetupModal({
                 <label className="modal-field">
                   <span className="modal-field-label">Existing deck</span>
                   <select
-                    className="anki-deck-select"
+                    className={styles.ankiDeckSelect}
                     value={selectedDeck}
                     onChange={(event) => setSelectedDeck(event.target.value)}
                     disabled={decks.length === 0}
@@ -343,7 +344,7 @@ export default function AnkiDeckSetupModal({
               )}
 
               <div className="modal-field">
-                <div className="anki-note-type-label-row">
+                <div className={styles.ankiNoteTypeLabelRow}>
                   <span className="modal-field-label" id="anki-deck-type-label">
                     Deck type
                   </span>
@@ -368,7 +369,7 @@ export default function AnkiDeckSetupModal({
                   )}
                 </div>
                 <select
-                  className="anki-deck-select"
+                  className={styles.ankiDeckSelect}
                   aria-labelledby="anki-deck-type-label"
                   value={selectedModel}
                   onChange={(event) => setSelectedModel(event.target.value)}
@@ -386,11 +387,11 @@ export default function AnkiDeckSetupModal({
                 </select>
               </div>
 
-              <fieldset className="anki-field-mapping">
-                <legend className="anki-field-mapping-legend">
+              <fieldset className={styles.ankiFieldMapping}>
+                <legend className={styles.ankiFieldMappingLegend}>
                   Field mapping
                 </legend>
-                <p className="anki-field-mapping-hint">
+                <p className={styles.ankiFieldMappingHint}>
                   Map each Teacher Wang field to a field on the selected Anki
                   deck type.
                 </p>
@@ -399,12 +400,12 @@ export default function AnkiDeckSetupModal({
                   <label key={field.key} className="modal-field">
                     <span className="modal-field-label">
                       {field.key}{" "}
-                      <span className="anki-field-description">
+                      <span className={styles.ankiFieldDescription}>
                         ({field.description})
                       </span>
                     </span>
                     <select
-                      className="anki-deck-select"
+                      className={styles.ankiDeckSelect}
                       value={fieldMap[field.key] ?? ""}
                       onChange={(event) =>
                         setFieldMap((current) => ({

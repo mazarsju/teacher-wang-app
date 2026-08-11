@@ -1,4 +1,5 @@
 import { WarningIcon } from "./icons";
+import styles from "./WarningModal.module.css";
 
 type WarningModalProps = {
   isOpen: boolean;
@@ -24,9 +25,9 @@ export default function WarningModal({
         aria-labelledby="warning-modal-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="warning-modal-header">
-          <WarningIcon className="warning-modal-icon" />
-          <h2 id="warning-modal-title" className="modal-title warning-modal-title">
+        <div className={styles.warningModalHeader}>
+          <WarningIcon className={styles.warningModalIcon} />
+          <h2 id="warning-modal-title" className={`modal-title ${styles.warningModalTitle}`}>
             Warning
           </h2>
         </div>

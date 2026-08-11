@@ -1,0 +1,18 @@
+.warning-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.warning-modal-icon {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #d97706;
+}
+
+.warning-modal-title {
+  margin: 0;
+  color: #92400e;
+}

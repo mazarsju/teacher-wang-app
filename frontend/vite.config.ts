@@ -10,10 +10,29 @@ export default defineConfig({
   plugins: [react()],
   // Load VITE_* from the repo-root `.env` (alongside backend COGNITO_*).
   envDir: path.resolve(frontendDir, ".."),
+  css: {
+    modules: {
+      // Keeps both the raw ("foo-bar") and camelCase ("fooBar") keys, so static
+      // classNames can use styles.fooBar while dynamic ones (`styles[`foo-${x}`]`)
+      // still work.
+      localsConvention: "camelCase",
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
+    css: {
+      // Without this, *.module.css imports are auto-mocked (Vitest default)
+      // and every class resolves to its raw property name instead of the
+      // actual CSS class — opt them into real processing.
+      include: [/\.module\.css$/],
+      modules: {
+        // Tests assert on literal class strings (toHaveClass("foo-bar")); keep
+        // CSS module class names unscoped in tests instead of hashed.
+        classNameStrategy: "non-scoped",
+      },
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],

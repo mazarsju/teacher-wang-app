@@ -7,6 +7,9 @@ import { extractCharacterEntries } from "../utils/knowledgeBase/buildImportLines
 import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
 import { getSuggestedHskWords, ignoreHskWords } from "../utils/knowledgeBase/hskWordsApi";
 import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
+import kbInitWizardStyles from "./KnowledgeBaseInitWizardModal.module.css";
+import tableStyles from "./Table.module.css";
+import styles from "./AddSuggestedWordsModal.module.css";
 
 type AddSuggestedWordsModalProps = {
   isOpen: boolean;
@@ -152,7 +155,7 @@ export default function AddSuggestedWordsModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-dialog kb-init-wizard-dialog--wide"
+        className={`modal-dialog ${kbInitWizardStyles.kbInitWizardDialogWide}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-suggested-words-title"
@@ -178,7 +181,7 @@ export default function AddSuggestedWordsModal({
             renderRowActions={(row) => (
               <button
                 type="button"
-                className="table-ignore-button"
+                className={tableStyles.tableIgnoreButton}
                 onClick={() => void handleIgnore([row.word])}
               >
                 Ignore
@@ -188,7 +191,7 @@ export default function AddSuggestedWordsModal({
         )}
 
         {!isLoading && suggestions.length > 0 && (
-          <p className="modal-message suggested-words-ignore-all">
+          <p className={`modal-message ${styles.suggestedWordsIgnoreAll}`}>
             None of those words interest you? You can ignore them all so that
             other words are proposed to you:{" "}
             <button

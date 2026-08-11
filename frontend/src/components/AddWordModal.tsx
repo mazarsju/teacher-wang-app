@@ -4,6 +4,7 @@ import {
   buildPinyinFromCharacterMap,
   isWordPinyinValid,
 } from "../utils/knowledgeBase/wordCharacters";
+import styles from "./AddWordModal.module.css";
 
 export type WordFormValues = {
   word: string;
@@ -129,7 +130,7 @@ export default function AddWordModal({
             />
           </label>
           {isDuplicateWord && (
-            <p className="form-warning">
+            <p className={styles.formWarning}>
               This word already exists in the database.
             </p>
           )}
@@ -145,7 +146,7 @@ export default function AddWordModal({
             />
           </label>
           {showPinyinWarning && (
-            <p id="word-pinyin-warning" className="form-warning">
+            <p id="word-pinyin-warning" className={styles.formWarning}>
               Enter one valid pinyin syllable per Chinese character (e.g.
               hao3), with a tone number. Any non-Chinese characters in the
               word don&rsquo;t need matching pinyin — spacing and content

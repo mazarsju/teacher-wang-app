@@ -1,3 +1,5 @@
+import styles from "./Banner.module.css";
+
 type BannerProps = {
   type: "info" | "warning";
   message: string;
@@ -14,11 +16,14 @@ export default function Banner({
   disabled,
 }: BannerProps) {
   return (
-    <div className={`app-banner app-banner--${type}`} role="status">
-      <p className="app-banner-text">{message}</p>
+    <div
+      className={`${styles.appBanner} ${styles[`app-banner--${type}`] ?? ""}`}
+      role="status"
+    >
+      <p className={styles.appBannerText}>{message}</p>
       <button
         type="button"
-        className="app-banner-button"
+        className={styles.appBannerButton}
         onClick={actionOnButtonClick}
         disabled={disabled}
       >

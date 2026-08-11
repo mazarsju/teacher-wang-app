@@ -20,6 +20,7 @@ import knowledgeBaseEditScreenshot from "../assets/screenshots/03-knowledge-base
 import chatScreenshot from "../assets/screenshots/04-chat.png";
 import chatChallengeScreenshot from "../assets/screenshots/05-chat-challenge-waiter.png";
 import ankiSyncImage from "../assets/screenshots/anki-sync.png";
+import styles from "./WelcomeAuthPage.module.css";
 
 export type WelcomeAuthMode = "login" | "signup" | "confirm" | "forgot" | "reset";
 
@@ -67,7 +68,7 @@ function authErrorMessage(error: unknown): string {
 function GoogleMark() {
   return (
     <svg
-      className="welcome-auth-google-icon"
+      className={styles.welcomeAuthGoogleIcon}
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
@@ -284,12 +285,12 @@ export default function WelcomeAuthPage({
 
   if (isHandlingOAuth) {
     return (
-      <div className="welcome-auth">
-        <div className="welcome-auth-atmosphere" aria-hidden="true">
-          <span className="welcome-auth-glyph">学</span>
+      <div className={styles.welcomeAuth}>
+        <div className={styles.welcomeAuthAtmosphere} aria-hidden="true">
+          <span className={styles.welcomeAuthGlyph}>学</span>
         </div>
-        <div className="welcome-auth-content">
-          <p className="welcome-auth-oauth-status" role="status">
+        <div className={styles.welcomeAuthContent}>
+          <p className={styles.welcomeAuthOauthStatus} role="status">
             Finishing Google sign-in…
           </p>
         </div>
@@ -298,37 +299,37 @@ export default function WelcomeAuthPage({
   }
 
   return (
-    <div className="welcome-auth">
-      <div className="welcome-auth-atmosphere" aria-hidden="true">
-        <span className="welcome-auth-glyph">学</span>
+    <div className={styles.welcomeAuth}>
+      <div className={styles.welcomeAuthAtmosphere} aria-hidden="true">
+        <span className={styles.welcomeAuthGlyph}>学</span>
       </div>
 
-      <div className="welcome-auth-content">
-        <header className="welcome-auth-brand">
-          <div className="welcome-auth-brand-row">
-            <img className="welcome-auth-logo" src={logo} alt="" />
-            <p className="welcome-auth-brand-mark">Teacher Wang</p>
+      <div className={styles.welcomeAuthContent}>
+        <header className={styles.welcomeAuthBrand}>
+          <div className={styles.welcomeAuthBrandRow}>
+            <img className={styles.welcomeAuthLogo} src={logo} alt="" />
+            <p className={styles.welcomeAuthBrandMark}>Teacher Wang</p>
           </div>
-          <p className="welcome-auth-tagline">
+          <p className={styles.welcomeAuthTagline}>
             Chat, track knowledge, and climb HSK.
           </p>
           <button
             type="button"
-            className="welcome-auth-discover-button"
+            className={styles.welcomeAuthDiscoverButton}
             onClick={() => setShowFeatures(true)}
           >
             Discover the features →
           </button>
         </header>
 
-        <form className="welcome-auth-form" onSubmit={handleSubmit} noValidate>
-          <h1 className="welcome-auth-form-title">{formTitle}</h1>
+        <form className={styles.welcomeAuthForm} onSubmit={handleSubmit} noValidate>
+          <h1 className={styles.welcomeAuthFormTitle}>{formTitle}</h1>
 
-          {codeHint ? <p className="welcome-auth-hint">{codeHint}</p> : null}
+          {codeHint ? <p className={styles.welcomeAuthHint}>{codeHint}</p> : null}
 
           {isLogin || isSignup ? (
-            <label className="welcome-auth-field">
-              <span className="welcome-auth-label">Username</span>
+            <label className={styles.welcomeAuthField}>
+              <span className={styles.welcomeAuthLabel}>Username</span>
               <input
                 type="text"
                 name="username"
@@ -340,14 +341,14 @@ export default function WelcomeAuthPage({
               />
             </label>
           ) : isConfirm ? (
-            <p className="welcome-auth-hint">
+            <p className={styles.welcomeAuthHint}>
               Username: <strong>{username.trim()}</strong>
             </p>
           ) : null}
 
           {isSignup || isForgot ? (
-            <label className="welcome-auth-field">
-              <span className="welcome-auth-label">Email</span>
+            <label className={styles.welcomeAuthField}>
+              <span className={styles.welcomeAuthLabel}>Email</span>
               <input
                 type="email"
                 name="email"
@@ -359,14 +360,14 @@ export default function WelcomeAuthPage({
               />
             </label>
           ) : isReset ? (
-            <p className="welcome-auth-hint">
+            <p className={styles.welcomeAuthHint}>
               Resetting password for <strong>{email.trim()}</strong>.
             </p>
           ) : null}
 
           {isConfirm || isReset ? (
-            <label className="welcome-auth-field">
-              <span className="welcome-auth-label">Confirmation code</span>
+            <label className={styles.welcomeAuthField}>
+              <span className={styles.welcomeAuthLabel}>Confirmation code</span>
               <input
                 type="text"
                 name="confirmationCode"
@@ -381,8 +382,8 @@ export default function WelcomeAuthPage({
           ) : null}
 
           {isLogin || isSignup || isReset ? (
-            <label className="welcome-auth-field">
-              <span className="welcome-auth-label">
+            <label className={styles.welcomeAuthField}>
+              <span className={styles.welcomeAuthLabel}>
                 {isReset ? "New password" : "Password"}
               </span>
               <input
@@ -398,10 +399,10 @@ export default function WelcomeAuthPage({
           ) : null}
 
           {isLogin ? (
-            <p className="welcome-auth-switch">
+            <p className={styles.welcomeAuthSwitch}>
               <button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToForgot}
                 disabled={isSubmitting}
               >
@@ -411,14 +412,14 @@ export default function WelcomeAuthPage({
           ) : null}
 
           {error ? (
-            <p className="welcome-auth-error" role="alert">
+            <p className={styles.welcomeAuthError} role="alert">
               {error}
             </p>
           ) : null}
 
           <button
             type="submit"
-            className="welcome-auth-submit"
+            className={styles.welcomeAuthSubmit}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Please wait…" : submitLabel}
@@ -426,12 +427,12 @@ export default function WelcomeAuthPage({
 
           {showGoogle ? (
             <>
-              <div className="welcome-auth-divider" aria-hidden="true">
+              <div className={styles.welcomeAuthDivider} aria-hidden="true">
                 <span>or</span>
               </div>
               <button
                 type="button"
-                className="welcome-auth-google"
+                className={styles.welcomeAuthGoogle}
                 onClick={() => {
                   void handleGoogleSignIn();
                 }}
@@ -444,11 +445,11 @@ export default function WelcomeAuthPage({
           ) : null}
 
           {isConfirm ? (
-            <p className="welcome-auth-switch">
+            <p className={styles.welcomeAuthSwitch}>
               Wrong account?{" "}
               <button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               >
@@ -456,10 +457,10 @@ export default function WelcomeAuthPage({
               </button>
             </p>
           ) : isForgot || isReset ? (
-            <p className="welcome-auth-switch">
+            <p className={styles.welcomeAuthSwitch}>
               <button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               >
@@ -467,11 +468,11 @@ export default function WelcomeAuthPage({
               </button>
             </p>
           ) : isSignup ? (
-            <p className="welcome-auth-switch">
+            <p className={styles.welcomeAuthSwitch}>
               Already have an account?{" "}
               <button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               >
@@ -479,11 +480,11 @@ export default function WelcomeAuthPage({
               </button>
             </p>
           ) : (
-            <p className="welcome-auth-switch">
+            <p className={styles.welcomeAuthSwitch}>
               New here?{" "}
               <button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToSignup}
                 disabled={isSubmitting}
               >
@@ -495,25 +496,25 @@ export default function WelcomeAuthPage({
       </div>
 
       <div
-        className={`feature-showcase${showFeatures ? " feature-showcase-open" : ""}`}
+        className={`${styles.featureShowcase}${showFeatures ? ` ${styles.featureShowcaseOpen}` : ""}`}
         aria-hidden={!showFeatures}
       >
-        <div className="feature-showcase-inner">
+        <div className={styles.featureShowcaseInner}>
           <button
             type="button"
-            className="feature-showcase-back"
+            className={styles.featureShowcaseBack}
             onClick={() => setShowFeatures(false)}
             tabIndex={showFeatures ? 0 : -1}
           >
             ← Back
           </button>
-          <h2 className="feature-showcase-title">
+          <h2 className={styles.featureShowcaseTitle}>
             Everything you need to learn Mandarin
           </h2>
-          <div className="feature-showcase-list">
+          <div className={styles.featureShowcaseList}>
             {FEATURES.map((feature) => (
-              <article className="feature-showcase-card" key={feature.title}>
-                <div className="feature-showcase-images">
+              <article className={styles.featureShowcaseCard} key={feature.title}>
+                <div className={styles.featureShowcaseImages}>
                   {feature.images.map((image) => (
                     <img src={image} alt="" key={image} />
                   ))}

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
+import styles from "./ChallengeConfetti.module.css";
 
 const CONFETTI_COLORS = [
   "#22c55e",
@@ -37,11 +38,11 @@ export default function ChallengeConfetti({ active }: ChallengeConfettiProps) {
   }
 
   return createPortal(
-    <div className="chat-modal-confetti" aria-hidden="true">
+    <div className={styles.chatModalConfetti} aria-hidden="true">
       {pieces.map((piece) => (
         <span
           key={piece.id}
-          className="chat-modal-confetti-piece"
+          className={styles.chatModalConfettiPiece}
           style={{
             left: piece.left,
             backgroundColor: piece.color,

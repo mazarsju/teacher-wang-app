@@ -4,6 +4,7 @@ import waiterAvatar from "../assets/avatars/waiter.svg";
 import taxiDriverAvatar from "../assets/avatars/taxi-driver.svg";
 import hotelReceptionistAvatar from "../assets/avatars/hotel-receptionist.svg";
 import shopAssistantAvatar from "../assets/avatars/shop-assistant.svg";
+import styles from "./ChatCharacterCard.module.css";
 
 type ChatCharacterAvatarVariant =
   | "teacher"
@@ -31,7 +32,7 @@ export default function ChatCharacterAvatar({
   variant,
   className,
 }: ChatCharacterAvatarProps) {
-  const avatarClassName = ["chat-character-avatar-image", className]
+  const avatarClassName = [styles.chatCharacterAvatarImage, className]
     .filter(Boolean)
     .join(" ");
 

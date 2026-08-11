@@ -30,6 +30,8 @@ import {
   updateSmartAiPreference,
 } from "../utils/aiChat/smartAiApi";
 import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import chatModalStyles from "../components/ChatModal.module.css";
+import styles from "./PreferencesPage.module.css";
 
 function formatDayLabel(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
@@ -262,9 +264,9 @@ export default function PreferencesPage() {
       {error && <p className="table-error">{error}</p>}
 
       {!isLoading && tokenUsage && (
-        <section className="preferences-section preferences-section--plan">
-          <h2 className="preferences-section-title">Current plan</h2>
-          <p className="preferences-section-description">
+        <section className={`preferences-section ${styles.preferencesSectionPlan}`}>
+          <h2 className={styles.preferencesSectionTitle}>Current plan</h2>
+          <p className={styles.preferencesSectionDescription}>
             <span>
               You&apos;re on the{" "}
               <b>{currentPlan === "pro" ? "Pro" : "Free"}</b> plan.
@@ -281,9 +283,9 @@ export default function PreferencesPage() {
       )}
 
       {!isLoading && (
-        <section className="preferences-section preferences-section--anki">
-          <h2 className="preferences-section-title">Anki synchronization</h2>
-          <p className="preferences-section-description">
+        <section className={`preferences-section ${styles.preferencesSectionAnki}`}>
+          <h2 className={styles.preferencesSectionTitle}>Anki synchronization</h2>
+          <p className={styles.preferencesSectionDescription}>
             Map your knowledge-base characters and words to Anki decks through
             AnkiConnect.
           </p>
@@ -305,48 +307,48 @@ export default function PreferencesPage() {
             />
           )}
 
-          <ul className="anki-deck-list">
+          <ul className={styles.ankiDeckList}>
             {deckRows.map(({ kind, label }) => {
               const mapping = ankiStatus.decks[kind];
               const statusClass = ankiStatus.connected
                 ? mapping.status
                 : "not_synchronized";
               return (
-                <li key={kind} className="anki-deck-row">
-                  <div className="anki-deck-row-main">
-                    <span className="anki-deck-name">{label}</span>
+                <li key={kind} className={styles.ankiDeckRow}>
+                  <div className={styles.ankiDeckRowMain}>
+                    <span className={styles.ankiDeckName}>{label}</span>
                     <span
-                      className={`anki-deck-status anki-deck-status--${statusClass}`}
+                      className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
                     >
                       {ankiStatus.connected
                         ? formatDeckStatus(mapping.status)
                         : "Not connected"}
                     </span>
                     {mapping.deck_name !== "" && (
-                      <span className="anki-deck-mapped-name">
+                      <span className={styles.ankiDeckMappedName}>
                         {mapping.deck_name}
                       </span>
                     )}
                   </div>
-                  <div className="anki-deck-row-actions">
+                  <div className={styles.ankiDeckRowActions}>
                     {mapping.status !== "not_configured" && (
                       <button
                         type="button"
-                        className="page-add-button anki-deck-action-button"
+                        className={`page-add-button ${styles.ankiDeckActionButton}`}
                         disabled={!ankiStatus.connected}
                         onClick={() => setSyncKind(kind)}
                       >
-                        <SyncIcon className="anki-deck-action-icon" />
+                        <SyncIcon className={styles.ankiDeckActionIcon} />
                         Sync
                       </button>
                     )}
                     <button
                       type="button"
-                      className="page-add-button anki-deck-action-button"
+                      className={`page-add-button ${styles.ankiDeckActionButton}`}
                       disabled={!ankiStatus.connected}
                       onClick={() => setSetupKind(kind)}
                     >
-                      <SettingsIcon className="anki-deck-action-icon" />
+                      <SettingsIcon className={styles.ankiDeckActionIcon} />
                       Setup
                     </button>
                   </div>
@@ -358,22 +360,22 @@ export default function PreferencesPage() {
       )}
 
 {!isLoading && tokenUsage && (
-        <section className="preferences-section preferences-section--usage">
-          <h2 className="preferences-section-title">AI usage</h2>
-          <p className="preferences-section-description">
+        <section className={`preferences-section ${styles.preferencesSectionUsage}`}>
+          <h2 className={styles.preferencesSectionTitle}>AI usage</h2>
+          <p className={styles.preferencesSectionDescription}>
             How much of your monthly AI allowance chat and grammar-check calls
             have used.
           </p>
 
           {!isSmartAiLoading && (
-            <div className="preferences-toggle-row">
-              <span className="preferences-toggle-row-label">
-                <span className="preferences-toggle-row-title">Smart AI</span>
-                <p className="preferences-toggle-row-description">
+            <div className={styles.preferencesToggleRow}>
+              <span className={styles.preferencesToggleRowLabel}>
+                <span className={styles.preferencesToggleRowTitle}>Smart AI</span>
+                <p className={styles.preferencesToggleRowDescription}>
                   Smarter answers, at the cost of a bit more time and usage.
                 </p>
               </span>
-              <label className="preferences-toggle" aria-label="Smart AI">
+              <label className={styles.preferencesToggle} aria-label="Smart AI">
                 <input
                   type="checkbox"
                   checked={isSmartAiEnabled}
@@ -382,23 +384,23 @@ export default function PreferencesPage() {
                     void handleToggleSmartAi(event.target.checked)
                   }
                 />
-                <span className="preferences-toggle-track" />
-                <span className="preferences-toggle-thumb" />
+                <span className={styles.preferencesToggleTrack} />
+                <span className={styles.preferencesToggleThumb} />
               </label>
             </div>
           )}
 
-          <div className="preferences-usage-progress">
-            <div className="preferences-usage-progress-header">
-              <span className="preferences-usage-progress-label">
+          <div className={styles.preferencesUsageProgress}>
+            <div className={styles.preferencesUsageProgressHeader}>
+              <span className={styles.preferencesUsageProgressLabel}>
                 Used this month
               </span>
-              <span className="preferences-usage-progress-value">
+              <span className={styles.preferencesUsageProgressValue}>
                 {formatPercent(usedPercent)}
               </span>
             </div>
             <div
-              className="preferences-usage-progress-track"
+              className={styles.preferencesUsageProgressTrack}
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
@@ -406,11 +408,11 @@ export default function PreferencesPage() {
               aria-label="Percentage of monthly AI usage allowance used"
             >
               <div
-                className="preferences-usage-progress-fill"
+                className={styles.preferencesUsageProgressFill}
                 style={{ width: `${usedPercent}%` }}
               />
             </div>
-            <p className="preferences-usage-reset-note">
+            <p className={styles.preferencesUsageResetNote}>
               Resets to 0% on the 1st of next month.
             </p>
           </div>
@@ -425,13 +427,13 @@ export default function PreferencesPage() {
           )}
 
           <div
-            className="preferences-usage-chart"
+            className={styles.preferencesUsageChart}
             role="img"
             aria-label={`Cumulative AI usage this month, currently at ${formatPercent(usedPercent)} of the monthly allowance`}
           >
             <svg
               viewBox={`0 0 ${USAGE_CHART_WIDTH} ${USAGE_CHART_HEIGHT}`}
-              className="preferences-usage-chart-svg"
+              className={styles.preferencesUsageChartSvg}
             >
               <defs>
                 <linearGradient
@@ -454,15 +456,15 @@ export default function PreferencesPage() {
                     x2={USAGE_CHART_WIDTH}
                     y1={y}
                     y2={y}
-                    className="preferences-usage-chart-grid"
+                    className={styles.preferencesUsageChartGrid}
                   />
                 );
               })}
               {usageAreaPath && (
-                <path d={usageAreaPath} className="preferences-usage-chart-area" />
+                <path d={usageAreaPath} className={styles.preferencesUsageChartArea} />
               )}
               {usageLinePath && (
-                <path d={usageLinePath} className="preferences-usage-chart-line" />
+                <path d={usageLinePath} className={styles.preferencesUsageChartLine} />
               )}
               {usageChartPoints.map((point) => (
                 <circle
@@ -470,7 +472,7 @@ export default function PreferencesPage() {
                   cx={point.x}
                   cy={point.y}
                   r={2.5}
-                  className="preferences-usage-chart-dot"
+                  className={styles.preferencesUsageChartDot}
                 >
                   <title>{`${formatDayLabel(point.date)}: ${formatPercent(point.percent)} used`}</title>
                 </circle>
@@ -480,13 +482,13 @@ export default function PreferencesPage() {
                   x={currentUsagePoint.x}
                   y={Math.max(12, currentUsagePoint.y - 8)}
                   textAnchor="end"
-                  className="preferences-usage-chart-current-label"
+                  className={styles.preferencesUsageChartCurrentLabel}
                 >
                   {formatPercent(usedPercent)}
                 </text>
               )}
             </svg>
-            <div className="preferences-usage-chart-labels">
+            <div className={styles.preferencesUsageChartLabels}>
               <span>
                 {tokenUsage.days[0]
                   ? formatDayLabel(tokenUsage.days[0].date)
@@ -503,9 +505,9 @@ export default function PreferencesPage() {
       )}
 
       {!isLoading && (
-        <section className="preferences-section preferences-section--danger">
-          <h2 className="preferences-section-title">Dangerous actions</h2>
-          <p className="preferences-section-description">
+        <section className={`preferences-section ${styles.preferencesSectionDanger}`}>
+          <h2 className={styles.preferencesSectionTitle}>Dangerous actions</h2>
+          <p className={styles.preferencesSectionDescription}>
             These actions are irreversible. Export your knowledge base first if
             you may need it later.
           </p>
@@ -515,7 +517,7 @@ export default function PreferencesPage() {
             onClick={() => setIsDeleteKnowledgeBaseConfirmOpen(true)}
             disabled={isDeletingKnowledgeBase}
           >
-            <TrashIcon className="chat-modal-clear-icon" />
+            <TrashIcon className={chatModalStyles.chatModalClearIcon} />
             Delete knowledge base
           </button>
         </section>

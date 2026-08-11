@@ -1,0 +1,63 @@
+.chat-character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.25rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(6, 24, 36, 0.08);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.chat-character-card:hover {
+  border-color: var(--app-sea);
+  box-shadow: 0 12px 32px rgba(6, 24, 36, 0.12);
+  transform: translateY(-2px);
+}
+
+.chat-character-card:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.chat-character-avatar-image {
+  width: 6rem;
+  height: 6rem;
+}
+
+.chat-character-avatar-image--compact {
+  width: 3rem;
+  height: 3rem;
+}
+
+.chat-character-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-character-card-name {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.chat-character-card-chinese-name {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.chat-character-card-description {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}

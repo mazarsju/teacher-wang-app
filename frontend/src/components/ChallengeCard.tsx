@@ -1,6 +1,8 @@
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import { TrophyIcon } from "./icons";
 import type { Challenge } from "../types/challenge";
+import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
+import styles from "./ChallengeCard.module.css";
 
 type ChallengeCardProps = {
   challenge: Challenge;
@@ -20,8 +22,8 @@ export default function ChallengeCard({
       type="button"
       className={
         completed
-          ? "chat-character-card challenge-card challenge-card--completed"
-          : "chat-character-card challenge-card"
+          ? `${chatCharacterCardStyles.chatCharacterCard} ${styles.challengeCard} ${styles.challengeCardCompleted}`
+          : `${chatCharacterCardStyles.chatCharacterCard} ${styles.challengeCard}`
       }
       onClick={() => onSelect(challenge)}
       aria-label={
@@ -30,26 +32,26 @@ export default function ChallengeCard({
           : undefined
       }
     >
-      <div className="challenge-card-avatar-wrap">
+      <div className={styles.challengeCardAvatarWrap}>
         <ChatCharacterAvatar variant={character.avatarVariant} />
         {completed && (
-          <span className="challenge-card-completed-badge" aria-hidden="true">
-            <TrophyIcon className="challenge-card-completed-icon" />
+          <span className={styles.challengeCardCompletedBadge} aria-hidden="true">
+            <TrophyIcon className={styles.challengeCardCompletedIcon} />
           </span>
         )}
       </div>
-      <div className="chat-character-card-content">
-        <span className="chat-character-card-name">
+      <div className={chatCharacterCardStyles.chatCharacterCardContent}>
+        <span className={chatCharacterCardStyles.chatCharacterCardName}>
           {character.name}{" "}
-          <span className="chat-character-card-chinese-name">
+          <span className={chatCharacterCardStyles.chatCharacterCardChineseName}>
             ({character.chineseName})
           </span>
         </span>
-        <p className="chat-character-card-description">
+        <p className={chatCharacterCardStyles.chatCharacterCardDescription}>
           {challenge.description}
         </p>
         {completed && (
-          <span className="challenge-card-completed-label">Completed</span>
+          <span className={styles.challengeCardCompletedLabel}>Completed</span>
         )}
       </div>
     </button>

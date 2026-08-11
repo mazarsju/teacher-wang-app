@@ -1,0 +1,207 @@
+.anki-sync-modal {
+  max-width: 40rem;
+  max-height: min(90vh, 52rem);
+  overflow-y: auto;
+}
+
+.anki-sync-modal--partial {
+  max-width: 44rem;
+  max-height: min(90vh, 48rem);
+}
+
+.anki-sync-lead {
+  margin: 0 0 1.25rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.anki-sync-panel {
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  backdrop-filter: blur(10px);
+}
+
+.anki-sync-panel--push {
+  border-color: var(--app-sea);
+  background: var(--app-mist);
+}
+
+.anki-sync-panel--pull {
+  border-color: var(--app-border-light);
+  background: var(--app-surface);
+}
+
+.anki-sync-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.anki-sync-panel-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.anki-sync-panel-count {
+  margin: 0;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.anki-sync-panel-copy {
+  margin: 0 0 0.95rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.anki-sync-panel--pull .anki-sync-panel-copy {
+  color: #6b7280;
+}
+
+.anki-sync-panel--pull :global(.modal-button-confirm-primary), .anki-sync-panel--pull :global(.modal-button-confirm), .anki-sync-panel--pull :global(.page-add-button) {
+  opacity: 0.92;
+}
+
+.anki-sync-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.anki-sync-actions :global(.page-add-button), .anki-sync-actions :global(.modal-button-cancel), .anki-sync-actions :global(.modal-button-confirm), .anki-sync-actions :global(.modal-button-confirm-primary) {
+  width: 100%;
+  justify-content: center;
+}
+
+.anki-sync-footer {
+  margin-top: 0.5rem;
+}
+
+.anki-sync-partial-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.anki-sync-partial-count {
+  margin-left: auto;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.anki-sync-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(50vh, 22rem);
+  margin-bottom: 1.25rem;
+  padding-right: 0.25rem;
+  overflow-y: auto;
+}
+
+.anki-sync-card-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(4rem, 0.9fr) minmax(5rem, 1fr) minmax(6rem, 1.4fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.5rem;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.anki-sync-card-row--header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-color: transparent;
+  background: var(--app-mist);
+  color: var(--app-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: default;
+}
+
+.anki-sync-card-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.anki-sync-card-writing {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.anki-sync-card-row--writing {
+  grid-template-columns: 2rem minmax(8rem, 1.6fr) minmax(4rem, 0.8fr);
+}
+
+.anki-sync-all-set {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.75rem;
+  background: #f0fdf4;
+}
+
+.anki-sync-all-set-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+.anki-sync-all-set-text {
+  margin: 0;
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.anki-sync-unsyncable {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #fde68a;
+  border-radius: 0.75rem;
+  background: #fffbeb;
+}
+
+.anki-sync-unsyncable-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.anki-sync-unsyncable-text {
+  margin: 0;
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.anki-sync-unsyncable-chars {
+  font-weight: 600;
+  font-size: 1rem;
+}

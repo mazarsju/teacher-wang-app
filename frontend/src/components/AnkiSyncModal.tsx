@@ -13,6 +13,7 @@ import {
 } from "../types/anki";
 import { fetchAnkiPendingSync, runAnkiSync } from "../utils/anki/ankiApi";
 import ConfirmModal from "./ConfirmModal";
+import styles from "./AnkiSyncModal.module.css";
 
 type SyncView = "overview" | "partial-push" | "partial-pull";
 
@@ -349,8 +350,8 @@ export default function AnkiSyncModal({
 
   const renderVocabularyPartialList = (cards: AnkiPendingCard[]) => (
     <>
-      <div className="anki-sync-card-row anki-sync-card-row--header">
-        <span className="anki-sync-card-check" aria-hidden="true" />
+      <div className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowHeader}`}>
+        <span className={styles.ankiSyncCardCheck} aria-hidden="true" />
         <span>Writing</span>
         <span>Pinyin</span>
         <span>Definition</span>
@@ -358,8 +359,8 @@ export default function AnkiSyncModal({
       {cards.filter(isVocabularyCard).map((card) => {
         const checked = selectedIds.has(card.id);
         return (
-          <label key={card.id} className="anki-sync-card-row" role="listitem">
-            <span className="anki-sync-card-check">
+          <label key={card.id} className={styles.ankiSyncCardRow} role="listitem">
+            <span className={styles.ankiSyncCardCheck}>
               <input
                 type="checkbox"
                 checked={checked}
@@ -368,7 +369,7 @@ export default function AnkiSyncModal({
                 aria-label={`Select ${card.writing}`}
               />
             </span>
-            <span className="anki-sync-card-writing">{card.writing}</span>
+            <span className={styles.ankiSyncCardWriting}>{card.writing}</span>
             <span>{card.pinyin}</span>
             <span>{card.definition}</span>
           </label>
@@ -381,8 +382,8 @@ export default function AnkiSyncModal({
     <>
       <div className="modal-overlay" onClick={onCancel}>
         <div
-          className={`modal-dialog anki-sync-modal${
-            view !== "overview" ? " anki-sync-modal--partial" : ""
+          className={`modal-dialog ${styles.ankiSyncModal}${
+            view !== "overview" ? ` ${styles.ankiSyncModalPartial}` : ""
           }`}
           role="dialog"
           aria-modal="true"
@@ -403,32 +404,32 @@ export default function AnkiSyncModal({
 
           {!isLoading && pending !== null && view === "overview" && (
             <>
-              <p className="anki-sync-lead">
+              <p className={styles.ankiSyncLead}>
                 Choose a direction. Push sends local knowledge-base content to
                 Anki. Pull imports Anki cards into the app.
               </p>
 
-              <section className="anki-sync-panel anki-sync-panel--push">
-                <div className="anki-sync-panel-header">
-                  <h3 className="anki-sync-panel-title">Push to Anki</h3>
-                  <p className="anki-sync-panel-count">
+              <section className={`${styles.ankiSyncPanel} ${styles.ankiSyncPanelPush}`}>
+                <div className={styles.ankiSyncPanelHeader}>
+                  <h3 className={styles.ankiSyncPanelTitle}>Push to Anki</h3>
+                  <p className={styles.ankiSyncPanelCount}>
                     {formatCount(pushCount, "card to push", "cards to push")}
                   </p>
                 </div>
-                <p className="anki-sync-panel-copy">
+                <p className={styles.ankiSyncPanelCopy}>
                   One-way only: add new local cards to this Anki deck, or ignore
                   them so they are not offered again.
                 </p>
 
                 {nothingToPush ? (
-                  <div className="anki-sync-all-set" role="status">
-                    <CheckIcon className="anki-sync-all-set-icon" />
-                    <p className="anki-sync-all-set-text">
+                  <div className={styles.ankiSyncAllSet} role="status">
+                    <CheckIcon className={styles.ankiSyncAllSetIcon} />
+                    <p className={styles.ankiSyncAllSetText}>
                       You’re all set, nothing to push.
                     </p>
                   </div>
                 ) : (
-                  <div className="anki-sync-actions">
+                  <div className={styles.ankiSyncActions}>
                     <button
                       type="button"
                       className="modal-button-confirm-primary"
@@ -464,14 +465,14 @@ export default function AnkiSyncModal({
                 )}
 
                 {isWriting && unsyncable.length > 0 && (
-                  <div className="anki-sync-unsyncable" role="note">
-                    <p className="anki-sync-unsyncable-title">
+                  <div className={styles.ankiSyncUnsyncable} role="note">
+                    <p className={styles.ankiSyncUnsyncableTitle}>
                       Words that cannot be pushed
                     </p>
-                    <p className="anki-sync-unsyncable-text">
+                    <p className={styles.ankiSyncUnsyncableText}>
                       These words are missing a definition or pinyin, so a
                       card cannot be built for them:{" "}
-                      <span className="anki-sync-unsyncable-chars">
+                      <span className={styles.ankiSyncUnsyncableChars}>
                         {unsyncable.join("、")}
                       </span>
                       . You can skip them with “Ignore all for push”.
@@ -480,10 +481,10 @@ export default function AnkiSyncModal({
                 )}
               </section>
 
-              <section className="anki-sync-panel anki-sync-panel--pull">
-                <div className="anki-sync-panel-header">
-                  <h3 className="anki-sync-panel-title">Pull from Anki</h3>
-                  <p className="anki-sync-panel-count">
+              <section className={`${styles.ankiSyncPanel} ${styles.ankiSyncPanelPull}`}>
+                <div className={styles.ankiSyncPanelHeader}>
+                  <h3 className={styles.ankiSyncPanelTitle}>Pull from Anki</h3>
+                  <p className={styles.ankiSyncPanelCount}>
                     {formatCount(
                       pullCount,
                       isWriting ? "word to pull" : "card to pull",
@@ -491,21 +492,21 @@ export default function AnkiSyncModal({
                     )}
                   </p>
                 </div>
-                <p className="anki-sync-panel-copy">
+                <p className={styles.ankiSyncPanelCopy}>
                   {isWriting
                     ? "Words found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”."
                     : "Cards found in this Anki deck that are not yet in your knowledge base."}
                 </p>
 
                 {nothingToPull ? (
-                  <div className="anki-sync-all-set" role="status">
-                    <CheckIcon className="anki-sync-all-set-icon" />
-                    <p className="anki-sync-all-set-text">
+                  <div className={styles.ankiSyncAllSet} role="status">
+                    <CheckIcon className={styles.ankiSyncAllSetIcon} />
+                    <p className={styles.ankiSyncAllSetText}>
                       You’re all set, nothing to pull.
                     </p>
                   </div>
                 ) : (
-                  <div className="anki-sync-actions">
+                  <div className={styles.ankiSyncActions}>
                     <button
                       type="button"
                       className="modal-button-confirm-primary"
@@ -534,16 +535,16 @@ export default function AnkiSyncModal({
                 )}
 
                 {isWriting && pullMissing.length > 0 && (
-                  <div className="anki-sync-unsyncable" role="note">
-                    <p className="anki-sync-unsyncable-title">
+                  <div className={styles.ankiSyncUnsyncable} role="note">
+                    <p className={styles.ankiSyncUnsyncableTitle}>
                       Words not yet in the knowledge base
                     </p>
-                    <p className="anki-sync-unsyncable-text">
+                    <p className={styles.ankiSyncUnsyncableText}>
                       These words from Anki don’t exist in your knowledge
                       base yet. Add them manually in the app, synchronize
-                      the Mandarin vocabulary deck with them first, or 
+                      the Mandarin vocabulary deck with them first, or
                       ignore them for future pulls:{" "}
-                      <span className="anki-sync-unsyncable-chars">
+                      <span className={styles.ankiSyncUnsyncableChars}>
                         {pullMissing.join("、")}
                       </span>
                       .
@@ -552,14 +553,14 @@ export default function AnkiSyncModal({
                 )}
 
                 {!isWriting && pullMissing.length > 0 && (
-                  <div className="anki-sync-unsyncable" role="note">
-                    <p className="anki-sync-unsyncable-title">
+                  <div className={styles.ankiSyncUnsyncable} role="note">
+                    <p className={styles.ankiSyncUnsyncableTitle}>
                       Cards that cannot be pulled
                     </p>
-                    <p className="anki-sync-unsyncable-text">
+                    <p className={styles.ankiSyncUnsyncableText}>
                       These Anki cards contain Chinese characters whose pinyin
                       could not be resolved from the deck:{" "}
-                      <span className="anki-sync-unsyncable-chars">
+                      <span className={styles.ankiSyncUnsyncableChars}>
                         {pullMissing.join("、")}
                       </span>
                       .
@@ -568,7 +569,7 @@ export default function AnkiSyncModal({
                 )}
               </section>
 
-              <div className="modal-actions anki-sync-footer">
+              <div className={`modal-actions ${styles.ankiSyncFooter}`}>
                 <button
                   type="button"
                   className="modal-button-cancel"
@@ -588,7 +589,7 @@ export default function AnkiSyncModal({
                 ignored for future pushes.
               </p>
 
-              <div className="anki-sync-partial-toolbar">
+              <div className={styles.ankiSyncPartialToolbar}>
                 <button
                   type="button"
                   className="page-add-button"
@@ -605,16 +606,16 @@ export default function AnkiSyncModal({
                 >
                   Unselect all
                 </button>
-                <span className="anki-sync-partial-count">
+                <span className={styles.ankiSyncPartialCount}>
                   {selectedCount} of {pushCount} selected
                 </span>
               </div>
 
-              <div className="anki-sync-card-list" role="list">
+              <div className={styles.ankiSyncCardList} role="list">
                 {isWriting ? (
                   <>
-                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writing">
-                      <span className="anki-sync-card-check" aria-hidden="true" />
+                    <div className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowHeader} ${styles.ankiSyncCardRowWriting}`}>
+                      <span className={styles.ankiSyncCardCheck} aria-hidden="true" />
                       <span>Recto</span>
                       <span>Verso</span>
                     </div>
@@ -623,10 +624,10 @@ export default function AnkiSyncModal({
                       return (
                         <label
                           key={card.id}
-                          className="anki-sync-card-row anki-sync-card-row--writing"
+                          className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowWriting}`}
                           role="listitem"
                         >
-                          <span className="anki-sync-card-check">
+                          <span className={styles.ankiSyncCardCheck}>
                             <input
                               type="checkbox"
                               checked={checked}
@@ -636,7 +637,7 @@ export default function AnkiSyncModal({
                             />
                           </span>
                           <span>{card.recto}</span>
-                          <span className="anki-sync-card-writing">
+                          <span className={styles.ankiSyncCardWriting}>
                             {card.verso}
                           </span>
                         </label>
@@ -683,7 +684,7 @@ export default function AnkiSyncModal({
                   : "Choose which cards to pull from Anki. Unselected cards will be ignored for future pulls."}
               </p>
 
-              <div className="anki-sync-partial-toolbar">
+              <div className={styles.ankiSyncPartialToolbar}>
                 <button
                   type="button"
                   className="page-add-button"
@@ -700,16 +701,16 @@ export default function AnkiSyncModal({
                 >
                   Unselect all
                 </button>
-                <span className="anki-sync-partial-count">
+                <span className={styles.ankiSyncPartialCount}>
                   {selectedCount} of {pullActionableCount} selected
                 </span>
               </div>
 
-              <div className="anki-sync-card-list" role="list">
+              <div className={styles.ankiSyncCardList} role="list">
                 {isWriting ? (
                   <>
-                    <div className="anki-sync-card-row anki-sync-card-row--header anki-sync-card-row--writing">
-                      <span className="anki-sync-card-check" aria-hidden="true" />
+                    <div className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowHeader} ${styles.ankiSyncCardRowWriting}`}>
+                      <span className={styles.ankiSyncCardCheck} aria-hidden="true" />
                       <span>Recto</span>
                       <span>Verso</span>
                     </div>
@@ -718,10 +719,10 @@ export default function AnkiSyncModal({
                       return (
                         <label
                           key={card.id}
-                          className="anki-sync-card-row anki-sync-card-row--writing"
+                          className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowWriting}`}
                           role="listitem"
                         >
-                          <span className="anki-sync-card-check">
+                          <span className={styles.ankiSyncCardCheck}>
                             <input
                               type="checkbox"
                               checked={checked}
@@ -731,7 +732,7 @@ export default function AnkiSyncModal({
                             />
                           </span>
                           <span>{card.recto}</span>
-                          <span className="anki-sync-card-writing">
+                          <span className={styles.ankiSyncCardWriting}>
                             {card.verso}
                           </span>
                         </label>

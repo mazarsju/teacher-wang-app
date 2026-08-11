@@ -1,0 +1,21 @@
+.anki-note-type-info-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.anki-note-type-info-header :global(.modal-title) {
+  margin: 0;
+}
+
+.anki-note-type-directions {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.anki-note-type-info-actions {
+  flex-wrap: wrap;
+}

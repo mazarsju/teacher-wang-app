@@ -76,7 +76,9 @@ describe("PinyinGridView", () => {
       />,
     );
 
-    expect(screen.getByRole("cell", { name: "爱艾矮碍" })).toBeInTheDocument();
+    // Each wrapped line is its own block box (see .pinyin-grid-cell-line),
+    // so the accessible name joins them with a space.
+    expect(screen.getByRole("cell", { name: "爱艾矮 碍" })).toBeInTheDocument();
     expect(container.querySelectorAll(".pinyin-grid-cell-line")).toHaveLength(2);
   });
 

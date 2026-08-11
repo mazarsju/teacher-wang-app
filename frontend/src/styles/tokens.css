@@ -1,0 +1,16 @@
+:root {
+  --app-ink: #0c2a3a;
+  --app-sea: #1a5c6e;
+  --app-sea-hover: #154a59;
+  --app-mist: #d8ece8;
+  --app-accent: #e8a54b;
+  --app-surface: rgba(255, 252, 247, 0.92);
+  --app-bg: #faf9f6;
+  --app-border: #b7c9ce;
+  --app-border-light: rgba(26, 92, 110, 0.1);
+  --app-focus: rgba(26, 92, 110, 0.35);
+  --app-danger: #ef4444;
+  --app-danger-hover: #b91c1c;
+  --font-sans: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: Fraunces, Georgia, serif;
+}

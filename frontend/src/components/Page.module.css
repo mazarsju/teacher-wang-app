@@ -1,0 +1,61 @@
+.page {
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.page--full-width {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-content {
+  color: #374151;
+  line-height: 1.6;
+}
+
+:where(.page-content) button {
+  margin-top: 1rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.55rem;
+  background: var(--app-surface);
+  backdrop-filter: blur(10px);
+  color: var(--app-ink);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+:where(.page-content) button:global(.button--danger) {
+  background-color: var(--app-danger);
+  color: #ffffff;
+}
+
+:where(.page-content) button:global(.button--danger):hover {
+  background-color: var(--app-danger-hover);
+}
+
+:where(.page-content) button:hover {
+  background: var(--app-border-light);
+}

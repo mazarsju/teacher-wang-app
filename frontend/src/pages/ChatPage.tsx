@@ -13,6 +13,8 @@ import { CHALLENGES, NEW_FRIEND_CHALLENGE } from "../data/challenges";
 import { CHAT_CHARACTERS, TEACHER_WANG, XIAO_MING } from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
 import { fetchChallengesProgress } from "../utils/aiChat/challengesApi";
+import challengeCardStyles from "../components/ChallengeCard.module.css";
+import styles from "./ChatPage.module.css";
 
 const KB_CHARACTER_THRESHOLD = 50;
 
@@ -93,8 +95,8 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
         />
       )}
 
-      <p className="chat-intro">Who do you want to speak with today?</p>
-      <div className="chat-character-grid">
+      <p className={styles.chatIntro}>Who do you want to speak with today?</p>
+      <div className={styles.chatCharacterGrid}>
         {visibleCharacters.map((character) => (
           <ChatCharacterCard
             key={character.id}
@@ -104,14 +106,14 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
         ))}
       </div>
 
-      <section className="chat-challenges-section" aria-labelledby="challenges-heading">
-        <h2 id="challenges-heading" className="chat-section-title">
+      <section className={styles.chatChallengesSection} aria-labelledby="challenges-heading">
+        <h2 id="challenges-heading" className={styles.chatSectionTitle}>
           Challenges
         </h2>
-        <p className="chat-section-description">
+        <p className={styles.chatSectionDescription}>
           Practice real-life conversations with guided tasks.
         </p>
-        <div className="challenge-card-grid">
+        <div className={challengeCardStyles.challengeCardGrid}>
           {visibleChallenges.map((challenge) => (
             <ChallengeCard
               key={challenge.id}

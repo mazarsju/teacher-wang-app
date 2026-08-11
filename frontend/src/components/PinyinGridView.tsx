@@ -8,6 +8,7 @@ import {
   START,
   type PinyinTone,
 } from "../types/pinyin";
+import styles from "./PinyinGridView.module.css";
 
 type GridCharacter = {
   char: string;
@@ -43,10 +44,10 @@ export function chunkCharacters(
 
 function getToneClassName(tone: PinyinTone | null): string {
   if (tone === null) {
-    return "pinyin-grid-char-tone-none";
+    return styles["pinyin-grid-char-tone-none"];
   }
 
-  return `pinyin-grid-char-tone-${tone}`;
+  return styles[`pinyin-grid-char-tone-${tone}`];
 }
 
 function chunkGridCharacters(
@@ -70,9 +71,9 @@ function renderCellCharacters(
   const lines = chunkGridCharacters(characters);
 
   return (
-    <span className="pinyin-grid-cell-content">
+    <span className={styles.pinyinGridCellContent}>
       {lines.map((line, lineIndex) => (
-        <span key={lineIndex} className="pinyin-grid-cell-line">
+        <span key={lineIndex} className={styles.pinyinGridCellLine}>
           {line.map((item, itemIndex) => {
             const hasWords =
               characterHasWords?.(item.char, item.pinyin) ?? false;
@@ -83,7 +84,7 @@ function renderCellCharacters(
                 key={`${item.char}-${item.pinyin}-${lineIndex}-${itemIndex}`}
                 className={
                   hasWords
-                    ? `${toneClassName} pinyin-grid-char-clickable`
+                    ? `${toneClassName} ${styles.pinyinGridCharClickable}`
                     : toneClassName
                 }
                 role={hasWords ? "button" : undefined}
@@ -167,18 +168,18 @@ export default function PinyinGridView({
   );
 
   return (
-    <div className="pinyin-grid-bleed">
-      <div className="pinyin-grid-wrapper">
+    <div className={styles.pinyinGridBleed}>
+      <div className={styles.pinyinGridWrapper}>
         <table
-          className="pinyin-grid"
+          className={styles.pinyinGrid}
           onMouseLeave={() => setHoveredCell(null)}
         >
           <colgroup>
-            <col className="pinyin-grid-corner-col" />
+            <col className={styles.pinyinGridCornerCol} />
             {FINAL.map((finalValue) => (
               <col
                 key={finalValue}
-                className="pinyin-grid-final-col"
+                className={styles.pinyinGridFinalCol}
                 style={{
                   minWidth: `${getColumnMinWidthCh(finalValue)}ch`,
                 }}
@@ -187,7 +188,7 @@ export default function PinyinGridView({
           </colgroup>
         <thead>
           <tr>
-            <th className="pinyin-grid-corner" scope="col">
+            <th className={styles.pinyinGridCorner} scope="col">
               start \ final
             </th>
             {FINAL.map((finalValue) => (
@@ -200,7 +201,7 @@ export default function PinyinGridView({
         <tbody>
           {START.map((startValue, rowIndex) => (
             <tr key={startValue || "empty-start"}>
-              <th className="pinyin-grid-row-header" scope="row">
+              <th className={styles.pinyinGridRowHeader} scope="row">
                 {formatStartLabel(startValue)}
               </th>
               {FINAL.map((finalValue, colIndex) => {
@@ -221,9 +222,9 @@ export default function PinyinGridView({
                     key={finalValue}
                     className={
                       isInvalid
-                        ? "pinyin-grid-cell-invalid"
+                        ? styles.pinyinGridCellInvalid
                         : isHighlighted
-                          ? "pinyin-grid-cell-highlight"
+                          ? styles.pinyinGridCellHighlight
                           : undefined
                     }
                     onMouseEnter={() =>

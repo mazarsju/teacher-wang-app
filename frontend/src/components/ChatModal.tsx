@@ -25,6 +25,8 @@ import {
   sendChatMessage,
 } from "../utils/aiChat/chatApi";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
+import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
+import styles from "./ChatModal.module.css";
 
 type CorrectionThreadState = {
   messageIndex: number;
@@ -106,7 +108,7 @@ function renderFormattedText(text: string) {
       const level = Math.min(headerMatch[1].length, 6);
       const HeadingTag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
       return (
-        <HeadingTag key={lineIndex} className="chat-message-heading">
+        <HeadingTag key={lineIndex} className={styles.chatMessageHeading}>
           {renderInlineFormattedText(headerMatch[2], String(lineIndex))}
         </HeadingTag>
       );
@@ -395,13 +397,13 @@ export default function ChatModal({
       return null;
     }
 
-    const iconClassName = "chat-message-severity-icon";
+    const iconClassName = styles.chatMessageSeverityIcon;
     const label = GRAMMAR_SEVERITY_LABELS[severity];
 
     if (severity === "none") {
       return (
         <span
-          className="chat-message-severity-badge chat-message-severity-badge--none"
+          className={`${styles.chatMessageSeverityBadge} ${styles.chatMessageSeverityBadgeNone}`}
           aria-label={label}
           title={label}
         >
@@ -420,7 +422,7 @@ export default function ChatModal({
     return (
       <button
         type="button"
-        className={`chat-message-severity-badge chat-message-severity-badge--${severity}`}
+        className={`${styles.chatMessageSeverityBadge} ${styles[`chat-message-severity-badge--${severity}`]}`}
         aria-label={`Open grammar note (${label}) with Teacher Wang`}
         title={`${label} — ask Teacher Wang`}
         onClick={() => openCorrectionThread(messageIndex, chatMessage)}
@@ -445,26 +447,26 @@ export default function ChatModal({
         onClick={onClose}
       >
         <div
-          className="chat-modal-dialog"
+          className={styles.chatModalDialog}
           role="dialog"
           aria-modal="true"
           aria-labelledby="chat-modal-title"
           onClick={(event) => event.stopPropagation()}
         >
-          <header className="chat-modal-header">
-            <div className="chat-modal-participant">
+          <header className={styles.chatModalHeader}>
+            <div className={styles.chatModalParticipant}>
               <ChatCharacterAvatar
                 variant={character.avatarVariant}
-                className="chat-character-avatar-image--compact"
+                className={chatCharacterCardStyles.chatCharacterAvatarImageCompact}
               />
-              <div className="chat-modal-participant-text">
-                <h2 id="chat-modal-title" className="chat-modal-participant-name">
+              <div className={styles.chatModalParticipantText}>
+                <h2 id="chat-modal-title" className={styles.chatModalParticipantName}>
                   {character.name}{" "}
-                  <span className="chat-modal-participant-chinese-name">
+                  <span className={styles.chatModalParticipantChineseName}>
                     ({character.chineseName})
                   </span>
                   {titleSeverityLabel && (
-                    <span className="chat-modal-participant-severity">
+                    <span className={styles.chatModalParticipantSeverity}>
                       {" "}
                       — {titleSeverityLabel}
                     </span>
@@ -472,11 +474,11 @@ export default function ChatModal({
                 </h2>
               </div>
             </div>
-            <div className="chat-modal-header-actions">
+            <div className={styles.chatModalHeaderActions}>
               {allowClearHistory && (
                 <button
                   type="button"
-                  className="chat-modal-clear-button"
+                  className={styles.chatModalClearButton}
                   disabled={
                     isLoadingHistory ||
                     isSending ||
@@ -485,7 +487,7 @@ export default function ChatModal({
                   }
                   onClick={() => setIsClearConfirmOpen(true)}
                 >
-                  <TrashIcon className="chat-modal-clear-icon" />
+                  <TrashIcon className={styles.chatModalClearIcon} />
                   <span>
                     {isClearing ? "Clearing..." : "Clear chat history"}
                   </span>
@@ -493,29 +495,29 @@ export default function ChatModal({
               )}
               <button
                 type="button"
-                className="chat-modal-close-button"
+                className={styles.chatModalCloseButton}
                 aria-label="Close chat"
                 onClick={onClose}
               >
-                <CloseIcon className="chat-modal-close-icon" />
+                <CloseIcon className={styles.chatModalCloseIcon} />
               </button>
             </div>
           </header>
 
           {tasks && tasks.length > 0 && (
             <section
-              className="chat-modal-tasks"
+              className={styles.chatModalTasks}
               aria-labelledby="chat-modal-tasks-title"
             >
-              <h3 id="chat-modal-tasks-title" className="chat-modal-tasks-title">
+              <h3 id="chat-modal-tasks-title" className={styles.chatModalTasksTitle}>
                 {challengeTitle ? `${challengeTitle} — tasks` : "Tasks"}
               </h3>
-              <ul className="chat-modal-task-list">
+              <ul className={styles.chatModalTaskList}>
                 {tasks.map((task) => {
                   const isCompleted = completedTaskIds.has(task.id);
                   return (
-                    <li key={task.id} className="chat-modal-task-item">
-                      <label className="chat-modal-task-label">
+                    <li key={task.id} className={styles.chatModalTaskItem}>
+                      <label className={styles.chatModalTaskLabel}>
                         <input
                           type="checkbox"
                           checked={isCompleted}
@@ -526,7 +528,7 @@ export default function ChatModal({
                         <span
                           className={
                             isCompleted
-                              ? "chat-modal-task-text chat-modal-task-text--done"
+                              ? `chat-modal-task-text ${styles.chatModalTaskTextDone}`
                               : "chat-modal-task-text"
                           }
                         >
@@ -540,15 +542,15 @@ export default function ChatModal({
             </section>
           )}
 
-          <div className="chat-modal-messages" aria-live="polite">
+          <div className={styles.chatModalMessages} aria-live="polite">
             {isLoadingHistory ? (
-              <p className="chat-modal-empty-state">Loading conversation...</p>
+              <p className={styles.chatModalEmptyState}>Loading conversation...</p>
             ) : messages.length === 0 ? (
-              <p className="chat-modal-empty-state">
+              <p className={styles.chatModalEmptyState}>
                 Start a conversation with {character.name}.
               </p>
             ) : (
-              <ul className="chat-message-list">
+              <ul className={styles.chatMessageList}>
                 {messages.map((chatMessage, index) => {
                   if (chatMessage.role === "assistant") {
                     const segments = parseMessageSegments(chatMessage.content);
@@ -560,21 +562,21 @@ export default function ChatModal({
                       return (
                         <li
                           key={`${chatMessage.role}-${index}-${chatMessage.content}`}
-                          className="chat-message-row chat-message-row--assistant chat-message-row--segmented"
+                          className={`${styles.chatMessageRow} ${styles.chatMessageRowAssistant} ${styles.chatMessageRowSegmented}`}
                         >
-                          <div className="chat-message-segments">
+                          <div className={styles.chatMessageSegments}>
                             {segments.map((segment, segmentIndex) =>
                               segment.type === "stage" ? (
                                 <p
                                   key={`${segmentIndex}-${segment.text}`}
-                                  className="chat-message-stage"
+                                  className={styles.chatMessageStage}
                                 >
                                   {segment.text}
                                 </p>
                               ) : (
                                 <div
                                   key={`${segmentIndex}-${segment.text}`}
-                                  className="chat-message chat-message--assistant"
+                                  className={`${styles.chatMessage} ${styles.chatMessageAssistant}`}
                                 >
                                   {renderFormattedText(segment.text)}
                                 </div>
@@ -591,15 +593,15 @@ export default function ChatModal({
                       key={`${chatMessage.role}-${index}-${chatMessage.content}`}
                       className={
                         chatMessage.role === "user"
-                          ? "chat-message-row chat-message-row--user"
-                          : "chat-message-row chat-message-row--assistant"
+                          ? `${styles.chatMessageRow} ${styles.chatMessageRowUser}`
+                          : `${styles.chatMessageRow} ${styles.chatMessageRowAssistant}`
                       }
                     >
                       <div
                         className={
                           chatMessage.role === "user"
-                            ? "chat-message-shell chat-message-shell--user"
-                            : "chat-message-shell"
+                            ? `${styles.chatMessageShell} chat-message-shell--user`
+                            : styles.chatMessageShell
                         }
                       >
                         {chatMessage.role === "user" &&
@@ -607,8 +609,8 @@ export default function ChatModal({
                         <div
                           className={
                             chatMessage.role === "user"
-                              ? "chat-message chat-message--user"
-                              : "chat-message chat-message--assistant"
+                              ? `${styles.chatMessage} ${styles.chatMessageUser}`
+                              : `${styles.chatMessage} ${styles.chatMessageAssistant}`
                           }
                         >
                           {renderFormattedText(chatMessage.content)}
@@ -620,35 +622,37 @@ export default function ChatModal({
               </ul>
             )}
             {isSending && (
-              <p className="chat-modal-typing-indicator">
+              <p className={styles.chatModalTypingIndicator}>
                 {character.name} is typing...
               </p>
             )}
           </div>
 
-          {error && <p className="chat-modal-error table-error">{error}</p>}
+          {error && (
+            <p className={`${styles.chatModalError} table-error`}>{error}</p>
+          )}
 
           {isChallengeComplete ? (
             <div
-              className="chat-modal-challenge-complete"
+              className={styles.chatModalChallengeComplete}
               role="status"
               aria-live="polite"
             >
-              <TrophyIcon className="chat-modal-challenge-complete-icon" />
+              <TrophyIcon className={styles.chatModalChallengeCompleteIcon} />
               <span>Challenge completed!</span>
             </div>
           ) : (
             <form
-              className="chat-modal-composer"
+              className={styles.chatModalComposer}
               onSubmit={(event) => void handleSubmit(event)}
             >
               <label
-                className="chat-modal-composer-label"
+                className={styles.chatModalComposerLabel}
                 htmlFor={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
               >
                 Message
               </label>
-              <div className="chat-modal-composer-row">
+              <div className={styles.chatModalComposerRow}>
                 <input
                   ref={messageInputRef}
                   id={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}

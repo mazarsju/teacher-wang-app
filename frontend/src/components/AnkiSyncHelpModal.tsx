@@ -1,3 +1,5 @@
+import vocabularyNoteTypeStyles from "./VocabularyNoteTypeInfoModal.module.css";
+
 type AnkiSyncHelpModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -23,7 +25,7 @@ export default function AnkiSyncHelpModal({
         <h2 id="anki-sync-help-title" className="modal-title">
           Anki synchronization gotchas
         </h2>
-        <ul className="anki-note-type-directions">
+        <ul className={vocabularyNoteTypeStyles.ankiNoteTypeDirections}>
           <li>
             Make sure your Anki cards have a &quot;definition&quot; (they
             cannot be imported if this field is empty).

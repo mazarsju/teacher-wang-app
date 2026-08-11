@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import styles from "./Page.module.css";
 
 type PageProps = {
   title: string;
@@ -16,13 +17,19 @@ export default function Page({
   fullWidth = false,
 }: PageProps) {
   return (
-    <section className={fullWidth ? "page page--full-width" : "page"}>
-      <header className="page-header">
+    <section
+      className={
+        fullWidth
+          ? `${styles.page} ${styles.pageFullWidth}`
+          : styles.page
+      }
+    >
+      <header className={styles.pageHeader}>
         <h1>{title}</h1>
         {headerCenter}
         {headerAction}
       </header>
-      <div className="page-content">{children}</div>
+      <div className={styles.pageContent}>{children}</div>
     </section>
   );
 }

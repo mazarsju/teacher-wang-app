@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { AnkiDeckSetupResult } from "../types/anki";
 import { autoSetupVocabularyDeck } from "../utils/anki/ankiApi";
+import ankiDeckSetupStyles from "./AnkiDeckSetupModal.module.css";
+import styles from "./VocabularyThreeDirectionSetupModal.module.css";
 
 type VocabularyThreeDirectionSetupModalProps = {
   isOpen: boolean;
@@ -87,7 +89,7 @@ export default function VocabularyThreeDirectionSetupModal({
       onClick={onCancel}
     >
       <div
-        className="modal-dialog anki-setup-modal"
+        className={`modal-dialog ${ankiDeckSetupStyles.ankiSetupModal}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="vocabulary-three-direction-title"
@@ -117,33 +119,33 @@ export default function VocabularyThreeDirectionSetupModal({
             />
           </label>
 
-          <fieldset className="anki-field-mapping">
-            <legend className="anki-field-mapping-legend">
+          <fieldset className={ankiDeckSetupStyles.ankiFieldMapping}>
+            <legend className={ankiDeckSetupStyles.ankiFieldMappingLegend}>
               Mandatory fields
             </legend>
-            <ul className="anki-mandatory-field-list">
+            <ul className={styles.ankiMandatoryFieldList}>
               {MANDATORY_FIELDS.map((field) => (
-                <li key={field} className="anki-mandatory-field-item">
+                <li key={field} className={styles.ankiMandatoryFieldItem}>
                   {field}
                 </li>
               ))}
             </ul>
-            <p className="anki-field-mapping-hint">
+            <p className={ankiDeckSetupStyles.ankiFieldMappingHint}>
               Directions: writing → pinyin + definition (+ optionals); pinyin →
               writing + definition (+ optionals); definition → writing +
               pinyin (+ optionals).
             </p>
           </fieldset>
 
-          <fieldset className="anki-field-mapping">
-            <legend className="anki-field-mapping-legend">
+          <fieldset className={ankiDeckSetupStyles.ankiFieldMapping}>
+            <legend className={ankiDeckSetupStyles.ankiFieldMappingLegend}>
               Optional fields
             </legend>
-            <p className="anki-field-mapping-hint">
+            <p className={ankiDeckSetupStyles.ankiFieldMappingHint}>
               Optional fields appear on the back of every direction.
             </p>
             {optionalFields.map((field, index) => (
-              <div key={index} className="anki-optional-field-row">
+              <div key={index} className={styles.ankiOptionalFieldRow}>
                 <input
                   type="text"
                   value={field}

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import styles from "./Table.module.css";
 
 export type TableColumn<T> = {
   key: keyof T & string;
@@ -26,18 +27,18 @@ export default function Table<T>({
   maxVisibleRows,
 }: TableProps<T>) {
   if (rows.length === 0) {
-    return <p className="table-empty">{emptyMessage}</p>;
+    return <p className={styles.tableEmpty}>{emptyMessage}</p>;
   }
 
   const wrapperClassName = [
-    "table-wrapper",
-    compact && "table-wrapper--compact",
-    maxVisibleRows !== undefined && "table-wrapper--scrollable",
+    styles.tableWrapper,
+    compact && styles.tableWrapperCompact,
+    maxVisibleRows !== undefined && styles.tableWrapperScrollable,
   ]
     .filter(Boolean)
     .join(" ");
 
-  const tableClassName = ["table", compact && "table--compact"]
+  const tableClassName = [styles.table, compact && styles.tableCompact]
     .filter(Boolean)
     .join(" ");
 
@@ -56,19 +57,19 @@ export default function Table<T>({
             {columns.map((column) => (
               <th key={column.key}>{column.header}</th>
             ))}
-            {renderRowActions && <th className="table-actions-header" />}
+            {renderRowActions && <th className={styles.tableActionsHeader} />}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={getRowKey(row)} className="table-row">
+            <tr key={getRowKey(row)} className={styles.tableRow}>
               {columns.map((column) => (
                 <td key={column.key}>
                   {column.render ? column.render(row) : String(row[column.key])}
                 </td>
               ))}
               {renderRowActions && (
-                <td className="table-actions">{renderRowActions(row)}</td>
+                <td className={styles.tableActions}>{renderRowActions(row)}</td>
               )}
             </tr>
           ))}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/apiBase";
 import { apiFetch } from "../utils/auth/apiFetch";
+import characterWordsStyles from "./CharacterWordsModal.module.css";
+import styles from "./MissingHskCharactersModal.module.css";
 
 type HskWordEntry = {
   id: string;
@@ -114,25 +116,25 @@ export default function MissingHskCharactersModal({
           <h2 id="missing-hsk-characters-title" className="modal-title">
             Missing characters for HSK {level}
           </h2>
-          <div className="character-words-modal-content">
+          <div className={characterWordsStyles.characterWordsModalContent}>
             {characters.length === 0 ? (
-              <p className="character-words-modal-heading">
+              <p className={characterWordsStyles.characterWordsModalHeading}>
                 No missing characters — this level is complete.
               </p>
             ) : (
               <>
-                <p className="home-missing-characters-hint">
+                <p className={styles.homeMissingCharactersHint}>
                   (those characters are ordered by frequency. If you want to learn
                   them, we are suggesting you to learn them in that order)
                 </p>
-                <div className="home-missing-characters-scroll">
-                  <p className="home-missing-characters-list">
+                <div className={styles.homeMissingCharactersScroll}>
+                  <p className={styles.homeMissingCharactersList}>
                     {characters.map((character, index) => (
                       <span key={character}>
                         {index > 0 ? "、" : null}
                         <button
                           type="button"
-                          className="home-missing-character-button"
+                          className={styles.homeMissingCharacterButton}
                           onClick={() => setSelectedCharacter(character)}
                         >
                           {character}
@@ -164,8 +166,8 @@ export default function MissingHskCharactersModal({
             <h2 id="hsk-character-words-title" className="modal-title">
               {selectedCharacter}
             </h2>
-            <div className="character-words-modal-content">
-              <p className="character-words-modal-heading">
+            <div className={characterWordsStyles.characterWordsModalContent}>
+              <p className={characterWordsStyles.characterWordsModalHeading}>
                 Related HSK words (up to level {level}):
               </p>
               {isLoadingWords && <p>Loading words...</p>}
@@ -174,7 +176,7 @@ export default function MissingHskCharactersModal({
                 <p>No related HSK words found for this level.</p>
               )}
               {!isLoadingWords && !wordsError && words.length > 0 && (
-                <ul className="character-words-modal-list">
+                <ul className={characterWordsStyles.characterWordsModalList}>
                   {words.map((entry) => (
                     <li key={entry.id}>
                       {entry.word}

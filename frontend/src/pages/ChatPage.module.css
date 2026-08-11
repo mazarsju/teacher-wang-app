@@ -1,0 +1,29 @@
+.chat-intro {
+  margin: 0 0 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.chat-character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.chat-challenges-section {
+  margin-top: 2.5rem;
+}
+
+.chat-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+  color: #111827;
+}
+
+.chat-section-description {
+  margin: 0 0 1.25rem;
+  color: #4b5563;
+  line-height: 1.5;
+}

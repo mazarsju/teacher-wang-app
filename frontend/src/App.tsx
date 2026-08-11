@@ -1,5 +1,8 @@
 import { useEffect, useState, type ComponentType } from "react";
-import "./App.css";
+import "./styles/tokens.css";
+import "./styles/globals.css";
+import "./components/shared.css";
+import styles from "./App.module.css";
 import HelpButton from "./components/HelpButton";
 import Navbar, { type PageId } from "./components/Navbar";
 import AdminPage from "./pages/AdminPage";
@@ -75,7 +78,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={styles.app}>
       <Navbar
         activePage={activePage}
         onPageChange={setActivePage}
@@ -84,7 +87,7 @@ export default function App() {
         isSyncing={syncStatus === "loading"}
         isAdmin={isAdmin}
       />
-      <main className="app-main">
+      <main className={styles.appMain}>
         <ActivePage onNavigate={setActivePage} />
       </main>
       <HelpButton />

@@ -20,6 +20,9 @@ import {
 } from "../utils/knowledgeBase/hskWordsApi";
 import { importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { bulkCreateWords } from "../utils/knowledgeBase/wordsApi";
+import kbPageStyles from "../pages/KnowledgeBasePage.module.css";
+import tableStyles from "./Table.module.css";
+import styles from "./KnowledgeBaseInitWizardModal.module.css";
 
 // Keeps each request under the backend's bulk-create limit (see
 // backend/routes/bulk_create_words.py / bulk_create_characters.py).
@@ -348,7 +351,7 @@ export default function KnowledgeBaseInitWizardModal({
   return (
     <div className="modal-overlay" onClick={resetAndClose}>
       <div
-        className={`modal-dialog${step === "smart" ? " kb-init-wizard-dialog--wide" : ""}`}
+        className={`modal-dialog${step === "smart" ? ` ${styles.kbInitWizardDialogWide}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="kb-init-wizard-title"
@@ -360,31 +363,31 @@ export default function KnowledgeBaseInitWizardModal({
 
         {step === "choose" && (
           <>
-            <div className="wizard-option-list">
+            <div className={styles.wizardOptionList}>
               <button
                 type="button"
-                className="wizard-option-button"
+                className={styles.wizardOptionButton}
                 onClick={() => setStep("manual-info")}
               >
                 Add characters and words one by one, manually
               </button>
               <button
                 type="button"
-                className="wizard-option-button"
+                className={styles.wizardOptionButton}
                 onClick={() => setStep("csv")}
               >
                 Upload an existing knowledge base (CSV)
               </button>
               <button
                 type="button"
-                className="wizard-option-button"
+                className={styles.wizardOptionButton}
                 onClick={() => setStep("anki-info")}
               >
                 Import data from an Anki deck
               </button>
               <button
                 type="button"
-                className="wizard-option-button"
+                className={styles.wizardOptionButton}
                 onClick={startSmartCreation}
               >
                 Smart creation based on what you already know
@@ -460,8 +463,8 @@ export default function KnowledgeBaseInitWizardModal({
               write it (true or false), whether it has been synchronized to
               Anki (true or false), and the last updated date. For example:
             </p>
-            <div className="table-wrapper">
-              <table className="table table--compact">
+            <div className={tableStyles.tableWrapper}>
+              <table className={`${tableStyles.table} ${tableStyles.tableCompact}`}>
                 <thead>
                   <tr>
                     <th>word</th>
@@ -493,7 +496,7 @@ export default function KnowledgeBaseInitWizardModal({
               ref={fileInputRef}
               type="file"
               accept=".csv,.txt,text/csv,text/plain"
-              className="knowledge-base-import-input"
+              className={kbPageStyles.knowledgeBaseImportInput}
               onChange={(event) => void handleImport(event)}
             />
             <div className="modal-actions">
@@ -530,12 +533,12 @@ export default function KnowledgeBaseInitWizardModal({
                 Your quick setup is done! Please review the list below.
               </p>
             ) : (
-              <div className="wizard-word-picker">
+              <div className={styles.wizardWordPicker}>
                 {candidateWord && (
                   <div className="wizard-word-picker-word">
-                    <p className="wizard-word-picker-hanzi">{candidateWord.word}</p>
-                    <p className="wizard-word-picker-pinyin">{candidateWord.pinyin}</p>
-                    <p className="wizard-word-picker-definition">
+                    <p className={styles.wizardWordPickerHanzi}>{candidateWord.word}</p>
+                    <p className={styles.wizardWordPickerPinyin}>{candidateWord.pinyin}</p>
+                    <p className={styles.wizardWordPickerDefinition}>
                       {candidateWord.definition}
                     </p>
                   </div>
@@ -544,7 +547,7 @@ export default function KnowledgeBaseInitWizardModal({
                   <p className="modal-message">Picking a word…</p>
                 )}
                 {pickError && <p className="table-error">{pickError}</p>}
-                <div className="wizard-word-picker-actions">
+                <div className={styles.wizardWordPickerActions}>
                   <button
                     type="button"
                     className="modal-button-cancel"
@@ -555,7 +558,7 @@ export default function KnowledgeBaseInitWizardModal({
                   </button>
                   <button
                     type="button"
-                    className="modal-button-confirm"
+                    className="modal-button-cancel"
                     onClick={handleCanRecognizeWord}
                     disabled={!candidateWord || isPickingWord}
                   >
@@ -563,7 +566,7 @@ export default function KnowledgeBaseInitWizardModal({
                   </button>
                   <button
                     type="button"
-                    className="modal-button-confirm-primary"
+                    className="modal-button-cancel"
                     onClick={handleCanWriteWord}
                     disabled={!candidateWord || isPickingWord || hasRecognizedOnly}
                   >
@@ -582,7 +585,7 @@ export default function KnowledgeBaseInitWizardModal({
               renderRowActions={(row) => (
                 <button
                   type="button"
-                  className="table-delete-button"
+                  className={tableStyles.tableDeleteButton}
                   onClick={() => removeSmartWord(row.word)}
                 >
                   Remove
@@ -593,7 +596,7 @@ export default function KnowledgeBaseInitWizardModal({
             {smartError && <p className="table-error">{smartError}</p>}
 
             {syncProgress && (
-              <div className="wizard-sync-progress">
+              <div className={styles.wizardSyncProgress}>
                 <progress value={syncProgress.completed} max={syncProgress.total} />
                 <span>
                   Syncing your knowledge base… {syncProgress.completed}/
@@ -601,7 +604,7 @@ export default function KnowledgeBaseInitWizardModal({
                 </span>
               </div>
             )}
-
+            <div style={{ height: "10px" }} />
             <div className="modal-actions">
               <button
                 type="button"

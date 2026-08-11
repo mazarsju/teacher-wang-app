@@ -1,5 +1,6 @@
 import type { Word } from "../types/word";
 import { formatAssociatedWord } from "../utils/knowledgeBase/wordsByCharacter";
+import styles from "./CharacterWordsModal.module.css";
 
 type CharacterWordsModalProps = {
   isOpen: boolean;
@@ -30,9 +31,9 @@ export default function CharacterWordsModal({
         <h2 id="character-words-modal-title" className="modal-title">
           {character}
         </h2>
-        <div className="character-words-modal-content">
-          <p className="character-words-modal-heading">Associated words:</p>
-          <ul className="character-words-modal-list">
+        <div className={styles.characterWordsModalContent}>
+          <p className={styles.characterWordsModalHeading}>Associated words:</p>
+          <ul className={styles.characterWordsModalList}>
             {words.map((word) => (
               <li key={word.word}>{formatAssociatedWord(word)}</li>
             ))}

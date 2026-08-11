@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { PowerIcon, ProfileIcon, SyncIcon } from "./icons";
+import styles from "./ProfileMenu.module.css";
 
 type ProfileMenuProps = {
   onLogout: () => void;
@@ -45,48 +46,48 @@ export default function ProfileMenu({
   }, [isOpen]);
 
   return (
-    <div className="profile-menu" ref={rootRef}>
+    <div className={styles.profileMenu} ref={rootRef}>
       <button
         type="button"
-        className="profile-menu-trigger"
+        className={styles.profileMenuTrigger}
         aria-label="Profile menu"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={menuId}
         onClick={() => setIsOpen((open) => !open)}
       >
-        <ProfileIcon className="profile-menu-trigger-icon" />
+        <ProfileIcon className={styles.profileMenuTriggerIcon} />
       </button>
 
       {isOpen ? (
         <div
           id={menuId}
-          className="profile-menu-dropdown"
+          className={styles.profileMenuDropdown}
           role="menu"
           aria-label="Profile"
         >
           <button
             type="button"
-            className="profile-menu-item"
+            className={styles.profileMenuItem}
             role="menuitem"
             disabled={isSyncing}
             onClick={() => {
               onSync();
             }}
           >
-            <SyncIcon className="profile-menu-item-icon" />
+            <SyncIcon className={styles.profileMenuItemIcon} />
             <span>{isSyncing ? "Syncing..." : "Synchro"}</span>
           </button>
           <button
             type="button"
-            className="profile-menu-item"
+            className={styles.profileMenuItem}
             role="menuitem"
             onClick={() => {
               setIsOpen(false);
               onLogout();
             }}
           >
-            <PowerIcon className="profile-menu-item-icon" />
+            <PowerIcon className={styles.profileMenuItemIcon} />
             <span>Log out</span>
           </button>
         </div>

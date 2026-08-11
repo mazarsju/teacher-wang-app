@@ -1,0 +1,62 @@
+.anki-guide-modal {
+  max-width: 36rem;
+  max-height: min(90vh, 44rem);
+  overflow-y: auto;
+}
+
+.anki-guide-steps {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.anki-guide-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.anki-guide-step-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.anki-guide-step-number {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.anki-guide-step-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.anki-guide-step-description {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.anki-guide-step-image {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  display: block;
+}

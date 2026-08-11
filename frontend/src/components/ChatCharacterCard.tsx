@@ -1,4 +1,5 @@
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
+import styles from "./ChatCharacterCard.module.css";
 
 export type ChatCharacter = {
   id: string;
@@ -26,18 +27,18 @@ export default function ChatCharacterCard({
   return (
     <button
       type="button"
-      className="chat-character-card"
+      className={styles.chatCharacterCard}
       onClick={() => onSelect(character)}
     >
       <ChatCharacterAvatar variant={character.avatarVariant} />
-      <div className="chat-character-card-content">
-        <span className="chat-character-card-name">
+      <div className={styles.chatCharacterCardContent}>
+        <span className={styles.chatCharacterCardName}>
           {character.name}{" "}
-          <span className="chat-character-card-chinese-name">
+          <span className={styles.chatCharacterCardChineseName}>
             ({character.chineseName})
           </span>
         </span>
-        <p className="chat-character-card-description">
+        <p className={styles.chatCharacterCardDescription}>
           {character.description}
         </p>
       </div>

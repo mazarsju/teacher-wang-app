@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { HelpMarkIcon } from "./icons";
+import styles from "./HelpButton.module.css";
 
 const ISSUES_URL = "https://github.com/mazarsju/teacher-wang-app/issues";
 
@@ -37,9 +38,9 @@ export default function HelpButton() {
   }, [isOpen]);
 
   return (
-    <div className="help-button" ref={rootRef}>
+    <div className={styles.helpButton} ref={rootRef}>
       {isOpen ? (
-        <div id={bubbleId} className="help-button-bubble" role="dialog">
+        <div id={bubbleId} className={styles.helpButtonBubble} role="dialog">
           <p>
             A question? A bug spotted? An idea of improvement? Don&apos;t
             hesitate to share your issue on{" "}
@@ -52,14 +53,14 @@ export default function HelpButton() {
       ) : null}
       <button
         type="button"
-        className="help-button-trigger"
+        className={styles.helpButtonTrigger}
         aria-label="Help"
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={bubbleId}
         onClick={() => setIsOpen((open) => !open)}
       >
-        <HelpMarkIcon className="help-button-trigger-icon" />
+        <HelpMarkIcon className={styles.helpButtonTriggerIcon} />
       </button>
     </div>
   );
