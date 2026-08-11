@@ -26,6 +26,7 @@ Use this index to find the right document. Prefer **one source of truth** and li
 | Authentication (Cognito) | [adr/auth.md](adr/auth.md) |
 | Data isolation / tenancy | [adr/data-isolation.md](adr/data-isolation.md) |
 | Plan / token budget | [adr/plan-management.md](adr/plan-management.md) |
+| Frontend CSS organization | [adr/frontend-styling.md](adr/frontend-styling.md) |
 
 Obsolete decisions: [adr/archived/](adr/archived/) (history only).
 
@@ -66,6 +67,7 @@ Example header:
 | Teacher Wang teaching behaviors (for planner/generator/validator) | [architecture/teacher-wang-behaviors.md](architecture/teacher-wang-behaviors.md) |
 | Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
 | Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |
+| Component CSS / `Button` design system | [adr/frontend-styling.md](adr/frontend-styling.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |
 | Product screenshots | [screenshots/](screenshots/) |
 | AnkiConnect install UI | [anki/setup/](anki/setup/) |

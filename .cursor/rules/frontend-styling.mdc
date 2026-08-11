@@ -1,0 +1,15 @@
+---
+description: Where component CSS lives, the shared design system, and the Button component
+globs: frontend/src/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Frontend CSS organization
+
+Rationale: `docs/adr/frontend-styling.md`.
+
+- Component/page styles go in a co-located `ComponentName.module.css`, imported as `styles` and referenced via `styles.camelCaseKey` (or `` styles[`kebab-key-${x}`] `` for dynamically built class names).
+- `src/styles/` holds only `tokens.css` (design tokens) and `globals.css` (reset/base tag selectors) — never component-specific rules.
+- Classes genuinely shared by many components (modal chrome, the toggle switch, the `Button` design system) live in `src/components/shared.css`, a plain global stylesheet, not a CSS Module. Reference its classes as literal strings; do not duplicate one of its rules locally to avoid an import.
+- A `.module.css` file that needs to combine its own scoped class with a `shared.css` (or another module's) class wraps the shared side in `:global(...)`, e.g. `.table-row:hover .table-row-actions :global(.btn) { opacity: 1; }`.
+- Every styled `<button>` goes through `frontend/src/components/Button.tsx` (`kind`: cancel/confirm/danger; `variant`: page/modal/banner/table/confirmation) — do not hand-roll `className="modal-button-cancel"`-style strings on a raw `<button>`. Exception: bespoke one-off controls that don't fit the kind/variant shape (nav tabs, dropdown menu items, icon-only triggers, whole clickable cards) — see the ADR for the current list.

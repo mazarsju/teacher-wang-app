@@ -6,7 +6,7 @@ screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 ## Documentation hygiene
 
 - After changes that affect setup, commands, or project structure, update `README.md`.
-- After changes that affect architecture (auth, tenancy, Anki, chat agents, Postgres, plan/tokens, deploy), update the matching ADR under `docs/adr/`.
+- After changes that affect architecture (auth, tenancy, Anki, chat agents, Postgres, plan/tokens, deploy, frontend CSS organization), update the matching ADR under `docs/adr/`.
 - Doc map and ADR archive process: `docs/README.md`.
 - Do not duplicate ADR rationale into this file or README — link instead.
 
@@ -53,6 +53,18 @@ Applies to: `frontend/src/**/*.{ts,tsx}`.
 - Call the Flask API through `frontend/src/utils/auth/apiFetch.ts` so Cognito headers are attached.
 - Use `API_BASE = "/api"`. Nginx strips `/api` and proxies to the backend. Never hit the backend host directly from the browser in deployed environments.
 - Auth details: `docs/adr/auth.md`. Deploy proxy: `docs/deployment/ecs-containers.md`.
+
+## Frontend CSS organization
+
+Applies to: `frontend/src/**/*.{ts,tsx,css}`.
+
+Rationale: `docs/adr/frontend-styling.md`.
+
+- Component/page styles go in a co-located `ComponentName.module.css`, imported as `styles` and referenced via `styles.camelCaseKey` (or `` styles[`kebab-key-${x}`] `` for dynamically built class names).
+- `src/styles/` holds only `tokens.css` (design tokens) and `globals.css` (reset/base tag selectors) — never component-specific rules.
+- Classes genuinely shared by many components (modal chrome, the toggle switch, the `Button` design system) live in `src/components/shared.css`, a plain global stylesheet, not a CSS Module. Reference its classes as literal strings; do not duplicate one of its rules locally to avoid an import.
+- A `.module.css` file that needs to combine its own scoped class with a `shared.css` (or another module's) class wraps the shared side in `:global(...)`, e.g. `.table-row:hover .table-row-actions :global(.btn) { opacity: 1; }`.
+- Every styled `<button>` goes through `frontend/src/components/Button.tsx` (`kind`: cancel/confirm/danger; `variant`: page/modal/banner/table/confirmation) — do not hand-roll `className="modal-button-cancel"`-style strings on a raw `<button>`. Exception: bespoke one-off controls that don't fit the kind/variant shape (nav tabs, dropdown menu items, icon-only triggers, whole clickable cards) — see the ADR for the current list.
 
 ## ECS container invariants
 

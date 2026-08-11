@@ -64,10 +64,14 @@ teacher-wang/
 │   │   └── anki-connect/   # Illustrative AnkiConnect setup guide images
 │   ├── src/
 │   │   ├── App.tsx         # App shell, auth gate, login/logout sync triggers
+│   │   ├── App.module.css
 │   │   ├── main.tsx        # React entry + Redux Provider
+│   │   ├── styles/         # tokens.css (design tokens), globals.css (reset/base)
 │   │   ├── store/          # Redux Toolkit store (characters, words, HSK, Anki)
-│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences
-│   │   ├── components/     # Navbar, ProfileMenu (Synchro / Log out), modals, …
+│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences (each with a co-located .module.css)
+│   │   ├── components/     # Navbar, ProfileMenu (Synchro / Log out), modals, … (each with a co-located .module.css)
+│   │   │   ├── Button.tsx      # The app's only button; kind (cancel/confirm/danger) × variant (page/modal/banner/table/confirmation)
+│   │   │   └── shared.css      # Global (non-module) CSS for the modal chrome, toggle switch, and Button design system
 │   │   ├── types/
 │   │   └── utils/
 │   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
@@ -104,6 +108,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Authentication & credentials](docs/adr/auth.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
 - [Data isolation](docs/adr/data-isolation.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
 - [Plan management](docs/adr/plan-management.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
+- [Frontend CSS organization](docs/adr/frontend-styling.md) — CSS Modules per component, `shared.css` design system, the `Button` component
 
 Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
 

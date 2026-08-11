@@ -6,6 +6,6 @@ alwaysApply: true
 # Documentation hygiene
 
 - After changes that affect setup, commands, or project structure, update `README.md`.
-- After changes that affect architecture (auth, tenancy, Anki, chat agents, Postgres, plan/tokens, deploy), update the matching ADR under `docs/adr/`.
+- After changes that affect architecture (auth, tenancy, Anki, chat agents, Postgres, plan/tokens, deploy, frontend CSS organization), update the matching ADR under `docs/adr/`.
 - Doc map and ADR archive process: `docs/README.md`.
 - Do not duplicate ADR rationale into Project Rules or README — link instead.
