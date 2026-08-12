@@ -5,9 +5,13 @@ from unittest.mock import MagicMock, patch
 
 from backend.utils.aiChat.conversation_summary import (
     GENERIC_SUMMARY_SYSTEM_PROMPT,
+    MIN_MESSAGES_FOR_CONTEXT_SUMMARY,
     SUMMARY_TRIGGER_MESSAGE_COUNT,
     TEACHER_WANG_SUMMARY_SYSTEM_PROMPT,
+    _last_n_user_turns,
     _summarize_and_store,
+    context_summary_for_turn,
+    count_user_messages,
     delete_conversation_summaries,
     should_summarize,
     store_conversation_summary,
@@ -25,6 +29,47 @@ class TestShouldSummarize(unittest.TestCase):
         self.assertFalse(should_summarize(0))
         self.assertFalse(should_summarize(1))
         self.assertFalse(should_summarize(SUMMARY_TRIGGER_MESSAGE_COUNT - 1))
+
+
+class TestCountUserMessages(unittest.TestCase):
+    def test_counts_only_user_role_messages(self):
+        messages = [
+            {"role": "user", "content": "a"},
+            {"role": "assistant", "content": "b"},
+            {"role": "user", "content": "c"},
+        ]
+        self.assertEqual(count_user_messages(messages), 2)
+
+    def test_empty_list_counts_zero(self):
+        self.assertEqual(count_user_messages([]), 0)
+
+
+class TestLastNUserTurns(unittest.TestCase):
+    def test_includes_interleaved_assistant_messages(self):
+        messages = [
+            {"role": "user", "content": "u1"},
+            {"role": "assistant", "content": "a1"},
+            {"role": "user", "content": "u2"},
+            {"role": "assistant", "content": "a2"},
+            {"role": "user", "content": "u3"},
+        ]
+        self.assertEqual(
+            _last_n_user_turns(messages, 2),
+            [
+                {"role": "user", "content": "u2"},
+                {"role": "assistant", "content": "a2"},
+                {"role": "user", "content": "u3"},
+            ],
+        )
+
+    def test_returns_everything_when_not_enough_user_turns(self):
+        messages = [{"role": "user", "content": "u1"}]
+        self.assertEqual(_last_n_user_turns(messages, 5), messages)
+
+    def test_zero_or_negative_returns_empty(self):
+        messages = [{"role": "user", "content": "u1"}]
+        self.assertEqual(_last_n_user_turns(messages, 0), [])
+        self.assertEqual(_last_n_user_turns(messages, -1), [])
 
 
 class TestStoreConversationSummary(PostgresTestCase):
@@ -87,6 +132,40 @@ class TestStoreConversationSummary(PostgresTestCase):
         ).all()
         self.assertEqual(len(other_rows), 1)
         self.assertTrue(other_rows[0].latest)
+
+
+class TestContextSummaryForTurn(PostgresTestCase):
+    def setUp(self):
+        super().setUp()
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": "old"})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": "current"})
+
+    def test_returns_none_below_the_minimum_message_count(self):
+        for count in range(MIN_MESSAGES_FOR_CONTEXT_SUMMARY):
+            self.assertIsNone(
+                context_summary_for_turn(self.user_id, "teacher-wang", count)
+            )
+
+    def test_returns_old_summary_when_remainder_below_three(self):
+        # 8 % 4 = 0, 9 % 4 = 1, 10 % 4 = 2
+        for count in (8, 9, 10):
+            self.assertEqual(
+                context_summary_for_turn(self.user_id, "teacher-wang", count),
+                {"v": "old"},
+            )
+
+    def test_returns_current_summary_when_remainder_at_least_three(self):
+        # 11 % 4 = 3, 15 % 4 = 3
+        for count in (11, 15):
+            self.assertEqual(
+                context_summary_for_turn(self.user_id, "teacher-wang", count),
+                {"v": "current"},
+            )
+
+    def test_returns_none_when_no_matching_row_exists(self):
+        self.assertIsNone(
+            context_summary_for_turn(self.user_id, "xiao-ming", 10)
+        )
 
 
 class TestDeleteConversationSummaries(PostgresTestCase):
@@ -155,11 +234,16 @@ class TestSummarizeAndStore(PostgresTestCase):
         messages = mock_get_llm.return_value.invoke.call_args.args[0]
         self.assertEqual(messages[0].content, GENERIC_SUMMARY_SYSTEM_PROMPT)
 
-    def test_includes_existing_memory_and_only_newest_messages_in_prompt(self):
+    def test_includes_existing_memory_and_only_newest_user_turns_in_prompt(self):
         store_conversation_summary(self.user_id, "teacher-wang", {"teaching_context": "prior"})
+        # Alternating user/assistant messages, starting with user: this has
+        # SUMMARY_TRIGGER_MESSAGE_COUNT + 1 user turns, one more than the
+        # window, so exactly the oldest user turn (and its content) should
+        # be dropped from the prompt.
+        total = 2 * SUMMARY_TRIGGER_MESSAGE_COUNT + 2
         many_messages = [
             {"role": "user" if i % 2 == 0 else "assistant", "content": f"msg{i}"}
-            for i in range(SUMMARY_TRIGGER_MESSAGE_COUNT + 2)
+            for i in range(total)
         ]
 
         with patch(
@@ -178,7 +262,7 @@ class TestSummarizeAndStore(PostgresTestCase):
         self.assertNotIn("msg0", human_content)
         self.assertNotIn("msg1", human_content)
         self.assertIn("msg2", human_content)
-        self.assertIn(f"msg{SUMMARY_TRIGGER_MESSAGE_COUNT + 1}", human_content)
+        self.assertIn(f"msg{total - 1}", human_content)
 
     def test_swallows_llm_errors_without_storing_a_row(self):
         with patch(

@@ -25,6 +25,7 @@ import {
   fetchChatHistory,
   sendChatMessage,
 } from "../utils/aiChat/chatApi";
+import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
 import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
 import styles from "./ChatModal.module.css";
@@ -272,10 +273,14 @@ export default function ChatModal({
     setIsSending(true);
     focusMessageInput();
 
+    const isChallenge = Boolean(tasks && tasks.length > 0);
+    const messagesToSend =
+      thread || isChallenge ? nextMessages : trimMessagesForContext(nextMessages);
+
     try {
       const response = await sendChatMessage(
         activeCharacter.id,
-        nextMessages,
+        messagesToSend,
         thread,
       );
       const updatedMessages = (() => {

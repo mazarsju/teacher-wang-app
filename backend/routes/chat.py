@@ -32,6 +32,8 @@ from backend.utils.aiChat.conversation_logs import (
     thread_exists,
 )
 from backend.utils.aiChat.conversation_summary import (
+    context_summary_for_turn,
+    count_user_messages,
     delete_conversation_summaries,
     queue_conversation_summary,
     should_summarize,
@@ -259,6 +261,10 @@ def _handle_main_chat(
                 ),
             )
 
+        user_message_count = count_user_messages(
+            load_conversation(log_user_id, character_id)
+        )
+
         if is_challenge_character(character_id):
             challenge = get_challenge(character_id)
             assert challenge is not None
@@ -282,7 +288,15 @@ def _handle_main_chat(
                 judge_conversation = challenge_reply.judge_conversation
             final_prompt = challenge_reply.system_prompt
         else:
-            reply = generate_chat_reply(user_id, character_id, normalized_messages)
+            summary_context = context_summary_for_turn(
+                user_id, character_id, user_message_count
+            )
+            reply = generate_chat_reply(
+                user_id,
+                character_id,
+                normalized_messages,
+                summary_context=summary_context,
+            )
             token_usage = token_usage + reply.token_usage
             reply_content = reply.content
             reply_unknown_characters = reply.unknown_characters
@@ -309,7 +323,7 @@ def _handle_main_chat(
             output_tokens=token_usage.output_tokens,
         )
 
-        if should_summarize(len(normalized_messages)):
+        if should_summarize(user_message_count):
             queue_conversation_summary(
                 current_app._get_current_object(),
                 user_id,

@@ -352,6 +352,28 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertIn("Teaching strategy for HSK 3", system_prompt)
         self.assertNotIn("Apply these teaching requirements", system_prompt)
 
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=False)
+    @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=3)
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_injects_summary_context_into_system_prompt(
+        self, mock_get_llm, _mock_speaking_level, _mock_smart_ai_enabled
+    ):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="你好！")
+        mock_get_llm.return_value = mock_llm
+
+        reply = generate_chat_reply(
+            "test-user",
+            "teacher-wang",
+            [{"role": "user", "content": "你好"}],
+            summary_context={"teaching_context": {"current_topic": "greetings"}},
+        )
+
+        system_prompt = mock_llm.invoke.call_args.args[0][0].content
+        self.assertIn("Conversation memory", system_prompt)
+        self.assertIn("greetings", system_prompt)
+        self.assertEqual(reply.system_prompt, system_prompt)
+
     def test_generate_chat_reply_rejects_unknown_character(self):
         with self.assertRaises(ValueError):
             generate_chat_reply(

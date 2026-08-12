@@ -26,7 +26,8 @@ from backend.utils.database.models import ConversationSummary
 
 logger = logging.getLogger(__name__)
 
-SUMMARY_TRIGGER_MESSAGE_COUNT = 5
+SUMMARY_TRIGGER_MESSAGE_COUNT = 4
+MIN_MESSAGES_FOR_CONTEXT_SUMMARY = 8
 
 TEACHER_WANG_SUMMARY_SYSTEM_PROMPT = """\
 You maintain structured memory for Teacher Wang's conversations.
@@ -179,8 +180,37 @@ Return only the structured output defined by the schema.
 """
 
 
-def should_summarize(message_count: int) -> bool:
-    return message_count > 0 and message_count % SUMMARY_TRIGGER_MESSAGE_COUNT == 0
+def count_user_messages(messages: list[dict[str, str]]) -> int:
+    """Message counting for this feature only counts the learner's own turns."""
+    return sum(1 for message in messages if message.get("role") == "user")
+
+
+def should_summarize(user_message_count: int) -> bool:
+    return user_message_count > 0 and user_message_count % SUMMARY_TRIGGER_MESSAGE_COUNT == 0
+
+
+def context_summary_for_turn(
+    user_id, character_id: str, user_message_count: int
+) -> dict | None:
+    """Pick which stored summary (if any) to inject as context for this turn.
+
+    Below ``MIN_MESSAGES_FOR_CONTEXT_SUMMARY`` (user messages) the frontend
+    still sends the full history, so no extra context is needed. Past that,
+    the frontend only sends the newest few messages (see the matching
+    frontend logic in ``trimMessagesForContext``), and this picks the
+    summary that covers the rest: the "old" summary for the few turns right
+    after a new one is created (giving the background summarization job
+    time to finish), the "latest" one once that job has had time to
+    complete.
+    """
+    if user_message_count < MIN_MESSAGES_FOR_CONTEXT_SUMMARY:
+        return None
+
+    use_latest = (user_message_count % SUMMARY_TRIGGER_MESSAGE_COUNT) >= 3
+    row = ConversationSummary.query.filter_by(
+        user_id=user_id, conversation_id=character_id, latest=use_latest
+    ).one_or_none()
+    return row.summary if row is not None else None
 
 
 def _system_prompt(character_id: str) -> str:
@@ -205,6 +235,26 @@ def _existing_memory(user_id, character_id: str) -> dict | None:
     return row.summary if row is not None else None
 
 
+def _last_n_user_turns(
+    messages: list[dict[str, str]], user_turns: int
+) -> list[dict[str, str]]:
+    """The tail of ``messages`` covering the newest ``user_turns`` user messages.
+
+    Includes whatever assistant messages are interleaved in that span, so
+    the raw count returned is typically close to double ``user_turns``.
+    """
+    if user_turns <= 0:
+        return []
+
+    seen = 0
+    for index in range(len(messages) - 1, -1, -1):
+        if messages[index]["role"] == "user":
+            seen += 1
+            if seen == user_turns:
+                return messages[index:]
+    return messages
+
+
 def _human_message(existing_memory: dict | None, new_messages: list[dict[str, str]]) -> str:
     existing_text = (
         json.dumps(existing_memory, ensure_ascii=False) if existing_memory else "null"
@@ -219,7 +269,7 @@ def _summarize_and_store(app, user_id, log_user_id: str, character_id: str) -> N
     with app.app_context():
         try:
             messages = load_conversation(log_user_id, character_id)
-            new_messages = messages[-SUMMARY_TRIGGER_MESSAGE_COUNT:]
+            new_messages = _last_n_user_turns(messages, SUMMARY_TRIGGER_MESSAGE_COUNT)
             existing_memory = _existing_memory(user_id, character_id)
 
             response = get_llm().invoke(

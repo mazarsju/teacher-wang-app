@@ -606,6 +606,7 @@ def generate_chat_reply(
     *,
     previous_assistant_reply: str | None = None,
     revision_instruction: str | None = None,
+    summary_context: dict | None = None,
 ) -> ChatReplyResult:
     if not messages:
         raise ValueError("At least one message is required")
@@ -614,12 +615,6 @@ def generate_chat_reply(
         raise ValueError(
             "previous_assistant_reply and revision_instruction must be provided together"
         )
-
-    if character_id == TEACHER_CHARACTER_ID:
-        # ponytail: naive last-3 cap to bound context size; replace with real
-        # history compaction (e.g. summarizing older turns) when longer memory
-        # is needed for the Teacher Wang chat.
-        messages = messages[-3:]
 
     token_usage = LlmTokenUsage()
     behavior_ids: list[str] = []
@@ -647,6 +642,13 @@ def generate_chat_reply(
                 system_prompt = f"{system_prompt}\n\n{behavior_block}"
     else:
         system_prompt = get_system_prompt(user_id, character_id)
+
+    if summary_context is not None:
+        system_prompt = (
+            f"{system_prompt}\n\n"
+            "Conversation memory (earlier context as structured JSON):\n"
+            f"{json.dumps(summary_context, ensure_ascii=False)}"
+        )
 
     langchain_messages = [SystemMessage(content=system_prompt)]
 

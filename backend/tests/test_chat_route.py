@@ -111,6 +111,12 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_queue_summary = self.queue_summary_patcher.start()
         self.addCleanup(self.queue_summary_patcher.stop)
 
+        self.context_summary_patcher = patch(
+            "backend.routes.chat.context_summary_for_turn"
+        )
+        self.mock_context_summary = self.context_summary_patcher.start()
+        self.addCleanup(self.context_summary_patcher.stop)
+
         self.delete_summaries_patcher = patch(
             "backend.routes.chat.delete_conversation_summaries"
         )
@@ -137,9 +143,12 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_clear_progress.reset_mock()
         self.mock_queue_summary.reset_mock()
         self.mock_delete_summaries.reset_mock()
+        self.mock_context_summary.reset_mock()
+        self.mock_context_summary.return_value = None
         self.mock_should_append.return_value = True
         self.mock_should_append_thread.return_value = True
         self.mock_thread_exists.return_value = True
+        self.mock_load.return_value = []
         self.mock_load_tasks.return_value = []
         self.mock_challenge_reply.return_value = MagicMock(
             content="您好",
@@ -186,6 +195,7 @@ class TestChatEndpoint(unittest.TestCase):
             TEST_USER_ID,
             "teacher-wang",
             [{"role": "user", "content": "你好"}],
+            summary_context=None,
         )
         self.mock_append.assert_any_call(
             TEST_USER_ID,
@@ -209,23 +219,25 @@ class TestChatEndpoint(unittest.TestCase):
             output_tokens=12,
         )
 
-    def test_chat_queues_summary_every_five_messages(self):
+    def test_chat_queues_summary_every_four_user_messages(self):
         self.mock_generate.return_value = MagicMock(
             content="好的。",
             unknown_characters=[],
             token_usage=MagicMock(input_tokens=1, output_tokens=1),
         )
-        messages = [
-            {"role": "user", "content": "1"},
-            {"role": "assistant", "content": "2"},
-            {"role": "user", "content": "3"},
-            {"role": "assistant", "content": "4"},
-            {"role": "user", "content": "5"},
-        ]
+        # The count of persisted *user* messages (after this turn's message
+        # is appended) is what drives the every-4-messages trigger; other
+        # roles don't count.
+        self.mock_load.return_value = [
+            {"role": "user", "content": f"m{i}"} for i in range(4)
+        ] + [{"role": "assistant", "content": "extra"}]
 
         response = self.client.post(
             "/chat",
-            json={"character_id": "teacher-wang", "messages": messages},
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
         )
 
         self.assertEqual(response.status_code, 200)
@@ -235,12 +247,13 @@ class TestChatEndpoint(unittest.TestCase):
         self.assertEqual(args[2], TEST_USER_ID)
         self.assertEqual(args[3], "teacher-wang")
 
-    def test_chat_does_not_queue_summary_off_multiple_of_five(self):
+    def test_chat_does_not_queue_summary_off_multiple_of_four(self):
         self.mock_generate.return_value = MagicMock(
             content="好的。",
             unknown_characters=[],
             token_usage=MagicMock(input_tokens=1, output_tokens=1),
         )
+        self.mock_load.return_value = [{"role": "user", "content": f"m{i}"} for i in range(3)]
 
         response = self.client.post(
             "/chat",
@@ -252,6 +265,37 @@ class TestChatEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.mock_queue_summary.assert_not_called()
+
+    def test_chat_passes_context_summary_from_the_right_row(self):
+        self.mock_generate.return_value = MagicMock(
+            content="好的。",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=1, output_tokens=1),
+        )
+        # 8 user messages plus interleaved assistant replies: only the user
+        # ones should count towards the total passed to context_summary_for_turn.
+        self.mock_load.return_value = [
+            {"role": "user" if i % 2 == 0 else "assistant", "content": f"m{i}"}
+            for i in range(16)
+        ]
+        self.mock_context_summary.return_value = {"teaching_context": {}}
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_context_summary.assert_called_once_with(TEST_USER_ID, "teacher-wang", 8)
+        self.mock_generate.assert_called_once_with(
+            TEST_USER_ID,
+            "teacher-wang",
+            [{"role": "user", "content": "你好"}],
+            summary_context={"teaching_context": {}},
+        )
 
     def test_chat_omits_final_prompt_by_default(self):
         self.mock_generate.return_value = MagicMock(
@@ -684,6 +728,7 @@ class TestChatEndpoint(unittest.TestCase):
         self.assertNotIn("judge_conversation", payload)
         self.mock_challenge_reply.assert_called_once()
         self.mock_generate.assert_not_called()
+        self.mock_context_summary.assert_not_called()
         self.mock_save_tasks.assert_called_once_with(
             TEST_USER_ID,
             "challenge-restaurant",

@@ -337,7 +337,7 @@ A chatbot that speaks Chinese using only the characters you are supposed to know
 - [x] AI chatbot remembering the previous answer (persistent through sessions)
 - [x] Add constraint for the agent to use only the known vocabulary
 - [x] Improve teacher wang character responses using planner and verification check
-- [ ] Compact conversation history
+- [x] Compact conversation history
 
 ### 3. Multi-agent conversations for specific topics
 
