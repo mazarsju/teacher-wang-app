@@ -51,6 +51,43 @@ class TestStoreConversationSummary(PostgresTestCase):
         self.assertTrue(rows[1].latest)
         self.assertEqual(rows[1].summary, {"v": 2})
 
+    def test_keeps_at_most_two_rows_dropping_the_oldest(self):
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 1})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 2})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 3})
+
+        rows = ConversationSummary.query.filter_by(user_id=self.user_id).order_by(
+            ConversationSummary.id
+        ).all()
+        self.assertEqual(len(rows), 2)
+        self.assertFalse(rows[0].latest)
+        self.assertEqual(rows[0].summary, {"v": 2})
+        self.assertTrue(rows[1].latest)
+        self.assertEqual(rows[1].summary, {"v": 3})
+
+    def test_revision_increments_from_previous_latest(self):
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 1})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 2})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 3})
+
+        rows = ConversationSummary.query.filter_by(user_id=self.user_id).order_by(
+            ConversationSummary.id
+        ).all()
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0].revision, 2)
+        self.assertEqual(rows[1].revision, 3)
+
+    def test_does_not_affect_other_conversations(self):
+        store_conversation_summary(self.user_id, "xiao-ming", {"v": "other"})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 1})
+        store_conversation_summary(self.user_id, "teacher-wang", {"v": 2})
+
+        other_rows = ConversationSummary.query.filter_by(
+            user_id=self.user_id, conversation_id="xiao-ming"
+        ).all()
+        self.assertEqual(len(other_rows), 1)
+        self.assertTrue(other_rows[0].latest)
+
 
 class TestDeleteConversationSummaries(PostgresTestCase):
     def setUp(self):

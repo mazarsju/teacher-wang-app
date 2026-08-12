@@ -14,6 +14,7 @@ from backend.utils.aiChat.conversation_logs import (
     load_conversation,
     replace_conversation,
 )
+from backend.utils.aiChat.conversation_summary import delete_conversation_summaries
 from backend.utils.auth.user_context import current_user, current_user_id
 
 bp = Blueprint("conversation_logs", __name__)
@@ -83,6 +84,7 @@ def delete_conversation_log(character_id: str):
 
     user_id = current_user().id
     clear_conversation(user_id, character_id)
+    delete_conversation_summaries(current_user_id(), character_id)
     if is_challenge_character(character_id):
         clear_completed_task_ids(user_id, character_id)
         clear_challenge_progress(current_user_id(), character_id)

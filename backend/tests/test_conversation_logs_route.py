@@ -68,6 +68,12 @@ class TestConversationLogsRoute(unittest.TestCase):
         self.mock_clear_progress = self.clear_progress_patcher.start()
         self.addCleanup(self.clear_progress_patcher.stop)
 
+        self.delete_summaries_patcher = patch(
+            "backend.routes.conversation_logs.delete_conversation_summaries"
+        )
+        self.mock_delete_summaries = self.delete_summaries_patcher.start()
+        self.addCleanup(self.delete_summaries_patcher.stop)
+
         self.mock_load.return_value = []
         self.mock_load_tasks.return_value = []
         self.mock_exists.return_value = False
@@ -127,6 +133,10 @@ class TestConversationLogsRoute(unittest.TestCase):
             "challenge-restaurant",
         )
         self.mock_clear_progress.assert_called_once_with(
+            TEST_USER_ID,
+            "challenge-restaurant",
+        )
+        self.mock_delete_summaries.assert_called_once_with(
             TEST_USER_ID,
             "challenge-restaurant",
         )

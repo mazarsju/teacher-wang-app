@@ -239,15 +239,32 @@ def _summarize_and_store(app, user_id, log_user_id: str, character_id: str) -> N
 
 
 def store_conversation_summary(user_id, character_id: str, memory: dict) -> None:
-    ConversationSummary.query.filter_by(
+    """Keep at most 2 rows per conversation: the latest, and the one before it.
+
+    The previous "old" row (``latest=False``) is dropped, the current
+    "latest" row becomes the new "old", and the merged memory is inserted
+    as the new "latest".
+    """
+    old_row = ConversationSummary.query.filter_by(
+        user_id=user_id, conversation_id=character_id, latest=False
+    ).one_or_none()
+    if old_row is not None:
+        db.session.delete(old_row)
+
+    latest_row = ConversationSummary.query.filter_by(
         user_id=user_id, conversation_id=character_id, latest=True
-    ).update({"latest": False})
+    ).one_or_none()
+    next_revision = 1
+    if latest_row is not None:
+        next_revision = latest_row.revision + 1
+        latest_row.latest = False
+
     db.session.add(
         ConversationSummary(
             user_id=user_id,
             conversation_id=character_id,
             summary=memory,
-            revision=1,
+            revision=next_revision,
             latest=True,
         )
     )
