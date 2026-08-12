@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from backend.models import HskCharacter
+from backend.utils.database.models import HskCharacter
 
 bp = Blueprint("list_hsk_character_words", __name__)
 

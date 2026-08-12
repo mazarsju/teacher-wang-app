@@ -1,7 +1,7 @@
 from flask import Blueprint
 
-from backend.challenges import get_challenges_progress
-from backend.user_context import current_user_id
+from backend.utils.aiChat.challenges import get_challenges_progress
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("challenges", __name__)
 

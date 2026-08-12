@@ -1,8 +1,8 @@
 import bootstrap  # noqa: F401
 import unittest
 
-from backend.models import Setting
-from backend.settings import (
+from backend.utils.database.models import Setting
+from backend.utils.database.settings import (
     DEFAULT_SETTINGS,
     FREE_PLAN_MAX_ALLOWED_TOKEN,
     PRO_PLAN_TOKEN_GRANT,
@@ -43,7 +43,7 @@ class TestSettings(PostgresTestCase):
         import threading
 
         Setting.query.filter_by(user_id=self.user_id).delete()
-        from backend.extensions import db
+        from backend.utils.database.extensions import db
 
         db.session.commit()
 

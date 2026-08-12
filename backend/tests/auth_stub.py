@@ -58,9 +58,9 @@ def stub_current_user() -> None:
 def patch_request_auth(test_case) -> None:
     """Accept the stub token and resolve the tenant without touching Postgres."""
     patchers = (
-        patch("backend.user_context.verify_access_token", return_value=TEST_CLAIMS),
+        patch("backend.utils.auth.user_context.verify_access_token", return_value=TEST_CLAIMS),
         patch(
-            "backend.user_context.ensure_current_user",
+            "backend.utils.auth.user_context.ensure_current_user",
             side_effect=stub_current_user,
         ),
     )

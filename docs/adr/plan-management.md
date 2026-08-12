@@ -34,7 +34,7 @@ Constraints:
 
 ### Plan identity
 
-* `users.plan` is a string. Default / free value: `"free"` (`DEFAULT_USER_PLAN` in `backend/models.py`).
+* `users.plan` is a string. Default / free value: `"free"` (`DEFAULT_USER_PLAN` in `backend/utils/database/models.py`).
 * Any other value is treated as **paid** for token gating today (no enumerated paid product SKUs yet).
 * Exposed on `GET /auth/me` and on `GET /token-usage` as `plan`.
 
@@ -45,7 +45,7 @@ Constraints:
 | Remaining budget | Per-user setting key `available_token` (`SETTING_AVAILABLE_TOKEN`) |
 | Initial allowance | `FREE_PLAN_MAX_ALLOWED_TOKEN = 100_000`, seeded in `DEFAULT_SETTINGS` |
 | Seed timing | `ensure_default_settings(user_id)` on **new and returning** users (inserts missing keys only) — no Alembic data migration |
-| Gate | Before every LLM call in `_invoke_llm` (`backend/chat_service.py`): if `plan == free` and `available_token <= 0` → `ValueError` with a user-facing message |
+| Gate | Before every LLM call in `_invoke_llm` (`backend/utils/aiChat/chat_service.py`): if `plan == free` and `available_token <= 0` → `ValueError` with a user-facing message |
 | Deduct | After a successful invoke, subtract `input + output` tokens from `available_token` (may go **negative** so one large call can overshoot; the next call is blocked) |
 | Paid | Skip check and deduct |
 

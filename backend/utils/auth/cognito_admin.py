@@ -7,7 +7,7 @@ credentials rather than raw HTTP.
 
 from __future__ import annotations
 
-from backend.auth_config import load_cognito_config
+from backend.utils.auth.auth_config import load_cognito_config
 
 
 class CognitoAdminError(Exception):

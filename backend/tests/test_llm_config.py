@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from backend.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV  # noqa: E402
-from backend.llm_config import read_llm_config  # noqa: E402
+from backend.utils.aiChat.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV  # noqa: E402
+from backend.utils.aiChat.llm_config import read_llm_config  # noqa: E402
 
 
 class TestLlmConfigFile(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestLlmConfigFile(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.config_path = Path(self.temp_dir.name) / ".config.txt"
         self.path_patcher = patch(
-            "backend.llm_config.CONFIG_PATH",
+            "backend.utils.aiChat.llm_config.CONFIG_PATH",
             self.config_path,
         )
         self.path_patcher.start()

@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
@@ -12,7 +12,7 @@ database_module.configure_database = MagicMock()
 sys.modules.pop("backend.app", None)
 
 from backend.app import app  # noqa: E402
-from backend.character_sync import CharacterSyncResult  # noqa: E402
+from backend.utils.knowledgeBase.character_sync import CharacterSyncResult  # noqa: E402
 from auth_stub import (  # noqa: E402
     TEST_USER_ID,
     authenticated_client,

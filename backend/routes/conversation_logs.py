@@ -1,12 +1,12 @@
 from flask import Blueprint, request
 
-from backend.challenge_progress import (
+from backend.utils.aiChat.challenge_progress import (
     clear_challenge_progress,
     clear_completed_task_ids,
     load_completed_task_ids,
 )
-from backend.challenges import is_challenge_character
-from backend.conversation_logs import (
+from backend.utils.aiChat.challenges import is_challenge_character
+from backend.utils.aiChat.conversation_logs import (
     VALID_CHARACTER_IDS,
     clear_conversation,
     conversation_exists,
@@ -14,7 +14,7 @@ from backend.conversation_logs import (
     load_conversation,
     replace_conversation,
 )
-from backend.user_context import current_user, current_user_id
+from backend.utils.auth.user_context import current_user, current_user_id
 
 bp = Blueprint("conversation_logs", __name__)
 

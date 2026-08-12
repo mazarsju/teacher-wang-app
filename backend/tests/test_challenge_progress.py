@@ -4,12 +4,12 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from backend.challenge_progress import (
+from backend.utils.aiChat.challenge_progress import (
     clear_completed_task_ids,
     load_completed_task_ids,
     save_completed_task_ids,
 )
-from backend.conversation_log_storage import (
+from backend.utils.aiChat.conversation_log_storage import (
     LocalConversationLogStorage,
     reset_storage_for_tests,
 )

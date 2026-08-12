@@ -8,7 +8,7 @@ import jwt
 from flask import g
 from jwt import PyJWKClient
 
-from backend.auth_config import CognitoConfig, load_cognito_config
+from backend.utils.auth.auth_config import CognitoConfig, load_cognito_config
 
 _jwks_clients: dict[str, PyJWKClient] = {}
 

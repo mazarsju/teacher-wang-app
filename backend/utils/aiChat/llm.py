@@ -8,7 +8,7 @@ LLM_MODEL_ENV = "LLM_MODEL"
 
 
 def _get_config_value(name: str) -> str:
-    from backend.llm_config import read_llm_config
+    from backend.utils.aiChat.llm_config import read_llm_config
 
     value = read_llm_config().get(name, "").strip()
     if value:

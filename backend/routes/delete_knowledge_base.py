@@ -1,15 +1,15 @@
 from flask import Blueprint
 
-from backend.conversation_log_storage import get_storage, object_key
-from backend.extensions import db
-from backend.models import (
+from backend.utils.aiChat.conversation_log_storage import get_storage, object_key
+from backend.utils.database.extensions import db
+from backend.utils.database.models import (
     Character,
     IgnoreHskWord,
     IgnoreVocabCard,
     IgnoreWritingCard,
     Word,
 )
-from backend.user_context import current_user, current_user_id
+from backend.utils.auth.user_context import current_user, current_user_id
 
 bp = Blueprint("delete_knowledge_base", __name__)
 

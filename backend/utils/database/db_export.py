@@ -1,7 +1,7 @@
 import csv
 import io
 
-from backend.models import Word
+from backend.utils.database.models import Word
 
 CSV_HEADER = ["word", "definition", "pinyin", "writing_known", "synchronized", "updated_at"]
 

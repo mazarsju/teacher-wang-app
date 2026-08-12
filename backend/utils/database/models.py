@@ -4,7 +4,7 @@ from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, Table
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from backend.extensions import db
+from backend.utils.database.extensions import db
 
 DEFAULT_USER_PLAN = "free"
 

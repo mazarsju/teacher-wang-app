@@ -7,9 +7,9 @@ import unittest
 from flask import Flask
 from sqlalchemy import text
 
-from backend.alembic_runner import run_alembic_upgrade
-from backend.db_config import resolve_test_database_url
-from backend.extensions import db
+from backend.utils.database.alembic_runner import run_alembic_upgrade
+from backend.utils.database.db_config import resolve_test_database_url
+from backend.utils.database.extensions import db
 
 _SCHEMA_READY = False
 
@@ -17,7 +17,7 @@ TEST_USER_ID = "test-user"
 TEST_USERNAME = "test"
 TEST_EMAIL = "test@example.com"
 
-# Keep in sync with backend.models metadata (quote reserved names).
+# Keep in sync with backend.utils.database.models metadata (quote reserved names).
 # users comes first: every private table references it.
 _TRUNCATE_TABLES = (
     "users",
@@ -48,7 +48,7 @@ def create_test_user(
     email: str = TEST_EMAIL,
 ):
     """Insert a ``users`` row so private-table fixtures satisfy their FK."""
-    from backend.models import User, utcnow
+    from backend.utils.database.models import User, utcnow
 
     user = User(
         id=user_id,
@@ -81,7 +81,7 @@ class PostgresTestCase(unittest.TestCase):
         self.app_context.push()
 
         if not _SCHEMA_READY:
-            import backend.models  # noqa: F401
+            import backend.utils.database.models  # noqa: F401
 
             run_alembic_upgrade(resolve_test_database_url())
             _SCHEMA_READY = True

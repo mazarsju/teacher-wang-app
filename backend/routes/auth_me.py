@@ -2,9 +2,9 @@
 
 from flask import Blueprint, jsonify
 
-from backend.auth import current_cognito_claims, current_cognito_sub
-from backend.settings import ADMIN_EMAIL
-from backend.user_context import current_user
+from backend.utils.auth.auth import current_cognito_claims, current_cognito_sub
+from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.auth.user_context import current_user
 
 bp = Blueprint("auth_me", __name__)
 

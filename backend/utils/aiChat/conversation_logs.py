@@ -1,10 +1,10 @@
 import uuid
 
-from backend.chat_agents import CHAT_CHARACTERS
-from backend.conversation_log_storage import get_storage, object_key
+from backend.utils.aiChat.chat_agents import CHAT_CHARACTERS
+from backend.utils.aiChat.conversation_log_storage import get_storage, object_key
 
 # Re-export for callers/tests that still import the local root path.
-from backend.conversation_log_storage import CONVERSATION_LOGS_DIR  # noqa: F401
+from backend.utils.aiChat.conversation_log_storage import CONVERSATION_LOGS_DIR  # noqa: F401
 
 VALID_CHARACTER_IDS = set(CHAT_CHARACTERS.keys())
 USER_PREFIX = "me: "

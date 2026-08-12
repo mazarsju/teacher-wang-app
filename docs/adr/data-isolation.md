@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — implemented by Alembic revision `9c4b71e0a2d5` (`users` table + hash-partitioned private tables), `c3d4e5f6a7b8` / `d5e6f7a8b9c0` (`users.shortid` as private-table tenant key), and the request-scoped tenant resolution in `backend/user_context.py`. RLS remains a documented follow-up.
+Accepted — implemented by Alembic revision `9c4b71e0a2d5` (`users` table + hash-partitioned private tables), `c3d4e5f6a7b8` / `d5e6f7a8b9c0` (`users.shortid` as private-table tenant key), and the request-scoped tenant resolution in `backend/utils/auth/user_context.py`. RLS remains a documented follow-up.
 
 Aligned with Decisions 2 and 3 in [teacher-wang-infra multi-user architecture](https://github.com/mazarsju/teacher-wang-infra/blob/main/docs/multi-user-archi-decision.md). Credentials live in Cognito; see [auth ADR](./auth.md). Coding invariants: `.cursor/rules/multi-tenant.mdc`. Table/PK catalog: [schema tenancy](../architecture/schema-tenancy.md). Conversation log paths: [conversation logs](../architecture/conversation-logs.md).
 
@@ -33,7 +33,7 @@ Constraints inherited from infra / product:
 
 ### Tenant resolution on every request
 
-`register_user_context(app)` installs a `before_request` hook (`backend/user_context.py`):
+`register_user_context(app)` installs a `before_request` hook (`backend/utils/auth/user_context.py`):
 
 1. `OPTIONS` requests and `/health` are public. Everything else requires `Authorization: Bearer <access_token>`; a missing or invalid token is a `401`.
 2. The verified claims land in `g.cognito_claims` / `g.cognito_sub`.
@@ -108,7 +108,7 @@ State that lives outside Postgres and is still **shared between all users**:
 
 | What | Where | Note |
 | --- | --- | --- |
-| Knowledge-base export | `backend/db_export.py` writes one file per deployment | Contents are user-scoped, the filename is not |
+| Knowledge-base export | `backend/utils/database/db_export.py` writes one file per deployment | Contents are user-scoped, the filename is not |
 | LLM API key / model | ECS secrets / env (local: `.config.txt`) | Operator-level only — never exposed via API or UI |
 
 Knowledge-base export still needs either a `user_id` path segment or a move into a private table before the app is opened to real multi-user traffic.

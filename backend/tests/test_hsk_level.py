@@ -2,9 +2,9 @@ import bootstrap  # noqa: F401
 import unittest
 from types import SimpleNamespace
 
-from backend.extensions import db
-from backend.challenge_progress import has_completed_challenge
-from backend.hsk_level import (
+from backend.utils.database.extensions import db
+from backend.utils.aiChat.challenge_progress import has_completed_challenge
+from backend.utils.knowledgeBase.hsk_level import (
     HSK_LEVEL_COMPLETION_RATIO,
     HSK_MAX_LEVEL,
     compute_current_hsk_level,
@@ -13,8 +13,8 @@ from backend.hsk_level import (
     refresh_current_hsk_level,
     speaking_hsk_level_from_current,
 )
-from backend.models import Character, HskCharacter
-from backend.settings import SETTING_LEVEL, get_setting
+from backend.utils.database.models import Character, HskCharacter
+from backend.utils.database.settings import SETTING_LEVEL, get_setting
 from postgres_test_case import PostgresTestCase, create_test_user
 
 VOCABULARY = [

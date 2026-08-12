@@ -8,7 +8,7 @@ Accepted
 
 Chat practice is a core Teacher Wang feature. A single LLM call is not enough for challenge scenarios: the app must stay in character, prefer the learner’s known vocabulary, correct grammar without blocking the main thread, and advance structured challenge tasks only when both sides cooperate.
 
-The implementation lives mainly in `backend/chat_service.py`, with persona prompts in `backend/chat_agents.py` and orchestration in `backend/routes/chat.py`.
+The implementation lives mainly in `backend/utils/aiChat/chat_service.py`, with persona prompts in `backend/utils/aiChat/chat_agents.py` and orchestration in `backend/routes/chat.py`.
 
 ## Decision
 
@@ -22,7 +22,7 @@ Wherever possible, the character also tries to use only Han characters from the 
 
 Teacher Wang itself does not run the unknown-character retry loop (`retry_unknown_characters: false`).
 
-For the Teacher Wang persona specifically, `generate_chat_reply` caps the history sent to the LLM to the **last 3 messages** (`backend/chat_service.py`, `messages = messages[-3:]`). This is a naive window, not conversation compaction — it will need to be replaced with real history summarization once longer memory is needed for that chat.
+For the Teacher Wang persona specifically, `generate_chat_reply` caps the history sent to the LLM to the **last 3 messages** (`backend/utils/aiChat/chat_service.py`, `messages = messages[-3:]`). This is a naive window, not conversation compaction — it will need to be replaced with real history summarization once longer memory is needed for that chat.
 
 ### Teacher agent (grammar)
 
@@ -62,7 +62,7 @@ character agent, described in
    The generator never gets a second revision — one retry only.
 
 Proficiency-level adaptation is handled separately by the **Teaching
-Strategy** (`backend/teaching_strategy.py`,
+Strategy** (`backend/utils/aiChat/teaching_strategy.py`,
 [architecture/teacher-wang-teaching-strategy.md](../architecture/teacher-wang-teaching-strategy.md)):
 a deterministic, code-defined mapping from the learner's HSK level to
 language balance, pinyin/translation policy, vocabulary scope, and
@@ -84,7 +84,7 @@ The exchange between judge and character (when a revision happens) is returned o
 ### Smart AI toggle (light vs. full pipeline)
 
 Learners can turn **Smart AI** off from Preferences → AI usage. The setting
-(`smart_ai_enabled` in `backend/settings.py`, default **on**) is read
+(`smart_ai_enabled` in `backend/utils/database/settings.py`, default **on**) is read
 directly by `chat_service.py`; it is a plain boolean check, not something
 the planner or any model reasons about.
 

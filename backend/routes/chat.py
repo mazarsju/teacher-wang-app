@@ -1,25 +1,25 @@
 from flask import Blueprint, request
 
-from backend.challenge_progress import (
+from backend.utils.aiChat.challenge_progress import (
     clear_challenge_progress,
     clear_completed_task_ids,
     load_completed_task_ids,
     mark_challenge_completed,
     save_completed_task_ids,
 )
-from backend.challenges import (
+from backend.utils.aiChat.challenges import (
     get_challenge,
     get_unlocked_character_id,
     is_challenge_character,
 )
-from backend.chat_service import (
+from backend.utils.aiChat.chat_service import (
     TEACHER_CHARACTER_ID,
     LlmTokenUsage,
     check_user_grammar,
     generate_challenge_reply,
     generate_chat_reply,
 )
-from backend.conversation_logs import (
+from backend.utils.aiChat.conversation_logs import (
     VALID_CHARACTER_IDS,
     append_message,
     append_thread_message,
@@ -31,9 +31,9 @@ from backend.conversation_logs import (
     should_append_user_message,
     thread_exists,
 )
-from backend.settings import ADMIN_EMAIL
-from backend.token_usage import record_token_usage
-from backend.user_context import current_user, current_user_id
+from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.aiChat.token_usage import record_token_usage
+from backend.utils.auth.user_context import current_user, current_user_id
 
 bp = Blueprint("chat", __name__)
 

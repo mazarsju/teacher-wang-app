@@ -19,7 +19,7 @@ down_revision: Union[str, Sequence[str], None] = "d5e6f7a8b9c0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# Keep in sync with backend.models.USER_PARTITION_MODULUS.
+# Keep in sync with backend.utils.database.models.USER_PARTITION_MODULUS.
 PARTITION_MODULUS = 8
 
 

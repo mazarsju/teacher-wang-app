@@ -18,7 +18,7 @@ of the message.
 
 ## Runtime source of truth
 
-`backend/teaching_strategy.py` defines one `TeachingStrategy` per HSK level
+`backend/utils/aiChat/teaching_strategy.py` defines one `TeachingStrategy` per HSK level
 (1–7) and `get_teaching_strategy(hsk_level)` to look one up (clamping out of
 range levels to 1 or 7). The same rendered strategy text is given to both the
 behavior planner (as context for which behaviors it selects) and the
@@ -48,7 +48,7 @@ planner — see [adr/ai-agents.md](../adr/ai-agents.md).
 Each level fixes: language balance, pinyin usage, translation usage, Chinese
 small talk, vocabulary scope, explanation language, and encouragement style.
 HSK1 additionally caps new vocabulary at one word per turn. See
-`backend/teaching_strategy.py` for the exact wording used at each level.
+`backend/utils/aiChat/teaching_strategy.py` for the exact wording used at each level.
 
 ## Non-goals
 

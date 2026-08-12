@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from flask import Flask
 
-from backend.db_config import resolve_database_url
-from backend.extensions import db
+from backend.utils.database.db_config import resolve_database_url
+from backend.utils.database.extensions import db
 
 
 def configure_database(app: Flask) -> None:
@@ -20,13 +20,13 @@ def configure_database(app: Flask) -> None:
 
 def _run_alembic_upgrade(database_url: str | None = None) -> None:
     """Apply pending Alembic revisions."""
-    from backend.alembic_runner import run_alembic_upgrade
+    from backend.utils.database.alembic_runner import run_alembic_upgrade
 
     run_alembic_upgrade(database_url)
 
 
 def _ensure_hsk_content_loaded() -> None:
-    from backend.models import HskWord
+    from backend.utils.database.models import HskWord
     from backend.routes.hsk_content_loader import load_hsk_content
 
     if HskWord.query.first() is not None:
@@ -36,7 +36,7 @@ def _ensure_hsk_content_loaded() -> None:
 
 
 def init_db(app: Flask) -> None:
-    import backend.models  # noqa: F401
+    import backend.utils.database.models  # noqa: F401
 
     with app.app_context():
         if db.engine.dialect.name != "postgresql":

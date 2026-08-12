@@ -1,8 +1,8 @@
 import bootstrap  # noqa: F401
 import unittest
 
-from backend.challenge_progress import has_completed_challenge, mark_challenge_completed
-from backend.challenges import get_challenges_progress
+from backend.utils.aiChat.challenge_progress import has_completed_challenge, mark_challenge_completed
+from backend.utils.aiChat.challenges import get_challenges_progress
 from postgres_test_case import PostgresTestCase
 
 ALL_CHALLENGE_IDS = (

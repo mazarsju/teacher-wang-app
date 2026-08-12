@@ -11,12 +11,12 @@ import logging
 
 from flask import Blueprint, request
 
-from backend.cognito_public import (
+from backend.utils.auth.cognito_public import (
     CognitoPublicError,
     confirm_forgot_password,
     forgot_password,
 )
-from backend.models import User
+from backend.utils.database.models import User
 
 bp = Blueprint("auth_password_reset", __name__)
 logger = logging.getLogger(__name__)

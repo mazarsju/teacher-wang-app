@@ -5,17 +5,17 @@ import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from backend.behavior_spec import (
+from backend.utils.aiChat.behavior_spec import (
     ALWAYS_ON_BEHAVIOR_IDS,
     BEHAVIORS,
     BEHAVIOR_IDS,
     get_behavior,
 )
-from backend.chat_agents import get_character, get_system_prompt
-from backend.chinese_validation import extract_han_characters
-from backend.llm import get_llm
-from backend.models import Character
-from backend.teaching_strategy import get_teaching_strategy
+from backend.utils.aiChat.chat_agents import get_character, get_system_prompt
+from backend.utils.knowledgeBase.chinese_validation import extract_han_characters
+from backend.utils.aiChat.llm import get_llm
+from backend.utils.database.models import Character
+from backend.utils.aiChat.teaching_strategy import get_teaching_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -210,9 +210,9 @@ def _tokens_from_response(response) -> LlmTokenUsage:
 
 
 def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
-    from backend.models import DEFAULT_USER_PLAN
-    from backend.settings import assert_free_plan_has_tokens, deduct_available_token
-    from backend.user_context import current_user
+    from backend.utils.database.models import DEFAULT_USER_PLAN
+    from backend.utils.database.settings import assert_free_plan_has_tokens, deduct_available_token
+    from backend.utils.auth.user_context import current_user
 
     user = current_user()
     assert_free_plan_has_tokens(user)
@@ -625,8 +625,8 @@ def generate_chat_reply(
     behavior_ids: list[str] = []
 
     if character_id == TEACHER_CHARACTER_ID and revision_instruction is None:
-        from backend.hsk_level import get_chat_speaking_hsk_level
-        from backend.settings import get_smart_ai_enabled
+        from backend.utils.knowledgeBase.hsk_level import get_chat_speaking_hsk_level
+        from backend.utils.database.settings import get_smart_ai_enabled
 
         strategy = get_teaching_strategy(get_chat_speaking_hsk_level(user_id))
         strategy_block = strategy.as_instructions()
@@ -769,7 +769,7 @@ def generate_challenge_reply(
     tasks: list[dict[str, str]],
 ) -> ChallengeReplyResult:
     """Generate a challenge reply, allowing one coherence revision from the judge."""
-    from backend.settings import get_smart_ai_enabled
+    from backend.utils.database.settings import get_smart_ai_enabled
 
     reply = generate_chat_reply(user_id, character_id, messages)
     token_usage = reply.token_usage

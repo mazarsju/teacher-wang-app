@@ -2,9 +2,9 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import patch
 
-from backend.database import _ensure_hsk_content_loaded
-from backend.extensions import db
-from backend.models import HskWord
+from backend.utils.database.database import _ensure_hsk_content_loaded
+from backend.utils.database.extensions import db
+from backend.utils.database.models import HskWord
 from postgres_test_case import PostgresTestCase
 
 

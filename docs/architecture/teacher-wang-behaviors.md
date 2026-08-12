@@ -52,12 +52,12 @@ validated without reference to any other behavior's internal requirements.
 Two behaviors may both apply to the same message.
 
 The runtime source of truth for the short form of each field (used by the
-planner/generator/validator) is `backend/behavior_spec.py`; keep it in sync
+planner/generator/validator) is `backend/utils/aiChat/behavior_spec.py`; keep it in sync
 with this document when either changes.
 
 Some behaviors apply on every turn by definition (BHV-02, BHV-08, BHV-10).
 Leaving those to the planner's per-turn judgment proved unreliable, so
-`backend/behavior_spec.py` marks them `"always": True` and the generator
+`backend/utils/aiChat/behavior_spec.py` marks them `"always": True` and the generator
 includes them unconditionally — the planner is only consulted for the
 remaining, conversation-dependent behaviors.
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.request import urlopen
 
-from backend.pinyin import normalize_anki_pinyin_token
+from backend.utils.knowledgeBase.pinyin import normalize_anki_pinyin_token
 
 COMPLETE_HSK_JSON_URL = (
     "https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/complete.json"

@@ -23,7 +23,7 @@ down_revision: Union[str, Sequence[str], None] = "c3d4e5f6a7b8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# Keep in sync with backend.models.USER_PARTITION_MODULUS.
+# Keep in sync with backend.utils.database.models.USER_PARTITION_MODULUS.
 PARTITION_MODULUS = 8
 
 # Recreated (and remapped) private tables — character_word is dropped for good.

@@ -1,8 +1,8 @@
 from flask import Blueprint
 
-from backend.models import User
-from backend.settings import ADMIN_EMAIL
-from backend.user_context import current_user
+from backend.utils.database.models import User
+from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.auth.user_context import current_user
 
 bp = Blueprint("list_users", __name__)
 

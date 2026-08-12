@@ -1,8 +1,8 @@
 from flask import Blueprint, request
 
-from backend.hsk_word_picker import pick_next_hsk_word
-from backend.models import HskWord
-from backend.user_context import current_user_id
+from backend.utils.knowledgeBase.hsk_word_picker import pick_next_hsk_word
+from backend.utils.database.models import HskWord
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("pick_hsk_word", __name__)
 

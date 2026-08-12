@@ -2,7 +2,7 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
@@ -562,7 +562,7 @@ class TestChatEndpoint(unittest.TestCase):
         )
 
     def test_chat_returns_free_plan_token_exhausted_message(self):
-        from backend.settings import FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
+        from backend.utils.database.settings import FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
 
         self.mock_generate.side_effect = ValueError(
             FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE

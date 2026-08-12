@@ -10,10 +10,10 @@ from pathlib import Path
 
 from sqlalchemy import func
 
-from backend.extensions import db
-from backend.llm import LLM_MODEL_ENV
-from backend.llm_config import read_llm_config
-from backend.models import TokenCount, utcnow
+from backend.utils.database.extensions import db
+from backend.utils.aiChat.llm import LLM_MODEL_ENV
+from backend.utils.aiChat.llm_config import read_llm_config
+from backend.utils.database.models import TokenCount, utcnow
 
 TOKEN_HISTORY_DAYS = 7
 TOKEN_TYPE_INPUT = "input"
@@ -26,7 +26,7 @@ USD_TO_CENTS = Decimal("100")
 TOKEN_PRICE_PATH = Path(
     os.environ.get(
         "TOKEN_PRICE_PATH",
-        Path(__file__).resolve().parent / "token_price.json",
+        Path(__file__).resolve().parents[2] / "token_price.json",
     )
 )
 
@@ -244,8 +244,8 @@ def get_daily_usage(
 
 
 def get_token_usage_summary(user_id: str, days: int | None = None) -> dict:
-    from backend.models import DEFAULT_USER_PLAN, User
-    from backend.settings import (
+    from backend.utils.database.models import DEFAULT_USER_PLAN, User
+    from backend.utils.database.settings import (
         FREE_PLAN_MAX_ALLOWED_TOKEN,
         PRO_PLAN_TOKEN_GRANT,
         get_available_token,

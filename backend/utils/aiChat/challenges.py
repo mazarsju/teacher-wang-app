@@ -76,7 +76,7 @@ def is_challenge_character(character_id: str) -> bool:
 
 
 def get_challenges_progress(user_id) -> dict:
-    from backend.challenge_progress import has_completed_challenge
+    from backend.utils.aiChat.challenge_progress import has_completed_challenge
 
     return {
         "challenges": [

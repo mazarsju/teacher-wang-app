@@ -1,9 +1,9 @@
 from flask import Blueprint, request
 
-from backend.extensions import db
-from backend.hsk_level import refresh_current_hsk_level
-from backend.models import Character, utcnow
-from backend.user_context import current_user_id
+from backend.utils.database.extensions import db
+from backend.utils.knowledgeBase.hsk_level import refresh_current_hsk_level
+from backend.utils.database.models import Character, utcnow
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("update_character", __name__)
 

@@ -1,13 +1,13 @@
 import os
 from pathlib import Path
 
-from backend.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV
+from backend.utils.aiChat.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV
 
 CONFIG_FILENAME = ".config.txt"
 CONFIG_PATH = Path(
     os.environ.get(
         "LLM_CONFIG_PATH",
-        Path(__file__).resolve().parent.parent / CONFIG_FILENAME,
+        Path(__file__).resolve().parents[3] / CONFIG_FILENAME,
     )
 )
 

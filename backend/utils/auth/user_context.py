@@ -14,14 +14,14 @@ from decimal import Decimal
 from flask import Flask, g, jsonify, request
 from sqlalchemy import text
 
-from backend.auth import (
+from backend.utils.auth.auth import (
     AuthError,
     extract_bearer_token,
     verify_access_token,
     verify_id_token,
 )
-from backend.extensions import db
-from backend.models import DEFAULT_USER_PLAN, User, utcnow
+from backend.utils.database.extensions import db
+from backend.utils.database.models import DEFAULT_USER_PLAN, User, utcnow
 
 ID_TOKEN_HEADER = "X-Id-Token"
 PUBLIC_PATHS = frozenset(
@@ -133,14 +133,14 @@ def ensure_current_user() -> User:
 
 def _ensure_user_defaults(user_id) -> None:
     """Seed the per-user settings rows a fresh account needs."""
-    from backend.settings import ensure_default_settings
+    from backend.utils.database.settings import ensure_default_settings
 
     ensure_default_settings(user_id)
 
 
 def _reset_monthly_tokens(user: User) -> None:
     """Refill the plan's token allowance when a new calendar month starts."""
-    from backend.settings import reset_available_token
+    from backend.utils.database.settings import reset_available_token
 
     reset_available_token(user.shortid, user.plan, commit=True)
 

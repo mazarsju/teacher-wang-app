@@ -4,13 +4,13 @@ from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
-from backend.conversation_log_storage import S3ConversationLogStorage
-from backend.conversation_logs import (
+from backend.utils.aiChat.conversation_log_storage import S3ConversationLogStorage
+from backend.utils.aiChat.conversation_logs import (
     append_message,
     clear_conversation,
     load_conversation,
 )
-from backend.conversation_log_storage import reset_storage_for_tests
+from backend.utils.aiChat.conversation_log_storage import reset_storage_for_tests
 
 
 class _FakeBody:

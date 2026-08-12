@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from botocore.exceptions import BotoCoreError, ClientError
 
-from backend.cognito_admin import CognitoAdminError, delete_cognito_user
+from backend.utils.auth.cognito_admin import CognitoAdminError, delete_cognito_user
 
 
 def _config():
@@ -17,12 +17,12 @@ def _config():
 class TestDeleteCognitoUser(unittest.TestCase):
     def test_raises_when_cognito_is_not_configured(self):
         with patch(
-            "backend.cognito_admin.load_cognito_config", return_value=None
+            "backend.utils.auth.cognito_admin.load_cognito_config", return_value=None
         ):
             with self.assertRaises(CognitoAdminError):
                 delete_cognito_user("alice")
 
-    @patch("backend.cognito_admin.load_cognito_config", return_value=_config())
+    @patch("backend.utils.auth.cognito_admin.load_cognito_config", return_value=_config())
     @patch("boto3.client")
     def test_calls_admin_delete_user_with_username(self, mock_client_factory, _):
         client = MagicMock()
@@ -35,7 +35,7 @@ class TestDeleteCognitoUser(unittest.TestCase):
             Username="alice",
         )
 
-    @patch("backend.cognito_admin.load_cognito_config", return_value=_config())
+    @patch("backend.utils.auth.cognito_admin.load_cognito_config", return_value=_config())
     @patch("boto3.client")
     def test_user_not_found_is_ignored(self, mock_client_factory, _):
         client = MagicMock()
@@ -47,7 +47,7 @@ class TestDeleteCognitoUser(unittest.TestCase):
 
         delete_cognito_user("alice")
 
-    @patch("backend.cognito_admin.load_cognito_config", return_value=_config())
+    @patch("backend.utils.auth.cognito_admin.load_cognito_config", return_value=_config())
     @patch("boto3.client")
     def test_access_denied_becomes_cognito_admin_error(
         self, mock_client_factory, _
@@ -62,7 +62,7 @@ class TestDeleteCognitoUser(unittest.TestCase):
         with self.assertRaises(CognitoAdminError):
             delete_cognito_user("alice")
 
-    @patch("backend.cognito_admin.load_cognito_config", return_value=_config())
+    @patch("backend.utils.auth.cognito_admin.load_cognito_config", return_value=_config())
     @patch("boto3.client")
     def test_botocore_errors_become_cognito_admin_error(
         self, mock_client_factory, _

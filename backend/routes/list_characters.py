@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 
-from backend.models import Character
-from backend.user_context import current_user_id
+from backend.utils.database.models import Character
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("list_characters", __name__)
 

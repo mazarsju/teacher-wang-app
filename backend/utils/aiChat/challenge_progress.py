@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 
-from backend.challenges import is_challenge_character
-from backend.conversation_log_storage import get_storage, object_key
-from backend.conversation_logs import VALID_CHARACTER_IDS
-from backend.extensions import db
-from backend.models import ChallengeProgress
+from backend.utils.aiChat.challenges import is_challenge_character
+from backend.utils.aiChat.conversation_log_storage import get_storage, object_key
+from backend.utils.aiChat.conversation_logs import VALID_CHARACTER_IDS
+from backend.utils.database.extensions import db
+from backend.utils.database.models import ChallengeProgress
 
 
 def progress_object_key(user_id: str, character_id: str) -> str:

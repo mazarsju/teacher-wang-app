@@ -1,7 +1,7 @@
 import bootstrap  # noqa: F401
 import unittest
 
-from backend.teaching_strategy import TEACHING_STRATEGIES, get_teaching_strategy
+from backend.utils.aiChat.teaching_strategy import TEACHING_STRATEGIES, get_teaching_strategy
 
 
 class TestGetTeachingStrategy(unittest.TestCase):

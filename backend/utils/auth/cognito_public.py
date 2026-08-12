@@ -11,7 +11,7 @@ import json
 import urllib.error
 import urllib.request
 
-from backend.auth_config import CognitoConfig, load_cognito_config
+from backend.utils.auth.auth_config import CognitoConfig, load_cognito_config
 
 
 class CognitoPublicError(Exception):

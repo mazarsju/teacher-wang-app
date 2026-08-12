@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 
-from backend import anki_sync
-from backend.user_context import current_user_id
+from backend.utils.knowledgeBase import anki_sync
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("anki", __name__)
 

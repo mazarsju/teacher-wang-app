@@ -2,11 +2,11 @@
 
 import unittest
 
-from backend.challenge_prompts import (
+from backend.utils.aiChat.challenge_prompts import (
     CHALLENGE_SCENARIOS,
     build_challenge_system_prompt,
 )
-from backend.chat_agents import CHAT_CHARACTERS, get_character
+from backend.utils.aiChat.chat_agents import CHAT_CHARACTERS, get_character
 
 
 SHARED_PHRASES = (

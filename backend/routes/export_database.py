@@ -2,8 +2,8 @@ from flask import Blueprint
 import io
 import zipfile
 from flask import send_file
-from backend.db_export import get_export_database_content
-from backend.user_context import current_user_id
+from backend.utils.database.db_export import get_export_database_content
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("export_database", __name__)
 

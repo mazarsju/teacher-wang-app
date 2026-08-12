@@ -1,9 +1,9 @@
 from flask import Blueprint
 
-from backend.cognito_admin import CognitoAdminError, delete_cognito_user
-from backend.conversation_log_storage import get_storage, object_key
-from backend.extensions import db
-from backend.models import (
+from backend.utils.auth.cognito_admin import CognitoAdminError, delete_cognito_user
+from backend.utils.aiChat.conversation_log_storage import get_storage, object_key
+from backend.utils.database.extensions import db
+from backend.utils.database.models import (
     ChallengeProgress,
     Character,
     IgnoreHskWord,
@@ -14,8 +14,8 @@ from backend.models import (
     User,
     Word,
 )
-from backend.settings import ADMIN_EMAIL
-from backend.user_context import current_user
+from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.auth.user_context import current_user
 
 bp = Blueprint("delete_user", __name__)
 

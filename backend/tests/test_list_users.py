@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()

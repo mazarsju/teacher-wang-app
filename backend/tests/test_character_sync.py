@@ -1,7 +1,7 @@
 import bootstrap  # noqa: F401
 import unittest
 
-from backend.character_sync import (
+from backend.utils.knowledgeBase.character_sync import (
     build_character_pinyin_map_from_words,
     build_word_pinyin_for_storage,
     extract_tone_syllables_in_order,
@@ -9,8 +9,8 @@ from backend.character_sync import (
     serialize_character,
     unresolved_word_characters,
 )
-from backend.extensions import db
-from backend.models import Character, Word, utcnow
+from backend.utils.database.extensions import db
+from backend.utils.database.models import Character, Word, utcnow
 from backend.tests.postgres_test_case import PostgresTestCase
 
 

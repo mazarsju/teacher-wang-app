@@ -2,7 +2,7 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
@@ -239,13 +239,13 @@ class TestAnkiRoutes(unittest.TestCase):
 
 class TestAnkiSyncHelpers(PostgresTestCase):
     def setUp(self):
-        from backend.settings import ensure_default_settings
+        from backend.utils.database.settings import ensure_default_settings
 
         super().setUp()
         ensure_default_settings(self.user_id)
 
     def test_get_anki_status_defaults_to_not_configured(self):
-        from backend.anki_sync import get_anki_status
+        from backend.utils.knowledgeBase.anki_sync import get_anki_status
 
         status = get_anki_status(self.user_id)
 
@@ -260,8 +260,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_setup_deck_persists_mapping(self):
-        from backend.anki_sync import setup_deck
-        from backend.settings import (
+        from backend.utils.knowledgeBase.anki_sync import setup_deck
+        from backend.utils.database.settings import (
             SETTING_ANKI_MANDARIN_WRITING_DECK,
             SETTING_ANKI_MANDARIN_WRITING_FIELDS,
             SETTING_ANKI_MANDARIN_WRITING_MODEL,
@@ -288,8 +288,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_setup_vocabulary_deck_persists_settings(self):
-        from backend.anki_sync import setup_deck
-        from backend.settings import (
+        from backend.utils.knowledgeBase.anki_sync import setup_deck
+        from backend.utils.database.settings import (
             SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
             SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
             SETTING_ANKI_MANDARIN_VOCABULARY_MODEL,
@@ -322,12 +322,12 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_overall_status_promotes_when_both_decks_synchronized(self):
-        from backend.anki_sync import (
+        from backend.utils.knowledgeBase.anki_sync import (
             get_overall_anki_synchronization_status,
             maybe_promote_overall_anki_synchronization,
             setup_deck,
         )
-        from backend.settings import SETTING_ANKI_SYNCHRONIZATION_STATUS, get_setting
+        from backend.utils.database.settings import SETTING_ANKI_SYNCHRONIZATION_STATUS, get_setting
 
         setup_deck(
             self.user_id,
@@ -359,10 +359,10 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_overall_status_stays_synchronized_when_new_pending_cards_exist(self):
-        from backend.anki_sync import get_anki_status, setup_deck
-        from backend.extensions import db
-        from backend.models import Word
-        from backend.settings import (
+        from backend.utils.knowledgeBase.anki_sync import get_anki_status, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
+        from backend.utils.database.settings import (
             SETTING_ANKI_SYNCHRONIZATION_STATUS,
             set_setting,
         )
@@ -410,9 +410,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_get_sync_data_returns_pending_vocabulary_cards(self):
-        from backend.anki_sync import get_sync_data, setup_deck
-        from backend.extensions import db
-        from backend.models import Character, Word
+        from backend.utils.knowledgeBase.anki_sync import get_sync_data, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Character, Word
 
         setup_deck(
             self.user_id,
@@ -452,9 +452,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertIn("水", payload["local_words"])
 
     def test_mark_synchronized_marks_words(self):
-        from backend.anki_sync import apply_push_completion, setup_deck
-        from backend.extensions import db
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import apply_push_completion, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -503,9 +503,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_cancel_all_marks_words_synchronized(self):
-        from backend.anki_sync import apply_push_completion, setup_deck
-        from backend.extensions import db
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import apply_push_completion, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -542,8 +542,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_pull_import_vocabulary_card(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import Character, Word
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.models import Character, Word
 
         setup_deck(
             self.user_id,
@@ -581,8 +581,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertFalse(character.writing_known)
 
     def test_pull_imports_vocabulary_cards_with_punctuation_glued_to_pinyin(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -639,8 +639,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_pull_rejects_vocabulary_card_with_unresolvable_pinyin(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -676,9 +676,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_pull_resolves_vocabulary_card_pinyin_from_hsk_characters(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.extensions import db
-        from backend.models import HskCharacter, Word
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import HskCharacter, Word
 
         setup_deck(
             self.user_id,
@@ -722,9 +722,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(word.pinyin, "shui3")
 
     def test_pull_resolves_vocabulary_card_pinyin_from_known_characters(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.extensions import db
-        from backend.models import Character, Word
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Character, Word
 
         setup_deck(
             self.user_id,
@@ -768,8 +768,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(word.pinyin, "shui3")
 
     def test_pull_ignore_vocabulary_card(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import IgnoreVocabCard
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.models import IgnoreVocabCard
 
         setup_deck(
             self.user_id,
@@ -795,9 +795,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertIn("稀有", {row.writing for row in IgnoreVocabCard.query.all()})
 
     def test_pull_import_writing_card(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.extensions import db
-        from backend.models import Character, Word
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Character, Word
 
         setup_deck(
             self.user_id,
@@ -841,7 +841,7 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertTrue(character.writing_known)
 
     def test_pull_writing_card_impossible_when_word_missing(self):
-        from backend.anki_sync import apply_pull, setup_deck
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
 
         setup_deck(
             self.user_id,
@@ -863,9 +863,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(result["failed"], ["水"])
 
     def test_pull_apply_marks_additional_characters_writing_known(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.extensions import db
-        from backend.models import Character
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Character
 
         setup_deck(
             self.user_id,
@@ -898,8 +898,8 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertTrue(character.writing_known)
 
     def test_pull_ignore_writing_card(self):
-        from backend.anki_sync import apply_pull, setup_deck
-        from backend.models import IgnoreWritingCard
+        from backend.utils.knowledgeBase.anki_sync import apply_pull, setup_deck
+        from backend.utils.database.models import IgnoreWritingCard
 
         setup_deck(
             self.user_id,
@@ -924,9 +924,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_get_sync_data_writing_unsyncable(self):
-        from backend.anki_sync import get_sync_data, setup_deck
-        from backend.extensions import db
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import get_sync_data, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -953,9 +953,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(payload["push_cards"], [])
 
     def test_get_sync_data_writing_pending_cards(self):
-        from backend.anki_sync import get_sync_data, setup_deck
-        from backend.extensions import db
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import get_sync_data, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -985,9 +985,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         self.assertEqual(payload["writing_known_words"], ["水"])
 
     def test_mark_synchronized_marks_writing_words(self):
-        from backend.anki_sync import apply_push_completion, setup_deck
-        from backend.extensions import db
-        from backend.models import Word
+        from backend.utils.knowledgeBase.anki_sync import apply_push_completion, setup_deck
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
 
         setup_deck(
             self.user_id,
@@ -1024,9 +1024,9 @@ class TestAnkiSyncHelpers(PostgresTestCase):
         )
 
     def test_vocabulary_card_pinyin_keeps_punctuation(self):
-        from backend.anki_sync import vocabulary_card_from_word
-        from backend.extensions import db
-        from backend.models import Character, Word
+        from backend.utils.knowledgeBase.anki_sync import vocabulary_card_from_word
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Character, Word
 
         for char, pinyin in (("除", "chu2"), ("了", "le"), ("以", "yi3"), ("外", "wai4")):
             db.session.add(

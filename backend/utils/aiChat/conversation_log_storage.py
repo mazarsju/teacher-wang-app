@@ -9,7 +9,7 @@ from typing import Protocol
 CONVERSATION_LOGS_DIR = Path(
     os.environ.get(
         "CONVERSATION_LOGS_DIR",
-        Path(__file__).resolve().parent.parent / "conversation_logs",
+        Path(__file__).resolve().parents[3] / "conversation_logs",
     )
 )
 

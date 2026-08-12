@@ -1,10 +1,10 @@
 from flask import Blueprint, request
 
-from backend.chinese_validation import is_han_character
-from backend.extensions import db
-from backend.hsk_level import refresh_current_hsk_level
-from backend.models import Character
-from backend.user_context import current_user_id
+from backend.utils.knowledgeBase.chinese_validation import is_han_character
+from backend.utils.database.extensions import db
+from backend.utils.knowledgeBase.hsk_level import refresh_current_hsk_level
+from backend.utils.database.models import Character
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("create_character", __name__)
 

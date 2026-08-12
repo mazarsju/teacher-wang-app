@@ -1,6 +1,6 @@
 import unittest
 
-from backend.pinyin import (
+from backend.utils.knowledgeBase.pinyin import (
     normalize_anki_pinyin_token,
     replace_pinyin_accents,
 )

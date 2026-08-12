@@ -2,12 +2,12 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
-from backend.chat_service import (  # noqa: E402
+from backend.utils.aiChat.chat_service import (  # noqa: E402
     ChallengeJudgeResult,
     ChallengeReplyResult,
     LlmTokenUsage,
@@ -27,14 +27,14 @@ class _FreePlanTokenMixin:
     def setUp(self):
         super().setUp()
         self.current_user_patcher = patch(
-            "backend.user_context.current_user",
+            "backend.utils.auth.user_context.current_user",
             return_value=MagicMock(id="test-user", plan="free"),
         )
         self.assert_tokens_patcher = patch(
-            "backend.settings.assert_free_plan_has_tokens"
+            "backend.utils.database.settings.assert_free_plan_has_tokens"
         )
         self.deduct_tokens_patcher = patch(
-            "backend.settings.deduct_available_token"
+            "backend.utils.database.settings.deduct_available_token"
         )
         self.current_user_patcher.start()
         self.assert_tokens_patcher.start()
@@ -45,7 +45,7 @@ class _FreePlanTokenMixin:
 
 
 class TestChallengeJudge(_FreePlanTokenMixin, unittest.TestCase):
-    @patch("backend.chat_service.get_llm")
+    @patch("backend.utils.aiChat.chat_service.get_llm")
     def test_judge_challenge_progress_returns_completed_task_ids(self, mock_get_llm):
         mock_llm = MagicMock()
         mock_llm.invoke.return_value = MagicMock(
@@ -81,7 +81,7 @@ class TestChallengeJudge(_FreePlanTokenMixin, unittest.TestCase):
         self.assertIn("refuses", system_prompt)
         self.assertIn("coherent", system_prompt)
 
-    @patch("backend.chat_service.get_llm")
+    @patch("backend.utils.aiChat.chat_service.get_llm")
     def test_judge_returns_incoherence_reason(self, mock_get_llm):
         mock_llm = MagicMock()
         mock_llm.invoke.return_value = MagicMock(
@@ -107,7 +107,7 @@ class TestChallengeJudge(_FreePlanTokenMixin, unittest.TestCase):
             "The waiter accepted payment before ordering.",
         )
 
-    @patch("backend.chat_service.get_llm")
+    @patch("backend.utils.aiChat.chat_service.get_llm")
     def test_judge_ignores_unknown_task_ids(self, mock_get_llm):
         mock_llm = MagicMock()
         mock_llm.invoke.return_value = MagicMock(
@@ -146,9 +146,9 @@ class TestChallengeJudge(_FreePlanTokenMixin, unittest.TestCase):
 
 
 class TestGenerateChallengeReply(unittest.TestCase):
-    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
-    @patch("backend.chat_service.judge_challenge_progress")
-    @patch("backend.chat_service.generate_chat_reply")
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=True)
+    @patch("backend.utils.aiChat.chat_service.judge_challenge_progress")
+    @patch("backend.utils.aiChat.chat_service.generate_chat_reply")
     def test_coherent_reply_skips_revision(
         self, mock_generate, mock_judge, _mock_smart_ai_enabled
     ):
@@ -185,9 +185,9 @@ class TestGenerateChallengeReply(unittest.TestCase):
         mock_generate.assert_called_once()
         mock_judge.assert_called_once()
 
-    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
-    @patch("backend.chat_service.judge_challenge_progress")
-    @patch("backend.chat_service.generate_chat_reply")
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=True)
+    @patch("backend.utils.aiChat.chat_service.judge_challenge_progress")
+    @patch("backend.utils.aiChat.chat_service.generate_chat_reply")
     def test_incoherent_reply_is_revised_once(
         self, mock_generate, mock_judge, _mock_smart_ai_enabled
     ):
@@ -246,9 +246,9 @@ class TestGenerateChallengeReply(unittest.TestCase):
         self.assertIn("Payment was accepted before ordering.", revision_kwargs["revision_instruction"])
         self.assertEqual(mock_judge.call_count, 2)
 
-    @patch("backend.settings.get_smart_ai_enabled", return_value=True)
-    @patch("backend.chat_service.judge_challenge_progress")
-    @patch("backend.chat_service.generate_chat_reply")
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=True)
+    @patch("backend.utils.aiChat.chat_service.judge_challenge_progress")
+    @patch("backend.utils.aiChat.chat_service.generate_chat_reply")
     def test_second_incoherence_is_accepted_anyway(
         self, mock_generate, mock_judge, _mock_smart_ai_enabled
     ):
@@ -312,9 +312,9 @@ class TestGenerateChallengeReply(unittest.TestCase):
         self.assertEqual(mock_generate.call_count, 2)
         self.assertEqual(mock_judge.call_count, 2)
 
-    @patch("backend.settings.get_smart_ai_enabled", return_value=False)
-    @patch("backend.chat_service.judge_challenge_progress")
-    @patch("backend.chat_service.generate_chat_reply")
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=False)
+    @patch("backend.utils.aiChat.chat_service.judge_challenge_progress")
+    @patch("backend.utils.aiChat.chat_service.generate_chat_reply")
     def test_incoherent_reply_is_accepted_without_revision_when_smart_ai_disabled(
         self, mock_generate, mock_judge, _mock_smart_ai_enabled
     ):

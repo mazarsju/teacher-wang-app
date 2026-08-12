@@ -36,7 +36,7 @@ def register_routes(app: Flask) -> None:
         update_user,
         update_word,
     )
-    from backend.user_context import register_user_context
+    from backend.utils.auth.user_context import register_user_context
 
     register_user_context(app)
 

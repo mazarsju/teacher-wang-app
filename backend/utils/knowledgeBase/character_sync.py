@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from backend.chinese_validation import is_han_character
-from backend.extensions import db
-from backend.models import Character, Word, utcnow
-from backend.pinyin import normalize_anki_pinyin_token
+from backend.utils.knowledgeBase.chinese_validation import is_han_character
+from backend.utils.database.extensions import db
+from backend.utils.database.models import Character, Word, utcnow
+from backend.utils.knowledgeBase.pinyin import normalize_anki_pinyin_token
 
 PINYIN_MAX_LENGTH = 8
 

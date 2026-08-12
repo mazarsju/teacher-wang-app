@@ -2,7 +2,7 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock
 
-from backend.db_export import serialize_database, word_to_csv_row
+from backend.utils.database.db_export import serialize_database, word_to_csv_row
 
 
 def make_word(**kwargs):

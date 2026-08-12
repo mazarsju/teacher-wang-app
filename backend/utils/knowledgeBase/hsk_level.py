@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 from typing import Protocol, TypedDict
 
-from backend.challenge_progress import mark_challenge_completed
-from backend.models import Character, HskCharacter
-from backend.settings import get_level, set_level
+from backend.utils.aiChat.challenge_progress import mark_challenge_completed
+from backend.utils.database.models import Character, HskCharacter
+from backend.utils.database.settings import get_level, set_level
 
 HSK_MAX_LEVEL = 7
 HSK_LEVEL_COMPLETION_RATIO = 0.85

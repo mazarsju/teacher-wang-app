@@ -7,7 +7,7 @@ import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
@@ -19,8 +19,8 @@ from auth_stub import (  # noqa: E402
     patch_request_auth,
 )
 from backend.app import app  # noqa: E402
-from backend.auth import AuthError, extract_bearer_token, verify_access_token
-from backend.auth_config import CognitoConfig
+from backend.utils.auth.auth import AuthError, extract_bearer_token, verify_access_token
+from backend.utils.auth.auth_config import CognitoConfig
 
 
 def _rsa_keypair():
@@ -72,7 +72,7 @@ class TestAuthHelpers(unittest.TestCase):
         signing_key = MagicMock()
         signing_key.key = public_pem
 
-        with patch("backend.auth._jwks_client") as jwks_client:
+        with patch("backend.utils.auth.auth._jwks_client") as jwks_client:
             jwks_client.return_value.get_signing_key_from_jwt.return_value = signing_key
             claims = verify_access_token(token, config=config)
 
@@ -104,7 +104,7 @@ class TestAuthHelpers(unittest.TestCase):
         signing_key = MagicMock()
         signing_key.key = public_pem
 
-        with patch("backend.auth._jwks_client") as jwks_client:
+        with patch("backend.utils.auth.auth._jwks_client") as jwks_client:
             jwks_client.return_value.get_signing_key_from_jwt.return_value = signing_key
             with self.assertRaises(AuthError):
                 verify_access_token(token, config=config)
@@ -142,7 +142,7 @@ class TestProtectedRoutes(unittest.TestCase):
 
     def test_token_without_cognito_config_returns_service_unavailable(self):
         """A bearer token with Cognito unset is 503, not a silent 401."""
-        with patch("backend.auth.load_cognito_config", return_value=None):
+        with patch("backend.utils.auth.auth.load_cognito_config", return_value=None):
             response = self.client.get(
                 "/auth/me",
                 headers={"Authorization": "Bearer some.token.value"},

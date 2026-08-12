@@ -2,9 +2,9 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock, patch
 
-from backend.chat_service import LlmTokenUsage, _invoke_llm
-from backend.extensions import db
-from backend.settings import (
+from backend.utils.aiChat.chat_service import LlmTokenUsage, _invoke_llm
+from backend.utils.database.extensions import db
+from backend.utils.database.settings import (
     FREE_PLAN_MAX_ALLOWED_TOKEN,
     FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE,
     SETTING_AVAILABLE_TOKEN,
@@ -65,9 +65,9 @@ class TestInvokeLlmTokenGate(PostgresTestCase):
         mock_response.response_metadata = {}
 
         with patch(
-            "backend.user_context.current_user",
+            "backend.utils.auth.user_context.current_user",
             return_value=self.user,
-        ), patch("backend.chat_service.get_llm") as mock_get_llm:
+        ), patch("backend.utils.aiChat.chat_service.get_llm") as mock_get_llm:
             mock_get_llm.return_value.invoke.return_value = mock_response
             text, usage = _invoke_llm([])
 
@@ -83,9 +83,9 @@ class TestInvokeLlmTokenGate(PostgresTestCase):
         set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
 
         with patch(
-            "backend.user_context.current_user",
+            "backend.utils.auth.user_context.current_user",
             return_value=self.user,
-        ), patch("backend.chat_service.get_llm") as mock_get_llm:
+        ), patch("backend.utils.aiChat.chat_service.get_llm") as mock_get_llm:
             with self.assertRaises(ValueError) as ctx:
                 _invoke_llm([])
 

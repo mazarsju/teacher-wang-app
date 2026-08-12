@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import zipfile
 import io
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()

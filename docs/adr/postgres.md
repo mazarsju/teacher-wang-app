@@ -13,13 +13,13 @@ Teacher Wang persists the knowledge base, Anki deck mappings, ignore lists, and 
 ### Engine
 
 * **PostgreSQL only** for the application and for backend unit/integration tests.
-* SQLAlchemy URL via **`DATABASE_URL`**, or ECS-style `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` (see `backend/db_config.py`).
+* SQLAlchemy URL via **`DATABASE_URL`**, or ECS-style `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` (see `backend/utils/database/db_config.py`).
 * Secrets live in a gitignored `.env` (template: `.env.example`), not in the repo.
 
 ### Schema
 
 * **Alembic** is the source of truth (`alembic.ini`, `backend/migrations/`).
-* App startup runs `alembic upgrade head` before seed helpers (`backend/database.py` / `backend/alembic_runner.py`).
+* App startup runs `alembic upgrade head` before seed helpers (`backend/utils/database/database.py` / `backend/utils/database/alembic_runner.py`).
 * Backend tests use **`TEST_DATABASE_URL`** (dedicated DB such as `teacher_wang_test`) and `PostgresTestCase`, which truncates tables between tests after migrating once.
 
 ### CI

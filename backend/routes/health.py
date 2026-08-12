@@ -2,7 +2,7 @@ from flask import Blueprint
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from backend.extensions import db
+from backend.utils.database.extensions import db
 
 bp = Blueprint("health", __name__)
 

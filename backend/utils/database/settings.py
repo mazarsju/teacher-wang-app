@@ -5,8 +5,8 @@ from __future__ import annotations
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
-from backend.extensions import db
-from backend.models import Setting
+from backend.utils.database.extensions import db
+from backend.utils.database.models import Setting
 
 SETTING_LEVEL = "level"
 SETTING_ANKI_SYNCHRONIZATION_STATUS = "anki_synchronization_status"
@@ -173,7 +173,7 @@ def get_available_token(user_id: str) -> int:
 
 def assert_free_plan_has_tokens(user) -> None:
     """Raise if a free-plan user has no tokens left for another LLM call."""
-    from backend.models import DEFAULT_USER_PLAN
+    from backend.utils.database.models import DEFAULT_USER_PLAN
 
     if user.plan != DEFAULT_USER_PLAN:
         return

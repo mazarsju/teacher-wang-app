@@ -11,7 +11,7 @@ from the same strategy.
 
 from dataclasses import dataclass
 
-from backend.hsk_level import HSK_MAX_LEVEL
+from backend.utils.knowledgeBase.hsk_level import HSK_MAX_LEVEL
 
 
 @dataclass(frozen=True)

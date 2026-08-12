@@ -7,10 +7,10 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from backend.alembic_runner import SQLALCHEMY_URL_ATTRIBUTE
-from backend.db_config import resolve_database_url
-from backend.extensions import db
-import backend.models  # noqa: F401 — register models on metadata
+from backend.utils.database.alembic_runner import SQLALCHEMY_URL_ATTRIBUTE
+from backend.utils.database.db_config import resolve_database_url
+from backend.utils.database.extensions import db
+import backend.utils.database.models  # noqa: F401 — register models on metadata
 
 config = context.config
 

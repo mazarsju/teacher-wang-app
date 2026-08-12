@@ -1,7 +1,7 @@
 from flask import Blueprint
 
-from backend.hsk_level import get_hsk_level_status
-from backend.user_context import current_user_id
+from backend.utils.knowledgeBase.hsk_level import get_hsk_level_status
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("get_hsk_level", __name__)
 

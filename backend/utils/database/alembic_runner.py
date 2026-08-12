@@ -7,13 +7,13 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 
-from backend.db_config import resolve_database_url
+from backend.utils.database.db_config import resolve_database_url
 
 # Stored on Config.attributes so URL-encoded passwords (with `%`) never go
 # through ConfigParser.set_main_option, which treats `%` as interpolation.
 SQLALCHEMY_URL_ATTRIBUTE = "sqlalchemy_url"
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def make_alembic_config(database_url: str | None = None) -> Config:

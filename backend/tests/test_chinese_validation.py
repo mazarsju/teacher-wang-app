@@ -1,7 +1,7 @@
 import bootstrap  # noqa: F401
 import unittest
 
-from backend.chinese_validation import extract_han_characters, is_han_character
+from backend.utils.knowledgeBase.chinese_validation import extract_han_characters, is_han_character
 
 
 class TestChineseValidation(unittest.TestCase):

@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 from typing import Any, Literal
 
-from backend.character_sync import (
+from backend.utils.knowledgeBase.character_sync import (
     build_word_pinyin_for_storage,
     rebuild_characters_from_words,
 )
-from backend.chinese_validation import is_han_character
-from backend.extensions import db
-from backend.models import (
+from backend.utils.knowledgeBase.chinese_validation import is_han_character
+from backend.utils.database.extensions import db
+from backend.utils.database.models import (
     Character,
     HskCharacter,
     IgnoreVocabCard,
@@ -19,7 +19,7 @@ from backend.models import (
     Word,
     utcnow,
 )
-from backend.settings import (
+from backend.utils.database.settings import (
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
     SETTING_ANKI_MANDARIN_VOCABULARY_MODEL,

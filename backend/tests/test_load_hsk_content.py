@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from backend.extensions import db
-from backend.models import HskCharacter, HskWord, hsk_word_character  # noqa: F401
+from backend.utils.database.extensions import db
+from backend.utils.database.models import HskCharacter, HskWord, hsk_word_character  # noqa: F401
 from backend.routes.hsk_content_loader import (
     _syllable_for_character,
     load_hsk_content,

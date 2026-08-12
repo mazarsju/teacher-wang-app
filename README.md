@@ -34,23 +34,18 @@ teacher-wang/
 │   ├── .dockerignore
 │   ├── __init__.py         # Application factory (create_app)
 │   ├── app.py              # Flask entry point
-│   ├── database.py         # DB init, Alembic upgrade (Postgres)
-│   ├── alembic_runner.py   # Alembic Config helper (URL via attributes; safe for % in passwords)
-│   ├── db_config.py        # Resolve DATABASE_URL or ECS DB_* vars
-│   ├── extensions.py       # SQLAlchemy extension
 │   ├── migrations/         # Alembic revisions (Postgres schema)
-│   ├── anki_sync.py        # Anki deck mapping status and sync helpers
-│   ├── llm.py              # LangChain LLM integration (get_llm)
-│   ├── llm_config.py       # Resolve LLM settings from .config.txt / env (never via API)
-│   ├── chat_agents.py      # Chat character prompts
-│   ├── chat_service.py     # LLM chat reply generation
-│   ├── conversation_logs.py
-│   ├── conversation_log_storage.py  # Local / S3 adapters (users/{sub}/…)
-│   ├── challenge_progress.py
 │   ├── hsk.json            # Bundled HSK fallback if GitHub download fails
-│   ├── models.py           # Character, Word, HskWord, HskCharacter, and association tables
-│   ├── settings.py         # Key/value app settings (HSK level, Anki mappings, available_token)
 │   ├── routes/             # One endpoint per file (Flask blueprints); HSK load helpers
+│   ├── utils/              # Everything importable from routes/tests, grouped by domain
+│   │   ├── database/       # database.py (init/Alembic upgrade), alembic_runner.py, db_config.py,
+│   │   │                   # extensions.py (SQLAlchemy), models.py, db_export.py, settings.py (key/value app settings)
+│   │   ├── auth/           # auth.py (Cognito JWT verify), auth_config.py, cognito_public.py, cognito_admin.py, user_context.py
+│   │   ├── aiChat/         # chat_service.py, chat_agents.py, llm.py, llm_config.py, behavior_spec.py,
+│   │   │                   # challenge_progress.py/challenge_prompts.py/challenges.py, teaching_strategy.py,
+│   │   │                   # conversation_logs.py, conversation_log_storage.py (local/S3 adapters), token_usage.py
+│   │   └── knowledgeBase/  # hsk_level.py, hsk_level_corrections.py, hsk_word_picker.py, pinyin.py,
+│   │                       # chinese_validation.py, character_sync.py, anki_sync.py (Anki deck mapping/sync)
 │   └── requirements.txt
 ├── alembic.ini             # Alembic config (URL overridden from .env)
 ├── .env.example            # Template for local DATABASE_URL (copy to .env)
@@ -192,7 +187,7 @@ curl -X POST -F "file=@db.txt" \
 | `LLM_MODEL` | Model name to use (for example `gpt-5.6-luna`) |
 
 - **Production / ECS:** set these as task-definition secrets / environment variables in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra).
-- **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/llm_config.py` as a convenience fallback).
+- **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/utils/aiChat/llm_config.py` as a convenience fallback).
 
 Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are read from `.config.txt` first (if present), then from environment variables.
 

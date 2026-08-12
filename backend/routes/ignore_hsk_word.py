@@ -1,10 +1,10 @@
 from flask import Blueprint, request
 
-from backend.extensions import db
-from backend.hsk_word_picker import suggested_hsk_words
-from backend.models import IgnoreHskWord
+from backend.utils.database.extensions import db
+from backend.utils.knowledgeBase.hsk_word_picker import suggested_hsk_words
+from backend.utils.database.models import IgnoreHskWord
 from backend.routes.suggest_hsk_words import SUGGESTION_LIMIT, serialize_word
-from backend.user_context import current_user_id
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("ignore_hsk_word", __name__)
 

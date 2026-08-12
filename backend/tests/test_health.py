@@ -2,7 +2,7 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 from sqlalchemy.exc import OperationalError
 
 database_module.init_db = MagicMock()

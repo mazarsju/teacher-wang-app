@@ -6,12 +6,12 @@ import os
 import unittest
 from unittest import mock
 
-from backend.db_config import resolve_database_url
+from backend.utils.database.db_config import resolve_database_url
 
 
 class TestResolveDatabaseUrl(unittest.TestCase):
     def test_prefers_database_url(self):
-        with mock.patch("backend.db_config.load_database_env"):
+        with mock.patch("backend.utils.database.db_config.load_database_env"):
             with mock.patch.dict(
                 os.environ,
                 {
@@ -33,7 +33,7 @@ class TestResolveDatabaseUrl(unittest.TestCase):
             "DB_USER": "teacherwang",
             "DB_PASSWORD": "s3cret/with@chars",
         }
-        with mock.patch("backend.db_config.load_database_env"):
+        with mock.patch("backend.utils.database.db_config.load_database_env"):
             with mock.patch.dict(os.environ, env, clear=True):
                 url = resolve_database_url()
         self.assertEqual(
@@ -43,7 +43,7 @@ class TestResolveDatabaseUrl(unittest.TestCase):
         )
 
     def test_raises_when_unconfigured(self):
-        with mock.patch("backend.db_config.load_database_env"):
+        with mock.patch("backend.utils.database.db_config.load_database_env"):
             with mock.patch.dict(os.environ, {}, clear=True):
                 with self.assertRaises(RuntimeError):
                     resolve_database_url()

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from backend.models import HskWord, IgnoreHskWord, Word
+from backend.utils.database.models import HskWord, IgnoreHskWord, Word
 
 MIN_INCREMENT = 1
 RECOGNIZE_GROWTH_THRESHOLD = 10

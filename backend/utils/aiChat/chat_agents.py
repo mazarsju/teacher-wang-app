@@ -1,4 +1,4 @@
-from backend.challenge_prompts import (
+from backend.utils.aiChat.challenge_prompts import (
     CHALLENGE_SCENARIOS,
     build_challenge_system_prompt,
 )
@@ -75,7 +75,7 @@ def get_character(character_id: str) -> dict:
 
 
 def get_system_prompt(user_id: str, character_id: str) -> str:
-    from backend.hsk_level import get_chat_speaking_hsk_level
+    from backend.utils.knowledgeBase.hsk_level import get_chat_speaking_hsk_level
 
     character = get_character(character_id)
     speaking_level = get_chat_speaking_hsk_level(user_id)

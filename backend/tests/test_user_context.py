@@ -4,13 +4,13 @@ from unittest.mock import patch
 
 from flask import g
 
-from backend.auth import AuthError
-from backend.models import Setting, User
-from backend.settings import (
+from backend.utils.auth.auth import AuthError
+from backend.utils.database.models import Setting, User
+from backend.utils.database.settings import (
     FREE_PLAN_MAX_ALLOWED_TOKEN,
     SETTING_AVAILABLE_TOKEN,
 )
-from backend.user_context import (
+from backend.utils.auth.user_context import (
     ID_TOKEN_HEADER,
     current_user,
     current_user_id,
@@ -61,7 +61,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
         Setting.query.filter_by(
             user_id=user.shortid, key=SETTING_AVAILABLE_TOKEN
         ).delete()
-        from backend.extensions import db
+        from backend.utils.database.extensions import db
 
         db.session.commit()
 
@@ -82,7 +82,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
             g.cognito_sub = COGNITO_SUB
 
             with patch(
-                "backend.user_context.verify_id_token",
+                "backend.utils.auth.user_context.verify_id_token",
                 return_value={"sub": COGNITO_SUB, "email": "wang@example.com"},
             ):
                 user = ensure_current_user()
@@ -95,7 +95,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
             g.cognito_sub = COGNITO_SUB
 
             with patch(
-                "backend.user_context.verify_id_token",
+                "backend.utils.auth.user_context.verify_id_token",
                 return_value={"sub": "someone-else", "email": "other@example.com"},
             ):
                 user = ensure_current_user()
@@ -108,7 +108,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
             g.cognito_sub = COGNITO_SUB
 
             with patch(
-                "backend.user_context.verify_id_token",
+                "backend.utils.auth.user_context.verify_id_token",
                 side_effect=AuthError("invalid token"),
             ):
                 user = ensure_current_user()
@@ -130,8 +130,8 @@ class TestEnsureCurrentUser(PostgresTestCase):
         self.assertGreaterEqual(second_seen, first_seen)
 
     def test_resets_available_token_when_a_new_month_starts(self):
-        from backend.extensions import db
-        from backend.settings import SETTING_AVAILABLE_TOKEN, set_setting
+        from backend.utils.database.extensions import db
+        from backend.utils.database.settings import SETTING_AVAILABLE_TOKEN, set_setting
 
         with self._request():
             g.cognito_claims = ACCESS_CLAIMS
@@ -159,7 +159,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
         self.assertEqual(available.value, str(FREE_PLAN_MAX_ALLOWED_TOKEN))
 
     def test_does_not_reset_available_token_within_the_same_month(self):
-        from backend.settings import SETTING_AVAILABLE_TOKEN, set_setting
+        from backend.utils.database.settings import SETTING_AVAILABLE_TOKEN, set_setting
 
         with self._request():
             g.cognito_claims = ACCESS_CLAIMS
@@ -188,7 +188,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
         self.assertEqual(user.username, COGNITO_SUB)
 
     def test_rematches_cognito_sub_when_username_already_exists(self):
-        from backend.extensions import db
+        from backend.utils.database.extensions import db
 
         with self._request():
             g.cognito_claims = ACCESS_CLAIMS

@@ -1,13 +1,13 @@
 from flask import Blueprint, request
 
-from backend.extensions import db
-from backend.hsk_level import refresh_current_hsk_level
-from backend.models import Character
+from backend.utils.database.extensions import db
+from backend.utils.knowledgeBase.hsk_level import refresh_current_hsk_level
+from backend.utils.database.models import Character
 from backend.routes.create_character import (
     CharacterValidationError,
     validate_character_payload,
 )
-from backend.user_context import current_user_id
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("bulk_create_characters", __name__)
 

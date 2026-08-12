@@ -8,11 +8,11 @@ from unittest import mock
 
 from alembic.config import Config
 
-from backend.alembic_runner import (
+from backend.utils.database.alembic_runner import (
     SQLALCHEMY_URL_ATTRIBUTE,
     make_alembic_config,
 )
-from backend.db_config import resolve_database_url
+from backend.utils.database.db_config import resolve_database_url
 
 
 class TestMakeAlembicConfig(unittest.TestCase):
@@ -38,7 +38,7 @@ class TestMakeAlembicConfig(unittest.TestCase):
 
     def test_defaults_to_resolve_database_url(self):
         with mock.patch(
-            "backend.alembic_runner.resolve_database_url",
+            "backend.utils.database.alembic_runner.resolve_database_url",
             return_value="postgresql+psycopg://u:p@localhost:5432/app",
         ):
             config = make_alembic_config()
@@ -55,7 +55,7 @@ class TestMakeAlembicConfig(unittest.TestCase):
             "DB_USER": "teacherwang",
             "DB_PASSWORD": "p>ass!w[ord@x/",
         }
-        with mock.patch("backend.db_config.load_database_env"):
+        with mock.patch("backend.utils.database.db_config.load_database_env"):
             with mock.patch.dict("os.environ", env, clear=True):
                 url = resolve_database_url()
         config = make_alembic_config(url)

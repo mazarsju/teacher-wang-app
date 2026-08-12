@@ -3,18 +3,18 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
-from backend.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV, get_llm  # noqa: E402
+from backend.utils.aiChat.llm import LLM_API_KEY_ENV, LLM_MODEL_ENV, get_llm  # noqa: E402
 
 
 class TestGetLlm(unittest.TestCase):
     def setUp(self):
         get_llm.cache_clear()
-        self.read_config_patcher = patch("backend.llm_config.read_llm_config")
+        self.read_config_patcher = patch("backend.utils.aiChat.llm_config.read_llm_config")
         self.mock_read_config = self.read_config_patcher.start()
         self.addCleanup(self.read_config_patcher.stop)
         self.mock_read_config.reset_mock()
@@ -26,7 +26,7 @@ class TestGetLlm(unittest.TestCase):
     def tearDown(self):
         get_llm.cache_clear()
 
-    @patch("backend.llm.ChatOpenAI")
+    @patch("backend.utils.aiChat.llm.ChatOpenAI")
     def test_get_llm_reads_values_from_config(self, mock_chat_openai):
         mock_instance = MagicMock()
         mock_chat_openai.return_value = mock_instance

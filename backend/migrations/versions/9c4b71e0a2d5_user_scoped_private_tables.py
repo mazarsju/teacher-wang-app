@@ -22,7 +22,7 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 # Hash partitions per private table. Keep in sync with
-# backend.models.USER_PARTITION_MODULUS.
+# backend.utils.database.models.USER_PARTITION_MODULUS.
 PARTITION_MODULUS = 8
 
 # Dropped children first: character_word references character and words.

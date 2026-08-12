@@ -2,13 +2,13 @@ import bootstrap  # noqa: F401
 import unittest
 from unittest.mock import MagicMock, patch
 
-import backend.database as database_module
+import backend.utils.database.database as database_module
 
 database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
-from backend.hsk_word_picker import WordPickResult  # noqa: E402
+from backend.utils.knowledgeBase.hsk_word_picker import WordPickResult  # noqa: E402
 from auth_stub import (  # noqa: E402
     TEST_USER_ID,
     authenticated_client,

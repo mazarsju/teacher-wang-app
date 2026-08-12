@@ -4,11 +4,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from backend.conversation_log_storage import (
+from backend.utils.aiChat.conversation_log_storage import (
     LocalConversationLogStorage,
     reset_storage_for_tests,
 )
-from backend.conversation_logs import (
+from backend.utils.aiChat.conversation_logs import (
     append_message,
     append_thread_message,
     clear_conversation,
@@ -31,7 +31,7 @@ class TestConversationLogs(unittest.TestCase):
         self.addCleanup(reset_storage_for_tests)
 
         self.dir_patcher = patch(
-            "backend.conversation_log_storage.CONVERSATION_LOGS_DIR",
+            "backend.utils.aiChat.conversation_log_storage.CONVERSATION_LOGS_DIR",
             self.logs_dir,
         )
         self.dir_patcher.start()

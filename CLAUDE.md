@@ -5,7 +5,7 @@ screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 
 ## Documentation hygiene
 
-- After changes that affect setup, commands, or project structure, update `README.md`.
+- After changes that affect setup, commands, or project structure, update `README.md`. This includes the `## Project structure` tree diagram itself — it lists bare filenames (no `backend/`/`frontend/` prefix per line), so a path-based find/grep pass over the repo will not catch it; edit it by hand whenever files move, get renamed, or a top-level dir is added/removed.
 - After changes that affect architecture (auth, tenancy, Anki, chat agents, Postgres, plan/tokens, deploy, frontend CSS organization), update the matching ADR under `docs/adr/`.
 - Doc map and ADR archive process: `docs/README.md`.
 - Do not duplicate ADR rationale into this file or README — link instead.

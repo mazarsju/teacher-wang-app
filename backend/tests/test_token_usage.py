@@ -7,9 +7,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from backend.extensions import db
-from backend.models import TokenCount
-from backend.token_usage import (
+from backend.utils.database.extensions import db
+from backend.utils.database.models import TokenCount
+from backend.utils.aiChat.token_usage import (
     TOKEN_TYPE_INPUT,
     TOKEN_TYPE_OUTPUT,
     compute_price_cents,
@@ -42,13 +42,13 @@ class TestTokenUsage(PostgresTestCase):
             encoding="utf-8",
         )
         self.price_patcher = patch(
-            "backend.token_usage.TOKEN_PRICE_PATH",
+            "backend.utils.aiChat.token_usage.TOKEN_PRICE_PATH",
             self.price_path,
         )
         self.price_patcher.start()
         self.addCleanup(self.price_patcher.stop)
         self.model_patcher = patch(
-            "backend.token_usage.read_llm_config",
+            "backend.utils.aiChat.token_usage.read_llm_config",
             return_value={"LLM_MODEL": "gpt-4o-mini"},
         )
         self.model_patcher.start()
@@ -127,7 +127,7 @@ class TestTokenUsage(PostgresTestCase):
         self.assertEqual(summary["days"][-1]["date"], today.date().isoformat())
 
     def test_summary_max_allowed_token_for_pro_plan(self):
-        from backend.models import User
+        from backend.utils.database.models import User
 
         User.query.filter_by(shortid=self.user_id).update({"plan": "pro"})
         db.session.commit()

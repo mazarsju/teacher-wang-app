@@ -1,9 +1,9 @@
 from flask import Blueprint, request
 
-from backend.extensions import db
-from backend.models import User
-from backend.settings import ADMIN_EMAIL, reset_available_token
-from backend.user_context import current_user
+from backend.utils.database.extensions import db
+from backend.utils.database.models import User
+from backend.utils.database.settings import ADMIN_EMAIL, reset_available_token
+from backend.utils.auth.user_context import current_user
 
 bp = Blueprint("update_user", __name__)
 

@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 
-from backend.settings import get_smart_ai_enabled, set_smart_ai_enabled
-from backend.user_context import current_user_id
+from backend.utils.database.settings import get_smart_ai_enabled, set_smart_ai_enabled
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("smart_ai_preference", __name__)
 

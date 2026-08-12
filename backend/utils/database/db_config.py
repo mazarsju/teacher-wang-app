@@ -8,7 +8,7 @@ from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def load_database_env() -> None:

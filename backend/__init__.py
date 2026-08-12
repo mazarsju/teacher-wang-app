@@ -2,7 +2,7 @@ def create_app():
     from flask import Flask
     from flask_cors import CORS
 
-    from backend.database import configure_database, init_db
+    from backend.utils.database.database import configure_database, init_db
     from backend.routes import register_routes
 
     app = Flask(__name__)

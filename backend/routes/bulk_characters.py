@@ -4,11 +4,11 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
-from backend.character_sync import rebuild_characters_from_words, serialize_character
-from backend.extensions import db
-from backend.hsk_level import refresh_current_hsk_level
-from backend.models import Word, utcnow
-from backend.user_context import current_user_id
+from backend.utils.knowledgeBase.character_sync import rebuild_characters_from_words, serialize_character
+from backend.utils.database.extensions import db
+from backend.utils.knowledgeBase.hsk_level import refresh_current_hsk_level
+from backend.utils.database.models import Word, utcnow
+from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("bulk_characters", __name__)
 

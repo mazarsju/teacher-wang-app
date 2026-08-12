@@ -1,9 +1,9 @@
 import bootstrap  # noqa: F401
 import unittest
 
-from backend.extensions import db
-from backend.hsk_word_picker import pick_next_hsk_word, suggested_hsk_words
-from backend.models import HskWord, IgnoreHskWord, Word
+from backend.utils.database.extensions import db
+from backend.utils.knowledgeBase.hsk_word_picker import pick_next_hsk_word, suggested_hsk_words
+from backend.utils.database.models import HskWord, IgnoreHskWord, Word
 from postgres_test_case import PostgresTestCase
 
 
