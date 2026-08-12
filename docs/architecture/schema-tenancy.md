@@ -25,6 +25,7 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 | `ignore_hsk_words` | `(user_id, writing)` |
 | `token_count` | `(user_id, recorded_at, type)` |
 | `challenge_progress` | `(user_id, challenge_scenario)` |
+| `conversation_summary` | `(user_id, id)` — `id` is a `BIGINT GENERATED ALWAYS AS IDENTITY`, unique on its own; `conversation_id` (= character id) + `latest` are queried, not part of the PK |
 
 Character↔word membership is derived at read time (a word contains its characters as substrings); there is no association table.
 

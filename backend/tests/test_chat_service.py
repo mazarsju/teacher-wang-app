@@ -374,6 +374,51 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertIn("greetings", system_prompt)
         self.assertEqual(reply.system_prompt, system_prompt)
 
+    @patch("backend.utils.aiChat.chat_service.Character")
+    @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=1)
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_lists_known_characters_when_knowledge_base_is_small(
+        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+    ):
+        mock_character_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(char="你"),
+            MagicMock(char="好"),
+        ]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="你好！")
+        mock_get_llm.return_value = mock_llm
+
+        reply = generate_chat_reply(
+            "test-user",
+            "xiao-ming",
+            [{"role": "user", "content": "你好"}],
+        )
+
+        self.assertIn("fewer than 250", reply.system_prompt)
+        self.assertIn("你、好", reply.system_prompt)
+        self.assertIn("Answer using only these characters", reply.system_prompt)
+
+    @patch("backend.utils.aiChat.chat_service.Character")
+    @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=1)
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_skips_known_characters_list_once_knowledge_base_is_large(
+        self, mock_get_llm, _mock_speaking_level, mock_character_cls
+    ):
+        mock_character_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(char=f"字{i}") for i in range(250)
+        ]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="你好！")
+        mock_get_llm.return_value = mock_llm
+
+        reply = generate_chat_reply(
+            "test-user",
+            "xiao-ming",
+            [{"role": "user", "content": "你好"}],
+        )
+
+        self.assertNotIn("fewer than 250", reply.system_prompt)
+
     def test_generate_chat_reply_rejects_unknown_character(self):
         with self.assertRaises(ValueError):
             generate_chat_reply(

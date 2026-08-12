@@ -20,9 +20,11 @@ Each chat persona (friend, waiter, Teacher Wang, etc.) is a role-play agent with
 
 Wherever possible, the character also tries to use only Han characters from the learner’s **knowledge base**. After each reply, unknown characters are detected against that vocabulary. If any appear, the agent is asked to rephrase without them (up to **3** retries). If unknown characters remain, the app keeps the attempt that used the **fewest** unknown characters.
 
-Teacher Wang itself does not run the unknown-character retry loop (`retry_unknown_characters: false`).
+When the learner's knowledge base has fewer than **250** characters, the retry loop is too slow to be useful, so the full known-character list is listed directly in the system prompt up front, with an instruction to answer using only those characters.
 
-For the Teacher Wang persona specifically, `generate_chat_reply` caps the history sent to the LLM to the **last 3 messages** (`backend/utils/aiChat/chat_service.py`, `messages = messages[-3:]`). This is a naive window, not conversation compaction — it will need to be replaced with real history summarization once longer memory is needed for that chat.
+Teacher Wang itself does not run the unknown-character retry loop or the small-knowledge-base character list (`retry_unknown_characters: false`).
+
+`generate_chat_reply` no longer caps history to a fixed window (it used to slice Teacher Wang to the last 3 messages). Long conversations are instead handled by the **conversation memory** system below: the frontend sends only the newest messages once a conversation is long enough, and the backend fills the gap by injecting a stored summary into the system prompt.
 
 ### Teacher agent (grammar)
 
@@ -80,6 +82,24 @@ After the character agent replies in a challenge, a **Challenge Judge** reviews 
 2. **Coherence** — checks that the character’s reply fits the situation and scenario rules. If it does not, the judge explains why and asks the character to revise **once**. If the second answer is still incoherent, it is sent anyway; the judge cannot block a reply twice.
 
 The exchange between judge and character (when a revision happens) is returned on the chat API as `judge_conversation`: it starts with the refused character reply, then the judge’s feedback (and a second judge note if the revision is still incoherent). The final character reply is only in `message.content`, not duplicated there. Only that final reply is stored in the learner-facing history.
+
+### Conversation memory (summarization)
+
+Non-challenge conversations (Teacher Wang and roleplay characters) no longer grow the LLM context window forever. Two things work together, both keyed on **user messages only** (assistant replies don't count towards these thresholds):
+
+**Background summarization** (`backend/utils/aiChat/conversation_summary.py`). Every 4 user messages (`should_summarize`, `SUMMARY_TRIGGER_MESSAGE_COUNT = 4`), `_handle_main_chat` (`backend/routes/chat.py`) fires `queue_conversation_summary` on a daemon thread **after** the chat response is returned — a genuine fire-and-forget background job, not part of the request. That job:
+
+1. Reads the persisted transcript and takes the newest 4 user turns plus their interleaved assistant replies (`_last_n_user_turns` — typically ~7 raw messages).
+2. Asks the LLM to **merge** those messages into the existing stored memory (not summarize them alone), using one of two schemas/prompts: `TEACHER_WANG_SUMMARY_SYSTEM_PROMPT` (teaching context: topics, grammar points, learner strengths/difficulties, vocabulary, unresolved questions) for `teacher-wang`, or `GENERIC_SUMMARY_SYSTEM_PROMPT` (situation, events, participants, open threads) for every other character.
+3. Stores the merged result in the `conversation_summary` table (`user_id`, `conversation_id` = the character id, `summary` JSONB, `revision`, `latest`). Each conversation keeps **at most 2 rows** — the current `latest = true` row and the one before it (`latest = false`); storing a new one deletes the old "old" row, demotes the current `latest` to "old", and inserts the merge as the new `latest` with `revision` incremented. `store_conversation_summary` is what enforces this rolling window.
+
+**Context injection** (`context_summary_for_turn`). Once a conversation has reached 8 user messages (`MIN_MESSAGES_FOR_CONTEXT_SUMMARY`), the frontend stops sending full history and the backend fills the gap from the stored summary instead of the naive last-N-messages cap this replaced:
+
+* The frontend (`frontend/src/utils/aiChat/chatContextWindow.ts`, `trimMessagesForContext`) only sends the newest user turns (plus their interleaved assistant replies) on each `POST /chat`: `userCount % 4 < 3` sends `(userCount % 4) + 4` user turns, `>= 3` sends just `userCount % 4` turns.
+* The backend recomputes the same `user_message_count` independently from its own persisted storage (never trusts the frontend's count) and picks which summary row to inject into the system prompt as `summary_context`: the **old** (`latest = false`) row for the first few turns after a trigger (remainder `< 3`) — giving the background job time to finish — or the **latest** row once that buffer has passed (remainder `>= 3`).
+* `generate_chat_reply` appends `summary_context` (when present) to the system prompt as labeled JSON ("Conversation memory (earlier context as structured JSON)").
+
+**Scope and lifecycle.** Challenge conversations are excluded entirely — they keep sending full history, since the Challenge Judge reasons over the whole transcript. Correction threads (`_handle_thread_chat`) are excluded too. `DELETE /conversation-logs/<character_id>` and `DELETE /database/knowledge-base` both purge the matching `conversation_summary` rows (`delete_conversation_summaries`) alongside the transcript, so summaries never outlive the conversation they describe.
 
 ### Smart AI toggle (light vs. full pipeline)
 
@@ -164,11 +184,13 @@ User
 * Challenge scenarios stay rule-aware without stuffing every constraint into one giant system prompt.
 * Learners see a severity badge on each message and can open corrections without losing the main conversation.
 * Unknown-vocabulary pressure is soft: best-effort rephrase, then best remaining attempt.
+* Long non-challenge conversations stay cheap: request payload and LLM context both stop growing once conversation memory kicks in, instead of resending (and re-billing) the full transcript every turn.
 
 ### Drawbacks
 
 * One user turn can cost several LLM calls (grammar + character + retries + judge + optional revision); for Teacher Wang specifically, up to five more (planner + generator + validator, plus one revision generator + re-validator if the validator flagged a problem).
 * Judge/character revision quality depends on structured JSON parsing from the model.
+* Conversation memory quality depends on the same structured JSON parsing, and the summarization job runs in the same process on a background thread — it isn't durable against a mid-request process restart, and the "old vs. latest" summary selection is a heuristic timing buffer, not a guarantee the background merge has finished.
 * Adding a new challenge requires persona prompt, tasks, and judge-compatible task ids to stay aligned — mitigated by the Cursor **create-challenge** skill (`.cursor/skills/create-challenge/`), which wires one `character_id` through backend + frontend with shared task ids and mandatory agent rules.
 
 ## Future evolution

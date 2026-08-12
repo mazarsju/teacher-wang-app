@@ -23,6 +23,7 @@ BEHAVIOR_CHECK_ENABLED = False
 VALID_ROLES = {"user", "assistant"}
 MAX_REPHRASE_ATTEMPTS = 3
 TEACHER_CHARACTER_ID = "teacher-wang"
+KNOWN_CHARACTERS_PROMPT_LIMIT = 250
 GRAMMAR_SEVERITIES = frozenset({"none", "minor", "awkward", "incorrect"})
 GRAMMAR_CHECK_INSTRUCTION = (
     "Check the learner's Chinese message and assign a grammar severity. "
@@ -245,6 +246,17 @@ def find_unknown_characters(
 
 def _known_characters(user_id: str) -> set[str]:
     return {row.char for row in Character.query.filter_by(user_id=user_id).all()}
+
+
+def _known_characters_instruction(known_characters: set[str]) -> str:
+    listed = "、".join(sorted(known_characters))
+    return (
+        "The learner's knowledge base currently has fewer than "
+        f"{KNOWN_CHARACTERS_PROMPT_LIMIT} Chinese characters. Here is the "
+        f"complete list of characters they know: {listed}. Answer using "
+        "only these characters — do not introduce any other Chinese "
+        "characters."
+    )
 
 
 def _rephrase_instruction(unknown_characters: list[str]) -> str:
@@ -616,8 +628,18 @@ def generate_chat_reply(
             "previous_assistant_reply and revision_instruction must be provided together"
         )
 
+    for message in messages:
+        if message["role"] not in VALID_ROLES:
+            raise ValueError(f"Invalid message role: {message['role']}")
+        if message["content"].strip() == "":
+            raise ValueError("Message content must be a non-empty string")
+
+    if messages[-1]["role"] != "user":
+        raise ValueError("The last message must be from the user")
+
     token_usage = LlmTokenUsage()
     behavior_ids: list[str] = []
+    character = get_character(character_id)
 
     if character_id == TEACHER_CHARACTER_ID and revision_instruction is None:
         from backend.utils.knowledgeBase.hsk_level import get_chat_speaking_hsk_level
@@ -625,7 +647,7 @@ def generate_chat_reply(
 
         strategy = get_teaching_strategy(get_chat_speaking_hsk_level(user_id))
         strategy_block = strategy.as_instructions()
-        system_prompt = f"{get_character(character_id)['system_prompt']}\n\n{strategy_block}"
+        system_prompt = f"{character['system_prompt']}\n\n{strategy_block}"
 
         if get_smart_ai_enabled(user_id):
             planned_ids, plan_usage = select_behaviors(
@@ -643,6 +665,14 @@ def generate_chat_reply(
     else:
         system_prompt = get_system_prompt(user_id, character_id)
 
+    known_characters: set[str] | None = None
+    if character.get("retry_unknown_characters", False):
+        known_characters = _known_characters(user_id)
+        if len(known_characters) < KNOWN_CHARACTERS_PROMPT_LIMIT:
+            system_prompt = (
+                f"{system_prompt}\n\n{_known_characters_instruction(known_characters)}"
+            )
+
     if summary_context is not None:
         system_prompt = (
             f"{system_prompt}\n\n"
@@ -653,22 +683,11 @@ def generate_chat_reply(
     langchain_messages = [SystemMessage(content=system_prompt)]
 
     for message in messages:
-        role = message["role"]
         content = message["content"].strip()
-
-        if role not in VALID_ROLES:
-            raise ValueError(f"Invalid message role: {role}")
-
-        if content == "":
-            raise ValueError("Message content must be a non-empty string")
-
-        if role == "user":
+        if message["role"] == "user":
             langchain_messages.append(HumanMessage(content=content))
         else:
             langchain_messages.append(AIMessage(content=content))
-
-    if messages[-1]["role"] != "user":
-        raise ValueError("The last message must be from the user")
 
     if previous_assistant_reply is not None and revision_instruction is not None:
         revised = previous_assistant_reply.strip()
@@ -678,7 +697,6 @@ def generate_chat_reply(
         langchain_messages.append(AIMessage(content=revised))
         langchain_messages.append(HumanMessage(content=instruction))
 
-    character = get_character(character_id)
     reply, reply_usage = _invoke_llm(langchain_messages)
     token_usage = token_usage + reply_usage
 
@@ -733,7 +751,8 @@ def generate_chat_reply(
             behavior_failures=behavior_failures,
         )
 
-    known_characters = _known_characters(user_id)
+    if known_characters is None:
+        known_characters = _known_characters(user_id)
     attempts: list[tuple[str, list[str]]] = []
 
     while True:

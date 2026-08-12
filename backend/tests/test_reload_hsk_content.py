@@ -30,14 +30,14 @@ class TestReloadHskContentEndpoint(unittest.TestCase):
         self.addCleanup(self.reload_patcher.stop)
 
     def test_admin_triggers_reload(self):
-        self.mock_reload.return_value = {"hsk-1": 150}
+        self.mock_reload.return_value = {"hsk-1": 250}
 
         response = self.client.post("/admin/hsk/reload")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.get_json(),
-            {"message": "HSK content reloaded", "counts": {"hsk-1": 150}},
+            {"message": "HSK content reloaded", "counts": {"hsk-1": 250}},
         )
         self.mock_reload.assert_called_once_with()
 

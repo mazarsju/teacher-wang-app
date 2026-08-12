@@ -221,7 +221,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/conversation-logs/<character_id>` | Load this user's chat transcript (and challenge task progress when applicable) |
 | `POST` | `/conversation-logs/<character_id>` | Create an empty conversation log (`409` if it already exists) |
 | `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
-| `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, and challenge progress |
+| `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, challenge progress, and stored conversation summary |
 | `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
