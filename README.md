@@ -1,6 +1,7 @@
 > 🚧 **Work in progress** — This repository is currently under active development. See the [roadmap](#roadmap) for planned features and progress.
 
 Check application online: [teacherwang.xyz](https://teacherwang.xyz/)
+And the Overview presentation video: https://www.youtube.com/watch?v=TvgJ_hcDlrk
 
 # teacher-wang
 
@@ -340,6 +341,8 @@ A chatbot that speaks Chinese using only the characters you are supposed to know
 - [x] AI chatbot remembering the previous answer (non-persistent through sessions)
 - [x] AI chatbot remembering the previous answer (persistent through sessions)
 - [x] Add constraint for the agent to use only the known vocabulary
+- [x] Improve teacher wang character responses using planner and verification check
+- [ ] Compact conversation history
 
 ### 3. Multi-agent conversations for specific topics
 
@@ -347,6 +350,7 @@ Several agents collaborating around focused learning scenarios.
 
 - [x] Add a grammar checker for each conversation, explaining the mistakes to the user in a separate thread
 - [x] Conversation scenarios with a defined goal to achieve
+- [ ] Add words to practice on challenges
 
 ### 4. Anki integration
 
@@ -355,7 +359,7 @@ Ease the process of synchronization between the app knowledge base and Anki.
 - [x] Add a connection to Anki in the setting section
 - [x] Make it possible to add new characters / words to your Anki collection (way "out")
 - [x] Make it possible to load your Anki collection to your current database (way "in")
-- [ ] Add a whole wizzard for the first connexion to help the user to populate his knowledge base
+- [x] Add a whole wizard for the first connexion to help the user to populate his knowledge base
 
 ### 5. Cloud deployment
 
@@ -363,7 +367,7 @@ Host the web app so learners can use it without a local install. Infrastructure 
 
 - [x] Separate frontend and backend container images (`frontend/Dockerfile`, `backend/Dockerfile`)
 - [x] Script to build `linux/arm64` images and push to ECR (`scripts/push-ecr.sh`)
-- [ ] Enable ECS in infra and wire LLM secrets / HTTPS
+- [x] Enable ECS in infra and wire LLM secrets / HTTPS
 
 ### 6. Multi-user auth & data isolation
 
@@ -374,9 +378,6 @@ Several learners can sign in; each owns private data, while shared catalogs stay
 - [x] Flask JWT verification on every route; `users` table keyed by Cognito `sub`
 - [x] Per-user private tables (`user_id` in PK, hash-partitioned) with shared HSK catalog
 - [x] Frontend attaches Cognito tokens on API calls; per-user conversation logs (S3 / local)
-- [ ] PostgreSQL RLS as a backstop behind app-level filters
-- [ ] Split `app` and `migrator` DB roles
-- [ ] Enable Google IdP in Cognito (infra secrets + Google console redirect)
 
 ### 7. Improve UX/UI
 
@@ -385,6 +386,7 @@ Keep the app feeling snappy and polished as datasets and features grow — clear
 - [x] Cache core learner data in Redux so tab switches do not re-fetch (refresh on login / profile **Synchro**)
 - [x] Avatar design improvement
 - [x] General webapp design improvement
+- [x] Use CSS components to better organize styling
 
 ### 8. Plan management
 
