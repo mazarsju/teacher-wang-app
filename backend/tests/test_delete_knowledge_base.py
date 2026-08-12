@@ -49,6 +49,12 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_storage = MagicMock()
         self.mock_get_storage.return_value = self.mock_storage
 
+        self.delete_summaries_patcher = patch(
+            "backend.routes.delete_knowledge_base.delete_conversation_summaries"
+        )
+        self.mock_delete_summaries = self.delete_summaries_patcher.start()
+        self.addCleanup(self.delete_summaries_patcher.stop)
+
     def test_delete_knowledge_base_removes_all_records(self):
         word_record = MagicMock()
         character_record = MagicMock()
@@ -79,6 +85,7 @@ class TestDeleteWordEndpoint(unittest.TestCase):
         self.mock_storage.delete_prefix.assert_called_once_with(
             f"users/{TEST_USER_ID}/"
         )
+        self.mock_delete_summaries.assert_called_once_with(TEST_USER_ID)
 
 if __name__ == "__main__":
     unittest.main()

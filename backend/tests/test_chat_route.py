@@ -105,6 +105,18 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_clear_progress = self.clear_progress_patcher.start()
         self.addCleanup(self.clear_progress_patcher.stop)
 
+        self.queue_summary_patcher = patch(
+            "backend.routes.chat.queue_conversation_summary"
+        )
+        self.mock_queue_summary = self.queue_summary_patcher.start()
+        self.addCleanup(self.queue_summary_patcher.stop)
+
+        self.delete_summaries_patcher = patch(
+            "backend.routes.chat.delete_conversation_summaries"
+        )
+        self.mock_delete_summaries = self.delete_summaries_patcher.start()
+        self.addCleanup(self.delete_summaries_patcher.stop)
+
         self.mock_generate.reset_mock()
         self.mock_append.reset_mock()
         self.mock_append_thread.reset_mock()
@@ -123,6 +135,8 @@ class TestChatEndpoint(unittest.TestCase):
         self.mock_clear_tasks.reset_mock()
         self.mock_mark_completed.reset_mock()
         self.mock_clear_progress.reset_mock()
+        self.mock_queue_summary.reset_mock()
+        self.mock_delete_summaries.reset_mock()
         self.mock_should_append.return_value = True
         self.mock_should_append_thread.return_value = True
         self.mock_thread_exists.return_value = True
@@ -194,6 +208,50 @@ class TestChatEndpoint(unittest.TestCase):
             input_tokens=30,
             output_tokens=12,
         )
+
+    def test_chat_queues_summary_every_five_messages(self):
+        self.mock_generate.return_value = MagicMock(
+            content="好的。",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=1, output_tokens=1),
+        )
+        messages = [
+            {"role": "user", "content": "1"},
+            {"role": "assistant", "content": "2"},
+            {"role": "user", "content": "3"},
+            {"role": "assistant", "content": "4"},
+            {"role": "user", "content": "5"},
+        ]
+
+        response = self.client.post(
+            "/chat",
+            json={"character_id": "teacher-wang", "messages": messages},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_queue_summary.assert_called_once()
+        args = self.mock_queue_summary.call_args.args
+        self.assertEqual(args[1], TEST_USER_ID)
+        self.assertEqual(args[2], TEST_USER_ID)
+        self.assertEqual(args[3], "teacher-wang")
+
+    def test_chat_does_not_queue_summary_off_multiple_of_five(self):
+        self.mock_generate.return_value = MagicMock(
+            content="好的。",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=1, output_tokens=1),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "messages": [{"role": "user", "content": "你好"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_queue_summary.assert_not_called()
 
     def test_chat_omits_final_prompt_by_default(self):
         self.mock_generate.return_value = MagicMock(
@@ -820,12 +878,14 @@ class TestChatEndpoint(unittest.TestCase):
             {"message": "Chat history cleared"},
         )
         self.mock_clear.assert_called_once_with(TEST_USER_ID, "teacher-wang")
+        self.mock_delete_summaries.assert_called_once_with(TEST_USER_ID, "teacher-wang")
 
     def test_clear_chat_history_rejects_invalid_character_id(self):
         response = self.client.delete("/chat/history/unknown")
 
         self.assertEqual(response.status_code, 400)
         self.mock_clear.assert_not_called()
+        self.mock_delete_summaries.assert_not_called()
 
 
 if __name__ == "__main__":

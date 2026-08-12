@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
 
 from backend.utils.aiChat.challenge_progress import (
     clear_challenge_progress,
@@ -30,6 +30,11 @@ from backend.utils.aiChat.conversation_logs import (
     should_append_thread_user_message,
     should_append_user_message,
     thread_exists,
+)
+from backend.utils.aiChat.conversation_summary import (
+    delete_conversation_summaries,
+    queue_conversation_summary,
+    should_summarize,
 )
 from backend.utils.database.settings import ADMIN_EMAIL
 from backend.utils.aiChat.token_usage import record_token_usage
@@ -303,6 +308,14 @@ def _handle_main_chat(
             input_tokens=token_usage.input_tokens,
             output_tokens=token_usage.output_tokens,
         )
+
+        if should_summarize(len(normalized_messages)):
+            queue_conversation_summary(
+                current_app._get_current_object(),
+                user_id,
+                log_user_id,
+                character_id,
+            )
     except ValueError as error:
         return {"error": str(error)}, 400
     except Exception:
@@ -346,6 +359,7 @@ def delete_chat_history(character_id: str):
 
     user_id = current_user().id
     clear_conversation(user_id, character_id)
+    delete_conversation_summaries(current_user_id(), character_id)
     if is_challenge_character(character_id):
         clear_completed_task_ids(user_id, character_id)
         clear_challenge_progress(current_user_id(), character_id)

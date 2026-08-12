@@ -1,6 +1,7 @@
 from flask import Blueprint
 
 from backend.utils.aiChat.conversation_log_storage import get_storage, object_key
+from backend.utils.aiChat.conversation_summary import delete_conversation_summaries
 from backend.utils.database.extensions import db
 from backend.utils.database.models import (
     Character,
@@ -27,5 +28,6 @@ def delete_knowledge_base():
     # Chat history (transcripts, correction threads, challenge task progress)
     # lives under this user's whole prefix in the conversation-log store.
     get_storage().delete_prefix(object_key(current_user().id, ""))
+    delete_conversation_summaries(current_user_id())
 
     return {"message": "Knowledge base deleted"}, 200

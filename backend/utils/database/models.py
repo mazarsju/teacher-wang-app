@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, Table
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from backend.utils.database.extensions import db
@@ -179,6 +179,23 @@ class ChallengeProgress(db.Model):
     user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
     challenge_scenario = db.Column(String, primary_key=True)
     completed = db.Column(db.Boolean, nullable=False, default=True)
+
+
+class ConversationSummary(db.Model):
+    """Stored summary of an AI agent conversation.
+
+    ``conversation_id`` is the same identifier used for the conversation's
+    S3 transcript (a character/challenge id, or a correction thread id).
+    """
+
+    __tablename__ = "conversation_summary"
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
+    conversation_id = db.Column(String, nullable=False)
+    summary = db.Column(JSONB, nullable=False)
+    revision = db.Column(Numeric)
+    latest = db.Column(db.Boolean)
 
 
 class TokenCount(db.Model):
