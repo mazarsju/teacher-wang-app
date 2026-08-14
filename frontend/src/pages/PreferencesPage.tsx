@@ -284,75 +284,83 @@ export default function PreferencesPage() {
       {!isLoading && (
         <section className={`preferences-section ${styles.preferencesSectionAnki}`}>
           <h2 className={styles.preferencesSectionTitle}>Anki synchronization</h2>
-          <p className={styles.preferencesSectionDescription}>
-            Map your knowledge-base characters and words to Anki decks through
-            AnkiConnect.
+
+          <p className={styles.ankiMobileWarning}>
+            Anki synchronization isn&apos;t available on a mobile phone. Use a
+            computer to set up and manage your Anki decks.
           </p>
-          {!ankiStatus.connected && (
-            <Banner
-              type="warning"
-              message="Start the Anki app with the AnkiConnect add-on activated before configuring decks."
-              buttonMessage="How to set up AnkiConnect"
-              actionOnButtonClick={() => setIsGuideOpen(true)}
-            />
-          )}
 
-          {hasUnsynchronizedDeck && (
-            <Banner
-              type="warning"
-              message="Struggling with your Anki setup? Click here for more info"
-              buttonMessage="Anki synchronization help"
-              actionOnButtonClick={() => setIsSyncHelpOpen(true)}
-            />
-          )}
+          <div className={styles.ankiDesktopContent}>
+            <p className={styles.preferencesSectionDescription}>
+              Map your knowledge-base characters and words to Anki decks through
+              AnkiConnect.
+            </p>
+            {!ankiStatus.connected && (
+              <Banner
+                type="warning"
+                message="Start the Anki app with the AnkiConnect add-on activated before configuring decks."
+                buttonMessage="How to set up AnkiConnect"
+                actionOnButtonClick={() => setIsGuideOpen(true)}
+              />
+            )}
 
-          <ul className={styles.ankiDeckList}>
-            {deckRows.map(({ kind, label }) => {
-              const mapping = ankiStatus.decks[kind];
-              const statusClass = ankiStatus.connected
-                ? mapping.status
-                : "not_synchronized";
-              return (
-                <li key={kind} className={styles.ankiDeckRow}>
-                  <div className={styles.ankiDeckRowMain}>
-                    <span className={styles.ankiDeckName}>{label}</span>
-                    <span
-                      className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
-                    >
-                      {ankiStatus.connected
-                        ? formatDeckStatus(mapping.status)
-                        : "Not connected"}
-                    </span>
-                    {mapping.deck_name !== "" && (
-                      <span className={styles.ankiDeckMappedName}>
-                        {mapping.deck_name}
+            {hasUnsynchronizedDeck && (
+              <Banner
+                type="warning"
+                message="Struggling with your Anki setup? Click here for more info"
+                buttonMessage="Anki synchronization help"
+                actionOnButtonClick={() => setIsSyncHelpOpen(true)}
+              />
+            )}
+
+            <ul className={styles.ankiDeckList}>
+              {deckRows.map(({ kind, label }) => {
+                const mapping = ankiStatus.decks[kind];
+                const statusClass = ankiStatus.connected
+                  ? mapping.status
+                  : "not_synchronized";
+                return (
+                  <li key={kind} className={styles.ankiDeckRow}>
+                    <div className={styles.ankiDeckRowMain}>
+                      <span className={styles.ankiDeckName}>{label}</span>
+                      <span
+                        className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
+                      >
+                        {ankiStatus.connected
+                          ? formatDeckStatus(mapping.status)
+                          : "Not connected"}
                       </span>
-                    )}
-                  </div>
-                  <div className={styles.ankiDeckRowActions}>
-                    {mapping.status !== "not_configured" && (
+                      {mapping.deck_name !== "" && (
+                        <span className={styles.ankiDeckMappedName}>
+                          {mapping.deck_name}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.ankiDeckRowActions}>
+                      {mapping.status !== "not_configured" && (
+                        <Button
+                          kind="confirm"
+                          variant="page"
+                          text="Sync"
+                          icon={<SyncIcon />}
+                          disabled={!ankiStatus.connected}
+                          onClick={() => setSyncKind(kind)}
+                        />
+                      )}
                       <Button
                         kind="confirm"
                         variant="page"
-                        text="Sync"
-                        icon={<SyncIcon />}
+                        text="Setup"
+                        icon={<SettingsIcon />}
                         disabled={!ankiStatus.connected}
-                        onClick={() => setSyncKind(kind)}
+                        onClick={() => setSetupKind(kind)}
                       />
-                    )}
-                    <Button
-                      kind="confirm"
-                      variant="page"
-                      text="Setup"
-                      icon={<SettingsIcon />}
-                      disabled={!ankiStatus.connected}
-                      onClick={() => setSetupKind(kind)}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </section>
       )}
 
