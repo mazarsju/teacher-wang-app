@@ -35,6 +35,12 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         self.mock_invoke = self.invoke_patcher.start()
         self.addCleanup(self.invoke_patcher.stop)
 
+        self.generate_weekly_patcher = patch(
+            "backend.routes.generate_article.generate_weekly_articles"
+        )
+        self.mock_generate_weekly = self.generate_weekly_patcher.start()
+        self.addCleanup(self.generate_weekly_patcher.stop)
+
     def test_admin_gets_top_articles_picked_by_llm(self):
         self.mock_fetch.return_value = [
             {"id": "a1", "title": "One"},
@@ -46,14 +52,38 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
             '{"selected_ids": ["a3", "a1", "a4"]}',
             MagicMock(),
         )
+        self.mock_generate_weekly.return_value = {
+            "week": 33,
+            "year": 2026,
+            "hsk_levels": [1, 2, 3, 4, 5, 6],
+        }
 
         response = self.client.post("/admin/articles/generate")
 
         self.assertEqual(response.status_code, 200)
+        picked_articles = [
+            {"id": "a3", "title": "Three"},
+            {"id": "a1", "title": "One"},
+            {"id": "a4", "title": "Four"},
+        ]
         self.assertEqual(
             [article["id"] for article in response.get_json()["articles"]],
             ["a3", "a1", "a4"],
         )
+        self.assertEqual(
+            response.get_json()["weekly_articles"],
+            {"week": 33, "year": 2026, "hsk_levels": [1, 2, 3, 4, 5, 6]},
+        )
+        self.mock_generate_weekly.assert_called_once_with(picked_articles)
+
+    def test_no_weekly_articles_generated_when_nothing_picked(self):
+        self.mock_fetch.return_value = []
+
+        response = self.client.post("/admin/articles/generate")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["weekly_articles"], None)
+        self.mock_generate_weekly.assert_not_called()
 
     def test_non_admin_is_forbidden(self):
         self.mock_current_user.return_value = MagicMock(email="someone@example.com")
@@ -101,6 +131,9 @@ class TestFetchChinaArticles(unittest.TestCase):
 
         self.assertEqual(articles, [{"id": "a1", "title": "One"}])
         self.mock_read_config.assert_called_once_with("CURRENTS_API_KEY")
+
+        sent_request = mock_urlopen.call_args.args[0]
+        self.assertIn("User-agent", sent_request.headers)
 
 
 if __name__ == "__main__":

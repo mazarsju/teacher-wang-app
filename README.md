@@ -241,7 +241,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
-| `POST` | `/admin/articles/generate` | Fetch latest China-related articles from the Currents API and use the LLM to pick the 3 most important (`403` unless the caller is the admin account) |
+| `POST` | `/admin/articles/generate` | Fetch latest China-related articles from the Currents API, use the LLM to pick the 3 most important, then adapt and save them to `weekly_articles` for each HSK level 1-6 (`403` unless the caller is the admin account) |
 
 ### Frontend
 

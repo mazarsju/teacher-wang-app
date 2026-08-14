@@ -33,6 +33,7 @@ _TRUNCATE_TABLES = (
     "token_count",
     "challenge_progress",
     "conversation_summary",
+    "weekly_articles",
 )
 
 
