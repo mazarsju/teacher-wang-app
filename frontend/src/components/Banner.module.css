@@ -47,3 +47,13 @@
 .app-banner--warning :global(.btn-confirm):hover:not(:disabled) {
   background: #fef3c7;
 }
+
+@media (max-width: 640px) {
+  .app-banner {
+    flex-wrap: wrap;
+  }
+
+  .app-banner-text {
+    flex-basis: 100%;
+  }
+}

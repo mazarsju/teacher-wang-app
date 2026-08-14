@@ -33,3 +33,17 @@
   color: #374151;
   line-height: 1.6;
 }
+
+@media (max-width: 640px) {
+  .page-header {
+    flex-wrap: wrap;
+  }
+
+  .page-header h1 {
+    flex-basis: 100%;
+  }
+
+  .page-header-actions {
+    flex-wrap: wrap;
+  }
+}
