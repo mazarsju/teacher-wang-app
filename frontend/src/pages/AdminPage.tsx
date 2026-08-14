@@ -8,6 +8,7 @@ import type { AdminUser, UserPlan } from "../types/adminUser";
 import {
   deleteUser,
   fetchUsers,
+  generateArticles,
   reloadHskContent,
   updateUserPlan,
 } from "../utils/admin/adminApi";
@@ -34,6 +35,7 @@ export default function AdminPage() {
   );
   const [isReloadingHsk, setIsReloadingHsk] = useState(false);
   const [isReloadHskConfirmOpen, setIsReloadHskConfirmOpen] = useState(false);
+  const [isGeneratingArticles, setIsGeneratingArticles] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setError(null);
@@ -113,6 +115,22 @@ export default function AdminPage() {
     }
   }
 
+  async function handleGenerateArticles() {
+    setIsGeneratingArticles(true);
+    setError(null);
+    try {
+      await generateArticles();
+    } catch (generateError) {
+      setError(
+        generateError instanceof Error
+          ? generateError.message
+          : "Failed to refresh articles.",
+      );
+    } finally {
+      setIsGeneratingArticles(false);
+    }
+  }
+
   return (
     <Page title="Admin">
       {isLoading && <p>Loading users...</p>}
@@ -162,6 +180,23 @@ export default function AdminPage() {
             icon={<SyncIcon />}
             disabled={isReloadingHsk}
             onClick={() => setIsReloadHskConfirmOpen(true)}
+          />
+        </section>
+      )}
+      {!isLoading && (
+        <section className={`admin-section ${styles.adminSectionArticles}`}>
+          <h2 className={styles.adminSectionTitle}>Weekly articles</h2>
+          <p className={styles.adminSectionDescription}>
+            Fetch the latest China-related news and have the AI pick the 3
+            most important articles for this week.
+          </p>
+          <Button
+            kind="confirm"
+            variant="page"
+            text={isGeneratingArticles ? "Refreshing..." : "Refresh articles"}
+            icon={<SyncIcon />}
+            disabled={isGeneratingArticles}
+            onClick={() => void handleGenerateArticles()}
           />
         </section>
       )}

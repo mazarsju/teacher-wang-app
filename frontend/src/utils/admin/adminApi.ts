@@ -49,3 +49,13 @@ export async function reloadHskContent(): Promise<void> {
     throw new Error("Failed to reload the HSK database.");
   }
 }
+
+export async function generateArticles(): Promise<void> {
+  const response = await apiFetch(`${API_BASE}/admin/articles/generate`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to refresh articles.");
+  }
+}

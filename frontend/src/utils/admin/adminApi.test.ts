@@ -1,4 +1,9 @@
-import { deleteUser, fetchUsers, updateUserPlan } from "./adminApi";
+import {
+  deleteUser,
+  fetchUsers,
+  generateArticles,
+  updateUserPlan,
+} from "./adminApi";
 
 describe("adminApi", () => {
   afterEach(() => {
@@ -81,5 +86,24 @@ describe("adminApi", () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
 
     await expect(deleteUser("1")).rejects.toThrow("Failed to delete user.");
+  });
+
+  it("generates articles", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(generateArticles()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/articles/generate",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("throws when generating articles fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+
+    await expect(generateArticles()).rejects.toThrow(
+      "Failed to refresh articles.",
+    );
   });
 });

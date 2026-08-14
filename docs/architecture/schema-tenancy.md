@@ -33,6 +33,8 @@ Character↔word membership is derived at read time (a word contains its charact
 
 `hsk_words`, `hsk_characters`, `hsk_word_character`. They are loaded once at boot (`database.init_db`) and only ever read by the app.
 
+`weekly_articles` — `id` (`BIGINT` PK, autoincrement), unique on `(week, year, hsk_level)`. Holds the LLM-picked article per week/HSK level.
+
 ## Partitioning mechanics
 
 SQLAlchemy models declare plain tables; they do not know about partitions. Partitioning lives in raw SQL inside the Alembic revision:

@@ -8,12 +8,14 @@ vi.mock("../utils/admin/adminApi", () => ({
   updateUserPlan: vi.fn(),
   deleteUser: vi.fn(),
   reloadHskContent: vi.fn(),
+  generateArticles: vi.fn(),
 }));
 
 const fetchUsers = vi.mocked(adminApi.fetchUsers);
 const updateUserPlan = vi.mocked(adminApi.updateUserPlan);
 const deleteUser = vi.mocked(adminApi.deleteUser);
 const reloadHskContent = vi.mocked(adminApi.reloadHskContent);
+const generateArticles = vi.mocked(adminApi.generateArticles);
 
 describe("AdminPage", () => {
   beforeEach(() => {
@@ -178,6 +180,38 @@ describe("AdminPage", () => {
 
     expect(
       await screen.findByText("Failed to reload the HSK database."),
+    ).toBeInTheDocument();
+  });
+
+  it("refreshes articles", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    generateArticles.mockResolvedValue(undefined);
+
+    render(<AdminPage />);
+
+    await screen.findByText("Weekly articles");
+    await user.click(screen.getByRole("button", { name: "Refresh articles" }));
+
+    await waitFor(() => {
+      expect(generateArticles).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("shows an error when refreshing articles fails", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    generateArticles.mockRejectedValue(
+      new Error("Failed to refresh articles."),
+    );
+
+    render(<AdminPage />);
+
+    await screen.findByText("Weekly articles");
+    await user.click(screen.getByRole("button", { name: "Refresh articles" }));
+
+    expect(
+      await screen.findByText("Failed to refresh articles."),
     ).toBeInTheDocument();
   });
 });

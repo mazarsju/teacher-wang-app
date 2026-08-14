@@ -134,6 +134,28 @@ class HskCharacter(db.Model):
     )
 
 
+class WeeklyArticle(db.Model):
+    """LLM-picked "most important" China-news article for a week/HSK level."""
+
+    __tablename__ = "weekly_articles"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "week", "year", "hsk_level", name="uq_weekly_articles_week_year_hsk_level"
+        ),
+    )
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    week = db.Column(Integer, nullable=False)
+    year = db.Column(Integer, nullable=False)
+    hsk_level = db.Column(Integer, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+    )
+
+
 class Setting(db.Model):
     """Per-user settings stored as key/value pairs."""
 

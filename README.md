@@ -189,6 +189,8 @@ curl -X POST -F "file=@db.txt" \
 - **Production / ECS:** set these as task-definition secrets / environment variables in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra).
 - **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/utils/aiChat/llm_config.py` as a convenience fallback).
 
+`CURRENTS_API_KEY` is the [Currents API](https://currentsapi.services/) key used by `POST /admin/articles/generate` to fetch China-related news, read the same way as `LLM_API_KEY` above (`.config.txt` first, then the environment variable).
+
 Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are read from `.config.txt` first (if present), then from environment variables.
 
 #### Free-plan token budget
@@ -239,6 +241,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
+| `POST` | `/admin/articles/generate` | Fetch latest China-related articles from the Currents API and use the LLM to pick the 3 most important (`403` unless the caller is the admin account) |
 
 ### Frontend
 
@@ -392,7 +395,13 @@ Differentiate free and paid tiers so AI chat can scale without unbounded cost. D
 - [x] Preferences shows remaining tokens (progress bar); hide estimated $ cost
 - [ ] Add payment subscription (upgrade / renew / cancel) and paid-plan entitlements
 
-### 9. Multi-language management
+### 9. Nice-to-have features
+
+Smaller additions that aren't part of a bigger initiative but are still worth doing.
+
+- [ ] Weekly Chinese-related article adapted to the learner's HSK level
+
+### 10. Multi-language management
 
 The app UI and explanations are English-only today. Learners should be able to pick another base language (still learning Mandarin) so prompts, corrections, and labels match how they think.
 
@@ -400,7 +409,7 @@ The app UI and explanations are English-only today. Learners should be able to p
 - [ ] Localize static UI strings for the selected language
 - [ ] Adapt AI system prompts and grammar explanations to the learner’s base language
 
-### 10. Grammar learning
+### 11. Grammar learning
 
 Dedicated grammar path by HSK level, with exercises and a loop back into chat so theory sticks through real use.
 
@@ -411,7 +420,7 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 - [ ] Persist grammar mistakes spotted in chat conversations
 - [ ] Infer current weaknesses from stored mistakes and surface personalized exercises
 
-### 11. Gamification
+### 12. Gamification
 
 Light rewards so progress feels visible without turning the app into a points grind.
 
@@ -419,7 +428,7 @@ Light rewards so progress feels visible without turning the app into a points gr
 - [ ] Award and display badges on the profile / home progress area
 - [ ] Notifications or toasts when a new badge is unlocked
 
-### 12. Peer chat (real persons)
+### 13. Peer chat (real persons)
 
 Let learners practice with each other, not only with AI agents — with clear presence, consent, and safety controls.
 
@@ -428,7 +437,7 @@ Let learners practice with each other, not only with AI agents — with clear pr
 - [ ] 1:1 chat sessions between two learners
 - [ ] Block a user so they can no longer contact you
 
-### 13. Interactive games with Xiao Ming
+### 14. Interactive games with Xiao Ming
 
 Short playful games in chat to reinforce vocabulary and comprehension alongside free conversation.
 
