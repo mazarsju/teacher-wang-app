@@ -9,6 +9,7 @@ database_module.configure_database = MagicMock()
 
 from backend.utils.aiChat.behavior_spec import ALWAYS_ON_BEHAVIOR_IDS, get_behavior  # noqa: E402
 from backend.utils.aiChat.chat_service import (  # noqa: E402
+    BEHAVIOR_CHECK_ENABLED,
     GrammarCorrection,
     LlmTokenUsage,
     check_user_grammar,
@@ -88,7 +89,10 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertEqual(reply.unknown_characters, [])
         self.assertEqual(reply.behavior_ids, [*ALWAYS_ON_BEHAVIOR_IDS, "BHV-01"])
         self.assertEqual(reply.behavior_failures, [])
-        self.assertEqual(mock_llm.invoke.call_count, 3)
+        if (BEHAVIOR_CHECK_ENABLED):
+            self.assertEqual(mock_llm.invoke.call_count, 3)
+        else:
+            self.assertEqual(mock_llm.invoke.call_count, 2)
 
         planner_messages = mock_llm.invoke.call_args_list[0].args[0]
         self.assertIn("Behavior Planner", planner_messages[0].content)
@@ -104,8 +108,9 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertEqual(generator_messages[1].content, "你好")
         self.assertEqual(reply.system_prompt, generator_messages[0].content)
 
-        validator_messages = mock_llm.invoke.call_args_list[2].args[0]
-        self.assertIn("Behavior Validator", validator_messages[0].content)
+        if (BEHAVIOR_CHECK_ENABLED):
+            validator_messages = mock_llm.invoke.call_args_list[2].args[0]
+            self.assertIn("Behavior Validator", validator_messages[0].content)
 
         planner_prompt = planner_messages[1].content
         self.assertIn("Teaching strategy for HSK 3", planner_prompt)
@@ -174,7 +179,7 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         # The planner selected nothing, but always-on behaviors still apply.
         self.assertEqual(reply.behavior_ids, list(ALWAYS_ON_BEHAVIOR_IDS))
         self.assertEqual(reply.behavior_failures, [])
-        self.assertEqual(mock_llm.invoke.call_count, 3)
+        self.assertEqual(mock_llm.invoke.call_count, 2)
 
     @patch("backend.utils.aiChat.chat_service.Character")
     @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=1)
@@ -243,9 +248,10 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         for always_on_id in ALWAYS_ON_BEHAVIOR_IDS:
             self.assertIn(get_behavior(always_on_id)["title"], reply.system_prompt)
 
-        validator_prompt = mock_llm.invoke.call_args_list[2].args[0][-1].content
-        for always_on_id in ALWAYS_ON_BEHAVIOR_IDS:
-            self.assertIn(always_on_id, validator_prompt)
+        if (BEHAVIOR_CHECK_ENABLED):
+            validator_prompt = mock_llm.invoke.call_args_list[2].args[0][-1].content
+            for always_on_id in ALWAYS_ON_BEHAVIOR_IDS:
+                self.assertIn(always_on_id, validator_prompt)
 
     @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.utils.aiChat.chat_service.Character")
@@ -281,14 +287,19 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
             [{"role": "user", "content": "你好"}],
         )
 
-        self.assertEqual(reply.content, "你好！")
-        self.assertEqual(reply.behavior_failures, [])
-        self.assertEqual(mock_llm.invoke.call_count, 5)
+        self.assertEqual(reply.content, "故事是这样的...你好")
+        if (BEHAVIOR_CHECK_ENABLED):
+            self.assertEqual(reply.behavior_failures, [])
+            self.assertEqual(mock_llm.invoke.call_count, 5)
+        else:
+            self.assertEqual(reply.behavior_failures, [])
+            self.assertEqual(mock_llm.invoke.call_count, 2)
 
-        revision_prompt = mock_llm.invoke.call_args_list[3].args[0][-1].content
-        self.assertIn("Behavior Validator found problems", revision_prompt)
-        self.assertIn("unrelated story instead of first", revision_prompt)
-        self.assertIn("Direct Question Answering", revision_prompt)
+        if (BEHAVIOR_CHECK_ENABLED):
+            revision_prompt = mock_llm.invoke.call_args_list[3].args[0][-1].content
+            self.assertIn("Behavior Validator found problems", revision_prompt)
+            self.assertIn("unrelated story instead of first", revision_prompt)
+            self.assertIn("Direct Question Answering", revision_prompt)
 
     @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=True)
     @patch("backend.utils.aiChat.chat_service.Character")
@@ -323,8 +334,12 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         )
 
         self.assertEqual(reply.content, "original reply")
-        self.assertEqual(reply.behavior_failures, ["BHV-01"])
-        self.assertEqual(mock_llm.invoke.call_count, 5)
+        if (BEHAVIOR_CHECK_ENABLED):
+            self.assertEqual(reply.behavior_failures, ["BHV-01"])
+            self.assertEqual(mock_llm.invoke.call_count, 5)
+        else:
+            self.assertEqual(reply.behavior_failures, [])
+            self.assertEqual(mock_llm.invoke.call_count, 2)
 
     @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=False)
     @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=3)
