@@ -277,6 +277,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -415,7 +418,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -452,8 +454,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -480,6 +480,9 @@ import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppSelector } from "../store/hooks";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
+import Button from "../components/Button";
+import characterWordsStyles from "../components/CharacterWordsModal.module.css";
+import styles from "./HomePage.module.css";
 &nbsp;
 const ONBOARDING_WORD_THRESHOLD = 10;
 &nbsp;
@@ -555,16 +558,16 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       {error &amp;&amp; &lt;p className="table-error"&gt;{error}&lt;/p&gt;}
       {!isLoading &amp;&amp; !error &amp;&amp; hskLevelStatus !== null &amp;&amp; (
         &lt;&gt;
-          &lt;section className="home-hsk-card" aria-label="HSK level"&gt;
-            &lt;div className="home-hsk-badge"&gt;
-              &lt;span className="home-hsk-badge-label"&gt;HSK&lt;/span&gt;
-              &lt;span className="home-hsk-badge-level"&gt;
+          &lt;section className={styles.homeHskCard} aria-label="HSK level"&gt;
+            &lt;div className={styles.homeHskBadge}&gt;
+              &lt;span className={styles.homeHskBadgeLabel}&gt;HSK&lt;/span&gt;
+              &lt;span className={styles.homeHskBadgeLevel}&gt;
                 {hskLevelStatus.current_level ?? "—"}
               &lt;/span&gt;
             &lt;/div&gt;
-            &lt;div className="home-hsk-content"&gt;
-              &lt;div className="home-hsk-title-row"&gt;
-                &lt;p className="home-hsk-title"&gt;{hskTitle}&lt;/p&gt;
+            &lt;div className={styles.homeHskContent}&gt;
+              &lt;div className={styles.homeHskTitleRow}&gt;
+                &lt;p className={styles.homeHskTitle}&gt;{hskTitle}&lt;/p&gt;
                 &lt;button
                   type="button"
                   className="home-hsk-info-button"
@@ -575,7 +578,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 &lt;/button&gt;
               &lt;/div&gt;
               &lt;div
-                className="home-hsk-progress-track"
+                className={styles.homeHskProgressTrack}
                 role="progressbar"
                 aria-valuenow={Math.round(hskLevelStatus.progress_to_next_level)}
                 aria-valuemin={0}
@@ -583,45 +586,44 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 aria-label="Progress to next HSK level"
               &gt;
                 &lt;div
-                  className="home-hsk-progress-fill"
+                  className={styles.homeHskProgressFill}
                   style={{
                     width: `${hskLevelStatus.progress_to_next_level}%`,
                   }}
                 /&gt;
               &lt;/div&gt;
-              &lt;div className="home-hsk-progress-footer"&gt;
-                &lt;p className="home-hsk-progress-label"&gt;{hskProgressLabel}&lt;/p&gt;
+              &lt;div className={styles.homeHskProgressFooter}&gt;
+                &lt;p className={styles.homeHskProgressLabel}&gt;{hskProgressLabel}&lt;/p&gt;
                 {hskLevelStatus.next_level !== null &amp;&amp; (
-                  &lt;button
-                    type="button"
-                    className="home-hsk-missing-button"
+                  &lt;Button
+                    kind="cancel"
+                    text="Missing characters"
                     onClick={() =&gt; setIsMissingModalOpen(true)}
-                  &gt;
-                    Missing characters
-                  &lt;/button&gt;
+                    className={styles.homeHskMissingButton}
+                  /&gt;
                 )}
               &lt;/div&gt;
             &lt;/div&gt;
           &lt;/section&gt;
 &nbsp;
-          &lt;div className="home-metrics"&gt;
-            &lt;div className="home-metric-card"&gt;
-              &lt;p className="home-metric-value"&gt;{recognizedCount}&lt;/p&gt;
-              &lt;p className="home-metric-label"&gt;
+          &lt;div className={styles.homeMetrics}&gt;
+            &lt;div className={styles.homeMetricCard}&gt;
+              &lt;p className={styles.homeMetricValue}&gt;{recognizedCount}&lt;/p&gt;
+              &lt;p className={styles.homeMetricLabel}&gt;
                 Characters you are able to recognize
               &lt;/p&gt;
             &lt;/div&gt;
-            &lt;div className="home-metric-card"&gt;
-              &lt;p className="home-metric-value"&gt;{writingCount}&lt;/p&gt;
-              &lt;p className="home-metric-label"&gt;Characters you can write&lt;/p&gt;
+            &lt;div className={styles.homeMetricCard}&gt;
+              &lt;p className={styles.homeMetricValue}&gt;{writingCount}&lt;/p&gt;
+              &lt;p className={styles.homeMetricLabel}&gt;Characters you can write&lt;/p&gt;
             &lt;/div&gt;
           &lt;/div&gt;
 &nbsp;
           {motivationMessages.length &gt; 0 &amp;&amp; (
-<span class="branch-1 cbranch-no" title="branch not covered" >            &lt;ul className="home-motivation-list"&gt;</span>
+<span class="branch-1 cbranch-no" title="branch not covered" >            &lt;ul className={styles.homeMotivationList}&gt;</span>
               {motivationMessages.map(<span class="fstat-no" title="function not covered" >(m</span>essage) =&gt; (
-<span class="cstat-no" title="statement not covered" >                &lt;li key={message} className="home-motivation-item"&gt;</span>
-                  &lt;TrophyIcon className="home-motivation-icon" /&gt;
+<span class="cstat-no" title="statement not covered" >                &lt;li key={message} className={styles.homeMotivationItem}&gt;</span>
+                  &lt;TrophyIcon className={styles.homeMotivationIcon} /&gt;
                   &lt;span&gt;{message}&lt;/span&gt;
                 &lt;/li&gt;
               ))}
@@ -640,7 +642,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 &lt;h2 id="hsk-level-info-title" className="modal-title"&gt;
                   How HSK level is estimated
                 &lt;/h2&gt;
-                &lt;div className="character-words-modal-content"&gt;
+                &lt;div className={characterWordsStyles.characterWordsModalContent}&gt;
                   &lt;p className="home-hsk-info-text"&gt;
                     This HSK level is an estimate based on the characters you know.
                     A level counts as reached when you know at least{" "}
@@ -652,13 +654,11 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                   &lt;/p&gt;
                 &lt;/div&gt;
                 &lt;div className="modal-actions"&gt;
-                  &lt;button
-                    type="button"
-                    className="modal-button-cancel"
+                  &lt;Button
+                    kind="cancel"
+                    text="Close"
                     onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etIsHskInfoOpen(false)}</span>
-                  &gt;
-                    Close
-                  &lt;/button&gt;
+                  /&gt;
                 &lt;/div&gt;
               &lt;/div&gt;
             &lt;/div&gt;
@@ -682,7 +682,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -535,12 +535,9 @@
 <a name='L470'></a><a href='#L470'>470</a>
 <a name='L471'></a><a href='#L471'>471</a>
 <a name='L472'></a><a href='#L472'>472</a>
-<a name='L473'></a><a href='#L473'>473</a>
-<a name='L474'></a><a href='#L474'>474</a>
-<a name='L475'></a><a href='#L475'>475</a>
-<a name='L476'></a><a href='#L476'>476</a>
-<a name='L477'></a><a href='#L477'>477</a>
-<a name='L478'></a><a href='#L478'>478</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L473'></a><a href='#L473'>473</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -985,13 +982,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1033,10 +1023,12 @@ import {
   fetchAnkiModels,
   setupAnkiDeck,
 } from "../utils/anki/ankiApi";
+import Button from "./Button";
 import { InfoIcon } from "./icons";
 import VocabularyNoteTypeInfoModal from "./VocabularyNoteTypeInfoModal";
 import VocabularyThreeDirectionSetupModal from "./VocabularyThreeDirectionSetupModal";
 import WritingDeckTypeInfoModal from "./WritingDeckTypeInfoModal";
+import styles from "./AnkiDeckSetupModal.module.css";
 &nbsp;
 type AnkiDeckSetupModalProps = {
   isOpen: boolean;
@@ -1299,7 +1291,7 @@ export default function AnkiDeckSetupModal({
     &lt;&gt;
       &lt;div className="modal-overlay" onClick={onCancel}&gt;
         &lt;div
-          className="modal-dialog anki-setup-modal"
+          className={`modal-dialog ${styles.ankiSetupModal}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="anki-deck-setup-title"
@@ -1308,7 +1300,7 @@ export default function AnkiDeckSetupModal({
           &lt;h2 id="anki-deck-setup-title" className="modal-title"&gt;
             Set up {ANKI_DECK_LABELS[deckKind]}
           &lt;/h2&gt;
-          &lt;p className="modal-message anki-setup-description"&gt;
+          &lt;p className={`modal-message ${styles.ankiSetupDescription}`}&gt;
             {ANKI_DECK_DESCRIPTIONS[deckKind]}
           &lt;/p&gt;
 &nbsp;
@@ -1343,7 +1335,7 @@ export default function AnkiDeckSetupModal({
                 &lt;label className="modal-field"&gt;
                   &lt;span className="modal-field-label"&gt;Existing deck&lt;/span&gt;
                   &lt;select
-                    className="anki-deck-select"
+                    className={styles.ankiDeckSelect}
                     value={selectedDeck}
                     onChange={(event) =&gt; setSelectedDeck(event.target.value)}
                     disabled={decks.length === 0}
@@ -1362,7 +1354,7 @@ export default function AnkiDeckSetupModal({
               )}
 &nbsp;
               &lt;div className="modal-field"&gt;
-                &lt;div className="anki-note-type-label-row"&gt;
+                &lt;div className={styles.ankiNoteTypeLabelRow}&gt;
                   &lt;span className="modal-field-label" id="anki-deck-type-label"&gt;
                     Deck type
                   &lt;/span&gt;
@@ -1387,7 +1379,7 @@ export default function AnkiDeckSetupModal({
                   )}
                 &lt;/div&gt;
                 &lt;select
-                  className="anki-deck-select"
+                  className={styles.ankiDeckSelect}
                   aria-labelledby="anki-deck-type-label"
                   value={selectedModel}
                   onChange={(event) =&gt; setSelectedModel(event.target.value)}
@@ -1405,11 +1397,11 @@ export default function AnkiDeckSetupModal({
                 &lt;/select&gt;
               &lt;/div&gt;
 &nbsp;
-              &lt;fieldset className="anki-field-mapping"&gt;
-                &lt;legend className="anki-field-mapping-legend"&gt;
+              &lt;fieldset className={styles.ankiFieldMapping}&gt;
+                &lt;legend className={styles.ankiFieldMappingLegend}&gt;
                   Field mapping
                 &lt;/legend&gt;
-                &lt;p className="anki-field-mapping-hint"&gt;
+                &lt;p className={styles.ankiFieldMappingHint}&gt;
                   Map each Teacher Wang field to a field on the selected Anki
                   deck type.
                 &lt;/p&gt;
@@ -1418,12 +1410,12 @@ export default function AnkiDeckSetupModal({
                   &lt;label key={field.key} className="modal-field"&gt;
                     &lt;span className="modal-field-label"&gt;
                       {field.key}{" "}
-                      &lt;span className="anki-field-description"&gt;
+                      &lt;span className={styles.ankiFieldDescription}&gt;
                         ({field.description})
                       &lt;/span&gt;
                     &lt;/span&gt;
                     &lt;select
-                      className="anki-deck-select"
+                      className={styles.ankiDeckSelect}
                       value={fieldMap[field.key] ?? ""}
                       onChange={(event) =&gt;
                         setFieldMap((current) =&gt; ({
@@ -1445,20 +1437,13 @@ export default function AnkiDeckSetupModal({
               &lt;/fieldset&gt;
 &nbsp;
               &lt;div className="modal-actions"&gt;
-                &lt;button
-                  type="button"
-                  className="modal-button-cancel"
-                  onClick={onCancel}
-                &gt;
-                  Cancel
-                &lt;/button&gt;
-                &lt;button
-                  type="submit"
-                  className="modal-button-confirm-primary"
+                &lt;Button kind="cancel" text="Cancel" onClick={onCancel} /&gt;
+                &lt;Button
+                  kind="confirm"
+                  htmlType="submit"
+                  text={isSaving ? "Saving…" : "Save mapping"}
                   disabled={isConfirmDisabled}
-                &gt;
-                  {isSaving ? "Saving…" : "Save mapping"}
-                &lt;/button&gt;
+                /&gt;
               &lt;/div&gt;
             &lt;/form&gt;
           )}
@@ -1501,7 +1486,7 @@ export default function AnkiDeckSetupModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

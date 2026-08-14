@@ -642,7 +642,15 @@
 <a name='L577'></a><a href='#L577'>577</a>
 <a name='L578'></a><a href='#L578'>578</a>
 <a name='L579'></a><a href='#L579'>579</a>
-<a name='L580'></a><a href='#L580'>580</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L580'></a><a href='#L580'>580</a>
+<a name='L581'></a><a href='#L581'>581</a>
+<a name='L582'></a><a href='#L582'>582</a>
+<a name='L583'></a><a href='#L583'>583</a>
+<a name='L584'></a><a href='#L584'>584</a>
+<a name='L585'></a><a href='#L585'>585</a>
+<a name='L586'></a><a href='#L586'>586</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -916,7 +924,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -956,6 +970,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">86x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -987,10 +1003,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1156,10 +1169,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1227,6 +1239,7 @@ import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncHelpModal from "../components/AnkiSyncHelpModal";
 import AnkiSyncModal from "../components/AnkiSyncModal";
 import Banner from "../components/Banner";
+import Button from "../components/Button";
 import ChangePlanModal from "../components/ChangePlanModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { SettingsIcon, SyncIcon, TrashIcon } from "../components/icons";
@@ -1253,6 +1266,7 @@ import {
   updateSmartAiPreference,
 } from "../utils/aiChat/smartAiApi";
 import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
+import styles from "./PreferencesPage.module.css";
 &nbsp;
 function formatDayLabel(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
@@ -1485,118 +1499,123 @@ export default function PreferencesPage() {
       {error &amp;&amp; &lt;p className="table-error"&gt;{error}&lt;/p&gt;}
 &nbsp;
       {!isLoading &amp;&amp; tokenUsage &amp;&amp; (
-        &lt;section className="preferences-section preferences-section--plan"&gt;
-          &lt;h2 className="preferences-section-title"&gt;Current plan&lt;/h2&gt;
-          &lt;p className="preferences-section-description"&gt;
+        &lt;section className={`preferences-section ${styles.preferencesSectionPlan}`}&gt;
+          &lt;h2 className={styles.preferencesSectionTitle}&gt;Current plan&lt;/h2&gt;
+          &lt;p className={styles.preferencesSectionDescription}&gt;
             &lt;span&gt;
               You&amp;apos;re on the{" "}
               &lt;b&gt;{currentPlan === "pro" ? <span class="branch-0 cbranch-no" title="branch not covered" >"Pro" : "</span>Free"}&lt;/b&gt; plan.
             &lt;/span&gt;
-            &lt;button
-              type="button"
-              className="page-add-button"
+            &lt;Button
+              kind="confirm"
+              variant="page"
+              text="Compare plans"
               onClick={() =&gt; setIsChangePlanModalOpen(true)}
-            &gt;
-              Compare plans
-            &lt;/button&gt;
+            /&gt;
           &lt;/p&gt;
         &lt;/section&gt;
       )}
 &nbsp;
       {!isLoading &amp;&amp; (
-        &lt;section className="preferences-section preferences-section--anki"&gt;
-          &lt;h2 className="preferences-section-title"&gt;Anki synchronization&lt;/h2&gt;
-          &lt;p className="preferences-section-description"&gt;
-            Map your knowledge-base characters and words to Anki decks through
-            AnkiConnect.
+        &lt;section className={`preferences-section ${styles.preferencesSectionAnki}`}&gt;
+          &lt;h2 className={styles.preferencesSectionTitle}&gt;Anki synchronization&lt;/h2&gt;
+&nbsp;
+          &lt;p className={styles.ankiMobileWarning}&gt;
+            Anki synchronization isn&amp;apos;t available on a mobile phone. Use a
+            computer to set up and manage your Anki decks.
           &lt;/p&gt;
-          {!ankiStatus.connected &amp;&amp; (
-            &lt;Banner
-              type="warning"
-              message="Start the Anki app with the AnkiConnect add-on activated before configuring decks."
-              buttonMessage="How to set up AnkiConnect"
-              actionOnButtonClick={() =&gt; setIsGuideOpen(true)}
-            /&gt;
-          )}
 &nbsp;
-          {hasUnsynchronizedDeck &amp;&amp; (
-            &lt;Banner
-              type="warning"
-              message="Struggling with your Anki setup? Click here for more info"
-              buttonMessage="Anki synchronization help"
-              actionOnButtonClick={() =&gt; setIsSyncHelpOpen(true)}
-            /&gt;
-          )}
+          &lt;div className={styles.ankiDesktopContent}&gt;
+            &lt;p className={styles.preferencesSectionDescription}&gt;
+              Map your knowledge-base characters and words to Anki decks through
+              AnkiConnect.
+            &lt;/p&gt;
+            {!ankiStatus.connected &amp;&amp; (
+              &lt;Banner
+                type="warning"
+                message="Start the Anki app with the AnkiConnect add-on activated before configuring decks."
+                buttonMessage="How to set up AnkiConnect"
+                actionOnButtonClick={() =&gt; setIsGuideOpen(true)}
+              /&gt;
+            )}
 &nbsp;
-          &lt;ul className="anki-deck-list"&gt;
-            {deckRows.map(({ kind, label }) =&gt; {
-              const mapping = ankiStatus.decks[kind];
-              const statusClass = ankiStatus.connected
-                ? mapping.status
-                : "not_synchronized";
-              return (
-                &lt;li key={kind} className="anki-deck-row"&gt;
-                  &lt;div className="anki-deck-row-main"&gt;
-                    &lt;span className="anki-deck-name"&gt;{label}&lt;/span&gt;
-                    &lt;span
-                      className={`anki-deck-status anki-deck-status--${statusClass}`}
-                    &gt;
-                      {ankiStatus.connected
-                        ? formatDeckStatus(mapping.status)
-                        : "Not connected"}
-                    &lt;/span&gt;
-                    {mapping.deck_name !== "" &amp;&amp; (
-                      &lt;span className="anki-deck-mapped-name"&gt;
-                        {mapping.deck_name}
-                      &lt;/span&gt;
-                    )}
-                  &lt;/div&gt;
-                  &lt;div className="anki-deck-row-actions"&gt;
-                    {mapping.status !== "not_configured" &amp;&amp; (
-                      &lt;button
-                        type="button"
-                        className="page-add-button anki-deck-action-button"
-                        disabled={!ankiStatus.connected}
-                        onClick={() =&gt; setSyncKind(kind)}
+            {hasUnsynchronizedDeck &amp;&amp; (
+              &lt;Banner
+                type="warning"
+                message="Struggling with your Anki setup? Click here for more info"
+                buttonMessage="Anki synchronization help"
+                actionOnButtonClick={() =&gt; setIsSyncHelpOpen(true)}
+              /&gt;
+            )}
+&nbsp;
+            &lt;ul className={styles.ankiDeckList}&gt;
+              {deckRows.map(({ kind, label }) =&gt; {
+                const mapping = ankiStatus.decks[kind];
+                const statusClass = ankiStatus.connected
+                  ? mapping.status
+                  : "not_synchronized";
+                return (
+                  &lt;li key={kind} className={styles.ankiDeckRow}&gt;
+                    &lt;div className={styles.ankiDeckRowMain}&gt;
+                      &lt;span className={styles.ankiDeckName}&gt;{label}&lt;/span&gt;
+                      &lt;span
+                        className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
                       &gt;
-                        &lt;SyncIcon className="anki-deck-action-icon" /&gt;
-                        Sync
-                      &lt;/button&gt;
-                    )}
-                    &lt;button
-                      type="button"
-                      className="page-add-button anki-deck-action-button"
-                      disabled={!ankiStatus.connected}
-                      onClick={() =&gt; setSetupKind(kind)}
-                    &gt;
-                      &lt;SettingsIcon className="anki-deck-action-icon" /&gt;
-                      Setup
-                    &lt;/button&gt;
-                  &lt;/div&gt;
-                &lt;/li&gt;
-              );
-            })}
-          &lt;/ul&gt;
+                        {ankiStatus.connected
+                          ? formatDeckStatus(mapping.status)
+                          : "Not connected"}
+                      &lt;/span&gt;
+                      {mapping.deck_name !== "" &amp;&amp; (
+                        &lt;span className={styles.ankiDeckMappedName}&gt;
+                          {mapping.deck_name}
+                        &lt;/span&gt;
+                      )}
+                    &lt;/div&gt;
+                    &lt;div className={styles.ankiDeckRowActions}&gt;
+                      {mapping.status !== "not_configured" &amp;&amp; (
+                        &lt;Button
+                          kind="confirm"
+                          variant="page"
+                          text="Sync"
+                          icon={&lt;SyncIcon /&gt;}
+                          disabled={!ankiStatus.connected}
+                          onClick={() =&gt; setSyncKind(kind)}
+                        /&gt;
+                      )}
+                      &lt;Button
+                        kind="confirm"
+                        variant="page"
+                        text="Setup"
+                        icon={&lt;SettingsIcon /&gt;}
+                        disabled={!ankiStatus.connected}
+                        onClick={() =&gt; setSetupKind(kind)}
+                      /&gt;
+                    &lt;/div&gt;
+                  &lt;/li&gt;
+                );
+              })}
+            &lt;/ul&gt;
+          &lt;/div&gt;
         &lt;/section&gt;
       )}
 &nbsp;
 {!isLoading &amp;&amp; tokenUsage &amp;&amp; (
-        &lt;section className="preferences-section preferences-section--usage"&gt;
-          &lt;h2 className="preferences-section-title"&gt;AI usage&lt;/h2&gt;
-          &lt;p className="preferences-section-description"&gt;
+        &lt;section className={`preferences-section ${styles.preferencesSectionUsage}`}&gt;
+          &lt;h2 className={styles.preferencesSectionTitle}&gt;AI usage&lt;/h2&gt;
+          &lt;p className={styles.preferencesSectionDescription}&gt;
             How much of your monthly AI allowance chat and grammar-check calls
             have used.
           &lt;/p&gt;
 &nbsp;
           {!isSmartAiLoading &amp;&amp; (
-            &lt;div className="preferences-toggle-row"&gt;
-              &lt;span className="preferences-toggle-row-label"&gt;
-                &lt;span className="preferences-toggle-row-title"&gt;Smart AI&lt;/span&gt;
-                &lt;p className="preferences-toggle-row-description"&gt;
+            &lt;div className={styles.preferencesToggleRow}&gt;
+              &lt;span className={styles.preferencesToggleRowLabel}&gt;
+                &lt;span className={styles.preferencesToggleRowTitle}&gt;Smart AI&lt;/span&gt;
+                &lt;p className={styles.preferencesToggleRowDescription}&gt;
                   Smarter answers, at the cost of a bit more time and usage.
                 &lt;/p&gt;
               &lt;/span&gt;
-              &lt;label className="preferences-toggle" aria-label="Smart AI"&gt;
+              &lt;label className={styles.preferencesToggle} aria-label="Smart AI"&gt;
                 &lt;input
                   type="checkbox"
                   checked={isSmartAiEnabled}
@@ -1605,23 +1624,23 @@ export default function PreferencesPage() {
                     void handleToggleSmartAi(event.target.checked)
                   }
                 /&gt;
-                &lt;span className="preferences-toggle-track" /&gt;
-                &lt;span className="preferences-toggle-thumb" /&gt;
+                &lt;span className={styles.preferencesToggleTrack} /&gt;
+                &lt;span className={styles.preferencesToggleThumb} /&gt;
               &lt;/label&gt;
             &lt;/div&gt;
           )}
 &nbsp;
-          &lt;div className="preferences-usage-progress"&gt;
-            &lt;div className="preferences-usage-progress-header"&gt;
-              &lt;span className="preferences-usage-progress-label"&gt;
+          &lt;div className={styles.preferencesUsageProgress}&gt;
+            &lt;div className={styles.preferencesUsageProgressHeader}&gt;
+              &lt;span className={styles.preferencesUsageProgressLabel}&gt;
                 Used this month
               &lt;/span&gt;
-              &lt;span className="preferences-usage-progress-value"&gt;
+              &lt;span className={styles.preferencesUsageProgressValue}&gt;
                 {formatPercent(usedPercent)}
               &lt;/span&gt;
             &lt;/div&gt;
             &lt;div
-              className="preferences-usage-progress-track"
+              className={styles.preferencesUsageProgressTrack}
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
@@ -1629,11 +1648,11 @@ export default function PreferencesPage() {
               aria-label="Percentage of monthly AI usage allowance used"
             &gt;
               &lt;div
-                className="preferences-usage-progress-fill"
+                className={styles.preferencesUsageProgressFill}
                 style={{ width: `${usedPercent}%` }}
               /&gt;
             &lt;/div&gt;
-            &lt;p className="preferences-usage-reset-note"&gt;
+            &lt;p className={styles.preferencesUsageResetNote}&gt;
               Resets to 0% on the 1st of next month.
             &lt;/p&gt;
           &lt;/div&gt;
@@ -1648,13 +1667,13 @@ export default function PreferencesPage() {
           )}
 &nbsp;
           &lt;div
-            className="preferences-usage-chart"
+            className={styles.preferencesUsageChart}
             role="img"
             aria-label={`Cumulative AI usage this month, currently at ${formatPercent(usedPercent)} of the monthly allowance`}
           &gt;
             &lt;svg
               viewBox={`0 0 ${USAGE_CHART_WIDTH} ${USAGE_CHART_HEIGHT}`}
-              className="preferences-usage-chart-svg"
+              className={styles.preferencesUsageChartSvg}
             &gt;
               &lt;defs&gt;
                 &lt;linearGradient
@@ -1677,15 +1696,15 @@ export default function PreferencesPage() {
                     x2={USAGE_CHART_WIDTH}
                     y1={y}
                     y2={y}
-                    className="preferences-usage-chart-grid"
+                    className={styles.preferencesUsageChartGrid}
                   /&gt;
                 );
               })}
               {usageAreaPath &amp;&amp; (
-                &lt;path d={usageAreaPath} className="preferences-usage-chart-area" /&gt;
+                &lt;path d={usageAreaPath} className={styles.preferencesUsageChartArea} /&gt;
               )}
               {usageLinePath &amp;&amp; (
-                &lt;path d={usageLinePath} className="preferences-usage-chart-line" /&gt;
+                &lt;path d={usageLinePath} className={styles.preferencesUsageChartLine} /&gt;
               )}
               {usageChartPoints.map((point) =&gt; (
                 &lt;circle
@@ -1693,7 +1712,7 @@ export default function PreferencesPage() {
                   cx={point.x}
                   cy={point.y}
                   r={2.5}
-                  className="preferences-usage-chart-dot"
+                  className={styles.preferencesUsageChartDot}
                 &gt;
                   &lt;title&gt;{`${formatDayLabel(point.date)}: ${formatPercent(point.percent)} used`}&lt;/title&gt;
                 &lt;/circle&gt;
@@ -1703,13 +1722,13 @@ export default function PreferencesPage() {
                   x={currentUsagePoint.x}
                   y={Math.max(12, currentUsagePoint.y - 8)}
                   textAnchor="end"
-                  className="preferences-usage-chart-current-label"
+                  className={styles.preferencesUsageChartCurrentLabel}
                 &gt;
                   {formatPercent(usedPercent)}
                 &lt;/text&gt;
               )}
             &lt;/svg&gt;
-            &lt;div className="preferences-usage-chart-labels"&gt;
+            &lt;div className={styles.preferencesUsageChartLabels}&gt;
               &lt;span&gt;
                 {tokenUsage.days[0]
                   ? formatDayLabel(tokenUsage.days[0].date)
@@ -1726,21 +1745,20 @@ export default function PreferencesPage() {
       )}
 &nbsp;
       {!isLoading &amp;&amp; (
-        &lt;section className="preferences-section preferences-section--danger"&gt;
-          &lt;h2 className="preferences-section-title"&gt;Dangerous actions&lt;/h2&gt;
-          &lt;p className="preferences-section-description"&gt;
+        &lt;section className={`preferences-section ${styles.preferencesSectionDanger}`}&gt;
+          &lt;h2 className={styles.preferencesSectionTitle}&gt;Dangerous actions&lt;/h2&gt;
+          &lt;p className={styles.preferencesSectionDescription}&gt;
             These actions are irreversible. Export your knowledge base first if
             you may need it later.
           &lt;/p&gt;
-          &lt;button
-            type="button"
-            className="page-mode-button--danger"
+          &lt;Button
+            kind="danger"
+            variant="page"
+            text="Delete knowledge base"
+            icon={&lt;TrashIcon /&gt;}
             onClick={() =&gt; setIsDeleteKnowledgeBaseConfirmOpen(true)}
             disabled={isDeletingKnowledgeBase}
-          &gt;
-            &lt;TrashIcon className="chat-modal-clear-icon" /&gt;
-            Delete knowledge base
-          &lt;/button&gt;
+          /&gt;
         &lt;/section&gt;
       )}
 &nbsp;
@@ -1807,7 +1825,7 @@ export default function PreferencesPage() {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

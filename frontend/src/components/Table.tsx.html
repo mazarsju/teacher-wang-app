@@ -32,7 +32,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>18/18</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
@@ -142,7 +142,12 @@
 <a name='L77'></a><a href='#L77'>77</a>
 <a name='L78'></a><a href='#L78'>78</a>
 <a name='L79'></a><a href='#L79'>79</a>
-<a name='L80'></a><a href='#L80'>80</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -169,8 +174,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">145x</span>
-<span class="cline-any cline-yes">40x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">156x</span>
+<span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">105x</span>
@@ -181,24 +189,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">145x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">156x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">145x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">145x</span>
+<span class="cline-any cline-yes">156x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">434x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">156x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">368x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -207,7 +217,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">200x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">823x</span>
+<span class="cline-any cline-yes">720x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -222,6 +232,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { CSSProperties, ReactNode } from "react";
+import styles from "./Table.module.css";
 &nbsp;
 export type TableColumn&lt;T&gt; = {
   key: keyof T &amp; string;
@@ -237,6 +248,7 @@ type TableProps&lt;T&gt; = {
   renderRowActions?: (row: T) =&gt; ReactNode;
   compact?: boolean;
   maxVisibleRows?: number;
+  maxHeight?: string;
 };
 &nbsp;
 export default function Table&lt;T&gt;({
@@ -247,25 +259,28 @@ export default function Table&lt;T&gt;({
   renderRowActions,
   compact = false,
   maxVisibleRows,
+  maxHeight,
 }: TableProps&lt;T&gt;) {
   if (rows.length === 0) {
-    return &lt;p className="table-empty"&gt;{emptyMessage}&lt;/p&gt;;
+    return &lt;p className={styles.tableEmpty}&gt;{emptyMessage}&lt;/p&gt;;
   }
 &nbsp;
   const wrapperClassName = [
-    "table-wrapper",
-    compact &amp;&amp; "table-wrapper--compact",
-    maxVisibleRows !== undefined &amp;&amp; "table-wrapper--scrollable",
+    styles.tableWrapper,
+    compact &amp;&amp; styles.tableWrapperCompact,
+    (maxVisibleRows !== undefined || maxHeight !== undefined) &amp;&amp;
+      styles.tableWrapperScrollable,
   ]
     .filter(Boolean)
     .join(" ");
 &nbsp;
-  const tableClassName = ["table", compact &amp;&amp; "table--compact"]
+  const tableClassName = [styles.table, compact &amp;&amp; styles.tableCompact]
     .filter(Boolean)
     .join(" ");
 &nbsp;
-  const wrapperStyle =
-    maxVisibleRows !== undefined
+  const wrapperStyle = maxHeight
+    ? ({ maxHeight } as CSSProperties)
+    : maxVisibleRows !== undefined
       ? ({
           "--table-visible-rows": maxVisibleRows,
         } as CSSProperties)
@@ -279,19 +294,19 @@ export default function Table&lt;T&gt;({
             {columns.map((column) =&gt; (
               &lt;th key={column.key}&gt;{column.header}&lt;/th&gt;
             ))}
-            {renderRowActions &amp;&amp; &lt;th className="table-actions-header" /&gt;}
+            {renderRowActions &amp;&amp; &lt;th className={styles.tableActionsHeader} /&gt;}
           &lt;/tr&gt;
         &lt;/thead&gt;
         &lt;tbody&gt;
           {rows.map((row) =&gt; (
-            &lt;tr key={getRowKey(row)} className="table-row"&gt;
+            &lt;tr key={getRowKey(row)} className={styles.tableRow}&gt;
               {columns.map((column) =&gt; (
                 &lt;td key={column.key}&gt;
                   {column.render ? column.render(row) : String(row[column.key])}
                 &lt;/td&gt;
               ))}
               {renderRowActions &amp;&amp; (
-                &lt;td className="table-actions"&gt;{renderRowActions(row)}&lt;/td&gt;
+                &lt;td className={styles.tableActions}&gt;{renderRowActions(row)}&lt;/td&gt;
               )}
             &lt;/tr&gt;
           ))}
@@ -307,7 +322,7 @@ export default function Table&lt;T&gt;({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

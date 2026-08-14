@@ -202,13 +202,9 @@
 <a name='L137'></a><a href='#L137'>137</a>
 <a name='L138'></a><a href='#L138'>138</a>
 <a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a>
-<a name='L145'></a><a href='#L145'>145</a>
-<a name='L146'></a><a href='#L146'>146</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L140'></a><a href='#L140'>140</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -316,17 +312,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">32x</span>
 <span class="cline-any cline-yes">32x</span>
 <span class="cline-any cline-yes">32x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -360,6 +348,8 @@
   WarningIcon,
 } from "../components/icons";
 import type { UserPlan } from "../types/adminUser";
+import Button from "./Button";
+import styles from "./ChangePlanModal.module.css";
 &nbsp;
 type ChangePlanModalProps = {
   isOpen: boolean;
@@ -434,45 +424,43 @@ export default function ChangePlanModal({
           Compare plans
         &lt;/h2&gt;
 &nbsp;
-        &lt;div className="plan-comparison"&gt;
+        &lt;div className={styles.planComparison}&gt;
           {PLANS.map((plan) =&gt; {
             const isCurrent = plan.id === currentPlan;
             return (
               &lt;div
                 key={plan.id}
-                className={`plan-card${isCurrent ? " plan-card--current" : ""}`}
+                className={`${styles.planCard}${isCurrent ? ` ${styles.planCardCurrent}` : ""}`}
               &gt;
-                &lt;div className="plan-card-header"&gt;
-                  &lt;h3 className="plan-card-name"&gt;{plan.name}&lt;/h3&gt;
-                  &lt;p className="plan-card-price"&gt;{plan.price}&lt;/p&gt;
-                  &lt;div className="plan-card-cta"&gt;
+                &lt;div className={styles.planCardHeader}&gt;
+                  &lt;h3 className={styles.planCardName}&gt;{plan.name}&lt;/h3&gt;
+                  &lt;p className={styles.planCardPrice}&gt;{plan.price}&lt;/p&gt;
+                  &lt;div className={styles.planCardCta}&gt;
                     {isCurrent ? (
-                      &lt;span className="plan-card-current-label"&gt;
+                      &lt;span className={styles.planCardCurrentLabel}&gt;
                         Current plan
                       &lt;/span&gt;
                     ) : (
-                      &lt;button
-                        type="button"
-                        className="modal-button-confirm-primary"
+                      &lt;Button
+                        kind="confirm"
+                        text={`Switch to ${plan.name}`}
                         onClick={onSwitchPlan}
-                      &gt;
-                        Switch to {plan.name}
-                      &lt;/button&gt;
+                      /&gt;
                     )}
                   &lt;/div&gt;
                 &lt;/div&gt;
-                &lt;ul className="plan-card-features"&gt;
+                &lt;ul className={styles.planCardFeatures}&gt;
                   {PLAN_FEATURES.map((feature) =&gt; {
                     const cell = plan.id === "free" ? feature.free : feature.pro;
                     const Icon = FEATURE_ICONS[cell.icon];
                     return (
                       &lt;li key={feature.label}&gt;
-                        &lt;span className="plan-card-feature-label"&gt;
+                        &lt;span className={styles.planCardFeatureLabel}&gt;
                           {feature.label}
                         &lt;/span&gt;
-                        &lt;span className="plan-card-feature-value"&gt;
+                        &lt;span className={styles.planCardFeatureValue}&gt;
                           &lt;Icon
-                            className={`plan-feature-icon plan-feature-icon--${cell.icon}`}
+                            className={`${styles.planFeatureIcon} ${styles[`plan-feature-icon--${cell.icon}`]}`}
                           /&gt;
                           {cell.text}
                         &lt;/span&gt;
@@ -486,13 +474,7 @@ export default function ChangePlanModal({
         &lt;/div&gt;
 &nbsp;
         &lt;div className="modal-actions"&gt;
-          &lt;button
-            type="button"
-            className="modal-button-cancel"
-            onClick={onClose}
-          &gt;
-            Close
-          &lt;/button&gt;
+          &lt;Button kind="cancel" text="Close" onClick={onClose} /&gt;
         &lt;/div&gt;
       &lt;/div&gt;
     &lt;/div&gt;
@@ -505,7 +487,7 @@ export default function ChangePlanModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

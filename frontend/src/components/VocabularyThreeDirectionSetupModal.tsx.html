@@ -249,15 +249,10 @@
 <a name='L184'></a><a href='#L184'>184</a>
 <a name='L185'></a><a href='#L185'>185</a>
 <a name='L186'></a><a href='#L186'>186</a>
-<a name='L187'></a><a href='#L187'>187</a>
-<a name='L188'></a><a href='#L188'>188</a>
-<a name='L189'></a><a href='#L189'>189</a>
-<a name='L190'></a><a href='#L190'>190</a>
-<a name='L191'></a><a href='#L191'>191</a>
-<a name='L192'></a><a href='#L192'>192</a>
-<a name='L193'></a><a href='#L193'>193</a>
-<a name='L194'></a><a href='#L194'>194</a>
-<a name='L195'></a><a href='#L195'>195</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L187'></a><a href='#L187'>187</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -422,18 +417,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -454,6 +438,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useEffect, useState, type FormEvent } from "react";
 import type { AnkiDeckSetupResult } from "../types/anki";
 import { autoSetupVocabularyDeck } from "../utils/anki/ankiApi";
+import ankiDeckSetupStyles from "./AnkiDeckSetupModal.module.css";
+import Button from "./Button";
+import styles from "./VocabularyThreeDirectionSetupModal.module.css";
 &nbsp;
 type VocabularyThreeDirectionSetupModalProps = {
   isOpen: boolean;
@@ -540,7 +527,7 @@ export default function VocabularyThreeDirectionSetupModal({
       onClick={onCancel}
     &gt;
       &lt;div
-        className="modal-dialog anki-setup-modal"
+        className={`modal-dialog ${ankiDeckSetupStyles.ankiSetupModal}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="vocabulary-three-direction-title"
@@ -570,33 +557,33 @@ export default function VocabularyThreeDirectionSetupModal({
             /&gt;
           &lt;/label&gt;
 &nbsp;
-          &lt;fieldset className="anki-field-mapping"&gt;
-            &lt;legend className="anki-field-mapping-legend"&gt;
+          &lt;fieldset className={ankiDeckSetupStyles.ankiFieldMapping}&gt;
+            &lt;legend className={ankiDeckSetupStyles.ankiFieldMappingLegend}&gt;
               Mandatory fields
             &lt;/legend&gt;
-            &lt;ul className="anki-mandatory-field-list"&gt;
+            &lt;ul className={styles.ankiMandatoryFieldList}&gt;
               {MANDATORY_FIELDS.map(<span class="fstat-no" title="function not covered" >(f</span>ield) =&gt; (
-<span class="cstat-no" title="statement not covered" >                &lt;li key={field} className="anki-mandatory-field-item"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;li key={field} className={styles.ankiMandatoryFieldItem}&gt;</span>
                   {field}
                 &lt;/li&gt;
               ))}
             &lt;/ul&gt;
-            &lt;p className="anki-field-mapping-hint"&gt;
+            &lt;p className={ankiDeckSetupStyles.ankiFieldMappingHint}&gt;
               Directions: writing → pinyin + definition (+ optionals); pinyin →
               writing + definition (+ optionals); definition → writing +
               pinyin (+ optionals).
             &lt;/p&gt;
           &lt;/fieldset&gt;
 &nbsp;
-          &lt;fieldset className="anki-field-mapping"&gt;
-            &lt;legend className="anki-field-mapping-legend"&gt;
+          &lt;fieldset className={ankiDeckSetupStyles.ankiFieldMapping}&gt;
+            &lt;legend className={ankiDeckSetupStyles.ankiFieldMappingLegend}&gt;
               Optional fields
             &lt;/legend&gt;
-            &lt;p className="anki-field-mapping-hint"&gt;
+            &lt;p className={ankiDeckSetupStyles.ankiFieldMappingHint}&gt;
               Optional fields appear on the back of every direction.
             &lt;/p&gt;
             {optionalFields.map(<span class="fstat-no" title="function not covered" >(f</span>ield, index) =&gt; (
-<span class="cstat-no" title="statement not covered" >              &lt;div key={index} className="anki-optional-field-row"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div key={index} className={styles.ankiOptionalFieldRow}&gt;</span>
                 &lt;input
                   type="text"
                   value={field}
@@ -606,39 +593,28 @@ export default function VocabularyThreeDirectionSetupModal({
 <span class="cstat-no" title="statement not covered" >                    updateOptionalField(index, event.target.value)</span>
                   }
                 /&gt;
-                &lt;button
-                  type="button"
-                  className="modal-button-cancel"
+                &lt;Button
+                  kind="cancel"
+                  text="Remove"
                   onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >r</span>emoveOptionalField(index)}</span>
-                &gt;
-                  Remove
-                &lt;/button&gt;
+                /&gt;
               &lt;/div&gt;
             ))}
-            &lt;button
-              type="button"
-              className="page-add-button"
+            &lt;Button
+              kind="confirm"
+              text="Add optional field"
               onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etOptionalFields(<span class="fstat-no" title="function not covered" >(c</span>urrent) =&gt; <span class="cstat-no" title="statement not covered" >[...current, ""])</span>}</span>
-            &gt;
-              Add optional field
-            &lt;/button&gt;
+            /&gt;
           &lt;/fieldset&gt;
 &nbsp;
           &lt;div className="modal-actions"&gt;
-            &lt;button
-              type="button"
-              className="modal-button-cancel"
-              onClick={onCancel}
-            &gt;
-              Cancel
-            &lt;/button&gt;
-            &lt;button
-              type="submit"
-              className="modal-button-confirm-primary"
+            &lt;Button kind="cancel" text="Cancel" onClick={onCancel} /&gt;
+            &lt;Button
+              kind="confirm"
+              htmlType="submit"
+              text={isSaving ? "Creating…" : "Create and map"}
               disabled={isConfirmDisabled}
-            &gt;
-              {isSaving ? "Creating…" : "Create and map"}
-            &lt;/button&gt;
+            /&gt;
           &lt;/div&gt;
         &lt;/form&gt;
       &lt;/div&gt;
@@ -652,7 +628,7 @@ export default function VocabularyThreeDirectionSetupModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

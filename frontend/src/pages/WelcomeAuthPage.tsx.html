@@ -593,7 +593,9 @@
 <a name='L528'></a><a href='#L528'>528</a>
 <a name='L529'></a><a href='#L529'>529</a>
 <a name='L530'></a><a href='#L530'>530</a>
-<a name='L531'></a><a href='#L531'>531</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L531'></a><a href='#L531'>531</a>
+<a name='L532'></a><a href='#L532'>532</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1145,6 +1147,7 @@ import knowledgeBaseEditScreenshot from "../assets/screenshots/03-knowledge-base
 import chatScreenshot from "../assets/screenshots/04-chat.png";
 import chatChallengeScreenshot from "../assets/screenshots/05-chat-challenge-waiter.png";
 import ankiSyncImage from "../assets/screenshots/anki-sync.png";
+import styles from "./WelcomeAuthPage.module.css";
 &nbsp;
 export type WelcomeAuthMode = "login" | "signup" | "confirm" | "forgot" | "reset";
 &nbsp;
@@ -1192,7 +1195,7 @@ function authErrorMessage(error: unknown): string {
 function GoogleMark() {
   return (
     &lt;svg
-      className="welcome-auth-google-icon"
+      className={styles.welcomeAuthGoogleIcon}
       viewBox="0 0 24 24"
       aria-hidden="true"
     &gt;
@@ -1409,12 +1412,12 @@ export default function WelcomeAuthPage({
 &nbsp;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (isHandlingOAuth) {
 <span class="cstat-no" title="statement not covered" >    return (</span>
-      &lt;div className="welcome-auth"&gt;
-        &lt;div className="welcome-auth-atmosphere" aria-hidden="true"&gt;
-          &lt;span className="welcome-auth-glyph"&gt;学&lt;/span&gt;
+      &lt;div className={styles.welcomeAuth}&gt;
+        &lt;div className={styles.welcomeAuthAtmosphere} aria-hidden="true"&gt;
+          &lt;span className={styles.welcomeAuthGlyph}&gt;学&lt;/span&gt;
         &lt;/div&gt;
-        &lt;div className="welcome-auth-content"&gt;
-          &lt;p className="welcome-auth-oauth-status" role="status"&gt;
+        &lt;div className={styles.welcomeAuthContent}&gt;
+          &lt;p className={styles.welcomeAuthOauthStatus} role="status"&gt;
             Finishing Google sign-in…
           &lt;/p&gt;
         &lt;/div&gt;
@@ -1423,37 +1426,37 @@ export default function WelcomeAuthPage({
   }
 &nbsp;
   return (
-    &lt;div className="welcome-auth"&gt;
-      &lt;div className="welcome-auth-atmosphere" aria-hidden="true"&gt;
-        &lt;span className="welcome-auth-glyph"&gt;学&lt;/span&gt;
+    &lt;div className={styles.welcomeAuth}&gt;
+      &lt;div className={styles.welcomeAuthAtmosphere} aria-hidden="true"&gt;
+        &lt;span className={styles.welcomeAuthGlyph}&gt;学&lt;/span&gt;
       &lt;/div&gt;
 &nbsp;
-      &lt;div className="welcome-auth-content"&gt;
-        &lt;header className="welcome-auth-brand"&gt;
-          &lt;div className="welcome-auth-brand-row"&gt;
-            &lt;img className="welcome-auth-logo" src={logo} alt="" /&gt;
-            &lt;p className="welcome-auth-brand-mark"&gt;Teacher Wang&lt;/p&gt;
+      &lt;div className={styles.welcomeAuthContent}&gt;
+        &lt;header className={styles.welcomeAuthBrand}&gt;
+          &lt;div className={styles.welcomeAuthBrandRow}&gt;
+            &lt;img className={styles.welcomeAuthLogo} src={logo} alt="" /&gt;
+            &lt;p className={styles.welcomeAuthBrandMark}&gt;Teacher Wang&lt;/p&gt;
           &lt;/div&gt;
-          &lt;p className="welcome-auth-tagline"&gt;
+          &lt;p className={styles.welcomeAuthTagline}&gt;
             Chat, track knowledge, and climb HSK.
           &lt;/p&gt;
           &lt;button
             type="button"
-            className="welcome-auth-discover-button"
+            className={styles.welcomeAuthDiscoverButton}
             onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etShowFeatures(true)}</span>
           &gt;
             Discover the features →
           &lt;/button&gt;
         &lt;/header&gt;
 &nbsp;
-        &lt;form className="welcome-auth-form" onSubmit={handleSubmit} noValidate&gt;
-          &lt;h1 className="welcome-auth-form-title"&gt;{formTitle}&lt;/h1&gt;
+        &lt;form className={styles.welcomeAuthForm} onSubmit={handleSubmit} noValidate&gt;
+          &lt;h1 className={styles.welcomeAuthFormTitle}&gt;{formTitle}&lt;/h1&gt;
 &nbsp;
-          {codeHint ? &lt;p className="welcome-auth-hint"&gt;{codeHint}&lt;/p&gt; : null}
+          {codeHint ? &lt;p className={styles.welcomeAuthHint}&gt;{codeHint}&lt;/p&gt; : null}
 &nbsp;
           {isLogin || isSignup ? (
-            &lt;label className="welcome-auth-field"&gt;
-              &lt;span className="welcome-auth-label"&gt;Username&lt;/span&gt;
+            &lt;label className={styles.welcomeAuthField}&gt;
+              &lt;span className={styles.welcomeAuthLabel}&gt;Username&lt;/span&gt;
               &lt;input
                 type="text"
                 name="username"
@@ -1465,14 +1468,14 @@ export default function WelcomeAuthPage({
               /&gt;
             &lt;/label&gt;
           ) : isConfirm ? (
-            &lt;p className="welcome-auth-hint"&gt;
+            &lt;p className={styles.welcomeAuthHint}&gt;
               Username: &lt;strong&gt;{username.trim()}&lt;/strong&gt;
             &lt;/p&gt;
           ) : null}
 &nbsp;
           {isSignup || isForgot ? (
-            &lt;label className="welcome-auth-field"&gt;
-              &lt;span className="welcome-auth-label"&gt;Email&lt;/span&gt;
+            &lt;label className={styles.welcomeAuthField}&gt;
+              &lt;span className={styles.welcomeAuthLabel}&gt;Email&lt;/span&gt;
               &lt;input
                 type="email"
                 name="email"
@@ -1484,14 +1487,14 @@ export default function WelcomeAuthPage({
               /&gt;
             &lt;/label&gt;
           ) : isReset ? (
-            &lt;p className="welcome-auth-hint"&gt;
+            &lt;p className={styles.welcomeAuthHint}&gt;
               Resetting password for &lt;strong&gt;{email.trim()}&lt;/strong&gt;.
             &lt;/p&gt;
           ) : null}
 &nbsp;
           {isConfirm || isReset ? (
-            &lt;label className="welcome-auth-field"&gt;
-              &lt;span className="welcome-auth-label"&gt;Confirmation code&lt;/span&gt;
+            &lt;label className={styles.welcomeAuthField}&gt;
+              &lt;span className={styles.welcomeAuthLabel}&gt;Confirmation code&lt;/span&gt;
               &lt;input
                 type="text"
                 name="confirmationCode"
@@ -1506,8 +1509,8 @@ export default function WelcomeAuthPage({
           ) : null}
 &nbsp;
           {isLogin || isSignup || isReset ? (
-            &lt;label className="welcome-auth-field"&gt;
-              &lt;span className="welcome-auth-label"&gt;
+            &lt;label className={styles.welcomeAuthField}&gt;
+              &lt;span className={styles.welcomeAuthLabel}&gt;
                 {isReset ? "New password" : "Password"}
               &lt;/span&gt;
               &lt;input
@@ -1523,10 +1526,10 @@ export default function WelcomeAuthPage({
           ) : null}
 &nbsp;
           {isLogin ? (
-            &lt;p className="welcome-auth-switch"&gt;
+            &lt;p className={styles.welcomeAuthSwitch}&gt;
               &lt;button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToForgot}
                 disabled={isSubmitting}
               &gt;
@@ -1536,14 +1539,14 @@ export default function WelcomeAuthPage({
           ) : null}
 &nbsp;
           {error ? (
-            &lt;p className="welcome-auth-error" role="alert"&gt;
+            &lt;p className={styles.welcomeAuthError} role="alert"&gt;
               {error}
             &lt;/p&gt;
           ) : null}
 &nbsp;
           &lt;button
             type="submit"
-            className="welcome-auth-submit"
+            className={styles.welcomeAuthSubmit}
             disabled={isSubmitting}
           &gt;
             {isSubmitting ? "Please wait…" : submitLabel}
@@ -1551,12 +1554,12 @@ export default function WelcomeAuthPage({
 &nbsp;
           {showGoogle ? (
             &lt;&gt;
-              &lt;div className="welcome-auth-divider" aria-hidden="true"&gt;
+              &lt;div className={styles.welcomeAuthDivider} aria-hidden="true"&gt;
                 &lt;span&gt;or&lt;/span&gt;
               &lt;/div&gt;
               &lt;button
                 type="button"
-                className="welcome-auth-google"
+                className={styles.welcomeAuthGoogle}
                 onClick={() =&gt; {
                   void handleGoogleSignIn();
                 }}
@@ -1569,11 +1572,11 @@ export default function WelcomeAuthPage({
           ) : null}
 &nbsp;
           {isConfirm ? (
-            &lt;p className="welcome-auth-switch"&gt;
+            &lt;p className={styles.welcomeAuthSwitch}&gt;
               Wrong account?{" "}
               &lt;button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               &gt;
@@ -1581,10 +1584,10 @@ export default function WelcomeAuthPage({
               &lt;/button&gt;
             &lt;/p&gt;
           ) : isForgot || isReset ? (
-            &lt;p className="welcome-auth-switch"&gt;
+            &lt;p className={styles.welcomeAuthSwitch}&gt;
               &lt;button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               &gt;
@@ -1592,11 +1595,11 @@ export default function WelcomeAuthPage({
               &lt;/button&gt;
             &lt;/p&gt;
           ) : isSignup ? (
-            &lt;p className="welcome-auth-switch"&gt;
+            &lt;p className={styles.welcomeAuthSwitch}&gt;
               Already have an account?{" "}
               &lt;button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               &gt;
@@ -1604,11 +1607,11 @@ export default function WelcomeAuthPage({
               &lt;/button&gt;
             &lt;/p&gt;
           ) : (
-            &lt;p className="welcome-auth-switch"&gt;
+            &lt;p className={styles.welcomeAuthSwitch}&gt;
               New here?{" "}
               &lt;button
                 type="button"
-                className="welcome-auth-switch-button"
+                className={styles.welcomeAuthSwitchButton}
                 onClick={switchToSignup}
                 disabled={isSubmitting}
               &gt;
@@ -1620,25 +1623,25 @@ export default function WelcomeAuthPage({
       &lt;/div&gt;
 &nbsp;
       &lt;div
-        className={`feature-showcase${showFeatures ? <span class="branch-0 cbranch-no" title="branch not covered" >" feature-showcase-open" : "</span>"}`}
+        className={`${styles.featureShowcase}${showFeatures ? <span class="branch-0 cbranch-no" title="branch not covered" >` ${styles.featureShowcaseOpen}` : "</span>"}`}
         aria-hidden={!showFeatures}
       &gt;
-        &lt;div className="feature-showcase-inner"&gt;
+        &lt;div className={styles.featureShowcaseInner}&gt;
           &lt;button
             type="button"
-            className="feature-showcase-back"
+            className={styles.featureShowcaseBack}
             onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etShowFeatures(false)}</span>
             tabIndex={showFeatures ? <span class="branch-0 cbranch-no" title="branch not covered" >0 : -</span>1}
           &gt;
             ← Back
           &lt;/button&gt;
-          &lt;h2 className="feature-showcase-title"&gt;
+          &lt;h2 className={styles.featureShowcaseTitle}&gt;
             Everything you need to learn Mandarin
           &lt;/h2&gt;
-          &lt;div className="feature-showcase-list"&gt;
+          &lt;div className={styles.featureShowcaseList}&gt;
             {FEATURES.map((feature) =&gt; (
-              &lt;article className="feature-showcase-card" key={feature.title}&gt;
-                &lt;div className="feature-showcase-images"&gt;
+              &lt;article className={styles.featureShowcaseCard} key={feature.title}&gt;
+                &lt;div className={styles.featureShowcaseImages}&gt;
                   {feature.images.map((image) =&gt; (
                     &lt;img src={image} alt="" key={image} /&gt;
                   ))}
@@ -1660,7 +1663,7 @@ export default function WelcomeAuthPage({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

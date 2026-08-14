@@ -259,12 +259,10 @@
 <a name='L194'></a><a href='#L194'>194</a>
 <a name='L195'></a><a href='#L195'>195</a>
 <a name='L196'></a><a href='#L196'>196</a>
-<a name='L197'></a><a href='#L197'>197</a>
-<a name='L198'></a><a href='#L198'>198</a>
-<a name='L199'></a><a href='#L199'>199</a>
-<a name='L200'></a><a href='#L200'>200</a>
-<a name='L201'></a><a href='#L201'>201</a>
-<a name='L202'></a><a href='#L202'>202</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L197'></a><a href='#L197'>197</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -423,8 +421,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -459,15 +455,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/apiBase";
 import { apiFetch } from "../utils/auth/apiFetch";
+import Button from "./Button";
+import characterWordsStyles from "./CharacterWordsModal.module.css";
+import styles from "./MissingHskCharactersModal.module.css";
 &nbsp;
 type HskWordEntry = {
   id: string;
@@ -581,25 +574,25 @@ export default function MissingHskCharactersModal({
           &lt;h2 id="missing-hsk-characters-title" className="modal-title"&gt;
             Missing characters for HSK {level}
           &lt;/h2&gt;
-          &lt;div className="character-words-modal-content"&gt;
+          &lt;div className={characterWordsStyles.characterWordsModalContent}&gt;
             {characters.length === 0 ? (
-<span class="branch-0 cbranch-no" title="branch not covered" >              &lt;p className="character-words-modal-heading"&gt;</span>
+<span class="branch-0 cbranch-no" title="branch not covered" >              &lt;p className={characterWordsStyles.characterWordsModalHeading}&gt;</span>
                 No missing characters — this level is complete.
               &lt;/p&gt;
             ) : (
               &lt;&gt;
-                &lt;p className="home-missing-characters-hint"&gt;
+                &lt;p className={styles.homeMissingCharactersHint}&gt;
                   (those characters are ordered by frequency. If you want to learn
                   them, we are suggesting you to learn them in that order)
                 &lt;/p&gt;
-                &lt;div className="home-missing-characters-scroll"&gt;
-                  &lt;p className="home-missing-characters-list"&gt;
+                &lt;div className={styles.homeMissingCharactersScroll}&gt;
+                  &lt;p className={styles.homeMissingCharactersList}&gt;
                     {characters.map((character, index) =&gt; (
                       &lt;span key={character}&gt;
                         {index &gt; 0 ? "、" : null}
                         &lt;button
                           type="button"
-                          className="home-missing-character-button"
+                          className={styles.homeMissingCharacterButton}
                           onClick={() =&gt; setSelectedCharacter(character)}
                         &gt;
                           {character}
@@ -612,9 +605,7 @@ export default function MissingHskCharactersModal({
             )}
           &lt;/div&gt;
           &lt;div className="modal-actions"&gt;
-            &lt;button type="button" className="modal-button-cancel" onClick={onClose}&gt;
-              Close
-            &lt;/button&gt;
+            &lt;Button kind="cancel" text="Close" onClick={onClose} /&gt;
           &lt;/div&gt;
         &lt;/div&gt;
       &lt;/div&gt;
@@ -631,8 +622,8 @@ export default function MissingHskCharactersModal({
             &lt;h2 id="hsk-character-words-title" className="modal-title"&gt;
               {selectedCharacter}
             &lt;/h2&gt;
-            &lt;div className="character-words-modal-content"&gt;
-              &lt;p className="character-words-modal-heading"&gt;
+            &lt;div className={characterWordsStyles.characterWordsModalContent}&gt;
+              &lt;p className={characterWordsStyles.characterWordsModalHeading}&gt;
                 Related HSK words (up to level {level}):
               &lt;/p&gt;
               {isLoadingWords &amp;&amp; &lt;p&gt;Loading words...&lt;/p&gt;}
@@ -641,7 +632,7 @@ export default function MissingHskCharactersModal({
                 &lt;p&gt;No related HSK words found for this level.&lt;/p&gt;
               )}
               {!isLoadingWords &amp;&amp; !wordsError &amp;&amp; words.length &gt; 0 &amp;&amp; (
-                &lt;ul className="character-words-modal-list"&gt;
+                &lt;ul className={characterWordsStyles.characterWordsModalList}&gt;
                   {words.map((entry) =&gt; (
                     &lt;li key={entry.id}&gt;
                       {entry.word}
@@ -652,13 +643,7 @@ export default function MissingHskCharactersModal({
               )}
             &lt;/div&gt;
             &lt;div className="modal-actions"&gt;
-              &lt;button
-                type="button"
-                className="modal-button-cancel"
-                onClick={closeWordsModal}
-              &gt;
-                Close
-              &lt;/button&gt;
+              &lt;Button kind="cancel" text="Close" onClick={closeWordsModal} /&gt;
             &lt;/div&gt;
           &lt;/div&gt;
         &lt;/div&gt;
@@ -673,7 +658,7 @@ export default function MissingHskCharactersModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-10T16:07:30.707Z
+                at 2026-08-14T13:38:06.976Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
