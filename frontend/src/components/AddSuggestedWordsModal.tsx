@@ -132,22 +132,30 @@ export default function AddSuggestedWordsModal({
   }
 
   const columns: TableColumn<HskWord>[] = [
-    { key: "word", header: "Word" },
-    { key: "pinyin", header: "Pinyin" },
-    { key: "definition", header: "Definition" },
     {
       key: "id",
-      header: "Select",
+      header: "",
       render: (row) => (
-        <label className="toggle">
-          <input
-            type="checkbox"
-            role="switch"
-            checked={selectedWords.has(row.word)}
-            onChange={() => toggleSelected(row.word)}
-          />
-          <span className="toggle-slider" />
-        </label>
+        <input
+          type="checkbox"
+          aria-label={`Select ${row.word}`}
+          checked={selectedWords.has(row.word)}
+          onChange={() => toggleSelected(row.word)}
+        />
+      ),
+    },
+    {
+      key: "word",
+      header: "Word",
+      render: (row) => (
+        <>
+          <p className={kbInitWizardStyles.wizardWordCellPrimary}>
+            {row.word} - {row.pinyin}
+          </p>
+          <p className={kbInitWizardStyles.wizardWordCellDefinition}>
+            ({row.definition})
+          </p>
+        </>
       ),
     },
   ];

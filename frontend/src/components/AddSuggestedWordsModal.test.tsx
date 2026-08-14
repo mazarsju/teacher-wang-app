@@ -123,14 +123,14 @@ describe("AddSuggestedWordsModal", () => {
     setupFetch();
     renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
 
-    expect(await screen.findByText("爱")).toBeInTheDocument();
-    expect(screen.getByText("学习")).toBeInTheDocument();
-    expect(screen.getByText("love")).toBeInTheDocument();
+    expect(await screen.findByText("爱 - ai4")).toBeInTheDocument();
+    expect(screen.getByText("学习 - xue2 xi2")).toBeInTheDocument();
+    expect(screen.getByText("(love)")).toBeInTheDocument();
 
-    const toggles = screen.getAllByRole("switch");
-    expect(toggles).toHaveLength(2);
-    for (const toggle of toggles) {
-      expect(toggle).not.toBeChecked();
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes).toHaveLength(2);
+    for (const checkbox of checkboxes) {
+      expect(checkbox).not.toBeChecked();
     }
   });
 
@@ -154,12 +154,12 @@ describe("AddSuggestedWordsModal", () => {
       },
     });
 
-    await screen.findByText("爱");
+    await screen.findByText("爱 - ai4");
     const confirmButton = screen.getByRole("button", { name: "Confirm" });
     expect(confirmButton).toBeDisabled();
 
-    const toggles = screen.getAllByRole("switch");
-    await user.click(toggles[0]);
+    const checkboxes = screen.getAllByRole("checkbox");
+    await user.click(checkboxes[0]);
     expect(confirmButton).not.toBeDisabled();
 
     await user.click(confirmButton);
@@ -188,15 +188,17 @@ describe("AddSuggestedWordsModal", () => {
 
     renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
 
-    await screen.findByText("爱");
-    const toggles = screen.getAllByRole("switch");
-    await user.click(toggles[0]);
+    await screen.findByText("爱 - ai4");
+    const checkboxes = screen.getAllByRole("checkbox");
+    await user.click(checkboxes[0]);
 
     const ignoreButtons = screen.getAllByRole("button", { name: "Ignore" });
     await user.click(ignoreButtons[0]);
 
-    await waitFor(() => expect(screen.queryByText("爱")).not.toBeInTheDocument());
-    expect(screen.getByText("学习")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("爱 - ai4")).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText("学习 - xue2 xi2")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
 
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
@@ -214,12 +216,12 @@ describe("AddSuggestedWordsModal", () => {
 
     renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
 
-    await screen.findByText("爱");
+    await screen.findByText("爱 - ai4");
     const ignoreButtons = screen.getAllByRole("button", { name: "Ignore" });
     await user.click(ignoreButtons[0]);
 
     expect(await screen.findByText("Failed to ignore the word(s).")).toBeInTheDocument();
-    expect(screen.getByText("爱")).toBeInTheDocument();
+    expect(screen.getByText("爱 - ai4")).toBeInTheDocument();
   });
 
   it("ignoring all words sends every displayed word and empties the list", async () => {
@@ -228,7 +230,7 @@ describe("AddSuggestedWordsModal", () => {
 
     renderWithStore(<AddSuggestedWordsModal isOpen onClose={() => {}} />);
 
-    await screen.findByText("爱");
+    await screen.findByText("爱 - ai4");
     await user.click(screen.getByRole("button", { name: "Ignore all words" }));
 
     await waitFor(() =>

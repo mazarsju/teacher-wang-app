@@ -85,3 +85,22 @@
   width: 100%;
   accent-color: var(--app-sea);
 }
+
+.wizard-word-cell-primary {
+  margin: 0;
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+.wizard-word-cell-definition {
+  margin: 0.15rem 0 0;
+  color: #4b5563;
+  font-size: 0.85rem;
+  line-height: 1.3em;
+}
+
+.wizard-word-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}

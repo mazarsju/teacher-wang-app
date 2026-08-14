@@ -485,6 +485,7 @@ export default function ChatModal({
                 <button
                   type="button"
                   className={styles.chatModalClearButton}
+                  aria-label={isClearing ? "Clearing..." : "Clear chat history"}
                   disabled={
                     isLoadingHistory ||
                     isSending ||

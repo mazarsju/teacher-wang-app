@@ -329,22 +329,18 @@ export default function KnowledgeBaseInitWizardModal({
   }
 
   const smartWordColumns: TableColumn<SmartWordRow>[] = [
-    { key: "word", header: "Word" },
-    { key: "pinyin", header: "Pinyin" },
-    { key: "definition", header: "Definition" },
     {
-      key: "knownToWrite",
-      header: "Know to write it",
+      key: "word",
+      header: "Word",
       render: (row) => (
-        <label className="toggle">
-          <input
-            type="checkbox"
-            role="switch"
-            checked={row.knownToWrite}
-            onChange={() => toggleSmartWordKnownToWrite(row.word)}
-          />
-          <span className="toggle-slider" />
-        </label>
+        <>
+          <p className={styles.wizardWordCellPrimary}>
+            {row.word} - {row.pinyin}
+          </p>
+          <p className={styles.wizardWordCellDefinition}>
+            ({row.definition})
+          </p>
+        </>
       ),
     },
   ];
@@ -541,15 +537,28 @@ export default function KnowledgeBaseInitWizardModal({
               columns={smartWordColumns}
               rows={smartWords}
               compact
+              maxHeight="500px"
               getRowKey={(row) => row.word}
               emptyMessage="No words picked yet."
               renderRowActions={(row) => (
-                <Button
-                  kind="danger"
-                  variant="table"
-                  text="Remove"
-                  onClick={() => removeSmartWord(row.word)}
-                />
+                <div className={styles.wizardWordRowActions}>
+                  <label className="toggle" title="Know to write it">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-label="Know to write it"
+                      checked={row.knownToWrite}
+                      onChange={() => toggleSmartWordKnownToWrite(row.word)}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                  <Button
+                    kind="danger"
+                    variant="table"
+                    text="Remove"
+                    onClick={() => removeSmartWord(row.word)}
+                  />
+                </div>
               )}
             />
 

@@ -15,6 +15,7 @@ type TableProps<T> = {
   renderRowActions?: (row: T) => ReactNode;
   compact?: boolean;
   maxVisibleRows?: number;
+  maxHeight?: string;
 };
 
 export default function Table<T>({
@@ -25,6 +26,7 @@ export default function Table<T>({
   renderRowActions,
   compact = false,
   maxVisibleRows,
+  maxHeight,
 }: TableProps<T>) {
   if (rows.length === 0) {
     return <p className={styles.tableEmpty}>{emptyMessage}</p>;
@@ -33,7 +35,8 @@ export default function Table<T>({
   const wrapperClassName = [
     styles.tableWrapper,
     compact && styles.tableWrapperCompact,
-    maxVisibleRows !== undefined && styles.tableWrapperScrollable,
+    (maxVisibleRows !== undefined || maxHeight !== undefined) &&
+      styles.tableWrapperScrollable,
   ]
     .filter(Boolean)
     .join(" ");
@@ -42,8 +45,9 @@ export default function Table<T>({
     .filter(Boolean)
     .join(" ");
 
-  const wrapperStyle =
-    maxVisibleRows !== undefined
+  const wrapperStyle = maxHeight
+    ? ({ maxHeight } as CSSProperties)
+    : maxVisibleRows !== undefined
       ? ({
           "--table-visible-rows": maxVisibleRows,
         } as CSSProperties)

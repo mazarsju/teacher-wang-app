@@ -85,6 +85,16 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 640px) {
+  .chat-modal-clear-button {
+    padding: 0.4rem;
+  }
+
+  .chat-modal-clear-button span {
+    display: none;
+  }
+}
+
 .chat-modal-close-button {
   flex-shrink: 0;
   display: inline-flex;

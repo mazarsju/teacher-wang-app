@@ -406,8 +406,8 @@ describe("KnowledgeBaseInitWizardModal", () => {
       exclude: ["爱"],
     });
 
-    expect(screen.getByRole("cell", { name: "爱" })).toBeInTheDocument();
-    expect(screen.queryByRole("cell", { name: "好" })).not.toBeInTheDocument();
+    expect(screen.getByText("爱 - ai4")).toBeInTheDocument();
+    expect(screen.queryByText(/^好 -/)).not.toBeInTheDocument();
 
     const knownToWriteToggle = screen.getByRole("switch");
     expect(knownToWriteToggle).toBeChecked();
@@ -608,7 +608,7 @@ describe("KnowledgeBaseInitWizardModal", () => {
     expect(await screen.findByText("爱")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Can recognize it" }));
 
-    expect(await screen.findByRole("cell", { name: "爱" })).toBeInTheDocument();
+    expect(await screen.findByText("爱 - ai4")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Remove" }));
 
@@ -646,9 +646,9 @@ describe("KnowledgeBaseInitWizardModal", () => {
 
     expect(await screen.findByText("爱")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Can recognize it" }));
-    await screen.findByRole("cell", { name: "爱" });
+    await screen.findByText("爱 - ai4");
 
-    expect(document.querySelector(".table-wrapper")).not.toHaveClass(
+    expect(document.querySelector(".table-wrapper")).toHaveClass(
       "table-wrapper--scrollable",
     );
     expect(
