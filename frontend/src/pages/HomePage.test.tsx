@@ -2,6 +2,13 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithStore } from "../test/renderWithStore";
 import HomePage from "./HomePage";
+import * as weeklyArticleApi from "../utils/knowledgeBase/weeklyArticleApi";
+
+vi.mock("../utils/knowledgeBase/weeklyArticleApi", () => ({
+  fetchWeeklyArticle: vi.fn(),
+}));
+
+const fetchWeeklyArticle = vi.mocked(weeklyArticleApi.fetchWeeklyArticle);
 
 const characters = [
   {
@@ -39,6 +46,15 @@ const syncedState = {
 };
 
 describe("HomePage", () => {
+  beforeEach(() => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 1,
+      year: 2026,
+      hsk_level: 1,
+      content: null,
+    });
+  });
+
   it("renders character metrics and HSK level from the store", () => {
     renderWithStore(<HomePage />, { preloadedState: syncedState });
 
@@ -144,5 +160,120 @@ describe("HomePage", () => {
     expect(
       screen.queryByRole("button", { name: "Start building your knowledge base" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows each article with its title, content, and pinyin, but not the translation", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 2,
+      content: [
+        {
+          title: "第一篇",
+          content: "你好，这是本周的文章。",
+          translation: "Hello, this is this week's article.",
+          pinyin: "nǐ hǎo, zhè shì běn zhōu de wénzhāng.",
+        },
+        {
+          title: "第二篇",
+          content: "第二篇文章的内容。",
+          translation: "The content of the second article.",
+          pinyin: "dì èr piān wénzhāng de nèiróng.",
+        },
+      ],
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(await screen.findByText("第一篇")).toBeInTheDocument();
+    expect(screen.getByText("你好，这是本周的文章。")).toBeInTheDocument();
+    expect(
+      screen.getByText("nǐ hǎo, zhè shì běn zhōu de wénzhāng."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("第二篇")).toBeInTheDocument();
+    expect(screen.getByText("第二篇文章的内容。")).toBeInTheDocument();
+
+    expect(
+      screen.queryByText("Hello, this is this week's article."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("The content of the second article."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show a pinyin line when an article has none", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 5,
+      content: [{ title: "第一篇", content: "第一篇文章的内容。" }],
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(await screen.findByText("第一篇")).toBeInTheDocument();
+    expect(screen.getByText("第一篇文章的内容。")).toBeInTheDocument();
+  });
+
+  it("shows new words at the end of an article", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 2,
+      content: [
+        {
+          title: "第一篇",
+          content: "长城很长。",
+          new_words: [{ word: "长城", translation: "Great Wall" }],
+        },
+      ],
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(await screen.findByText("New words")).toBeInTheDocument();
+    expect(screen.getByText("长城")).toBeInTheDocument();
+    expect(screen.getByText("Great Wall")).toBeInTheDocument();
+  });
+
+  it("does not show a new words section when an article has none", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 5,
+      content: [{ title: "第一篇", content: "第一篇文章的内容。" }],
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(await screen.findByText("第一篇")).toBeInTheDocument();
+    expect(screen.queryByText("New words")).not.toBeInTheDocument();
+  });
+
+  it("shows a placeholder when no article was generated yet", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 2,
+      content: null,
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(
+      await screen.findByText("No articles for this week yet — check back soon."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an error when loading the weekly article fails", async () => {
+    fetchWeeklyArticle.mockRejectedValue(
+      new Error("Failed to load your weekly articles."),
+    );
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(
+      await screen.findByText("Failed to load your weekly articles."),
+    ).toBeInTheDocument();
   });
 });

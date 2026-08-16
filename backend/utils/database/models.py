@@ -135,7 +135,14 @@ class HskCharacter(db.Model):
 
 
 class WeeklyArticle(db.Model):
-    """LLM-picked "most important" China-news article for a week/HSK level."""
+    """LLM-picked "most important" China-news articles for a week/HSK level.
+
+    ``content`` is a JSON list of ``{"title", "content", "translation"?,
+    "pinyin"?, "new_words"?}`` objects, one per picked article.
+    ``translation`` only appears for HSK 1-3, ``pinyin`` only for HSK 1-2,
+    and ``new_words`` (a list of ``{"word", "translation"}``, vocabulary
+    beyond that level) only for HSK 1-4, and only when non-empty.
+    """
 
     __tablename__ = "weekly_articles"
     __table_args__ = (
@@ -148,7 +155,7 @@ class WeeklyArticle(db.Model):
     week = db.Column(Integer, nullable=False)
     year = db.Column(Integer, nullable=False)
     hsk_level = db.Column(Integer, nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    content = db.Column(JSONB, nullable=False)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

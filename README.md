@@ -212,6 +212,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/health` | Health check (`200` + DB up, or `503` if Postgres is unreachable) — the only public route |
 | `GET` | `/auth/me` | Current user (`username`, `email`, `plan`, `is_admin`) from the `users` row |
 | `GET` | `/token-usage` | Token history (`total_tokens`, `days`, …) plus `plan`, `available_token`, and `max_allowed_token` (100000 on free, else `null`) |
+| `GET` | `/weekly-articles` | This week's `weekly_articles` content for the caller's stored HSK level (clamped to 1-6; `content` is `null` if not generated yet) |
 | `GET` | `/preferences/smart-ai` | Current Smart AI preference (`{ "enabled": bool }`, default `true`) — see [Smart AI toggle](docs/adr/ai-agents.md#smart-ai-toggle-light-vs-full-pipeline) |
 | `PATCH` | `/preferences/smart-ai` | Set the Smart AI preference (`{ "enabled": bool }`) |
 | `GET` | `/anki/status` | Mandarin vocabulary/writing deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Banner from "../components/Banner";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
 import MissingHskCharactersModal from "../components/MissingHskCharactersModal";
@@ -7,6 +7,10 @@ import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppSelector } from "../store/hooks";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
+import {
+  fetchWeeklyArticle,
+  type WeeklyArticle,
+} from "../utils/knowledgeBase/weeklyArticleApi";
 import Button from "../components/Button";
 import characterWordsStyles from "../components/CharacterWordsModal.module.css";
 import styles from "./HomePage.module.css";
@@ -25,6 +29,30 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   const [isMissingModalOpen, setIsMissingModalOpen] = useState(false);
   const [isHskInfoOpen, setIsHskInfoOpen] = useState(false);
   const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
+  const [weeklyArticle, setWeeklyArticle] = useState<WeeklyArticle | null>(null);
+  const [isWeeklyArticleLoading, setIsWeeklyArticleLoading] = useState(true);
+  const [weeklyArticleError, setWeeklyArticleError] = useState<string | null>(
+    null,
+  );
+
+  const loadWeeklyArticle = useCallback(async () => {
+    setWeeklyArticleError(null);
+    try {
+      setWeeklyArticle(await fetchWeeklyArticle());
+    } catch (loadError) {
+      setWeeklyArticleError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Failed to load your weekly articles.",
+      );
+    } finally {
+      setIsWeeklyArticleLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadWeeklyArticle();
+  }, [loadWeeklyArticle]);
 
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
@@ -145,6 +173,63 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               <p className={styles.homeMetricLabel}>Characters you can write</p>
             </div>
           </div>
+
+          <section className={styles.homeArticleCard} aria-label="Your weekly articles">
+            <h2 className={styles.homeArticleTitle}>Your weekly articles</h2>
+            {isWeeklyArticleLoading && <p>Loading this week's articles...</p>}
+            {weeklyArticleError && (
+              <p className="table-error">{weeklyArticleError}</p>
+            )}
+            {!isWeeklyArticleLoading &&
+              !weeklyArticleError &&
+              (weeklyArticle?.content && weeklyArticle.content.length > 0 ? (
+                <ul className={styles.homeArticleList}>
+                  {weeklyArticle.content.map((article, index) => (
+                    <li key={index} className={styles.homeArticleItem}>
+                      <p className={styles.homeArticleItemTitle}>
+                        {article.title}
+                      </p>
+                      <p className={styles.homeArticleContent}>
+                        {article.content}
+                      </p>
+                      {article.pinyin && (
+                        <p className={styles.homeArticlePinyin}>
+                          {article.pinyin}
+                        </p>
+                      )}
+                      {article.new_words && article.new_words.length > 0 && (
+                        <div className={styles.homeArticleNewWords}>
+                          <p className={styles.homeArticleNewWordsLabel}>
+                            New words
+                          </p>
+                          <ul className={styles.homeArticleNewWordsList}>
+                            {article.new_words.map((newWord) => (
+                              <li
+                                key={newWord.word}
+                                className={styles.homeArticleNewWord}
+                              >
+                                <span className={styles.homeArticleNewWordText}>
+                                  {newWord.word}
+                                </span>
+                                <span
+                                  className={styles.homeArticleNewWordTranslation}
+                                >
+                                  {newWord.translation}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.homeArticleEmpty}>
+                  No articles for this week yet — check back soon.
+                </p>
+              ))}
+          </section>
 
           {motivationMessages.length > 0 && (
             <ul className={styles.homeMotivationList}>

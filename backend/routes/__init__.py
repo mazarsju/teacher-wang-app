@@ -36,6 +36,7 @@ def register_routes(app: Flask) -> None:
         update_character,
         update_user,
         update_word,
+        weekly_articles,
     )
     from backend.utils.auth.user_context import register_user_context
 
@@ -74,3 +75,4 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(reload_hsk_content.bp)
     app.register_blueprint(smart_ai_preference.bp)
     app.register_blueprint(generate_article.bp)
+    app.register_blueprint(weekly_articles.bp)
