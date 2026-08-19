@@ -8,11 +8,14 @@ from backend.utils.aiChat.teaching_strategy import get_teaching_strategy
 from backend.utils.database.extensions import db
 from backend.utils.database.models import WeeklyArticle, utcnow
 
-# Levels adapted from the LLM-generated summary; the rest from the full
-# (title + description) text — richer source material for the higher levels.
-SUMMARIZED_SOURCE_LEVELS = {1, 2}
+ARTICLES_PER_LEVEL = 3
 TRANSLATION_LEVELS = {1, 2, 3}
 PINYIN_LEVELS = {1, 2}
+# Below this, the retelling may loosen factual accuracy to stay readable.
+LOOSE_ACCURACY_LEVELS = {1, 2}
+# Below this, proper nouns / org names / technical terms are dropped unless
+# necessary to follow the story.
+AVOID_PROPER_NOUNS_LEVELS = {1, 2, 3}
 # Beyond HSK4, the reading material is close to unrestricted vocabulary, so
 # flagging "new words" stops being a meaningful signal.
 NEW_WORDS_LEVELS = {1, 2, 3, 4}
@@ -26,6 +29,20 @@ ARTICLE_LENGTH_GUIDELINES: dict[int, str] = {
     5: "About 35 to 55 lines per article.",
     6: "About 55 to 90 lines per article, close to the full source length.",
 }
+
+ARTICLE_PICKER_SYSTEM_PROMPT_TEMPLATE = (
+    "You are a news editor picking China-related news articles for a "
+    "Mandarin learner at HSK {hsk_level}. Based only on the titles below, "
+    "pick the {count} articles whose topic best matches this level's "
+    "difficulty.\n\n"
+    "Simple, concrete topics (a sports result, the weather, a new metro "
+    "line, a new panda at the zoo, a local event) suit lower levels "
+    "(HSK 1-2). Complex, abstract topics (geopolitics, economic strategy, "
+    "tax policy, diplomacy) suit higher levels (HSK 5-6). Match the "
+    "topic's complexity to HSK {hsk_level}.\n\n"
+    'Reply with only a JSON object: {{"selected_ids": ["id1", ...]}} using '
+    'each article\'s "id" field, ordered from best to least fitting.'
+)
 
 NEW_WORDS_SYSTEM_PROMPT_TEMPLATE = (
     "You are a Mandarin teacher reviewing reading material written for an "
@@ -44,13 +61,6 @@ NEW_WORDS_SYSTEM_PROMPT_TEMPLATE = (
     "Reply with only the JSON object, no commentary, no markdown."
 )
 
-ARTICLE_SUMMARY_SYSTEM_PROMPT = (
-    "You are a news editor. Summarize the following China-related news "
-    "articles into a short combined summary, a few sentences per article, "
-    "preserving the key facts. Reply with only the summarized text, no "
-    "commentary, no markdown, no headings."
-)
-
 ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE = (
     "You are adapting China-related news articles into Mandarin Chinese "
     "reading material for a learner at this level.\n\n"
@@ -59,13 +69,34 @@ ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE = (
     "The source text below contains {article_count} separate articles, "
     "separated by blank lines. Adapt each one independently, writing the "
     "title and content in Chinese (with pinyin/translation only as "
-    "instructed below).\n\n"
+    "instructed below).\n"
+    "{adaptation_instructions}\n\n"
     'Reply with only a JSON object: {{"articles": [...]}}, with exactly '
     "{article_count} entries in the same order as the source articles. "
     "Each entry is a JSON object with exactly these fields, no others:\n"
     "{field_instructions}\n"
     "Reply with only the JSON object, no commentary, no markdown."
 )
+
+
+def _content_adaptation_instructions(hsk_level: int) -> str:
+    lines = []
+    if hsk_level in LOOSE_ACCURACY_LEVELS:
+        lines.append(
+            "You may simplify or adapt the information so it is easier to "
+            "understand at this level. The retelling does not need to be "
+            "fully factually accurate and may omit factual details, as "
+            "long as it stays inspired by and recognizable from the "
+            "original source."
+        )
+    if hsk_level in AVOID_PROPER_NOUNS_LEVELS:
+        lines.append(
+            "Do not preserve proper nouns, organization names, or "
+            "technical terminology from the source unless they are "
+            "necessary to understand the story — replace or omit them "
+            "otherwise."
+        )
+    return "\n".join(lines)
 
 
 def _json_field_instructions(hsk_level: int) -> str:
@@ -80,16 +111,27 @@ def _json_field_instructions(hsk_level: int) -> str:
     return "\n".join(lines)
 
 
-def _normalize_article(article: dict, hsk_level: int) -> dict:
+def _normalize_article(article: dict, hsk_level: int, source: dict) -> dict:
     normalized = {
         "title": article.get("title", ""),
         "content": article.get("content", ""),
     }
+    category = source.get("category")
+    if category:
+        normalized["category"] = category
     if hsk_level in TRANSLATION_LEVELS and "translation" in article:
         normalized["translation"] = article["translation"]
     if hsk_level in PINYIN_LEVELS and "pinyin" in article:
         normalized["pinyin"] = article["pinyin"]
     return normalized
+
+
+def _normalize_new_words(raw_words) -> list[dict]:
+    return [
+        {"word": item.get("word", ""), "translation": item.get("translation", "")}
+        for item in raw_words
+        if isinstance(item, dict) and item.get("word")
+    ]
 
 
 def _full_length_text(articles: list[dict]) -> str:
@@ -101,40 +143,53 @@ def _full_length_text(articles: list[dict]) -> str:
     return "\n\n".join(sections)
 
 
-def _summarize_articles(full_text: str) -> str:
-    text, _ = _invoke_llm(
+def _pick_articles_for_level(
+    articles: list[dict], hsk_level: int, count: int = ARTICLES_PER_LEVEL
+) -> list[dict]:
+    """Ask the LLM which articles (by title only) suit this HSK level."""
+    if not articles:
+        return []
+
+    listing = "\n".join(
+        f'{article.get("id")}: {article.get("title", "")}' for article in articles
+    )
+    system_prompt = ARTICLE_PICKER_SYSTEM_PROMPT_TEMPLATE.format(
+        hsk_level=hsk_level, count=count
+    )
+    raw, _ = _invoke_llm(
         [
-            SystemMessage(content=ARTICLE_SUMMARY_SYSTEM_PROMPT),
-            HumanMessage(content=full_text),
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=f"Articles:\n{listing}"),
         ]
     )
-    return text
+    selected_ids = _extract_json_object(raw).get("selected_ids", [])
+
+    by_id = {article.get("id"): article for article in articles}
+    picked = [by_id[article_id] for article_id in selected_ids if article_id in by_id]
+    return picked[:count]
 
 
 def _adapt_articles_for_level(
-    source_text: str, hsk_level: int, article_count: int
+    selected_articles: list[dict], hsk_level: int
 ) -> list[dict]:
+    article_count = len(selected_articles)
     system_prompt = ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE.format(
         strategy=get_teaching_strategy(hsk_level).as_instructions(),
         length_guideline=ARTICLE_LENGTH_GUIDELINES[hsk_level],
         article_count=article_count,
+        adaptation_instructions=_content_adaptation_instructions(hsk_level),
         field_instructions=_json_field_instructions(hsk_level),
     )
     raw, _ = _invoke_llm(
         [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=source_text),
+            HumanMessage(content=_full_length_text(selected_articles)),
         ]
     )
     articles = _extract_json_object(raw).get("articles", [])
-    return [_normalize_article(article, hsk_level) for article in articles]
-
-
-def _normalize_new_words(raw_words) -> list[dict]:
     return [
-        {"word": item.get("word", ""), "translation": item.get("translation", "")}
-        for item in raw_words
-        if isinstance(item, dict) and item.get("word")
+        _normalize_article(article, hsk_level, source)
+        for article, source in zip(articles, selected_articles)
     ]
 
 
@@ -189,27 +244,21 @@ def _save_weekly_article(
 
 
 def generate_weekly_articles(articles: list[dict]) -> dict:
-    """Adapt ``articles`` to each HSK level and persist one row per level.
+    """Pick and adapt articles per HSK level, persisting one row per level.
 
-    Each row's ``content`` is a JSON list of per-article objects (title,
-    content, optional translation/pinyin/new_words — see
-    ``WeeklyArticle``). Levels 1-2 are adapted from an LLM-generated
-    summary of the articles; levels 3-6 are adapted from the full (title +
-    description) text. As a second pass, levels 1-4 get their generated
-    content read back to flag "new_words" beyond that level's vocabulary.
+    For each level, the LLM first picks ``ARTICLES_PER_LEVEL`` articles from
+    ``articles`` (by title only) matching that level's topic difficulty,
+    then adapts just those into reading material — so different levels can
+    end up with different source articles. Each row's ``content`` is a JSON
+    list of per-article objects (title, content, source category, optional
+    translation/pinyin/new_words — see ``WeeklyArticle``).
     """
-    full_text = _full_length_text(articles)
-    summarized_text = _summarize_articles(full_text)
-    article_count = len(articles)
-
     now = datetime.now(timezone.utc)
     iso_year, iso_week, _ = now.isocalendar()
 
     for hsk_level in HSK_LEVELS:
-        source_text = (
-            summarized_text if hsk_level in SUMMARIZED_SOURCE_LEVELS else full_text
-        )
-        content = _adapt_articles_for_level(source_text, hsk_level, article_count)
+        selected = _pick_articles_for_level(articles, hsk_level)
+        content = _adapt_articles_for_level(selected, hsk_level)
         if hsk_level in NEW_WORDS_LEVELS:
             content = _inject_new_words(content, hsk_level)
         _save_weekly_article(iso_week, iso_year, hsk_level, content)

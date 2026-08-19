@@ -201,6 +201,42 @@ describe("HomePage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the article's category", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 3,
+      content: [
+        {
+          title: "第一篇",
+          content: "第一篇文章的内容。",
+          category: ["sports", "world"],
+        },
+      ],
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(await screen.findByText("sports")).toBeInTheDocument();
+    expect(screen.getByText("world")).toBeInTheDocument();
+  });
+
+  it("does not show a category list when an article has none", async () => {
+    fetchWeeklyArticle.mockResolvedValue({
+      week: 33,
+      year: 2026,
+      hsk_level: 3,
+      content: [{ title: "第一篇", content: "第一篇文章的内容。" }],
+    });
+
+    renderWithStore(<HomePage />, { preloadedState: syncedState });
+
+    expect(await screen.findByText("第一篇")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Article categories"),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not show a pinyin line when an article has none", async () => {
     fetchWeeklyArticle.mockResolvedValue({
       week: 33,

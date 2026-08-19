@@ -135,13 +135,16 @@ class HskCharacter(db.Model):
 
 
 class WeeklyArticle(db.Model):
-    """LLM-picked "most important" China-news articles for a week/HSK level.
+    """LLM-picked China-news articles adapted for a week/HSK level.
 
-    ``content`` is a JSON list of ``{"title", "content", "translation"?,
-    "pinyin"?, "new_words"?}`` objects, one per picked article.
-    ``translation`` only appears for HSK 1-3, ``pinyin`` only for HSK 1-2,
-    and ``new_words`` (a list of ``{"word", "translation"}``, vocabulary
-    beyond that level) only for HSK 1-4, and only when non-empty.
+    ``content`` is a JSON list of ``{"title", "content", "category"?,
+    "translation"?, "pinyin"?, "new_words"?}`` objects, one per article
+    picked for that level (different levels may pick different source
+    articles — see ``backend/routes/weekly_article_generator.py``).
+    ``category`` is the source Currents API article's category list, when
+    present. ``translation`` only appears for HSK 1-3, ``pinyin`` only for
+    HSK 1-2, and ``new_words`` (a list of ``{"word", "translation"}``,
+    vocabulary beyond that level) only for HSK 1-4, and only when non-empty.
     """
 
     __tablename__ = "weekly_articles"

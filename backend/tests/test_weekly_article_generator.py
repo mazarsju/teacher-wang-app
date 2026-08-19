@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 
 from backend.routes.weekly_article_generator import (
     ARTICLE_LENGTH_GUIDELINES,
-    ARTICLE_SUMMARY_SYSTEM_PROMPT,
     _full_length_text,
     _inject_new_words,
     _normalize_article,
+    _pick_articles_for_level,
     generate_weekly_articles,
 )
 from backend.utils.database.models import WeeklyArticle
@@ -32,6 +32,67 @@ class TestArticleLengthGuidelines(unittest.TestCase):
         self.assertEqual(set(ARTICLE_LENGTH_GUIDELINES.keys()), {1, 2, 3, 4, 5, 6})
 
 
+class TestPickArticlesForLevel(unittest.TestCase):
+    def setUp(self):
+        self.invoke_patcher = patch(
+            "backend.routes.weekly_article_generator._invoke_llm"
+        )
+        self.mock_invoke = self.invoke_patcher.start()
+        self.addCleanup(self.invoke_patcher.stop)
+        self.articles = [
+            {"id": "a1", "title": "China wins gold in swimming"},
+            {"id": "a2", "title": "New tax policy reshapes trade relations"},
+            {"id": "a3", "title": "New panda born at Beijing zoo"},
+        ]
+
+    def test_returns_empty_list_when_no_articles(self):
+        result = _pick_articles_for_level([], hsk_level=1)
+
+        self.assertEqual(result, [])
+        self.mock_invoke.assert_not_called()
+
+    def test_picks_articles_selected_by_the_llm_in_order(self):
+        self.mock_invoke.return_value = (
+            '{"selected_ids": ["a3", "a1"]}',
+            MagicMock(),
+        )
+
+        result = _pick_articles_for_level(self.articles, hsk_level=1)
+
+        self.assertEqual([article["id"] for article in result], ["a3", "a1"])
+
+    def test_prompt_targets_the_level_and_count_using_titles_only(self):
+        self.mock_invoke.return_value = ('{"selected_ids": []}', MagicMock())
+
+        _pick_articles_for_level(self.articles, hsk_level=5, count=2)
+
+        system_content = self.mock_invoke.call_args.args[0][0].content
+        human_content = self.mock_invoke.call_args.args[0][-1].content
+        self.assertIn("HSK 5", system_content)
+        self.assertIn("2 articles", system_content)
+        self.assertIn("China wins gold in swimming", human_content)
+
+    def test_ignores_ids_not_in_the_pool(self):
+        self.mock_invoke.return_value = (
+            '{"selected_ids": ["unknown", "a2"]}',
+            MagicMock(),
+        )
+
+        result = _pick_articles_for_level(self.articles, hsk_level=3)
+
+        self.assertEqual([article["id"] for article in result], ["a2"])
+
+    def test_truncates_to_count(self):
+        self.mock_invoke.return_value = (
+            '{"selected_ids": ["a1", "a2", "a3"]}',
+            MagicMock(),
+        )
+
+        result = _pick_articles_for_level(self.articles, hsk_level=1, count=2)
+
+        self.assertEqual(len(result), 2)
+
+
 class TestNormalizeArticle(unittest.TestCase):
     RAW_ARTICLE = {
         "title": "Title",
@@ -40,14 +101,16 @@ class TestNormalizeArticle(unittest.TestCase):
         "pinyin": "Pinyin",
         "extra": "should be dropped",
     }
+    SOURCE = {"id": "a1", "category": ["technology", "china"]}
 
     def test_keeps_translation_and_pinyin_for_hsk1_and_hsk2(self):
         for level in (1, 2):
             self.assertEqual(
-                _normalize_article(self.RAW_ARTICLE, level),
+                _normalize_article(self.RAW_ARTICLE, level, self.SOURCE),
                 {
                     "title": "Title",
                     "content": "Content",
+                    "category": ["technology", "china"],
                     "translation": "Translation",
                     "pinyin": "Pinyin",
                 },
@@ -55,20 +118,35 @@ class TestNormalizeArticle(unittest.TestCase):
 
     def test_keeps_only_translation_for_hsk3(self):
         self.assertEqual(
-            _normalize_article(self.RAW_ARTICLE, 3),
-            {"title": "Title", "content": "Content", "translation": "Translation"},
+            _normalize_article(self.RAW_ARTICLE, 3, self.SOURCE),
+            {
+                "title": "Title",
+                "content": "Content",
+                "category": ["technology", "china"],
+                "translation": "Translation",
+            },
         )
 
     def test_drops_translation_and_pinyin_for_hsk4_to_6(self):
         for level in (4, 5, 6):
             self.assertEqual(
-                _normalize_article(self.RAW_ARTICLE, level),
-                {"title": "Title", "content": "Content"},
+                _normalize_article(self.RAW_ARTICLE, level, self.SOURCE),
+                {
+                    "title": "Title",
+                    "content": "Content",
+                    "category": ["technology", "china"],
+                },
             )
 
     def test_missing_optional_fields_are_omitted_even_when_allowed(self):
         self.assertEqual(
-            _normalize_article({"title": "Title", "content": "Content"}, 1),
+            _normalize_article({"title": "Title", "content": "Content"}, 1, {}),
+            {"title": "Title", "content": "Content"},
+        )
+
+    def test_category_omitted_when_source_has_none(self):
+        self.assertEqual(
+            _normalize_article(self.RAW_ARTICLE, 4, {"id": "a1"}),
             {"title": "Title", "content": "Content"},
         )
 
@@ -128,38 +206,9 @@ class TestInjectNewWords(unittest.TestCase):
         self.mock_invoke.assert_not_called()
 
 
-def _fake_llm_response(messages, *, marker: str, article_count: int):
-    system_content = messages[0].content
-    human_content = messages[-1].content
-
-    if system_content == ARTICLE_SUMMARY_SYSTEM_PROMPT:
-        return f"{marker}-summary:{human_content}", MagicMock()
-
-    if "adapting China-related news articles" in system_content:
-        articles = [
-            {
-                "title": f"{marker}-title-{index}",
-                "content": f"{marker}-content-{index}",
-                "translation": f"{marker}-translation-{index}",
-                "pinyin": f"{marker}-pinyin-{index}",
-            }
-            for index in range(article_count)
-        ]
-        return json.dumps({"articles": articles}), MagicMock()
-
-    # "new words" injection step.
-    articles = [
-        {
-            "new_words": [
-                {"word": f"{marker}-word-{index}", "translation": f"{marker}-meaning-{index}"}
-            ]
-        }
-        for index in range(article_count)
-    ]
-    return json.dumps({"articles": articles}), MagicMock()
-
-
 class TestGenerateWeeklyArticles(PostgresTestCase):
+    """End-to-end: pick -> adapt -> (new words) -> persist, per HSK level."""
+
     def setUp(self):
         super().setUp()
 
@@ -170,12 +219,52 @@ class TestGenerateWeeklyArticles(PostgresTestCase):
         self.addCleanup(self.invoke_patcher.stop)
 
         self.articles = [
-            {"id": "a1", "title": "Title A", "description": "Desc A"},
+            {
+                "id": "a1",
+                "title": "Title A",
+                "description": "Desc A",
+                "category": ["sports"],
+            },
             {"id": "a2", "title": "Title B", "description": "Desc B"},
         ]
-        self.mock_invoke.side_effect = lambda messages: _fake_llm_response(
-            messages, marker="v1", article_count=len(self.articles)
-        )
+        self.marker = "v1"
+        self.mock_invoke.side_effect = self._fake_invoke
+
+    def _fake_invoke(self, messages):
+        system_content = messages[0].content
+        marker = self.marker
+
+        if "picking China-related news articles" in system_content:
+            selected_ids = [article["id"] for article in self.articles]
+            return json.dumps({"selected_ids": selected_ids}), MagicMock()
+
+        article_count = len(self.articles)
+
+        if "adapting China-related news articles" in system_content:
+            articles = [
+                {
+                    "title": f"{marker}-title-{index}",
+                    "content": f"{marker}-content-{index}",
+                    "translation": f"{marker}-translation-{index}",
+                    "pinyin": f"{marker}-pinyin-{index}",
+                }
+                for index in range(article_count)
+            ]
+            return json.dumps({"articles": articles}), MagicMock()
+
+        # "new words" injection step.
+        articles = [
+            {
+                "new_words": [
+                    {
+                        "word": f"{marker}-word-{index}",
+                        "translation": f"{marker}-meaning-{index}",
+                    }
+                ]
+            }
+            for index in range(article_count)
+        ]
+        return json.dumps({"articles": articles}), MagicMock()
 
     def test_saves_one_row_per_hsk_level(self):
         result = generate_weekly_articles(self.articles)
@@ -203,6 +292,13 @@ class TestGenerateWeeklyArticles(PostgresTestCase):
         self.assertEqual(row.content[0]["title"], "v1-title-0")
         self.assertEqual(row.content[0]["content"], "v1-content-0")
 
+    def test_category_is_carried_over_from_the_source_article(self):
+        generate_weekly_articles(self.articles)
+
+        row = WeeklyArticle.query.filter_by(hsk_level=1).one()
+        self.assertEqual(row.content[0]["category"], ["sports"])
+        self.assertNotIn("category", row.content[1])
+
     def test_translation_and_pinyin_present_only_for_allowed_levels(self):
         generate_weekly_articles(self.articles)
 
@@ -223,25 +319,6 @@ class TestGenerateWeeklyArticles(PostgresTestCase):
                 self.assertIn("title", article)
                 self.assertIn("content", article)
 
-    def test_low_levels_are_adapted_from_the_summary_not_the_full_text(self):
-        generate_weekly_articles(self.articles)
-
-        call_args = self.mock_invoke.call_args_list
-        # First call is the summarization step.
-        full_text = call_args[0].args[0][-1].content
-        self.assertIn("Title A", full_text)
-
-        adaptation_calls = [
-            call
-            for call in call_args
-            if "adapting China-related news articles" in call.args[0][0].content
-        ]
-        level_1_source = adaptation_calls[0].args[0][-1].content
-        self.assertEqual(level_1_source, f"v1-summary:{full_text}")
-
-        level_3_source = adaptation_calls[2].args[0][-1].content
-        self.assertEqual(level_3_source, full_text)
-
     def test_new_words_present_only_for_hsk1_to_4(self):
         generate_weekly_articles(self.articles)
 
@@ -258,13 +335,29 @@ class TestGenerateWeeklyArticles(PostgresTestCase):
             for article in rows[level]:
                 self.assertNotIn("new_words", article)
 
+    def test_each_level_asks_the_picker_for_its_own_level(self):
+        generate_weekly_articles(self.articles)
+
+        picker_calls = [
+            call
+            for call in self.mock_invoke.call_args_list
+            if "picking China-related news articles" in call.args[0][0].content
+        ]
+        levels_requested = [
+            level
+            for level in range(1, 7)
+            if any(
+                f"HSK {level}" in call.args[0][0].content for call in picker_calls
+            )
+        ]
+        self.assertEqual(len(picker_calls), 6)
+        self.assertEqual(levels_requested, [1, 2, 3, 4, 5, 6])
+
     def test_refresh_overwrites_the_existing_week(self):
         generate_weekly_articles(self.articles)
         first_content = WeeklyArticle.query.filter_by(hsk_level=1).one().content
 
-        self.mock_invoke.side_effect = lambda messages: _fake_llm_response(
-            messages, marker="v2", article_count=len(self.articles)
-        )
+        self.marker = "v2"
         generate_weekly_articles(self.articles)
 
         rows = WeeklyArticle.query.filter_by(hsk_level=1).all()

@@ -31,27 +31,18 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         self.mock_fetch = self.fetch_patcher.start()
         self.addCleanup(self.fetch_patcher.stop)
 
-        self.invoke_patcher = patch("backend.routes.generate_article._invoke_llm")
-        self.mock_invoke = self.invoke_patcher.start()
-        self.addCleanup(self.invoke_patcher.stop)
-
         self.generate_weekly_patcher = patch(
             "backend.routes.generate_article.generate_weekly_articles"
         )
         self.mock_generate_weekly = self.generate_weekly_patcher.start()
         self.addCleanup(self.generate_weekly_patcher.stop)
 
-    def test_admin_gets_top_articles_picked_by_llm(self):
-        self.mock_fetch.return_value = [
+    def test_admin_triggers_weekly_article_generation(self):
+        fetched_articles = [
             {"id": "a1", "title": "One"},
             {"id": "a2", "title": "Two"},
-            {"id": "a3", "title": "Three"},
-            {"id": "a4", "title": "Four"},
         ]
-        self.mock_invoke.return_value = (
-            '{"selected_ids": ["a3", "a1", "a4"]}',
-            MagicMock(),
-        )
+        self.mock_fetch.return_value = fetched_articles
         self.mock_generate_weekly.return_value = {
             "week": 33,
             "year": 2026,
@@ -61,22 +52,19 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         response = self.client.post("/admin/articles/generate")
 
         self.assertEqual(response.status_code, 200)
-        picked_articles = [
-            {"id": "a3", "title": "Three"},
-            {"id": "a1", "title": "One"},
-            {"id": "a4", "title": "Four"},
-        ]
         self.assertEqual(
-            [article["id"] for article in response.get_json()["articles"]],
-            ["a3", "a1", "a4"],
+            response.get_json(),
+            {
+                "weekly_articles": {
+                    "week": 33,
+                    "year": 2026,
+                    "hsk_levels": [1, 2, 3, 4, 5, 6],
+                }
+            },
         )
-        self.assertEqual(
-            response.get_json()["weekly_articles"],
-            {"week": 33, "year": 2026, "hsk_levels": [1, 2, 3, 4, 5, 6]},
-        )
-        self.mock_generate_weekly.assert_called_once_with(picked_articles)
+        self.mock_generate_weekly.assert_called_once_with(fetched_articles)
 
-    def test_no_weekly_articles_generated_when_nothing_picked(self):
+    def test_no_weekly_articles_generated_when_nothing_fetched(self):
         self.mock_fetch.return_value = []
 
         response = self.client.post("/admin/articles/generate")
@@ -101,7 +89,7 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         response = self.client.post("/admin/articles/generate")
 
         self.assertEqual(response.status_code, 400)
-        self.mock_invoke.assert_not_called()
+        self.mock_generate_weekly.assert_not_called()
 
 
 class TestFetchChinaArticles(unittest.TestCase):

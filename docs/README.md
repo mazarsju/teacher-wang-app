@@ -22,6 +22,7 @@ Use this index to find the right document. Prefer **one source of truth** and li
 | AnkiConnect bridge | [adr/anki-connect.md](adr/anki-connect.md) |
 | Anki ↔ KB sync orchestration | [adr/anki-sync.md](adr/anki-sync.md) |
 | Multi-agent chat | [adr/ai-agents.md](adr/ai-agents.md) |
+| Weekly articles generation | [adr/weekly-articles.md](adr/weekly-articles.md) |
 | PostgreSQL | [adr/postgres.md](adr/postgres.md) |
 | Authentication (Cognito) | [adr/auth.md](adr/auth.md) |
 | Data isolation / tenancy | [adr/data-isolation.md](adr/data-isolation.md) |
@@ -64,6 +65,7 @@ Example header:
 | AnkiConnect ownership | [adr/anki-connect.md](adr/anki-connect.md) |
 | Push/pull sync steps | [anki/sync-protocol.md](anki/sync-protocol.md) |
 | Chat agents / challenges | [adr/ai-agents.md](adr/ai-agents.md), skill `create-challenge` |
+| Weekly articles / `POST /admin/articles/generate` / `weekly_articles` | [adr/weekly-articles.md](adr/weekly-articles.md) |
 | Teacher Wang teaching behaviors (for planner/generator/validator) | [architecture/teacher-wang-behaviors.md](architecture/teacher-wang-behaviors.md) |
 | Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
 | Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |

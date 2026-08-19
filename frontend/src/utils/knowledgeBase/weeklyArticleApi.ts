@@ -9,6 +9,7 @@ export type WeeklyArticleNewWord = {
 export type WeeklyArticleItem = {
   title: string;
   content: string;
+  category?: string[];
   translation?: string;
   pinyin?: string;
   new_words?: WeeklyArticleNewWord[];

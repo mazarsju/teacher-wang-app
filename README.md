@@ -100,6 +100,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [AnkiConnect bridge](docs/adr/anki-connect.md) — why the React client talks to local AnkiConnect instead of AnkiWeb
 - [Anki ↔ knowledge-base sync](docs/adr/anki-sync.md) — push / pull orchestration (steps: [sync protocol](docs/anki/sync-protocol.md))
 - [Multi-agent chat](docs/adr/ai-agents.md) — character, grammar teacher, and challenge judge collaboration
+- [Weekly articles generation](docs/adr/weekly-articles.md) — per-HSK-level article picking, adaptation, and new-word flagging pipeline
 - [PostgreSQL](docs/adr/postgres.md) — Alembic schema, `DATABASE_URL` / `TEST_DATABASE_URL`
 - [Authentication & credentials](docs/adr/auth.md) — Cognito User Pool for credentials; thin Postgres profile by `sub`
 - [Data isolation](docs/adr/data-isolation.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
@@ -242,7 +243,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
-| `POST` | `/admin/articles/generate` | Fetch latest China-related articles from the Currents API, use the LLM to pick the 3 most important, then adapt and save them to `weekly_articles` for each HSK level 1-6 (`403` unless the caller is the admin account) |
+| `POST` | `/admin/articles/generate` | Fetch latest China-related articles from the Currents API; for each HSK level 1-6, use the LLM to pick 3 articles (by title) matching that level's topic difficulty, adapt and save them to `weekly_articles` (`403` unless the caller is the admin account) |
 
 ### Frontend
 

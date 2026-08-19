@@ -4,9 +4,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from flask import Blueprint
-from langchain_core.messages import HumanMessage, SystemMessage
 
-from backend.utils.aiChat.chat_service import _extract_json_object, _invoke_llm
 from backend.utils.aiChat.llm_config import read_config_value
 from backend.utils.auth.user_context import current_user
 from backend.utils.database.settings import ADMIN_EMAIL
@@ -16,15 +14,6 @@ bp = Blueprint("generate_article", __name__)
 
 CURRENTS_API_KEY_ENV = "CURRENTS_API_KEY"
 CURRENTS_SEARCH_URL = "https://api.currentsapi.services/v1/search"
-TOP_ARTICLE_COUNT = 3
-
-ARTICLE_PICKER_SYSTEM_PROMPT = (
-    "You are a news editor. Given a list of recent articles about China, "
-    f"pick the {TOP_ARTICLE_COUNT} most important ones for a general "
-    "audience following China-related news. Reply with only a JSON "
-    'object: {"selected_ids": ["id1", "id2", "id3"]} using each '
-    'article\'s "id" field, ordered from most to least important.'
-)
 
 
 def _fetch_china_articles() -> list[dict]:
@@ -50,29 +39,6 @@ def _fetch_china_articles() -> list[dict]:
     return payload.get("news", [])
 
 
-def _pick_top_articles(articles: list[dict]) -> list[dict]:
-    if not articles:
-        return []
-
-    listing = "\n".join(
-        f'{article.get("id")}: {article.get("title", "")} — '
-        f'{article.get("description", "")}'
-        for article in articles
-    )
-
-    raw, _ = _invoke_llm(
-        [
-            SystemMessage(content=ARTICLE_PICKER_SYSTEM_PROMPT),
-            HumanMessage(content=f"Articles:\n{listing}"),
-        ]
-    )
-    selected_ids = _extract_json_object(raw).get("selected_ids", [])
-
-    by_id = {article.get("id"): article for article in articles}
-    picked = [by_id[article_id] for article_id in selected_ids if article_id in by_id]
-    return picked[:TOP_ARTICLE_COUNT]
-
-
 @bp.post("/admin/articles/generate")
 def generate_article():
     if current_user().email != ADMIN_EMAIL:
@@ -80,13 +46,10 @@ def generate_article():
 
     try:
         articles = _fetch_china_articles()
-        top_articles = _pick_top_articles(articles)
-        weekly_articles = (
-            generate_weekly_articles(top_articles) if top_articles else None
-        )
+        weekly_articles = generate_weekly_articles(articles) if articles else None
     except ValueError as error:
         return {"error": str(error)}, 400
     except Exception:
         return {"error": "Failed to generate article selection"}, 500
 
-    return {"articles": top_articles, "weekly_articles": weekly_articles}, 200
+    return {"weekly_articles": weekly_articles}, 200

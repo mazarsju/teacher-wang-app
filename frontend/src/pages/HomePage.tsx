@@ -186,6 +186,21 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 <ul className={styles.homeArticleList}>
                   {weeklyArticle.content.map((article, index) => (
                     <li key={index} className={styles.homeArticleItem}>
+                      {article.category && article.category.length > 0 && (
+                        <ul
+                          className={styles.homeArticleCategoryList}
+                          aria-label="Article categories"
+                        >
+                          {article.category.map((category) => (
+                            <li
+                              key={category}
+                              className={styles.homeArticleCategory}
+                            >
+                              {category}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       <p className={styles.homeArticleItemTitle}>
                         {article.title}
                       </p>
