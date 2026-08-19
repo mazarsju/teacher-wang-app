@@ -15,28 +15,74 @@ bp = Blueprint("generate_article", __name__)
 CURRENTS_API_KEY_ENV = "CURRENTS_API_KEY"
 CURRENTS_SEARCH_URL = "https://api.currentsapi.services/v1/search"
 
+GUARDIAN_API_KEY_ENV = "GUARDIAN_API_KEY"
+GUARDIAN_SEARCH_URL = "https://content.guardianapis.com/search"
 
-def _fetch_china_articles() -> list[dict]:
-    api_key = read_config_value(CURRENTS_API_KEY_ENV)
+ARTICLE_SOURCE_CURRENTS = "currents"
+ARTICLE_SOURCE_GUARDIAN = "guardian"
+
+# Hardcoded choice of news source for weekly article generation.
+ARTICLE_SOURCE = ARTICLE_SOURCE_GUARDIAN
+
+# Cloudflare (in front of some news APIs) blocks urllib's default
+# "Python-urllib/…" User-Agent as a bot signature (error code: 1010).
+USER_AGENT = "teacher-wang-app/1.0"
+
+
+def _require_api_key(env_name: str) -> str:
+    api_key = read_config_value(env_name)
     if not api_key:
         raise ValueError(
-            f"{CURRENTS_API_KEY_ENV} must be set as an environment variable "
+            f"{env_name} must be set as an environment variable "
             "(or in .config.txt for local development)"
         )
+    return api_key
 
-    query = urlencode({"keywords": "China", "language": "en", "apiKey": api_key})
-    url = f"{CURRENTS_SEARCH_URL}?{query}"
-    # Cloudflare (in front of the Currents API) blocks urllib's default
-    # "Python-urllib/…" User-Agent as a bot signature (error code: 1010).
-    request = Request(url, headers={"User-Agent": "teacher-wang-app/1.0"})
 
+def _get_json(url: str) -> dict:
+    request = Request(url, headers={"User-Agent": USER_AGENT})
     try:
         with urlopen(request, timeout=10) as response:  # noqa: S310 - fixed https API host
-            payload = json.loads(response.read().decode("utf-8"))
+            return json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError) as error:
-        raise ValueError(f"Currents API request failed: {error}") from error
+        raise ValueError(f"News API request failed: {error}") from error
 
+
+def _fetch_from_currents() -> list[dict]:
+    api_key = _require_api_key(CURRENTS_API_KEY_ENV)
+    query = urlencode({"keywords": "China", "language": "en", "apiKey": api_key})
+    payload = _get_json(f"{CURRENTS_SEARCH_URL}?{query}")
     return payload.get("news", [])
+
+
+def _fetch_from_guardian() -> list[dict]:
+    api_key = _require_api_key(GUARDIAN_API_KEY_ENV)
+    query = urlencode(
+        {
+            "q": "China",
+            "api-key": api_key,
+            "show-fields": "trailText",
+            "order-by": "newest",
+            "page-size": "20",
+        }
+    )
+    payload = _get_json(f"{GUARDIAN_SEARCH_URL}?{query}")
+    results = payload.get("response", {}).get("results", [])
+    return [
+        {
+            "id": item.get("id", ""),
+            "title": item.get("webTitle", ""),
+            "description": item.get("fields", {}).get("trailText", ""),
+            "category": [item["sectionName"]] if item.get("sectionName") else [],
+        }
+        for item in results
+    ]
+
+
+def _fetch_china_articles() -> list[dict]:
+    if ARTICLE_SOURCE == ARTICLE_SOURCE_GUARDIAN:
+        return _fetch_from_guardian()
+    return _fetch_from_currents()
 
 
 @bp.post("/admin/articles/generate")

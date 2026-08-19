@@ -9,7 +9,11 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
-from backend.routes.generate_article import _fetch_china_articles  # noqa: E402
+from backend.routes.generate_article import (  # noqa: E402
+    _fetch_china_articles,
+    _fetch_from_currents,
+    _fetch_from_guardian,
+)
 from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 
 
@@ -83,7 +87,7 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
 
     def test_missing_api_key_returns_400(self):
         self.mock_fetch.side_effect = ValueError(
-            "CURRENTS_API_KEY must be set as an environment variable"
+            "GUARDIAN_API_KEY must be set as an environment variable"
         )
 
         response = self.client.post("/admin/articles/generate")
@@ -92,7 +96,31 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         self.mock_generate_weekly.assert_not_called()
 
 
-class TestFetchChinaArticles(unittest.TestCase):
+class TestArticleSourceDispatch(unittest.TestCase):
+    """`_fetch_china_articles` picks a source per the hardcoded `ARTICLE_SOURCE` flag."""
+
+    def test_dispatches_to_guardian_by_default(self):
+        with patch(
+            "backend.routes.generate_article._fetch_from_guardian"
+        ) as mock_guardian:
+            mock_guardian.return_value = [{"id": "g1"}]
+
+            self.assertEqual(_fetch_china_articles(), [{"id": "g1"}])
+            mock_guardian.assert_called_once_with()
+
+    def test_dispatches_to_currents_when_flag_set(self):
+        with patch(
+            "backend.routes.generate_article.ARTICLE_SOURCE", "currents"
+        ), patch(
+            "backend.routes.generate_article._fetch_from_currents"
+        ) as mock_currents:
+            mock_currents.return_value = [{"id": "c1"}]
+
+            self.assertEqual(_fetch_china_articles(), [{"id": "c1"}])
+            mock_currents.assert_called_once_with()
+
+
+class TestFetchFromCurrents(unittest.TestCase):
     def setUp(self):
         self.read_config_patcher = patch(
             "backend.routes.generate_article.read_config_value"
@@ -104,7 +132,7 @@ class TestFetchChinaArticles(unittest.TestCase):
         self.mock_read_config.return_value = ""
 
         with self.assertRaises(ValueError):
-            _fetch_china_articles()
+            _fetch_from_currents()
 
     @patch("backend.routes.generate_article.urlopen")
     def test_reads_api_key_the_same_way_as_llm_api_key(self, mock_urlopen):
@@ -115,13 +143,89 @@ class TestFetchChinaArticles(unittest.TestCase):
         ).encode("utf-8")
         mock_urlopen.return_value.__enter__.return_value = mock_response
 
-        articles = _fetch_china_articles()
+        articles = _fetch_from_currents()
 
         self.assertEqual(articles, [{"id": "a1", "title": "One"}])
         self.mock_read_config.assert_called_once_with("CURRENTS_API_KEY")
 
         sent_request = mock_urlopen.call_args.args[0]
         self.assertIn("User-agent", sent_request.headers)
+
+
+class TestFetchFromGuardian(unittest.TestCase):
+    def setUp(self):
+        self.read_config_patcher = patch(
+            "backend.routes.generate_article.read_config_value"
+        )
+        self.mock_read_config = self.read_config_patcher.start()
+        self.addCleanup(self.read_config_patcher.stop)
+
+    def test_raises_when_api_key_missing(self):
+        self.mock_read_config.return_value = ""
+
+        with self.assertRaises(ValueError):
+            _fetch_from_guardian()
+
+    @patch("backend.routes.generate_article.urlopen")
+    def test_reads_api_key_the_same_way_as_currents_api_key(self, mock_urlopen):
+        self.mock_read_config.return_value = "test-key"
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps(
+            {
+                "response": {
+                    "results": [
+                        {
+                            "id": "world/2026/aug/01/china-story",
+                            "webTitle": "China story",
+                            "sectionName": "World news",
+                            "fields": {"trailText": "A short teaser."},
+                        }
+                    ]
+                }
+            }
+        ).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        articles = _fetch_from_guardian()
+
+        self.assertEqual(
+            articles,
+            [
+                {
+                    "id": "world/2026/aug/01/china-story",
+                    "title": "China story",
+                    "description": "A short teaser.",
+                    "category": ["World news"],
+                }
+            ],
+        )
+        self.mock_read_config.assert_called_once_with("GUARDIAN_API_KEY")
+
+        sent_request = mock_urlopen.call_args.args[0]
+        self.assertIn("User-agent", sent_request.headers)
+
+    @patch("backend.routes.generate_article.urlopen")
+    def test_defaults_missing_fields(self, mock_urlopen):
+        self.mock_read_config.return_value = "test-key"
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps(
+            {"response": {"results": [{"id": "a1", "webTitle": "Title only"}]}}
+        ).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        articles = _fetch_from_guardian()
+
+        self.assertEqual(
+            articles,
+            [
+                {
+                    "id": "a1",
+                    "title": "Title only",
+                    "description": "",
+                    "category": [],
+                }
+            ],
+        )
 
 
 if __name__ == "__main__":

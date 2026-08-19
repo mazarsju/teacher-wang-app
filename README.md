@@ -190,7 +190,14 @@ curl -X POST -F "file=@db.txt" \
 - **Production / ECS:** set these as task-definition secrets / environment variables in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra).
 - **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/utils/aiChat/llm_config.py` as a convenience fallback).
 
-`CURRENTS_API_KEY` is the [Currents API](https://currentsapi.services/) key used by `POST /admin/articles/generate` to fetch China-related news, read the same way as `LLM_API_KEY` above (`.config.txt` first, then the environment variable).
+`POST /admin/articles/generate` fetches China-related news from one of two sources, chosen by the hardcoded `ARTICLE_SOURCE` flag in `backend/routes/generate_article.py` (currently `"guardian"`) — not an env var, since it's a code-level choice, not a per-environment secret:
+
+| Key / variable | Description |
+| --- | --- |
+| `CURRENTS_API_KEY` | [Currents API](https://currentsapi.services/) key (used when `ARTICLE_SOURCE = "currents"`) |
+| `GUARDIAN_API_KEY` | [The Guardian Open Platform](https://open-platform.theguardian.com/) key (used when `ARTICLE_SOURCE = "guardian"`) |
+
+Both are read the same way as `LLM_API_KEY` above (`.config.txt` first, then the environment variable).
 
 Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are read from `.config.txt` first (if present), then from environment variables.
 
@@ -243,7 +250,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
-| `POST` | `/admin/articles/generate` | Fetch latest China-related articles from the Currents API; for each HSK level 1-6, use the LLM to pick 3 articles (by title) matching that level's topic difficulty, adapt and save them to `weekly_articles` (`403` unless the caller is the admin account) |
+| `POST` | `/admin/articles/generate` | Fetch latest China-related articles (Currents API or The Guardian, per the hardcoded `ARTICLE_SOURCE` flag); for each HSK level 1-6, use the LLM to pick 3 articles (by title) matching that level's topic difficulty, adapt and save them to `weekly_articles` (`403` unless the caller is the admin account) |
 
 ### Frontend
 
