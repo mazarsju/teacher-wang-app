@@ -5,13 +5,17 @@ from unittest.mock import MagicMock, patch
 
 from backend.routes.weekly_article_generator import (
     ARTICLE_LENGTH_GUIDELINES,
+    _content_adaptation_instructions,
     _full_length_text,
     _inject_new_words,
+    _known_hsk_words,
+    _measure_words_instruction,
     _normalize_article,
     _pick_articles_for_level,
     generate_weekly_articles,
 )
-from backend.utils.database.models import WeeklyArticle
+from backend.utils.database.extensions import db
+from backend.utils.database.models import HskWord, WeeklyArticle
 from postgres_test_case import PostgresTestCase
 
 
@@ -30,6 +34,76 @@ class TestFullLengthText(unittest.TestCase):
 class TestArticleLengthGuidelines(unittest.TestCase):
     def test_has_a_guideline_for_every_hsk_level(self):
         self.assertEqual(set(ARTICLE_LENGTH_GUIDELINES.keys()), {1, 2, 3, 4, 5, 6})
+
+
+class TestMeasureWordsInstruction(unittest.TestCase):
+    def test_empty_for_levels_beyond_hsk4(self):
+        self.assertEqual(_measure_words_instruction(5), "")
+        self.assertEqual(_measure_words_instruction(6), "")
+
+    def test_hsk1_only_lists_hsk1_words(self):
+        instruction = _measure_words_instruction(1)
+
+        self.assertIn("个 (gè)", instruction)
+        self.assertNotIn("件 (jiàn)", instruction)  # HSK2
+
+    def test_is_cumulative_up_to_the_level(self):
+        instruction = _measure_words_instruction(3)
+
+        self.assertIn("个 (gè)", instruction)  # HSK1
+        self.assertIn("件 (jiàn)", instruction)  # HSK2
+        self.assertIn("张 (zhāng)", instruction)  # HSK3
+        self.assertNotIn("座 (zuò)", instruction)  # HSK4, not yet
+
+    def test_adaptation_instructions_include_measure_words_for_hsk1_to_4(self):
+        for level in (1, 2, 3, 4):
+            self.assertIn("量词", _content_adaptation_instructions(level))
+
+    def test_adaptation_instructions_omit_measure_words_beyond_hsk4(self):
+        for level in (5, 6):
+            self.assertNotIn("量词", _content_adaptation_instructions(level))
+
+
+class TestKnownHskWords(PostgresTestCase):
+    def setUp(self):
+        super().setUp()
+        db.session.add_all(
+            [
+                HskWord(
+                    id="熊猫|xiongmao",
+                    word="熊猫",
+                    level=1,
+                    frequency=1,
+                    pinyin="xiongmao",
+                    definition="panda",
+                ),
+                HskWord(
+                    id="长城|changcheng",
+                    word="长城",
+                    level=3,
+                    frequency=1,
+                    pinyin="changcheng",
+                    definition="Great Wall",
+                ),
+            ]
+        )
+        db.session.commit()
+
+    def test_returns_words_at_or_below_the_target_level(self):
+        result = _known_hsk_words({"熊猫", "长城", "外交"}, hsk_level=2)
+
+        self.assertEqual(result, {"熊猫"})
+
+    def test_includes_words_exactly_at_the_target_level(self):
+        result = _known_hsk_words({"长城"}, hsk_level=3)
+
+        self.assertEqual(result, {"长城"})
+
+    def test_returns_empty_set_for_empty_input(self):
+        self.assertEqual(_known_hsk_words(set(), hsk_level=6), set())
+
+    def test_ignores_words_not_in_hsk_words(self):
+        self.assertEqual(_known_hsk_words({"外交"}, hsk_level=6), set())
 
 
 class TestPickArticlesForLevel(unittest.TestCase):
@@ -158,6 +232,54 @@ class TestInjectNewWords(unittest.TestCase):
         )
         self.mock_invoke = self.invoke_patcher.start()
         self.addCleanup(self.invoke_patcher.stop)
+
+        self.known_words_patcher = patch(
+            "backend.routes.weekly_article_generator._known_hsk_words"
+        )
+        self.mock_known_words = self.known_words_patcher.start()
+        self.addCleanup(self.known_words_patcher.stop)
+        self.mock_known_words.return_value = set()
+
+    def test_drops_words_already_in_hsk_words_at_or_below_the_level(self):
+        self.mock_invoke.return_value = (
+            json.dumps(
+                {
+                    "articles": [
+                        {
+                            "new_words": [
+                                {"word": "长城", "translation": "Great Wall"},
+                                {"word": "熊猫", "translation": "panda"},
+                            ]
+                        }
+                    ]
+                }
+            ),
+            MagicMock(),
+        )
+        self.mock_known_words.return_value = {"熊猫"}
+        content = [{"title": "T1", "content": "C1"}]
+
+        result = _inject_new_words(content, hsk_level=3)
+
+        self.assertEqual(
+            result[0]["new_words"],
+            [{"word": "长城", "translation": "Great Wall"}],
+        )
+        self.mock_known_words.assert_called_once_with({"长城", "熊猫"}, 3)
+
+    def test_omits_new_words_field_when_every_word_is_already_known(self):
+        self.mock_invoke.return_value = (
+            json.dumps(
+                {"articles": [{"new_words": [{"word": "熊猫", "translation": "panda"}]}]}
+            ),
+            MagicMock(),
+        )
+        self.mock_known_words.return_value = {"熊猫"}
+        content = [{"title": "T", "content": "C"}]
+
+        result = _inject_new_words(content, hsk_level=1)
+
+        self.assertNotIn("new_words", result[0])
 
     def test_merges_new_words_into_matching_articles(self):
         self.mock_invoke.return_value = (

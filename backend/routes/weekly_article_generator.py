@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from backend.utils.aiChat.chat_service import _extract_json_object, _invoke_llm
 from backend.utils.aiChat.teaching_strategy import get_teaching_strategy
 from backend.utils.database.extensions import db
-from backend.utils.database.models import WeeklyArticle, utcnow
+from backend.utils.database.models import HskWord, WeeklyArticle, utcnow
 
 ARTICLES_PER_LEVEL = 3
 TRANSLATION_LEVELS = {1, 2, 3}
@@ -28,6 +28,25 @@ ARTICLE_LENGTH_GUIDELINES: dict[int, str] = {
     4: "About 20 to 35 lines per article.",
     5: "About 35 to 55 lines per article.",
     6: "About 55 to 90 lines per article, close to the full source length.",
+}
+
+# Per-level measure words (量词), from
+# https://resources.allsetlearning.com/chinese/vocabulary/HSK_1-4_Measure_Words
+# Beyond HSK4 there is no such constrained list — natural usage applies.
+MEASURE_WORDS_BY_LEVEL: dict[int, list[str]] = {
+    1: ["本 (běn)", "个 (gè)", "块 (kuài)", "岁 (suì)", "些 (xiē)", "一点儿 (yīdiǎnr)"],
+    2: ["次 (cì)", "件 (jiàn)", "一下 (yīxià)"],
+    3: [
+        "把 (bǎ)", "层 (céng)", "段 (duàn)", "分 (fēn)", "公斤 (gōngjīn)",
+        "角 (jiǎo)", "刻 (kè)", "口 (kǒu)", "辆 (liàng)", "双 (shuāng)",
+        "条 (tiáo)", "碗 (wǎn)", "位 (wèi)", "元 (yuán)", "张 (zhāng)",
+        "只 (zhī)", "种 (zhǒng)",
+    ],
+    4: [
+        "倍 (bèi)", "遍 (biàn)", "场 (cháng)", "份 (fèn)", "公里 (gōnglǐ)",
+        "节 (jié)", "棵 (kē)", "秒 (miǎo)", "篇 (piān)", "台 (tái)",
+        "趟 (tàng)", "页 (yè)", "座 (zuò)",
+    ],
 }
 
 ARTICLE_PICKER_SYSTEM_PROMPT_TEMPLATE = (
@@ -79,6 +98,23 @@ ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE = (
 )
 
 
+def _measure_words_instruction(hsk_level: int) -> str:
+    if hsk_level not in MEASURE_WORDS_BY_LEVEL:
+        # No constrained list beyond HSK4 — natural usage applies.
+        return ""
+    cumulative = [
+        word
+        for level in range(1, hsk_level + 1)
+        for word in MEASURE_WORDS_BY_LEVEL.get(level, [])
+    ]
+    return (
+        "Measure words (量词): whenever a noun needs a measure word, use "
+        f"only ones from this HSK 1-{hsk_level} list, matched to the "
+        "correct noun — do not default to 个 for everything it doesn't fit, "
+        f"and do not use a measure word outside this list: {'、'.join(cumulative)}."
+    )
+
+
 def _content_adaptation_instructions(hsk_level: int) -> str:
     lines = []
     if hsk_level in LOOSE_ACCURACY_LEVELS:
@@ -96,6 +132,9 @@ def _content_adaptation_instructions(hsk_level: int) -> str:
             "necessary to understand the story — replace or omit them "
             "otherwise."
         )
+    measure_words_instruction = _measure_words_instruction(hsk_level)
+    if measure_words_instruction:
+        lines.append(measure_words_instruction)
     return "\n".join(lines)
 
 
@@ -132,6 +171,16 @@ def _normalize_new_words(raw_words) -> list[dict]:
         for item in raw_words
         if isinstance(item, dict) and item.get("word")
     ]
+
+
+def _known_hsk_words(words: set[str], hsk_level: int) -> set[str]:
+    """Words already covered by HSK 1-``hsk_level`` vocabulary, per hsk_words."""
+    if not words:
+        return set()
+    rows = HskWord.query.filter(
+        HskWord.word.in_(words), HskWord.level <= hsk_level
+    ).all()
+    return {row.word for row in rows}
 
 
 def _full_length_text(articles: list[dict]) -> str:
@@ -198,7 +247,10 @@ def _inject_new_words(content: list[dict], hsk_level: int) -> list[dict]:
 
     Reads the already-generated ``content`` back (a second LLM pass, after
     ``_adapt_articles_for_level``) and flags vocabulary beyond HSK
-    1-``hsk_level``. Articles with no such words are left unchanged.
+    1-``hsk_level``. Words the model flagged that are actually already in
+    ``hsk_words`` at or below this level are dropped — the LLM's flagging
+    is a best-effort guess, ``hsk_words`` is the source of truth. Articles
+    with no remaining new words are left unchanged.
     """
     if not content:
         return content
@@ -215,11 +267,19 @@ def _inject_new_words(content: list[dict], hsk_level: int) -> list[dict]:
     )
     results = _extract_json_object(raw).get("articles", [])
 
-    for index, article in enumerate(content):
-        raw_words = results[index].get("new_words", []) if index < len(results) else []
-        new_words = _normalize_new_words(raw_words)
-        if new_words:
-            article["new_words"] = new_words
+    per_article_words = [
+        _normalize_new_words(
+            results[index].get("new_words", []) if index < len(results) else []
+        )
+        for index in range(len(content))
+    ]
+    all_words = {item["word"] for words in per_article_words for item in words}
+    known_words = _known_hsk_words(all_words, hsk_level)
+
+    for article, new_words in zip(content, per_article_words):
+        filtered_words = [item for item in new_words if item["word"] not in known_words]
+        if filtered_words:
+            article["new_words"] = filtered_words
 
     return content
 
