@@ -116,6 +116,7 @@ export default function AddSuggestedWordsModal({
         selected.map((word) => ({
           word: word.word,
           definition: word.definition.trim().slice(0, 100) || null,
+          pinyin: word.pinyin,
         })),
       );
       await dispatch(syncAppData()).unwrap();

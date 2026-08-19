@@ -178,7 +178,7 @@ describe("AddSuggestedWordsModal", () => {
       String(input).endsWith("/words/bulk-create"),
     );
     expect(jsonBody(wordsCall?.[1]).words).toEqual([
-      { word: "爱", definition: "love" },
+      { word: "爱", definition: "love", pinyin: "ai4" },
     ]);
   });
 
