@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import type { AnkiCustomFieldDef } from "../types/anki";
 import type { Word } from "../types/word";
 import {
   buildPinyinFromCharacterMap,
@@ -12,6 +13,7 @@ export type WordFormValues = {
   definition: string;
   pinyin: string;
   writing_known: boolean;
+  custom_fields: Record<string, string>;
 };
 
 type AddWordModalProps = {
@@ -21,6 +23,7 @@ type AddWordModalProps = {
   existingWords?: string[];
   hskCharacterPinyin: Record<string, string>;
   characterPinyin: Record<string, string>;
+  customFields?: AnkiCustomFieldDef[];
   onConfirm: (values: WordFormValues) => void;
   onCancel: () => void;
 };
@@ -32,6 +35,7 @@ export default function AddWordModal({
   existingWords = [],
   hskCharacterPinyin,
   characterPinyin,
+  customFields = [],
   onConfirm,
   onCancel,
 }: AddWordModalProps) {
@@ -39,6 +43,7 @@ export default function AddWordModal({
   const [definition, setDefinition] = useState("");
   const [pinyin, setPinyin] = useState("");
   const [writingKnown, setWritingKnown] = useState(false);
+  const [customValues, setCustomValues] = useState<Record<string, string>>({});
 
   const existingWordSet = useMemo(
     () => new Set(existingWords),
@@ -55,6 +60,7 @@ export default function AddWordModal({
       setDefinition(initialWord.definition ?? "");
       setPinyin(initialWord.pinyin ?? "");
       setWritingKnown(initialWord.writing_known);
+      setCustomValues(initialWord.custom_fields ?? {});
       return;
     }
 
@@ -62,6 +68,7 @@ export default function AddWordModal({
     setDefinition("");
     setPinyin("");
     setWritingKnown(false);
+    setCustomValues({});
   }, [isOpen, mode, initialWord]);
 
   if (!isOpen) {
@@ -94,6 +101,7 @@ export default function AddWordModal({
       definition: definition.trim(),
       pinyin: pinyin.trim(),
       writing_known: writingKnown,
+      custom_fields: customValues,
     });
   }
 
@@ -163,6 +171,28 @@ export default function AddWordModal({
               onChange={(event) => setDefinition(event.target.value)}
             />
           </label>
+          {customFields.map((field) => (
+            <label key={field.id} className="modal-field">
+              <span className="modal-field-label">
+                {field.title}{" "}
+                {field.description !== "" && (
+                  <span className={styles.fieldHint}>
+                    ({field.description})
+                  </span>
+                )}
+              </span>
+              <input
+                type="text"
+                value={customValues[field.id] ?? ""}
+                onChange={(event) =>
+                  setCustomValues((current) => ({
+                    ...current,
+                    [field.id]: event.target.value,
+                  }))
+                }
+              />
+            </label>
+          ))}
           <label className="modal-field-toggle">
             <span className="modal-field-label">writing known</span>
             <span className="toggle">

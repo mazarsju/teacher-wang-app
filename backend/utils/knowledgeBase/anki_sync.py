@@ -20,6 +20,7 @@ from backend.utils.database.models import (
     utcnow,
 )
 from backend.utils.database.settings import (
+    SETTING_ANKI_MANDARIN_VOCABULARY_CUSTOM_FIELDS,
     SETTING_ANKI_MANDARIN_VOCABULARY_DECK,
     SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS,
     SETTING_ANKI_MANDARIN_VOCABULARY_MODEL,
@@ -56,6 +57,12 @@ REQUIRED_FIELDS: dict[DeckKind, tuple[str, ...]] = {
     "mandarin_vocabulary": ("writing", "pinyin", "definition"),
 }
 
+# Optional user-defined fields (title + Anki field mapping) — vocabulary only.
+CUSTOM_FIELDS_SETTING_KEYS: dict[DeckKind, str | None] = {
+    "mandarin_vocabulary": SETTING_ANKI_MANDARIN_VOCABULARY_CUSTOM_FIELDS,
+    "mandarin_writing": None,
+}
+
 
 def _parse_fields(raw: str) -> dict[str, str]:
     if raw.strip() == "":
@@ -71,6 +78,54 @@ def _parse_fields(raw: str) -> dict[str, str]:
         for key, value in data.items()
         if isinstance(key, str) and isinstance(value, str)
     }
+
+
+def validate_custom_fields(fields: Any) -> list[dict[str, str]]:
+    if not isinstance(fields, list):
+        raise ValueError("custom_fields must be an array")
+
+    cleaned: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+    for entry in fields:
+        if not isinstance(entry, dict):
+            raise ValueError("Each custom field must be an object")
+        field_id = entry.get("id")
+        title = entry.get("title")
+        description = entry.get("description", "")
+        anki_field = entry.get("anki_field")
+        if not isinstance(field_id, str) or field_id.strip() == "":
+            raise ValueError("custom_fields[].id is required")
+        if not isinstance(title, str) or title.strip() == "":
+            raise ValueError("custom_fields[].title is required")
+        if not isinstance(anki_field, str) or anki_field.strip() == "":
+            raise ValueError("custom_fields[].anki_field is required")
+        if not isinstance(description, str):
+            raise ValueError("custom_fields[].description must be a string")
+        if field_id in seen_ids:
+            raise ValueError(f'Duplicate custom field id "{field_id}"')
+        seen_ids.add(field_id)
+        cleaned.append(
+            {
+                "id": field_id.strip(),
+                "title": title.strip(),
+                "description": description.strip(),
+                "anki_field": anki_field.strip(),
+            }
+        )
+    return cleaned
+
+
+def _parse_custom_fields(raw: str) -> list[dict[str, str]]:
+    if raw.strip() == "":
+        return []
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    try:
+        return validate_custom_fields(data)
+    except ValueError:
+        return []
 
 
 def _fields_complete(kind: DeckKind, fields: dict[str, str]) -> bool:
@@ -135,12 +190,13 @@ def _vocabulary_card_pinyin(user_id: str, word_text: str) -> str:
     return "".join(pieces)
 
 
-def vocabulary_card_from_word(word: Word) -> dict[str, str]:
+def vocabulary_card_from_word(word: Word) -> dict[str, Any]:
     return {
         "id": word.word,
         "writing": word.word,
         "pinyin": _vocabulary_card_pinyin(word.user_id, word.word),
         "definition": word.definition or "",
+        "custom_fields": dict(word.custom_fields or {}),
     }
 
 
@@ -415,6 +471,12 @@ def get_deck_mapping(user_id: str, kind: DeckKind) -> dict[str, Any]:
     deck_name = get_setting(user_id, DECK_SETTING_KEYS[kind], "")
     model_name = get_setting(user_id, MODEL_SETTING_KEYS[kind], "")
     fields = _parse_fields(get_setting(user_id, FIELDS_SETTING_KEYS[kind], ""))
+    custom_fields_key = CUSTOM_FIELDS_SETTING_KEYS[kind]
+    custom_fields = (
+        _parse_custom_fields(get_setting(user_id, custom_fields_key, "[]"))
+        if custom_fields_key
+        else []
+    )
     return {
         "status": deck_status_for_mapping(
             user_id,
@@ -426,6 +488,7 @@ def get_deck_mapping(user_id: str, kind: DeckKind) -> dict[str, Any]:
         "deck_name": deck_name,
         "model_name": model_name,
         "fields": fields,
+        "custom_fields": custom_fields,
     }
 
 
@@ -475,6 +538,7 @@ def setup_deck(
     *,
     model_name: str,
     fields: dict[str, str],
+    custom_fields: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Persist deck mapping only (Anki validation happens on the frontend)."""
     trimmed_deck = deck_name.strip()
@@ -485,6 +549,10 @@ def setup_deck(
         raise ValueError("model_name must be a non-empty string")
 
     cleaned_fields = validate_fields(kind, fields)
+    custom_fields_key = CUSTOM_FIELDS_SETTING_KEYS[kind]
+    cleaned_custom_fields = (
+        validate_custom_fields(custom_fields or []) if custom_fields_key else []
+    )
 
     set_setting(user_id, DECK_SETTING_KEYS[kind], trimmed_deck, commit=False)
     set_setting(user_id, MODEL_SETTING_KEYS[kind], trimmed_model, commit=False)
@@ -492,8 +560,15 @@ def setup_deck(
         user_id,
         FIELDS_SETTING_KEYS[kind],
         json.dumps(cleaned_fields, ensure_ascii=False),
-        commit=True,
+        commit=custom_fields_key is None,
     )
+    if custom_fields_key:
+        set_setting(
+            user_id,
+            custom_fields_key,
+            json.dumps(cleaned_custom_fields, ensure_ascii=False),
+            commit=True,
+        )
     return get_deck_mapping(user_id, kind)
 
 

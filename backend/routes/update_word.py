@@ -4,6 +4,7 @@ from backend.utils.knowledgeBase.character_sync import rebuild_characters_from_w
 from backend.utils.database.extensions import db
 from backend.utils.knowledgeBase.hsk_level import refresh_current_hsk_level
 from backend.utils.database.models import Word, utcnow
+from backend.routes.create_word import WordValidationError, validate_custom_fields_payload
 from backend.utils.auth.user_context import current_user_id
 
 bp = Blueprint("update_word", __name__)
@@ -45,6 +46,12 @@ def update_word(word: str):
             return {"error": "writing_known must be a boolean"}, 400
         word_record.writing_known = writing_known
 
+    if "custom_fields" in data:
+        try:
+            word_record.custom_fields = validate_custom_fields_payload(data)
+        except WordValidationError as exc:
+            return {"error": str(exc)}, 400
+
     word_record.definition = definition.strip() or None
     word_record.updated_at = utcnow()
     sync_result = rebuild_characters_from_words(user_id)
@@ -56,6 +63,7 @@ def update_word(word: str):
         "definition": word_record.definition,
         "pinyin": word_record.pinyin,
         "writing_known": word_record.writing_known,
+        "custom_fields": word_record.custom_fields,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_record.word),
         "updated_characters": [

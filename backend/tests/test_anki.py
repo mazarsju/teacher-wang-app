@@ -94,6 +94,7 @@ class TestAnkiRoutes(unittest.TestCase):
             "Characters",
             model_name="Basic",
             fields={"recto": "Front", "verso": "Back"},
+            custom_fields=None,
         )
         self.assertEqual(
             response.get_json(),
@@ -102,6 +103,70 @@ class TestAnkiRoutes(unittest.TestCase):
                 "deck": self.mock_setup.return_value,
             },
         )
+
+    def test_setup_anki_deck_forwards_custom_fields(self):
+        self.mock_setup.return_value = {
+            "status": "not_configured",
+            "deck_name": "Vocab",
+            "model_name": "Words",
+            "fields": {"writing": "Hanzi", "pinyin": "Reading", "definition": "Meaning"},
+            "custom_fields": [
+                {
+                    "id": "example",
+                    "title": "Example sentence",
+                    "description": "",
+                    "anki_field": "Example",
+                }
+            ],
+        }
+
+        response = self.client.post(
+            "/anki/decks/setup",
+            json={
+                "kind": "mandarin_vocabulary",
+                "deck_name": "Vocab",
+                "model_name": "Words",
+                "fields": {"writing": "Hanzi", "pinyin": "Reading", "definition": "Meaning"},
+                "custom_fields": [
+                    {
+                        "id": "example",
+                        "title": "Example sentence",
+                        "description": "",
+                        "anki_field": "Example",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_setup.assert_called_once_with(
+            TEST_USER_ID,
+            "mandarin_vocabulary",
+            "Vocab",
+            model_name="Words",
+            fields={"writing": "Hanzi", "pinyin": "Reading", "definition": "Meaning"},
+            custom_fields=[
+                {
+                    "id": "example",
+                    "title": "Example sentence",
+                    "description": "",
+                    "anki_field": "Example",
+                }
+            ],
+        )
+
+    def test_setup_rejects_non_list_custom_fields(self):
+        response = self.client.post(
+            "/anki/decks/setup",
+            json={
+                "kind": "mandarin_vocabulary",
+                "deck_name": "Vocab",
+                "model_name": "Words",
+                "fields": {"writing": "Hanzi", "pinyin": "Reading", "definition": "Meaning"},
+                "custom_fields": {"not": "a list"},
+            },
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_setup_rejects_invalid_kind(self):
         response = self.client.post(
@@ -320,6 +385,114 @@ class TestAnkiSyncHelpers(PostgresTestCase):
             "writing",
             get_setting(self.user_id, SETTING_ANKI_MANDARIN_VOCABULARY_FIELDS),
         )
+
+    def test_setup_vocabulary_deck_persists_custom_fields(self):
+        from backend.utils.knowledgeBase.anki_sync import get_deck_mapping, setup_deck
+
+        result = setup_deck(
+            self.user_id,
+            "mandarin_vocabulary",
+            "Vocab",
+            model_name="VocabModel",
+            fields={
+                "writing": "Hanzi",
+                "pinyin": "Pinyin",
+                "definition": "Meaning",
+            },
+            custom_fields=[
+                {
+                    "id": "example",
+                    "title": "Example sentence",
+                    "description": "shown on the back",
+                    "anki_field": "Example",
+                }
+            ],
+        )
+
+        self.assertEqual(
+            result["custom_fields"],
+            [
+                {
+                    "id": "example",
+                    "title": "Example sentence",
+                    "description": "shown on the back",
+                    "anki_field": "Example",
+                }
+            ],
+        )
+        self.assertEqual(
+            get_deck_mapping(self.user_id, "mandarin_vocabulary")["custom_fields"],
+            result["custom_fields"],
+        )
+
+    def test_setup_writing_deck_ignores_custom_fields(self):
+        from backend.utils.knowledgeBase.anki_sync import setup_deck
+
+        result = setup_deck(
+            self.user_id,
+            "mandarin_writing",
+            "Characters",
+            model_name="Basic",
+            fields={"recto": "Front", "verso": "Back"},
+            custom_fields=[
+                {
+                    "id": "example",
+                    "title": "Example",
+                    "description": "",
+                    "anki_field": "Example",
+                }
+            ],
+        )
+
+        self.assertEqual(result["custom_fields"], [])
+
+    def test_validate_custom_fields_rejects_duplicate_ids(self):
+        from backend.utils.knowledgeBase.anki_sync import validate_custom_fields
+
+        with self.assertRaises(ValueError):
+            validate_custom_fields(
+                [
+                    {
+                        "id": "dup",
+                        "title": "A",
+                        "description": "",
+                        "anki_field": "Field1",
+                    },
+                    {
+                        "id": "dup",
+                        "title": "B",
+                        "description": "",
+                        "anki_field": "Field2",
+                    },
+                ]
+            )
+
+    def test_validate_custom_fields_requires_title_and_anki_field(self):
+        from backend.utils.knowledgeBase.anki_sync import validate_custom_fields
+
+        with self.assertRaises(ValueError):
+            validate_custom_fields([{"id": "a", "title": "", "anki_field": "Field"}])
+        with self.assertRaises(ValueError):
+            validate_custom_fields([{"id": "a", "title": "A", "anki_field": ""}])
+
+    def test_vocabulary_card_from_word_includes_custom_fields(self):
+        from backend.utils.knowledgeBase.anki_sync import vocabulary_card_from_word
+        from backend.utils.database.extensions import db
+        from backend.utils.database.models import Word
+
+        word = Word(
+            user_id=self.user_id,
+            word="水",
+            definition="water",
+            pinyin="shui3",
+            custom_fields={"example": "水很好喝"},
+        )
+        db.session.add(word)
+        db.session.commit()
+
+        card = vocabulary_card_from_word(word)
+
+        self.assertEqual(card["custom_fields"], {"example": "水很好喝"})
 
     def test_overall_status_promotes_when_both_decks_synchronized(self):
         from backend.utils.knowledgeBase.anki_sync import (

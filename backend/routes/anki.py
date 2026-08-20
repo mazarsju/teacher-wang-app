@@ -27,6 +27,7 @@ def setup_anki_deck():
     deck_name = data.get("deck_name")
     model_name = data.get("model_name")
     fields = data.get("fields")
+    custom_fields = data.get("custom_fields")
 
     if kind not in VALID_KINDS:
         return {"error": 'kind must be "mandarin_vocabulary" or "mandarin_writing"'}, 400
@@ -40,6 +41,9 @@ def setup_anki_deck():
     if not isinstance(fields, dict):
         return {"error": "fields must be an object"}, 400
 
+    if custom_fields is not None and not isinstance(custom_fields, list):
+        return {"error": "custom_fields must be an array"}, 400
+
     try:
         deck = anki_sync.setup_deck(
             current_user_id(),
@@ -47,6 +51,7 @@ def setup_anki_deck():
             deck_name,
             model_name=model_name,
             fields=fields,
+            custom_fields=custom_fields,
         )
     except ValueError as exc:
         return {"error": str(exc)}, 400

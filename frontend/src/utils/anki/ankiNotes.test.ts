@@ -66,4 +66,42 @@ describe("buildAnkiNotes", () => {
       },
     ]);
   });
+
+  it("maps custom field values onto their configured Anki field", () => {
+    const notes = buildAnkiNotes({
+      kind: "mandarin_vocabulary",
+      deckName: "Vocab",
+      modelName: "Model",
+      fieldMap: {
+        writing: "Hanzi",
+        pinyin: "Reading",
+        definition: "Meaning",
+      },
+      customFields: [
+        {
+          id: "example-sentence",
+          title: "Example sentence",
+          description: "",
+          anki_field: "Example",
+        },
+        { id: "unmapped", title: "Unmapped", description: "", anki_field: "" },
+      ],
+      cards: [
+        {
+          id: "水",
+          writing: "水",
+          pinyin: "shui3",
+          definition: "water",
+          custom_fields: { "example-sentence": "水很好喝" },
+        },
+      ],
+    });
+
+    expect(notes[0].fields).toEqual({
+      Hanzi: "水",
+      Reading: "shui3",
+      Meaning: "water",
+      Example: "水很好喝",
+    });
+  });
 });

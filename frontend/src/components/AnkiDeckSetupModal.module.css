@@ -64,3 +64,15 @@
   outline: 2px solid var(--app-focus);
   border-color: var(--app-sea);
 }
+
+.anki-custom-field-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.anki-custom-field-row .anki-deck-select {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}

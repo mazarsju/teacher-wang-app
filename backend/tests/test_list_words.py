@@ -28,6 +28,7 @@ class TestListWordsEndpoint(unittest.TestCase):
             definition="hobby",
             pinyin="ai4 hao3",
             writing_known=True,
+            custom_fields={"example": "我爱好music"},
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
             characters=[MagicMock(char="爱"), MagicMock(char="好")],
         )
@@ -36,6 +37,7 @@ class TestListWordsEndpoint(unittest.TestCase):
             definition=None,
             pinyin=None,
             writing_known=False,
+            custom_fields={},
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
             characters=[MagicMock(char="爱")],
         )
@@ -55,6 +57,7 @@ class TestListWordsEndpoint(unittest.TestCase):
                     "definition": "hobby",
                     "pinyin": "ai4 hao3",
                     "writing_known": True,
+                    "custom_fields": {"example": "我爱好music"},
                     "updated_at": updated_at,
                     "characters": ["爱", "好"],
                 },
@@ -63,6 +66,7 @@ class TestListWordsEndpoint(unittest.TestCase):
                     "definition": None,
                     "pinyin": None,
                     "writing_known": False,
+                    "custom_fields": {},
                     "updated_at": updated_at,
                     "characters": ["爱"],
                 },
@@ -77,6 +81,7 @@ class TestListWordsEndpoint(unittest.TestCase):
             definition="hobby",
             pinyin="ai4 hao3",
             writing_known=False,
+            custom_fields={},
             updated_at=MagicMock(isoformat=MagicMock(return_value=updated_at)),
             characters=[MagicMock(char="爱"), MagicMock(char="好")],
         )

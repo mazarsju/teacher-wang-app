@@ -66,6 +66,7 @@ class TestBulkCreateWordsEndpoint(unittest.TestCase):
         def make_word(**kwargs):
             record = MagicMock(**kwargs)
             record.updated_at = updated_at
+            record.custom_fields = {}
             return record
 
         self.mock_word_cls.side_effect = make_word
@@ -158,6 +159,7 @@ class TestBulkCreateWordsEndpoint(unittest.TestCase):
         def make_word(**kwargs):
             record = MagicMock(**kwargs)
             record.updated_at = updated_at
+            record.custom_fields = {}
             return record
 
         self.mock_word_cls.side_effect = make_word

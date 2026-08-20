@@ -26,6 +26,7 @@ export async function createWord(values: {
   definition: string | null;
   pinyin?: string | null;
   writing_known?: boolean;
+  custom_fields?: Record<string, string>;
 }): Promise<Word & CharacterSyncResult> {
   const response = await apiFetch(`${API_BASE}/words`, {
     method: "POST",
@@ -68,6 +69,7 @@ export async function updateWord(
     definition: string | null;
     pinyin?: string | null;
     writing_known?: boolean;
+    custom_fields?: Record<string, string>;
   },
 ): Promise<Word & CharacterSyncResult> {
   const response = await apiFetch(

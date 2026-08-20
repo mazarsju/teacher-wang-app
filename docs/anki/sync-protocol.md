@@ -6,10 +6,10 @@ Orchestration rationale: [anki-sync ADR](../adr/anki-sync.md). AnkiConnect owner
 
 | Kind | Meaning | Push payload | Pull effect |
 | --- | --- | --- | --- |
-| `mandarin_vocabulary` | Vocabulary notes | word → `writing` / `pinyin` / `definition` | Import missing words (and create characters when pinyin allows) |
+| `mandarin_vocabulary` | Vocabulary notes | word → `writing` / `pinyin` / `definition` (+ optional custom fields) | Import missing words (and create characters when pinyin allows) |
 | `mandarin_writing` | Writing practice | words with `writing_known` → `recto` (`definition (pinyin)`) / `verso` (the word) | Set `writing_known` on the matching local word |
 
-Preferences store deck name, note type, and field mappings. Sync is user-triggered from the UI (full, cancel, or partial selection), not a continuous background job.
+Preferences store deck name, note type, and field mappings. `mandarin_vocabulary` additionally supports user-defined optional fields (title, description, mapped Anki field), stored as JSON in `settings`; each word carries its own `custom_fields` (id → value), set from the Add/Edit word modal and pushed as-is (pull direction ignores them). Sync is user-triggered from the UI (full, cancel, or partial selection), not a continuous background job.
 
 ## Directions
 

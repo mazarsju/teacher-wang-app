@@ -8,6 +8,7 @@ import {
 import { persistDeckSetup } from "./ankiDbClient";
 import { ANKI_REQUIRED_FIELDS } from "../../types/anki";
 import type {
+  AnkiCustomFieldDef,
   AnkiDeckKind,
   AnkiDeckSetupResult,
   AnkiFieldKey,
@@ -36,6 +37,7 @@ export async function setupAnkiDeck(options: {
   deckName: string;
   modelName: string;
   fields: Record<AnkiFieldKey, string>;
+  customFields?: AnkiCustomFieldDef[];
   create?: boolean;
 }): Promise<AnkiDeckSetupResult> {
   const trimmedDeck = options.deckName.trim();
@@ -58,6 +60,20 @@ export async function setupAnkiDeck(options: {
     }
     cleanedFields[field.key] = value.trim();
   }
+
+  const cleanedCustomFields: AnkiCustomFieldDef[] = (
+    options.customFields ?? []
+  ).map((field) => {
+    if (field.title.trim() === "" || field.anki_field.trim() === "") {
+      throw new Error("Every custom field needs a title and an Anki field.");
+    }
+    return {
+      id: field.id,
+      title: field.title.trim(),
+      description: field.description.trim(),
+      anki_field: field.anki_field.trim(),
+    };
+  });
 
   if (options.create) {
     await createDeck(trimmedDeck);
@@ -82,12 +98,21 @@ export async function setupAnkiDeck(options: {
       );
     }
   }
+  for (const field of cleanedCustomFields) {
+    if (!modelFields.includes(field.anki_field)) {
+      throw new Error(
+        `Field "${field.anki_field}" (mapped to "${field.title}") ` +
+          `was not found on note type "${trimmedModel}".`,
+      );
+    }
+  }
 
   return persistDeckSetup({
     kind: options.kind,
     deck_name: trimmedDeck,
     model_name: trimmedModel,
     fields: cleanedFields,
+    custom_fields: cleanedCustomFields,
   });
 }
 
@@ -132,6 +157,7 @@ export async function autoSetupVocabularyDeck(options: {
         pinyin: "pinyin",
         definition: "definition",
       },
+      custom_fields: [],
     },
   };
 }

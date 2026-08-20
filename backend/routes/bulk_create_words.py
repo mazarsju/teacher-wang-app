@@ -80,6 +80,7 @@ def bulk_create_words():
                 "definition": record.definition,
                 "pinyin": record.pinyin,
                 "writing_known": record.writing_known,
+                "custom_fields": record.custom_fields,
                 "updated_at": record.updated_at.isoformat(),
                 "characters": list(record.word),
             }

@@ -93,6 +93,12 @@ class Word(db.Model):
     writing_known = db.Column(db.Boolean, nullable=False, default=False)
     anki_voc_sync = db.Column(db.Boolean, nullable=False, default=False)
     anki_writing_sync = db.Column(db.Boolean, nullable=False, default=False)
+    custom_fields = db.Column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=db.text("'{}'::jsonb"),
+    )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

@@ -54,6 +54,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
             definition="old",
             pinyin="ai4 hao3",
             writing_known=False,
+            custom_fields={},
             updated_at=updated_at,
         )
         self.mock_word_cls.query.filter_by.return_value.first.return_value = (
@@ -74,6 +75,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
                 "definition": "hobby",
                 "pinyin": "ai4 hao3",
                 "writing_known": True,
+                "custom_fields": {},
                 "updated_at": "2026-07-12T12:00:00+00:00",
                 "characters": ["爱", "好"],
                 "updated_characters": [],
@@ -86,6 +88,54 @@ class TestUpdateWordEndpoint(unittest.TestCase):
         self.mock_rebuild.assert_called_once_with(TEST_USER_ID)
         self.mock_session.commit.assert_called_once()
         self.mock_refresh.assert_called_once_with(TEST_USER_ID)
+
+    def test_update_word_updates_custom_fields(self):
+        updated_at = MagicMock(isoformat=MagicMock(return_value="2026-07-12T12:00:00+00:00"))
+        word_record = MagicMock(
+            word="爱好",
+            definition="old",
+            pinyin="ai4 hao3",
+            writing_known=False,
+            custom_fields={"example": "old value"},
+            updated_at=updated_at,
+        )
+        self.mock_word_cls.query.filter_by.return_value.first.return_value = (
+            word_record
+        )
+        self.mock_utcnow.return_value = updated_at
+
+        response = self.client.patch(
+            "/words/爱好",
+            json={
+                "definition": "hobby",
+                "custom_fields": {"example": "new value"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(word_record.custom_fields, {"example": "new value"})
+        self.assertEqual(
+            response.get_json()["custom_fields"], {"example": "new value"}
+        )
+
+    def test_update_word_rejects_non_dict_custom_fields(self):
+        word_record = MagicMock(
+            word="爱好", definition="old", pinyin="ai4 hao3", custom_fields={}
+        )
+        self.mock_word_cls.query.filter_by.return_value.first.return_value = (
+            word_record
+        )
+
+        response = self.client.patch(
+            "/words/爱好",
+            json={"definition": "hobby", "custom_fields": ["nope"]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json(), {"error": "custom_fields must be an object"}
+        )
+        self.mock_session.commit.assert_not_called()
 
     def test_update_word_rejects_non_boolean_writing_known(self):
         word_record = MagicMock(
@@ -113,6 +163,7 @@ class TestUpdateWordEndpoint(unittest.TestCase):
             definition="old",
             pinyin="ai4 hao3",
             writing_known=False,
+            custom_fields={},
             updated_at=updated_at,
         )
         self.mock_word_cls.query.filter_by.return_value.first.return_value = (

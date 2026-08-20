@@ -167,6 +167,7 @@ export function vocabularyPullCardsFromNotes(
       writing,
       pinyin,
       definition,
+      custom_fields: {},
       characters_to_create: charactersToCreate,
     });
   }

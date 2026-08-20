@@ -1,4 +1,5 @@
 import type {
+  AnkiCustomFieldDef,
   AnkiDeckKind,
   AnkiFieldKey,
   AnkiPendingCard,
@@ -30,6 +31,7 @@ export function buildAnkiNotes(options: {
   deckName: string;
   modelName: string;
   fieldMap: Partial<Record<AnkiFieldKey, string>>;
+  customFields?: AnkiCustomFieldDef[];
   cards: AnkiPendingCard[];
 }): Array<Record<string, unknown>> {
   const notes: Array<Record<string, unknown>> = [];
@@ -42,6 +44,12 @@ export function buildAnkiNotes(options: {
         [options.fieldMap.pinyin ?? ""]: vocab.pinyin,
         [options.fieldMap.definition ?? ""]: vocab.definition,
       };
+      for (const field of options.customFields ?? []) {
+        if (field.anki_field.trim() === "") {
+          continue;
+        }
+        ankiFields[field.anki_field] = vocab.custom_fields?.[field.id] ?? "";
+      }
     } else {
       const writing = card as AnkiPendingWritingCard;
       ankiFields = {

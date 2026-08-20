@@ -587,8 +587,141 @@ describe("PreferencesPage", () => {
           pinyin: "Reading",
           definition: "Meaning",
         },
+        customFields: [],
         create: false,
       });
+    });
+  });
+
+  it("allows adding and removing custom fields for the vocabulary deck only", async () => {
+    const user = userEvent.setup();
+    const connectedStatus: AnkiStatus = {
+      connected: true,
+      synchronization_status: "not_synchronized",
+      pending_push_estimate: 0,
+      decks: {
+        mandarin_writing: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+          custom_fields: [],
+        },
+        mandarin_vocabulary: {
+          status: "not_configured",
+          deck_name: "",
+          model_name: "",
+          fields: {},
+          custom_fields: [],
+        },
+      },
+    };
+    fetchAnkiStatus.mockResolvedValue(connectedStatus);
+    fetchAnkiDecks.mockResolvedValue(["Characters", "Words"]);
+    fetchAnkiModels.mockResolvedValue(["Basic", "Words"]);
+    fetchAnkiModelFields.mockImplementation(async (modelName: string) =>
+      modelName === "Basic"
+        ? ["Front", "Back"]
+        : ["Hanzi", "Reading", "Meaning", "Example"],
+    );
+    setupAnkiDeck.mockResolvedValue({
+      kind: "mandarin_vocabulary",
+      deck: {
+        status: "not_configured",
+        deck_name: "Words",
+        model_name: "Words",
+        fields: { writing: "Hanzi", pinyin: "Reading", definition: "Meaning" },
+        custom_fields: [
+          {
+            id: "example-sentence",
+            title: "Example sentence",
+            description: "shown on the back",
+            anki_field: "Example",
+          },
+        ],
+      },
+    });
+
+    renderWithStore(<PreferencesPage />, {
+      preloadedState: { ...syncedState, anki: { status: connectedStatus } },
+    });
+
+    await screen.findByRole("heading", { name: "Anki synchronization" });
+
+    const writingRow = screen.getByText("Mandarin writing").closest("li");
+    await user.click(
+      within(writingRow as HTMLElement).getByRole("button", { name: "Setup" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Set up Mandarin writing" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Custom fields" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    const wordsRow = screen.getByText("Mandarin vocabulary").closest("li");
+    await user.click(
+      within(wordsRow as HTMLElement).getByRole("button", { name: "Setup" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Set up Mandarin vocabulary" }),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Existing deck"), "Words");
+    await user.selectOptions(screen.getByLabelText("Deck type"), "Words");
+    await waitFor(() => expect(screen.getByLabelText(/writing/)).toBeEnabled());
+    await user.selectOptions(screen.getByLabelText(/writing/), "Hanzi");
+    await user.selectOptions(screen.getByLabelText(/pinyin/), "Reading");
+    await user.selectOptions(screen.getByLabelText(/definition/), "Meaning");
+
+    await user.click(screen.getByRole("button", { name: "Add custom" }));
+    expect(
+      await screen.findByRole("heading", { name: "Add custom field" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Title"), "Example sentence");
+    await user.type(screen.getByLabelText("Description"), "shown on the back");
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(
+      screen.queryByRole("heading", { name: "Add custom field" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save mapping" })).toBeDisabled();
+
+    await user.selectOptions(
+      screen.getByLabelText(/Example sentence/),
+      "Example",
+    );
+    expect(screen.getByRole("button", { name: "Save mapping" })).toBeEnabled();
+
+    // Adding a second field via the sub-modal disables save again (its Anki
+    // field is still unmapped); removing it restores the valid state.
+    await user.click(screen.getByRole("button", { name: "Add custom" }));
+    await user.type(screen.getByLabelText("Title"), "Notes");
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(screen.getByRole("button", { name: "Save mapping" })).toBeDisabled();
+    const removeButtons = screen.getAllByRole("button", { name: "Remove" });
+    await user.click(removeButtons[removeButtons.length - 1]);
+    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Save mapping" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Save mapping" }));
+
+    await waitFor(() => {
+      expect(setupAnkiDeck).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "mandarin_vocabulary",
+          customFields: [
+            expect.objectContaining({
+              title: "Example sentence",
+              description: "shown on the back",
+              anki_field: "Example",
+            }),
+          ],
+        }),
+      );
     });
   });
 

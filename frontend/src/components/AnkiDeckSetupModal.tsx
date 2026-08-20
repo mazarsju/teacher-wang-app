@@ -3,6 +3,7 @@ import {
   ANKI_DECK_DESCRIPTIONS,
   ANKI_DECK_LABELS,
   ANKI_REQUIRED_FIELDS,
+  type AnkiCustomFieldDef,
   type AnkiDeckKind,
   type AnkiDeckMapping,
   type AnkiDeckSetupResult,
@@ -14,6 +15,7 @@ import {
   fetchAnkiModels,
   setupAnkiDeck,
 } from "../utils/anki/ankiApi";
+import AnkiCustomFieldModal from "./AnkiCustomFieldModal";
 import Button from "./Button";
 import { InfoIcon } from "./icons";
 import VocabularyNoteTypeInfoModal from "./VocabularyNoteTypeInfoModal";
@@ -53,6 +55,16 @@ function fieldMapFromSaved(
   return next;
 }
 
+function customFieldsFromSaved(
+  kind: AnkiDeckKind,
+  saved: AnkiDeckMapping | null | undefined,
+): AnkiCustomFieldDef[] {
+  if (kind !== "mandarin_vocabulary") {
+    return [];
+  }
+  return saved?.custom_fields ?? [];
+}
+
 function withPreferredOption(options: string[], preferred: string): string[] {
   if (preferred === "" || options.includes(preferred)) {
     return options;
@@ -75,6 +87,7 @@ export default function AnkiDeckSetupModal({
   const [fieldMap, setFieldMap] = useState<Record<AnkiFieldKey, string>>(
     {} as Record<AnkiFieldKey, string>,
   );
+  const [customFields, setCustomFields] = useState<AnkiCustomFieldDef[]>([]);
   const [createMode, setCreateMode] = useState(false);
   const [newDeckName, setNewDeckName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +96,7 @@ export default function AnkiDeckSetupModal({
   const [error, setError] = useState<string | null>(null);
   const [isDeckTypeInfoOpen, setIsDeckTypeInfoOpen] = useState(false);
   const [isAutoCreateOpen, setIsAutoCreateOpen] = useState(false);
+  const [isAddCustomFieldOpen, setIsAddCustomFieldOpen] = useState(false);
 
   const requiredFields = useMemo(
     () => (kind ? ANKI_REQUIRED_FIELDS[kind] : []),
@@ -99,6 +113,7 @@ export default function AnkiDeckSetupModal({
       const preferredDeck = saved?.deck_name?.trim() ?? "";
       const preferredModel = saved?.model_name?.trim() ?? "";
       const savedFields = fieldMapFromSaved(deckKind, saved);
+      setCustomFields(customFieldsFromSaved(deckKind, saved));
 
       try {
         const [fetchedDecks, fetchedModels] = await Promise.all([
@@ -145,6 +160,7 @@ export default function AnkiDeckSetupModal({
     setNewDeckName("");
     setIsDeckTypeInfoOpen(false);
     setIsAutoCreateOpen(false);
+    setIsAddCustomFieldOpen(false);
     void loadCatalog(kind, initialMapping);
   }, [isOpen, kind, initialMapping, loadCatalog]);
 
@@ -174,6 +190,13 @@ export default function AnkiDeckSetupModal({
           }
           return next;
         });
+        setCustomFields((current) =>
+          current.map((field) =>
+            fields.includes(field.anki_field)
+              ? field
+              : { ...field, anki_field: "" },
+          ),
+        );
       } catch (loadError) {
         if (cancelled) {
           return;
@@ -207,13 +230,37 @@ export default function AnkiDeckSetupModal({
   const fieldsReady = requiredFields.every(
     (field) => fieldMap[field.key]?.trim(),
   );
+  const customFieldsReady = customFields.every(
+    (field) => field.title.trim() !== "" && field.anki_field.trim() !== "",
+  );
   const isConfirmDisabled =
     !deckReady ||
     selectedModel === "" ||
     !fieldsReady ||
+    !customFieldsReady ||
     isSaving ||
     isLoading ||
     isLoadingFields;
+
+  function handleCustomFieldConfirm(title: string, description: string) {
+    setCustomFields((current) => [
+      ...current,
+      { id: crypto.randomUUID(), title, description, anki_field: "" },
+    ]);
+    setIsAddCustomFieldOpen(false);
+  }
+
+  function removeCustomField(id: string) {
+    setCustomFields((current) => current.filter((field) => field.id !== id));
+  }
+
+  function updateCustomField(id: string, patch: Partial<AnkiCustomFieldDef>) {
+    setCustomFields((current) =>
+      current.map((field) =>
+        field.id === id ? { ...field, ...patch } : field,
+      ),
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -234,6 +281,7 @@ export default function AnkiDeckSetupModal({
         deckName: createMode ? trimmedNewName : selectedDeck,
         modelName: selectedModel,
         fields: fieldsPayload,
+        customFields: deckKind === "mandarin_vocabulary" ? customFields : [],
         create: createMode,
       });
       onConfigured();
@@ -267,6 +315,7 @@ export default function AnkiDeckSetupModal({
       setSelectedModel(result.deck.model_name);
 
       setFieldMap(fieldMapFromSaved("mandarin_vocabulary", result.deck));
+      setCustomFields(customFieldsFromSaved("mandarin_vocabulary", result.deck));
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -427,6 +476,65 @@ export default function AnkiDeckSetupModal({
                 ))}
               </fieldset>
 
+              {deckKind === "mandarin_vocabulary" && (
+                <fieldset className={styles.ankiFieldMapping}>
+                  <legend className={styles.ankiFieldMappingLegend}>
+                    Custom fields
+                  </legend>
+                  <p className={styles.ankiFieldMappingHint}>
+                    Optional fields you define yourself, mapped to an extra
+                    field on the selected Anki deck type.
+                  </p>
+                  {customFields.map((field) => (
+                    <div key={field.id} className="modal-field">
+                      <span
+                        className="modal-field-label"
+                        id={`anki-custom-field-label-${field.id}`}
+                      >
+                        {field.title}{" "}
+                        {field.description !== "" && (
+                          <span className={styles.ankiFieldDescription}>
+                            ({field.description})
+                          </span>
+                        )}
+                      </span>
+                      <div className={styles.ankiCustomFieldRow}>
+                        <select
+                          className={styles.ankiDeckSelect}
+                          aria-labelledby={`anki-custom-field-label-${field.id}`}
+                          value={field.anki_field}
+                          onChange={(event) =>
+                            updateCustomField(field.id, {
+                              anki_field: event.target.value,
+                            })
+                          }
+                          disabled={modelFields.length === 0 || isLoadingFields}
+                        >
+                          <option value="">Select Anki field…</option>
+                          {modelFields.map((ankiField) => (
+                            <option key={ankiField} value={ankiField}>
+                              {ankiField}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          kind="danger"
+                          variant="modal"
+                          text="Remove"
+                          onClick={() => removeCustomField(field.id)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    kind="confirm"
+                    variant="modal"
+                    text="Add custom"
+                    onClick={() => setIsAddCustomFieldOpen(true)}
+                  />
+                </fieldset>
+              )}
+
               <div className="modal-actions">
                 <Button kind="cancel" text="Cancel" onClick={onCancel} />
                 <Button
@@ -467,6 +575,12 @@ export default function AnkiDeckSetupModal({
           onClose={() => setIsDeckTypeInfoOpen(false)}
         />
       )}
+
+      <AnkiCustomFieldModal
+        isOpen={isAddCustomFieldOpen}
+        onConfirm={handleCustomFieldConfirm}
+        onCancel={() => setIsAddCustomFieldOpen(false)}
+      />
     </>
   );
 }

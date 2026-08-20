@@ -328,6 +328,7 @@ async function runPush(
       deckName: mapping.deck_name,
       modelName: mapping.model_name,
       fieldMap: mapping.fields,
+      customFields: mapping.custom_fields,
       cards: toAdd,
     });
     const results = await addNotes(notes);

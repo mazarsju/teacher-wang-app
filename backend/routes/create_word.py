@@ -69,6 +69,21 @@ def validate_word_payload(data: dict) -> tuple[str, str, str, bool]:
     return word_text, definition_text, pinyin_text, writing_known
 
 
+def validate_custom_fields_payload(data: dict) -> dict[str, str]:
+    """Validate the optional per-word custom-field values (id -> value)."""
+    custom_fields = data.get("custom_fields")
+    if custom_fields is None:
+        return {}
+    if not isinstance(custom_fields, dict):
+        raise WordValidationError("custom_fields must be an object")
+    cleaned: dict[str, str] = {}
+    for key, value in custom_fields.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise WordValidationError("custom_fields keys and values must be strings")
+        cleaned[key] = value.strip()
+    return cleaned
+
+
 @bp.post("/words")
 def create_word():
     data = request.get_json(silent=True)
@@ -79,6 +94,7 @@ def create_word():
         word_text, definition_text, pinyin_text, writing_known = validate_word_payload(
             data
         )
+        custom_fields = validate_custom_fields_payload(data)
     except WordValidationError as exc:
         return {"error": str(exc)}, 400
 
@@ -93,6 +109,7 @@ def create_word():
         definition=definition_text or None,
         pinyin=pinyin_text or None,
         writing_known=writing_known,
+        custom_fields=custom_fields,
         updated_at=now,
     )
     db.session.add(word_record)
@@ -105,6 +122,7 @@ def create_word():
         "definition": word_record.definition,
         "pinyin": word_record.pinyin,
         "writing_known": word_record.writing_known,
+        "custom_fields": word_record.custom_fields,
         "updated_at": word_record.updated_at.isoformat(),
         "characters": list(word_text),
         "updated_characters": [

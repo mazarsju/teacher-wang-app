@@ -35,6 +35,7 @@ describe("vocabularyPullCardsFromNotes", () => {
         writing: "风",
         pinyin: "feng1",
         definition: "wind",
+        custom_fields: {},
         characters_to_create: ["风"],
       },
     ]);
@@ -68,6 +69,7 @@ describe("vocabularyPullCardsFromNotes", () => {
         writing: "风",
         pinyin: "",
         definition: "wind",
+        custom_fields: {},
         characters_to_create: ["风"],
       },
     ]);

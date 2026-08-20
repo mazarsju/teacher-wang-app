@@ -50,6 +50,7 @@ describe("AddWordModal", () => {
       definition: "to think",
       pinyin: "A xiang3 B",
       writing_known: false,
+      custom_fields: {},
     });
   });
 
@@ -134,6 +135,7 @@ describe("AddWordModal", () => {
       definition: "to like",
       pinyin: "ai4 hao3",
       writing_known: false,
+      custom_fields: {},
     });
   });
 
@@ -216,6 +218,7 @@ describe("AddWordModal", () => {
           definition: null,
           pinyin: null,
           writing_known: false,
+          custom_fields: {},
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["A", "想", "B"],
         }}
@@ -241,6 +244,7 @@ describe("AddWordModal", () => {
       definition: "to think",
       pinyin: "A xiang3 B",
       writing_known: false,
+      custom_fields: {},
     });
   });
 
@@ -257,6 +261,7 @@ describe("AddWordModal", () => {
           definition: "old",
           pinyin: "ai4 hao3",
           writing_known: false,
+          custom_fields: {},
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["爱", "好"],
         }}
@@ -277,6 +282,7 @@ describe("AddWordModal", () => {
       definition: "hobby",
       pinyin: "ai4 hao3",
       writing_known: false,
+      custom_fields: {},
     });
   });
 
@@ -305,6 +311,47 @@ describe("AddWordModal", () => {
       definition: "to like",
       pinyin: "ai4 hao3",
       writing_known: true,
+      custom_fields: {},
+    });
+  });
+
+  it("renders and submits custom field values", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
+        customFields={[
+          {
+            id: "example-sentence",
+            title: "Example sentence",
+            description: "shown on the back of the card",
+            anki_field: "Example",
+          },
+        ]}
+        onConfirm={onConfirm}
+        onCancel={() => {}}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("words"), "爱好");
+    await user.type(screen.getByLabelText("definition"), "to like");
+    await user.type(
+      screen.getByLabelText(/Example sentence/),
+      "我爱好music",
+    );
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      word: "爱好",
+      definition: "to like",
+      pinyin: "ai4 hao3",
+      writing_known: false,
+      custom_fields: { "example-sentence": "我爱好music" },
     });
   });
 
@@ -318,6 +365,7 @@ describe("AddWordModal", () => {
           definition: "old",
           pinyin: "ai4 hao3",
           writing_known: true,
+          custom_fields: {},
           updated_at: "2026-07-12T12:00:00+00:00",
           characters: ["爱", "好"],
         }}

@@ -4,6 +4,7 @@
  * AnkiConnect note I/O lives in ankiConnect.ts → http://127.0.0.1:8765.
  */
 import type {
+  AnkiCustomFieldDef,
   AnkiDeckKind,
   AnkiDeckMapping,
   AnkiDeckSetupResult,
@@ -129,6 +130,7 @@ export async function persistDeckSetup(body: {
   deck_name: string;
   model_name: string;
   fields: Record<string, string>;
+  custom_fields?: AnkiCustomFieldDef[];
 }): Promise<AnkiDeckSetupResult> {
   const response = await apiFetch(`${API_BASE}/anki/decks/setup`, {
     method: "POST",

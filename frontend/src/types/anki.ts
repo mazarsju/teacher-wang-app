@@ -13,11 +13,20 @@ export type AnkiVocabularyFieldKey = "writing" | "pinyin" | "definition";
 export type AnkiWritingFieldKey = "recto" | "verso";
 export type AnkiFieldKey = AnkiVocabularyFieldKey | AnkiWritingFieldKey;
 
+/** User-defined optional field (vocabulary deck only). */
+export type AnkiCustomFieldDef = {
+  id: string;
+  title: string;
+  description: string;
+  anki_field: string;
+};
+
 export type AnkiDeckMapping = {
   status: AnkiDeckStatus;
   deck_name: string;
   model_name: string;
   fields: Partial<Record<AnkiFieldKey, string>>;
+  custom_fields: AnkiCustomFieldDef[];
 };
 
 export type AnkiStatus = {
@@ -37,12 +46,14 @@ export const emptyAnkiStatus: AnkiStatus = {
       deck_name: "",
       model_name: "",
       fields: {},
+      custom_fields: [],
     },
     mandarin_writing: {
       status: "not_configured",
       deck_name: "",
       model_name: "",
       fields: {},
+      custom_fields: [],
     },
   },
 };
@@ -57,6 +68,7 @@ export type AnkiPendingVocabularyCard = {
   writing: string;
   pinyin: string;
   definition: string;
+  custom_fields: Record<string, string>;
   characters_to_create?: string[];
 };
 

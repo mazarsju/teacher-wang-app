@@ -321,6 +321,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         definition: values.definition,
         pinyin: values.pinyin || null,
         writing_known: values.writing_known,
+        custom_fields: values.custom_fields,
       });
       dispatch(upsertWord(updatedWord));
       applyCharacterSyncResult(updatedWord);
@@ -343,6 +344,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         definition: values.definition || null,
         pinyin: values.pinyin || null,
         writing_known: values.writing_known,
+        custom_fields: values.custom_fields,
       });
       dispatch(upsertWord(createdWord));
       applyCharacterSyncResult(createdWord);
@@ -542,6 +544,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         existingWords={existingWords}
         hskCharacterPinyin={hskCharacterPinyin}
         characterPinyin={characterPinyin}
+        customFields={ankiStatus.decks.mandarin_vocabulary.custom_fields}
         onCancel={() => setIsAddWordModalOpen(false)}
         onConfirm={(values) => void confirmAddWord(values)}
       />
@@ -551,6 +554,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         initialWord={wordToEdit}
         hskCharacterPinyin={hskCharacterPinyin}
         characterPinyin={characterPinyin}
+        customFields={ankiStatus.decks.mandarin_vocabulary.custom_fields}
         onCancel={() => setWordToEdit(null)}
         onConfirm={(values) => void confirmEditWord(values)}
       />
