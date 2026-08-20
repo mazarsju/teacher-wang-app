@@ -13,7 +13,7 @@ MAX_ARTICLE_HSK_LEVEL = 6
 
 
 def _article_hsk_level(user_id: str) -> int:
-    level = get_stored_current_hsk_level(user_id) or MIN_ARTICLE_HSK_LEVEL
+    level = (get_stored_current_hsk_level(user_id) + 1) or MIN_ARTICLE_HSK_LEVEL
     return max(MIN_ARTICLE_HSK_LEVEL, min(MAX_ARTICLE_HSK_LEVEL, level))
 
 
