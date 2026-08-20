@@ -111,6 +111,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Data isolation](docs/adr/data-isolation.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
 - [Plan management](docs/adr/plan-management.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
 - [Frontend CSS organization](docs/adr/frontend-styling.md) — CSS Modules per component, `shared.css` design system, the `Button` component
+- [Grammar content architecture](docs/adr/grammar-content.md) — content in Git/S3 vs. metadata and learner progress in Postgres, prerequisite resolution
 
 Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
 
