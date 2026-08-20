@@ -219,6 +219,45 @@ class ChallengeProgress(db.Model):
     completed = db.Column(db.Boolean, nullable=False, default=True)
 
 
+class GrammarPoint(db.Model):
+    """A grammar point taught at a given HSK level."""
+
+    __tablename__ = "grammar_points"
+
+    # Composite of hsk_level + "|" + title, like HskWord.id.
+    id = db.Column(String(128), primary_key=True)
+    hsk_level = db.Column(Integer, nullable=False)
+    title = db.Column(String, nullable=False)
+    s3_key = db.Column(String, nullable=True)
+
+
+class GrammarPrerequisite(db.Model):
+    """A grammar point that should be learned before another."""
+
+    __tablename__ = "grammar_prerequisites"
+
+    grammar_id = db.Column(
+        String(128), ForeignKey("grammar_points.id"), primary_key=True
+    )
+    prerequisite_id = db.Column(
+        String(128), ForeignKey("grammar_points.id"), primary_key=True
+    )
+
+
+class UserGrammarProgress(db.Model):
+    """A user's practice progress on a grammar point."""
+
+    __tablename__ = "user_grammar_progress"
+
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
+    grammar_id = db.Column(
+        String(128), ForeignKey("grammar_points.id"), primary_key=True
+    )
+    status = db.Column(String, nullable=False, default="TODO")
+    score = db.Column(Numeric, nullable=True)
+    last_practiced_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+
 class ConversationSummary(db.Model):
     """Stored summary of an AI agent conversation.
 

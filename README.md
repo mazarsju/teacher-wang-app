@@ -411,26 +411,40 @@ Differentiate free and paid tiers so AI chat can scale without unbounded cost. D
 
 Smaller additions that aren't part of a bigger initiative but are still worth doing.
 
-- [ ] Weekly Chinese-related article adapted to the learner's HSK level
+- [x] Weekly Chinese-related article adapted to the learner's HSK level
 
-### 10. Multi-language management
+### 10. Grammar learning
+
+Dedicated grammar path by HSK level, with exercises and a loop back into chat so theory sticks through real use.
+
+- [x] Define HSK1 grammar curriculum and grammar-point metadata structure
+- [x] Create grammar content repository and S3 deployment pipeline
+- [x] Design database schema for grammar catalog, prerequisites, and learner progress
+- [ ] Load the database with grammar metadata based on S3 content
+- [ ] Build grammar section UI with HSK-level navigation
+- [ ] Display grammar explanations from S3 (Markdown rendering)
+- [ ] Track grammar completion and mastery per user
+- [ ] Add deterministic exercises
+  - [ ] Multiple-choice questions
+  - [ ] Sentence reordering
+  - [ ] Sentence transformation
+- [ ] Add translation exercises with AI-assisted validation
+- [ ] Add AI tutor mode for grammar-specific questions and explanations
+- [ ] Add AI-powered grammar practice scenarios
+- [ ] Integrate learned grammar points into AI conversations and challenges
+- [ ] Recommend next grammar points based on prerequisites and learner progress
+- [ ] Create complete HSK1 grammar content
+- [ ] Create complete HSK2 grammar content
+- [ ] Create complete HSK3 grammar content
+- [ ] Create complete HSK4 grammar content
+
+### 11. Multi-language management
 
 The app UI and explanations are English-only today. Learners should be able to pick another base language (still learning Mandarin) so prompts, corrections, and labels match how they think.
 
 - [ ] Preferences: choose UI / explanation language (start with a small set beyond English)
 - [ ] Localize static UI strings for the selected language
 - [ ] Adapt AI system prompts and grammar explanations to the learner’s base language
-
-### 11. Grammar learning
-
-Dedicated grammar path by HSK level, with exercises and a loop back into chat so theory sticks through real use.
-
-- [ ] Grammar section in the app, chapters grouped by HSK level
-- [ ] Mostly hardcoded exercises per chapter (fill-in, reorder, choose the correct pattern, …)
-- [ ] A few AI-assisted exercise types (e.g. generate variants, open-ended production with feedback)
-- [ ] Mark a grammar structure as validated when the learner uses it correctly in AI chat
-- [ ] Persist grammar mistakes spotted in chat conversations
-- [ ] Infer current weaknesses from stored mistakes and surface personalized exercises
 
 ### 12. Gamification
 
