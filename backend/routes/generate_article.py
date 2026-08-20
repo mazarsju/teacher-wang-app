@@ -9,7 +9,7 @@ from backend.utils.aiChat.llm_config import read_config_value
 from backend.utils.auth.user_context import current_user
 from backend.utils.database.settings import ADMIN_EMAIL
 from backend.utils.request_logging import progress_log
-from backend.routes.weekly_article_generator import generate_weekly_articles
+from backend.utils.generateArticle.weekly_article_generator import generate_weekly_articles
 
 bp = Blueprint("generate_article", __name__)
 

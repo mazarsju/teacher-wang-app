@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-from backend.routes.weekly_article_generator import (
+from backend.utils.generateArticle.weekly_article_generator import (
     ARTICLE_LENGTH_GUIDELINES,
     _content_adaptation_instructions,
     _full_length_text,
@@ -109,7 +109,7 @@ class TestKnownHskWords(PostgresTestCase):
 class TestPickArticlesForLevel(unittest.TestCase):
     def setUp(self):
         self.invoke_patcher = patch(
-            "backend.routes.weekly_article_generator._invoke_llm"
+            "backend.utils.generateArticle.weekly_article_generator._invoke_llm"
         )
         self.mock_invoke = self.invoke_patcher.start()
         self.addCleanup(self.invoke_patcher.stop)
@@ -228,13 +228,13 @@ class TestNormalizeArticle(unittest.TestCase):
 class TestInjectNewWords(unittest.TestCase):
     def setUp(self):
         self.invoke_patcher = patch(
-            "backend.routes.weekly_article_generator._invoke_llm"
+            "backend.utils.generateArticle.weekly_article_generator._invoke_llm"
         )
         self.mock_invoke = self.invoke_patcher.start()
         self.addCleanup(self.invoke_patcher.stop)
 
         self.known_words_patcher = patch(
-            "backend.routes.weekly_article_generator._known_hsk_words"
+            "backend.utils.generateArticle.weekly_article_generator._known_hsk_words"
         )
         self.mock_known_words = self.known_words_patcher.start()
         self.addCleanup(self.known_words_patcher.stop)
@@ -335,7 +335,7 @@ class TestGenerateWeeklyArticles(PostgresTestCase):
         super().setUp()
 
         self.invoke_patcher = patch(
-            "backend.routes.weekly_article_generator._invoke_llm"
+            "backend.utils.generateArticle.weekly_article_generator._invoke_llm"
         )
         self.mock_invoke = self.invoke_patcher.start()
         self.addCleanup(self.invoke_patcher.stop)

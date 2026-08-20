@@ -36,7 +36,7 @@ teacher-wang/
 │   ├── app.py              # Flask entry point
 │   ├── migrations/         # Alembic revisions (Postgres schema)
 │   ├── hsk.json            # Bundled HSK fallback if GitHub download fails
-│   ├── routes/             # One endpoint per file (Flask blueprints); HSK load helpers
+│   ├── routes/             # One endpoint per file (Flask blueprints)
 │   ├── utils/              # Everything importable from routes/tests, grouped by domain
 │   │   ├── database/       # database.py (init/Alembic upgrade), alembic_runner.py, db_config.py,
 │   │   │                   # extensions.py (SQLAlchemy), models.py, db_export.py, settings.py (key/value app settings)
@@ -44,8 +44,10 @@ teacher-wang/
 │   │   ├── aiChat/         # chat_service.py, chat_agents.py, llm.py, llm_config.py, behavior_spec.py,
 │   │   │                   # challenge_progress.py/challenge_prompts.py/challenges.py, teaching_strategy.py,
 │   │   │                   # conversation_logs.py, conversation_log_storage.py (local/S3 adapters), token_usage.py
-│   │   └── knowledgeBase/  # hsk_level.py, hsk_level_corrections.py, hsk_word_picker.py, pinyin.py,
-│   │                       # chinese_validation.py, character_sync.py, anki_sync.py (Anki deck mapping/sync)
+│   │   ├── knowledgeBase/  # hsk_level.py, hsk_level_corrections.py, hsk_word_picker.py, pinyin.py,
+│   │   │                   # chinese_validation.py, character_sync.py, anki_sync.py (Anki deck mapping/sync),
+│   │   │                   # hsk_source.py/hsk_content_loader.py/load_hsk_content.py (HSK vocabulary load)
+│   │   └── generateArticle/ # weekly_article_generator.py (weekly news-to-reading pipeline)
 │   └── requirements.txt
 ├── alembic.ini             # Alembic config (URL overridden from .env)
 ├── .env.example            # Template for local DATABASE_URL (copy to .env)

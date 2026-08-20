@@ -7,8 +7,8 @@ from pathlib import Path
 
 from backend import create_app
 from backend.utils.database.models import HskCharacter, HskWord
-from backend.routes.hsk_content_loader import reload_hsk_content
-from backend.routes.hsk_source import COMPLETE_HSK_JSON_URL, load_complete_hsk_entries
+from backend.utils.knowledgeBase.hsk_content_loader import reload_hsk_content
+from backend.utils.knowledgeBase.hsk_source import COMPLETE_HSK_JSON_URL, load_complete_hsk_entries
 
 
 def main() -> None:

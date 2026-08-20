@@ -140,7 +140,7 @@ class WeeklyArticle(db.Model):
     ``content`` is a JSON list of ``{"title", "content", "category"?,
     "translation"?, "pinyin"?, "new_words"?}`` objects, one per article
     picked for that level (different levels may pick different source
-    articles — see ``backend/routes/weekly_article_generator.py``).
+    articles — see ``backend/utils/generateArticle/weekly_article_generator.py``).
     ``category`` is the source Currents API article's category list, when
     present. ``translation`` only appears for HSK 1-3, ``pinyin`` only for
     HSK 1-2, and ``new_words`` (a list of ``{"word", "translation"}``,

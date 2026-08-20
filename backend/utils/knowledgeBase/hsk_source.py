@@ -14,7 +14,7 @@ from backend.utils.knowledgeBase.pinyin import normalize_anki_pinyin_token
 COMPLETE_HSK_JSON_URL = (
     "https://raw.githubusercontent.com/drkameleon/complete-hsk-vocabulary/main/complete.json"
 )
-HSK_FALLBACK_PATH = Path(__file__).resolve().parents[1] / "hsk.json"
+HSK_FALLBACK_PATH = Path(__file__).resolve().parents[2] / "hsk.json"
 NEW_LEVEL_PATTERN = re.compile(r"^new-(\d+)$")
 # Neutral tone in complete-hsk numeric pinyin; app syllables use no digit instead.
 _NEUTRAL_TONE = "5"

@@ -33,7 +33,7 @@ Character↔word membership is derived at read time (a word contains its charact
 
 `hsk_words`, `hsk_characters`, `hsk_word_character`. They are loaded once at boot (`database.init_db`) and only ever read by the app.
 
-`weekly_articles` — `id` (`BIGINT` PK, autoincrement), unique on `(week, year, hsk_level)`. Holds the 3 LLM-picked China-news articles adapted to that HSK level, written by `POST /admin/articles/generate` (`backend/routes/weekly_article_generator.py`); refreshing overwrites the current week's row per level via upsert.
+`weekly_articles` — `id` (`BIGINT` PK, autoincrement), unique on `(week, year, hsk_level)`. Holds the 3 LLM-picked China-news articles adapted to that HSK level, written by `POST /admin/articles/generate` (`backend/utils/generateArticle/weekly_article_generator.py`); refreshing overwrites the current week's row per level via upsert.
 
 ## Partitioning mechanics
 

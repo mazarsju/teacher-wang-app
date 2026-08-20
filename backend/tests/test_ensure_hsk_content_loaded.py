@@ -10,7 +10,7 @@ from postgres_test_case import PostgresTestCase
 
 class TestEnsureHskContentLoaded(PostgresTestCase):
     def test_loads_when_table_is_empty(self):
-        with patch("backend.routes.hsk_content_loader.load_hsk_content") as mock_load:
+        with patch("backend.utils.knowledgeBase.hsk_content_loader.load_hsk_content") as mock_load:
             _ensure_hsk_content_loaded()
 
         mock_load.assert_called_once_with()
@@ -28,7 +28,7 @@ class TestEnsureHskContentLoaded(PostgresTestCase):
         )
         db.session.commit()
 
-        with patch("backend.routes.hsk_content_loader.load_hsk_content") as mock_load:
+        with patch("backend.utils.knowledgeBase.hsk_content_loader.load_hsk_content") as mock_load:
             _ensure_hsk_content_loaded()
 
         mock_load.assert_not_called()

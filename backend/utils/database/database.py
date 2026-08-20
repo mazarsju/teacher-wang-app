@@ -27,7 +27,7 @@ def _run_alembic_upgrade(database_url: str | None = None) -> None:
 
 def _ensure_hsk_content_loaded() -> None:
     from backend.utils.database.models import HskWord
-    from backend.routes.hsk_content_loader import load_hsk_content
+    from backend.utils.knowledgeBase.hsk_content_loader import load_hsk_content
 
     if HskWord.query.first() is not None:
         return

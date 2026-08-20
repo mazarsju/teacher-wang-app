@@ -10,7 +10,7 @@ Learners benefit from real-world Chinese reading practice, not just chat. The ap
 
 News content and per-level adaptation both need an LLM: raw wire copy is in English, at adult-native complexity, and mixes topics of wildly different difficulty (a panda birth vs. a tax-policy story). A single fixed "top 3 articles" shared across every level could not serve HSK 1 and HSK 6 well at once.
 
-The implementation lives in `backend/routes/generate_article.py` (fetch + trigger), `backend/routes/weekly_article_generator.py` (the pipeline), `backend/routes/weekly_articles.py` (learner-facing read), and the `weekly_articles` table (`backend/utils/database/models.py`, catalogued in [architecture/schema-tenancy.md](../architecture/schema-tenancy.md)).
+The implementation lives in `backend/routes/generate_article.py` (fetch + trigger), `backend/utils/generateArticle/weekly_article_generator.py` (the pipeline), `backend/routes/weekly_articles.py` (learner-facing read), and the `weekly_articles` table (`backend/utils/database/models.py`, catalogued in [architecture/schema-tenancy.md](../architecture/schema-tenancy.md)).
 
 ## Decision
 

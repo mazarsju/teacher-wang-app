@@ -4,7 +4,11 @@ from backend.utils.knowledgeBase.chinese_validation import is_han_character
 from backend.utils.database.extensions import db
 from backend.utils.knowledgeBase.hsk_level_corrections import corrected_hsk_level
 from backend.utils.database.models import HskCharacter, HskWord, hsk_word_character
-from backend.routes.hsk_source import HskWordForm, load_complete_hsk_entries, words_by_new_level
+from backend.utils.knowledgeBase.hsk_source import (
+    HskWordForm,
+    load_complete_hsk_entries,
+    words_by_new_level,
+)
 
 # Matches HskCharacter.most_used_pinyin's column width.
 MOST_USED_PINYIN_MAX_LENGTH = 8

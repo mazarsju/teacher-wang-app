@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from backend.routes.hsk_content_loader import reload_hsk_content
+from backend.utils.knowledgeBase.hsk_content_loader import reload_hsk_content
 from backend.utils.database.settings import ADMIN_EMAIL
 from backend.utils.auth.user_context import current_user
 
