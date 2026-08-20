@@ -59,3 +59,13 @@ export async function generateArticles(): Promise<void> {
     throw new Error("Failed to refresh articles.");
   }
 }
+
+export async function reloadGrammarRules(): Promise<void> {
+  const response = await apiFetch(`${API_BASE}/admin/grammar/reload`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to reload grammar rules.");
+  }
+}

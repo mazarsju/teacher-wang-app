@@ -9,6 +9,7 @@ import {
   deleteUser,
   fetchUsers,
   generateArticles,
+  reloadGrammarRules,
   reloadHskContent,
   updateUserPlan,
 } from "../utils/admin/adminApi";
@@ -36,6 +37,7 @@ export default function AdminPage() {
   const [isReloadingHsk, setIsReloadingHsk] = useState(false);
   const [isReloadHskConfirmOpen, setIsReloadHskConfirmOpen] = useState(false);
   const [isGeneratingArticles, setIsGeneratingArticles] = useState(false);
+  const [isReloadingGrammar, setIsReloadingGrammar] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setError(null);
@@ -131,6 +133,22 @@ export default function AdminPage() {
     }
   }
 
+  async function handleReloadGrammar() {
+    setIsReloadingGrammar(true);
+    setError(null);
+    try {
+      await reloadGrammarRules();
+    } catch (reloadError) {
+      setError(
+        reloadError instanceof Error
+          ? reloadError.message
+          : "Failed to reload grammar rules.",
+      );
+    } finally {
+      setIsReloadingGrammar(false);
+    }
+  }
+
   return (
     <Page title="Admin">
       {isLoading && <p>Loading users...</p>}
@@ -197,6 +215,23 @@ export default function AdminPage() {
             icon={<SyncIcon />}
             disabled={isGeneratingArticles}
             onClick={() => void handleGenerateArticles()}
+          />
+        </section>
+      )}
+      {!isLoading && (
+        <section className={`admin-section ${styles.adminSectionGrammar}`}>
+          <h2 className={styles.adminSectionTitle}>Grammar rules</h2>
+          <p className={styles.adminSectionDescription}>
+            Reload the shared grammar points and prerequisites from the
+            grammar-content S3 bucket.
+          </p>
+          <Button
+            kind="confirm"
+            variant="page"
+            text={isReloadingGrammar ? "Reloading..." : "Reload grammar rules"}
+            icon={<SyncIcon />}
+            disabled={isReloadingGrammar}
+            onClick={() => void handleReloadGrammar()}
           />
         </section>
       )}

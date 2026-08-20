@@ -48,6 +48,8 @@ teacher-wang/
 │   │   ├── knowledgeBase/  # hsk_level.py, hsk_level_corrections.py, hsk_word_picker.py, pinyin.py,
 │   │   │                   # chinese_validation.py, character_sync.py, anki_sync.py (Anki deck mapping/sync),
 │   │   │                   # hsk_source.py/hsk_content_loader.py/load_hsk_content.py (HSK vocabulary load)
+│   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml files from S3 into
+│   │   │                   # grammar_points/grammar_prerequisites)
 │   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
 │   └── requirements.txt
 ├── alembic.ini             # Alembic config (URL overridden from .env)
@@ -254,6 +256,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
 | `POST` | `/admin/articles/generate` | Same as `python3 -m backend.jobs.generate_weekly_articles`: fetch latest China-related articles (Currents API or The Guardian, per the hardcoded `ARTICLE_SOURCE` flag); for each HSK level 1-6, pick/adapt/save to `weekly_articles` (`403` unless the caller is the admin account) |
+| `POST` | `/admin/grammar/reload` | Read every `grammar.yaml` from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (see [teacher-wang-grammar](https://github.com/mazarsju/teacher-wang-grammar)), or from a local checkout at `GRAMMAR_CONTENT_S3_PATH` if set (local debugging, skips S3), and repopulate `grammar_points`/`grammar_prerequisites` (`403` unless the caller is the admin account) |
 
 ### Frontend
 
@@ -420,7 +423,7 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 - [x] Define HSK1 grammar curriculum and grammar-point metadata structure
 - [x] Create grammar content repository and S3 deployment pipeline
 - [x] Design database schema for grammar catalog, prerequisites, and learner progress
-- [ ] Load the database with grammar metadata based on S3 content
+- [x] Load the database with grammar metadata based on S3 content
 - [ ] Build grammar section UI with HSK-level navigation
 - [ ] Display grammar explanations from S3 (Markdown rendering)
 - [ ] Track grammar completion and mastery per user

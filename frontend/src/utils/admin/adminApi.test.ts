@@ -2,6 +2,7 @@ import {
   deleteUser,
   fetchUsers,
   generateArticles,
+  reloadGrammarRules,
   updateUserPlan,
 } from "./adminApi";
 
@@ -104,6 +105,25 @@ describe("adminApi", () => {
 
     await expect(generateArticles()).rejects.toThrow(
       "Failed to refresh articles.",
+    );
+  });
+
+  it("reloads grammar rules", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(reloadGrammarRules()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/grammar/reload",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("throws when reloading grammar rules fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+
+    await expect(reloadGrammarRules()).rejects.toThrow(
+      "Failed to reload grammar rules.",
     );
   });
 });

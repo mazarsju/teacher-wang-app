@@ -9,6 +9,7 @@ vi.mock("../utils/admin/adminApi", () => ({
   deleteUser: vi.fn(),
   reloadHskContent: vi.fn(),
   generateArticles: vi.fn(),
+  reloadGrammarRules: vi.fn(),
 }));
 
 const fetchUsers = vi.mocked(adminApi.fetchUsers);
@@ -16,6 +17,7 @@ const updateUserPlan = vi.mocked(adminApi.updateUserPlan);
 const deleteUser = vi.mocked(adminApi.deleteUser);
 const reloadHskContent = vi.mocked(adminApi.reloadHskContent);
 const generateArticles = vi.mocked(adminApi.generateArticles);
+const reloadGrammarRules = vi.mocked(adminApi.reloadGrammarRules);
 
 describe("AdminPage", () => {
   beforeEach(() => {
@@ -212,6 +214,42 @@ describe("AdminPage", () => {
 
     expect(
       await screen.findByText("Failed to refresh articles."),
+    ).toBeInTheDocument();
+  });
+
+  it("reloads grammar rules", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    reloadGrammarRules.mockResolvedValue(undefined);
+
+    render(<AdminPage />);
+
+    await screen.findByText("Grammar rules");
+    await user.click(
+      screen.getByRole("button", { name: "Reload grammar rules" }),
+    );
+
+    await waitFor(() => {
+      expect(reloadGrammarRules).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("shows an error when reloading grammar rules fails", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    reloadGrammarRules.mockRejectedValue(
+      new Error("Failed to reload grammar rules."),
+    );
+
+    render(<AdminPage />);
+
+    await screen.findByText("Grammar rules");
+    await user.click(
+      screen.getByRole("button", { name: "Reload grammar rules" }),
+    );
+
+    expect(
+      await screen.findByText("Failed to reload grammar rules."),
     ).toBeInTheDocument();
   });
 });

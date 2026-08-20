@@ -9,5 +9,6 @@ gunicorn==23.0.0
 coverage==7.8.0
 PyJWT[crypto]==2.10.1
 boto3==1.39.14
+PyYAML==6.0.3
 langchain-core==0.3.59
 langchain-openai==0.3.16

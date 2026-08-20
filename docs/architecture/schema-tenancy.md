@@ -26,6 +26,7 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 | `token_count` | `(user_id, recorded_at, type)` |
 | `challenge_progress` | `(user_id, challenge_scenario)` |
 | `conversation_summary` | `(user_id, id)` — `id` is a `BIGINT GENERATED ALWAYS AS IDENTITY`, unique on its own; `conversation_id` (= character id) + `latest` are queried, not part of the PK |
+| `user_grammar_progress` | `(user_id, grammar_id)` — `grammar_id` FK → `grammar_points.id` |
 
 Character↔word membership is derived at read time (a word contains its characters as substrings); there is no association table.
 
@@ -34,6 +35,8 @@ Character↔word membership is derived at read time (a word contains its charact
 `hsk_words`, `hsk_characters`, `hsk_word_character`. They are loaded once at boot (`database.init_db`) and only ever read by the app.
 
 `weekly_articles` — `id` (`BIGINT` PK, autoincrement), unique on `(week, year, hsk_level)`. Holds the 3 LLM-picked China-news articles adapted to that HSK level, written by `run_weekly_article_generation()` (`backend/utils/generateArticle/service.py` → `weekly_article_generator.py`); refreshing overwrites the current week's row per level via upsert.
+
+`grammar_points` / `grammar_prerequisites` — grammar rule catalog. `grammar_points.id` is `"{hsk_level}|{title}"`; `s3_key` is the rule's folder key (e.g. `hsk1/01-basic-sentence-structure`) in the `GRAMMAR_CONTENT_S3_BUCKET` bucket (see [teacher-wang-grammar](https://github.com/mazarsju/teacher-wang-grammar)). `grammar_prerequisites` is a `(grammar_id, prerequisite_id)` association table, both FK → `grammar_points.id`. `POST /admin/grammar/reload` clears and repopulates both from every `grammar.yaml` in the bucket (`backend/utils/grammar/grammar_content_loader.py`); set `GRAMMAR_CONTENT_S3_PATH` to a local `teacher-wang-grammar`-layout checkout to reload from disk instead, for local debugging without AWS credentials.
 
 ## Partitioning mechanics
 
