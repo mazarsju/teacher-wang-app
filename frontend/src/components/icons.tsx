@@ -38,6 +38,24 @@ export function NotebookIcon({ className }: IconProps) {
   );
 }
 
+export function BookOpenIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 6.5c-1.5-1.2-3.5-1.8-6-1.8v13.6c2.5 0 4.5.6 6 1.8" />
+      <path d="M12 6.5c1.5-1.2 3.5-1.8 6-1.8v13.6c-2.5 0-4.5.6-6 1.8V6.5z" />
+    </svg>
+  );
+}
+
 export function ChatBubbleIcon({ className }: IconProps) {
   return (
     <svg

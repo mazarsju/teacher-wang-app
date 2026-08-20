@@ -7,6 +7,7 @@ import HelpButton from "./components/HelpButton";
 import Navbar, { type PageId } from "./components/Navbar";
 import AdminPage from "./pages/AdminPage";
 import ChatPage from "./pages/ChatPage";
+import GrammarPage from "./pages/GrammarPage";
 import HomePage from "./pages/HomePage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
 import PreferencesPage from "./pages/PreferencesPage";
@@ -25,6 +26,7 @@ type PageProps = { onNavigate?: (page: PageId) => void };
 const PAGES: Record<PageId, ComponentType<PageProps>> = {
   home: HomePage,
   "knowledge-base": KnowledgeBasePage,
+  grammar: GrammarPage,
   chat: ChatPage,
   preferences: PreferencesPage,
   admin: AdminPage,

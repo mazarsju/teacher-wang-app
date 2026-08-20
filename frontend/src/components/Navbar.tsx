@@ -1,4 +1,5 @@
 import {
+  BookOpenIcon,
   ChatBubbleIcon,
   HouseIcon,
   NotebookIcon,
@@ -12,6 +13,7 @@ import styles from "./Navbar.module.css";
 export type PageId =
   | "home"
   | "knowledge-base"
+  | "grammar"
   | "chat"
   | "preferences"
   | "admin";
@@ -25,6 +27,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Home", icon: HouseIcon },
   { id: "knowledge-base", label: "Knowledge base", icon: NotebookIcon },
+  { id: "grammar", label: "Grammar", icon: BookOpenIcon },
   { id: "chat", label: "Chat", icon: ChatBubbleIcon },
   { id: "preferences", label: "Preferences", icon: SettingsIcon },
 ];

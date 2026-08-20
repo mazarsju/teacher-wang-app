@@ -68,8 +68,8 @@ teacher-wang/
 │   │   ├── App.module.css
 │   │   ├── main.tsx        # React entry + Redux Provider
 │   │   ├── styles/         # tokens.css (design tokens), globals.css (reset/base)
-│   │   ├── store/          # Redux Toolkit store (characters, words, HSK, Anki)
-│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Chat, Preferences (each with a co-located .module.css)
+│   │   ├── store/          # Redux Toolkit store (characters, words, HSK, grammar, Anki)
+│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Grammar, Chat, Preferences (each with a co-located .module.css)
 │   │   ├── components/     # Navbar, ProfileMenu (Synchro / Log out), modals, … (each with a co-located .module.css)
 │   │   │   ├── Button.tsx      # The app's only button; kind (cancel/confirm/danger) × variant (page/modal/banner/table/confirmation)
 │   │   │   └── shared.css      # Global (non-module) CSS for the modal chrome, toggle switch, and Button design system
@@ -79,6 +79,7 @@ teacher-wang/
 │   │       ├── auth/           # Cognito auth client + apiFetch
 │   │       ├── anki/           # AnkiConnect (localhost:8765) + /api/anki bookkeeping
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
+│   │       ├── grammar/        # Grammar points API
 │   │       └── aiChat/         # Chat and token usage APIs
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
@@ -252,6 +253,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/words/<word>` | Update a word's `definition` |
 | `DELETE` | `/words/<word>` | Delete a word |
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |
+| `GET` | `/grammar-points` | List grammar points (`grammar_points`/`grammar_prerequisites`) with the current user's `status` from `user_grammar_progress` (Postgres only, no S3 content) |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
@@ -425,7 +427,7 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 - [x] Create grammar content repository and S3 deployment pipeline
 - [x] Design database schema for grammar catalog, prerequisites, and learner progress
 - [x] Load the database with grammar metadata based on S3 content
-- [ ] Build grammar section UI with HSK-level navigation
+- [x] Build grammar section UI with HSK-level navigation (list view; explanation view still pending)
 - [ ] Display grammar explanations from S3 (Markdown rendering)
 - [ ] Track grammar completion and mastery per user
 - [ ] Add deterministic exercises

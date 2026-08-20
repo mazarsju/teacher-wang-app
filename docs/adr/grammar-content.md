@@ -5,9 +5,11 @@
 Accepted
 
 The content pipeline described here (repo → S3 → `grammar_points` /
-`grammar_prerequisites`) is implemented. Grammar UI, explanation rendering,
-learner progress tracking, and AI-powered practice are not yet built
-(README roadmap §10).
+`grammar_prerequisites`) is implemented. The frontend has a Grammar tab
+listing grammar points (`GET /grammar-points`, Postgres-only: hsk_level,
+title, prerequisites, and the current user's status from
+`user_grammar_progress`). Explanation rendering from S3, exercises, and
+AI-powered practice are not yet built (README roadmap §10).
 
 ## Context
 
