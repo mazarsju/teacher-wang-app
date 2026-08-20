@@ -361,6 +361,51 @@ describe("GrammarPage", () => {
     expect(container.querySelector("details")).toBeNull();
   });
 
+  it("navigates to the grammar point detail page when a card is clicked", async () => {
+    const user = userEvent.setup();
+    const listPoint = {
+      id: "1|Basic Sentence Structure",
+      hsk_level: 1,
+      title: "Basic Sentence Structure",
+      prerequisites: [],
+      status: "TODO",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/grammar-points")) {
+          return Promise.resolve({ ok: true, json: async () => [listPoint] });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            ...listPoint,
+            explanation: "# Basic Sentence Structure",
+            exercises: null,
+          }),
+        });
+      }),
+    );
+
+    renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+      ).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "Explanation" })).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
+
   it("shows an error message when the fetch fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 

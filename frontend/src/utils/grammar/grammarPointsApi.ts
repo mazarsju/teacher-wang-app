@@ -1,4 +1,4 @@
-import type { GrammarPoint } from "../../types/grammarPoint";
+import type { GrammarPoint, GrammarPointDetail } from "../../types/grammarPoint";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
 
@@ -10,6 +10,21 @@ export async function fetchGrammarPoints(): Promise<GrammarPoint[]> {
   }
 
   return (await response.json()) as GrammarPoint[];
+}
+
+export async function fetchGrammarPointDetail(
+  grammarId: string,
+): Promise<GrammarPointDetail> {
+  const response = await apiFetch(
+    `${API_BASE}/grammar-points/${encodeURIComponent(grammarId)}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load grammar topic.");
+  }
+
+  return (await response.json()) as GrammarPointDetail;
 }
 
 export async function skipGrammarPoint(grammarId: string): Promise<void> {

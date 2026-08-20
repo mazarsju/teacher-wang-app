@@ -5,3 +5,10 @@ export type GrammarPoint = {
   prerequisites: string[];
   status: string;
 };
+
+export type GrammarExercise = Record<string, unknown>;
+
+export type GrammarPointDetail = GrammarPoint & {
+  explanation: string | null;
+  exercises: GrammarExercise[] | null;
+};

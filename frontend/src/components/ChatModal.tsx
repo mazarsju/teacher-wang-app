@@ -27,6 +27,7 @@ import {
 } from "../utils/aiChat/chatApi";
 import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
+import { renderFormattedText } from "../utils/formatMarkdownText";
 import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
 import styles from "./ChatModal.module.css";
 
@@ -78,50 +79,6 @@ function hasCorrectionThread(message: ChatMessage): boolean {
       (message.correctionThread && message.correctionThread.length > 0) ||
       message.correctionAnswer,
   );
-}
-
-const MARKDOWN_INLINE_PATTERN = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
-const MARKDOWN_HEADER_PATTERN = /^(#{1,6})\s+(.*)$/;
-
-function renderInlineFormattedText(text: string, keyPrefix: string) {
-  return text.split(MARKDOWN_INLINE_PATTERN).map((part, index) => {
-    const key = `${keyPrefix}-${index}`;
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={key}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return <code key={key}>{part.slice(1, -1)}</code>;
-    }
-    if (part.startsWith("*") && part.endsWith("*")) {
-      return <em key={key}>{part.slice(1, -1)}</em>;
-    }
-    return part;
-  });
-}
-
-function renderFormattedText(text: string) {
-  const lines = text.split("\n");
-  if (lines.length === 1 && !MARKDOWN_HEADER_PATTERN.test(text)) {
-    return renderInlineFormattedText(text, "0");
-  }
-  return lines.map((line, lineIndex) => {
-    const headerMatch = line.match(MARKDOWN_HEADER_PATTERN);
-    if (headerMatch) {
-      const level = Math.min(headerMatch[1].length, 6);
-      const HeadingTag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
-      return (
-        <HeadingTag key={lineIndex} className={styles.chatMessageHeading}>
-          {renderInlineFormattedText(headerMatch[2], String(lineIndex))}
-        </HeadingTag>
-      );
-    }
-    return (
-      <span key={lineIndex}>
-        {renderInlineFormattedText(line, String(lineIndex))}
-        {lineIndex < lines.length - 1 ? "\n" : null}
-      </span>
-    );
-  });
 }
 
 function getCorrectionThreadMessages(message: ChatMessage): ChatMessage[] {
@@ -585,7 +542,10 @@ export default function ChatModal({
                                   key={`${segmentIndex}-${segment.text}`}
                                   className={`${styles.chatMessage} ${styles.chatMessageAssistant}`}
                                 >
-                                  {renderFormattedText(segment.text)}
+                                  {renderFormattedText(
+                                    segment.text,
+                                    styles.chatMessageHeading,
+                                  )}
                                 </div>
                               ),
                             )}
@@ -620,7 +580,10 @@ export default function ChatModal({
                               : `${styles.chatMessage} ${styles.chatMessageAssistant}`
                           }
                         >
-                          {renderFormattedText(chatMessage.content)}
+                          {renderFormattedText(
+                            chatMessage.content,
+                            styles.chatMessageHeading,
+                          )}
                         </div>
                       </div>
                     </li>

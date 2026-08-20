@@ -11,6 +11,7 @@ import {
   fetchGrammarPoints,
   skipGrammarPoint,
 } from "../utils/grammar/grammarPointsApi";
+import GrammarPointDetailPage from "./GrammarPointDetailPage";
 import styles from "./GrammarPage.module.css";
 
 // A grammar point counts as done for both prerequisite-unlocking and the
@@ -37,6 +38,9 @@ export default function GrammarPage() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGrammarId, setSelectedGrammarId] = useState<string | null>(
+    null,
+  );
 
   const availableGrammarPoints = useMemo(() => {
     const statusById = new Map(
@@ -87,8 +91,8 @@ export default function GrammarPage() {
     };
   }, [dispatch]);
 
-  function handleSelect(_grammarPoint: GrammarPoint) {
-    // Detail view will open once the S3-backed detail endpoint exists.
+  function handleSelect(grammarPoint: GrammarPoint) {
+    setSelectedGrammarId(grammarPoint.id);
   }
 
   async function handleSkip(grammarPoint: GrammarPoint) {
@@ -102,6 +106,15 @@ export default function GrammarPage() {
           : "Failed to mark grammar point as known.",
       );
     }
+  }
+
+  if (selectedGrammarId !== null) {
+    return (
+      <GrammarPointDetailPage
+        grammarId={selectedGrammarId}
+        onBack={() => setSelectedGrammarId(null)}
+      />
+    );
   }
 
   return (

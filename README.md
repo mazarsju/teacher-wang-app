@@ -76,6 +76,7 @@ teacher-wang/
 │   │   ├── types/
 │   │   └── utils/
 │   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
+│   │       ├── formatMarkdownText.tsx  # Shared chat/grammar Markdown-ish renderer
 │   │       ├── auth/           # Cognito auth client + apiFetch
 │   │       ├── anki/           # AnkiConnect (localhost:8765) + /api/anki bookkeeping
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
@@ -255,6 +256,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |
 | `GET` | `/grammar-points` | List grammar points (`grammar_points`/`grammar_prerequisites`) with the current user's `status` from `user_grammar_progress` (Postgres only, no S3 content) |
 | `POST` | `/grammar-points/<grammar_id>/skip` | Mark a grammar point as already known (`status` = `SKIP` in `user_grammar_progress`), unlocking grammar points that list it as a prerequisite |
+| `GET` | `/grammar-points/<grammar_id>` | Fetch one grammar point's detail: Postgres metadata plus its `explanation.md`/`exercises.json` content read from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (or `GRAMMAR_CONTENT_S3_PATH` local checkout) at its `s3_key` |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
@@ -429,7 +431,7 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 - [x] Design database schema for grammar catalog, prerequisites, and learner progress
 - [x] Load the database with grammar metadata based on S3 content
 - [x] Build grammar section UI with HSK-level navigation (list view; explanation view still pending)
-- [ ] Display grammar explanations from S3 (Markdown rendering)
+- [x] Display grammar explanations from S3 (Markdown rendering)
 - [ ] Track grammar completion and mastery per user
 - [ ] Add deterministic exercises
   - [ ] Multiple-choice questions

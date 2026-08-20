@@ -5,8 +5,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from botocore.exceptions import ClientError
+
 from backend.utils.database.models import GrammarPoint, GrammarPrerequisite
-from backend.utils.grammar.grammar_content_loader import reload_grammar_content
+from backend.utils.grammar.grammar_content_loader import (
+    fetch_grammar_content,
+    reload_grammar_content,
+)
 from postgres_test_case import PostgresTestCase
 
 
@@ -188,6 +193,80 @@ class TestReloadGrammarContent(PostgresTestCase):
                 reload_grammar_content(client=_make_client(objects))
         finally:
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+
+class TestFetchGrammarContent(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_reads_from_local_path_when_env_var_set(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            rule_dir = root / "hsk1" / "01-basic-sentence-structure"
+            rule_dir.mkdir(parents=True)
+            (rule_dir / "explanation.md").write_text("# Basic sentence structure")
+            (rule_dir / "exercises.json").write_text('[{"id": "mcq_001"}]')
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                content = fetch_grammar_content("hsk1/01-basic-sentence-structure")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(content["explanation"], "# Basic sentence structure")
+        self.assertEqual(content["exercises"], [{"id": "mcq_001"}])
+
+    def test_local_path_missing_files_return_none(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                content = fetch_grammar_content("hsk1/01-basic-sentence-structure")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertIsNone(content["explanation"])
+        self.assertIsNone(content["exercises"])
+
+    def test_reads_from_s3_when_local_path_not_set(self):
+        client = _make_client(
+            {
+                "hsk1/01-basic-sentence-structure/explanation.md": "# Basic sentence structure",
+                "hsk1/01-basic-sentence-structure/exercises.json": '[{"id": "mcq_001"}]',
+            }
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_grammar_content(
+                "hsk1/01-basic-sentence-structure", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(content["explanation"], "# Basic sentence structure")
+        self.assertEqual(content["exercises"], [{"id": "mcq_001"}])
+
+    def test_s3_missing_key_returns_none(self):
+        client = MagicMock()
+        client.get_object.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchKey"}}, "GetObject"
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_grammar_content(
+                "hsk1/01-basic-sentence-structure", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertIsNone(content["explanation"])
+        self.assertIsNone(content["exercises"])
 
 
 if __name__ == "__main__":

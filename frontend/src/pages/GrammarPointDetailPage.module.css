@@ -1,0 +1,40 @@
+.grammar-detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--app-border-light);
+  margin-bottom: 1.25rem;
+}
+
+.grammar-detail-tab {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: #4b5563;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grammar-detail-tab:hover {
+  color: var(--app-sea);
+}
+
+.grammar-detail-tab-active {
+  color: var(--app-sea);
+  border-bottom-color: var(--app-sea);
+}
+
+.grammar-detail-explanation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  line-height: 1.6;
+  color: #111827;
+  white-space: pre-wrap;
+}
+
+.grammar-detail-todo {
+  color: #6b7280;
+  font-style: italic;
+}

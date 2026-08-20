@@ -8,8 +8,13 @@ The content pipeline described here (repo → S3 → `grammar_points` /
 `grammar_prerequisites`) is implemented. The frontend has a Grammar tab
 listing grammar points (`GET /grammar-points`, Postgres-only: hsk_level,
 title, prerequisites, and the current user's status from
-`user_grammar_progress`). Explanation rendering from S3, exercises, and
-AI-powered practice are not yet built (README roadmap §10).
+`user_grammar_progress`) and a detail view (`GET /grammar-points/<id>`,
+`backend/utils/grammar/grammar_content_loader.py:fetch_grammar_content`)
+that reads `explanation.md`/`exercises.json` from S3 at the point's
+`s3_key` and renders the Explanation tab as Markdown (reusing the chat
+agents' `renderFormattedText`, `frontend/src/utils/formatMarkdownText.tsx`).
+The Exercises tab is a placeholder; deterministic exercises and AI-powered
+practice are not yet built (README roadmap §10).
 
 ## Context
 

@@ -14,10 +14,12 @@ instead of S3, for local debugging.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
 import yaml
+from botocore.exceptions import ClientError
 from sqlalchemy.dialects.postgresql import insert
 
 from backend.utils.database.extensions import db
@@ -137,4 +139,43 @@ def reload_grammar_content(client=None) -> dict[str, int]:
     return {
         "grammar_points": len(manifests),
         "grammar_prerequisites": prerequisite_count,
+    }
+
+
+def _read_local_file(root: Path, relative_path: str) -> str | None:
+    path = root / relative_path
+    return path.read_text() if path.exists() else None
+
+
+def _read_s3_object(client, bucket: str, key: str) -> str | None:
+    try:
+        return client.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf-8")
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+            return None
+        raise
+
+
+def fetch_grammar_content(s3_key: str, client=None) -> dict:
+    """Fetches a grammar point's explanation.md and exercises.json.
+
+    Reads from GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout)
+    when set, otherwise from the GRAMMAR_CONTENT_S3_BUCKET bucket. A missing
+    file returns None for that field rather than raising, since not every
+    topic has exercises authored yet.
+    """
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        root = Path(local_path)
+        explanation = _read_local_file(root, f"{s3_key}/explanation.md")
+        exercises_raw = _read_local_file(root, f"{s3_key}/exercises.json")
+    else:
+        bucket = _bucket()
+        client = client or _s3_client()
+        explanation = _read_s3_object(client, bucket, f"{s3_key}/explanation.md")
+        exercises_raw = _read_s3_object(client, bucket, f"{s3_key}/exercises.json")
+
+    return {
+        "explanation": explanation,
+        "exercises": json.loads(exercises_raw) if exercises_raw else None,
     }
