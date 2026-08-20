@@ -37,6 +37,7 @@ teacher-wang/
 │   ├── migrations/         # Alembic revisions (Postgres schema)
 │   ├── hsk.json            # Bundled HSK fallback if GitHub download fails
 │   ├── routes/             # One endpoint per file (Flask blueprints)
+│   ├── jobs/               # CLI entrypoints for ECS tasks (generate_weekly_articles.py)
 │   ├── utils/              # Everything importable from routes/tests, grouped by domain
 │   │   ├── database/       # database.py (init/Alembic upgrade), alembic_runner.py, db_config.py,
 │   │   │                   # extensions.py (SQLAlchemy), models.py, db_export.py, settings.py (key/value app settings)
@@ -47,7 +48,7 @@ teacher-wang/
 │   │   ├── knowledgeBase/  # hsk_level.py, hsk_level_corrections.py, hsk_word_picker.py, pinyin.py,
 │   │   │                   # chinese_validation.py, character_sync.py, anki_sync.py (Anki deck mapping/sync),
 │   │   │                   # hsk_source.py/hsk_content_loader.py/load_hsk_content.py (HSK vocabulary load)
-│   │   └── generateArticle/ # weekly_article_generator.py (weekly news-to-reading pipeline)
+│   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
 │   └── requirements.txt
 ├── alembic.ini             # Alembic config (URL overridden from .env)
 ├── .env.example            # Template for local DATABASE_URL (copy to .env)
@@ -192,7 +193,7 @@ curl -X POST -F "file=@db.txt" \
 - **Production / ECS:** set these as task-definition secrets / environment variables in [teacher-wang-infra](https://github.com/mazarsju/teacher-wang-infra).
 - **Local development:** the same env vars, or a gitignored `.config.txt` at the project root (read by `backend/utils/aiChat/llm_config.py` as a convenience fallback).
 
-`POST /admin/articles/generate` fetches China-related news from one of two sources, chosen by the hardcoded `ARTICLE_SOURCE` flag in `backend/routes/generate_article.py` (currently `"guardian"`) — not an env var, since it's a code-level choice, not a per-environment secret:
+`POST /admin/articles/generate` and the ECS job `python3 -m backend.jobs.generate_weekly_articles` both call `run_weekly_article_generation()` in `backend/utils/generateArticle/service.py`. That service fetches China-related news from one of two sources, chosen by the hardcoded `ARTICLE_SOURCE` flag (currently `"guardian"`) — not an env var, since it's a code-level choice, not a per-environment secret:
 
 | Key / variable | Description |
 | --- | --- |
@@ -252,7 +253,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
-| `POST` | `/admin/articles/generate` | Fetch latest China-related articles (Currents API or The Guardian, per the hardcoded `ARTICLE_SOURCE` flag); for each HSK level 1-6, use the LLM to pick 3 articles (by title) matching that level's topic difficulty, adapt and save them to `weekly_articles` (`403` unless the caller is the admin account) |
+| `POST` | `/admin/articles/generate` | Same as `python3 -m backend.jobs.generate_weekly_articles`: fetch latest China-related articles (Currents API or The Guardian, per the hardcoded `ARTICLE_SOURCE` flag); for each HSK level 1-6, pick/adapt/save to `weekly_articles` (`403` unless the caller is the admin account) |
 
 ### Frontend
 

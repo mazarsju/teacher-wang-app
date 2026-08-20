@@ -10,13 +10,13 @@ Learners benefit from real-world Chinese reading practice, not just chat. The ap
 
 News content and per-level adaptation both need an LLM: raw wire copy is in English, at adult-native complexity, and mixes topics of wildly different difficulty (a panda birth vs. a tax-policy story). A single fixed "top 3 articles" shared across every level could not serve HSK 1 and HSK 6 well at once.
 
-The implementation lives in `backend/routes/generate_article.py` (fetch + trigger), `backend/utils/generateArticle/weekly_article_generator.py` (the pipeline), `backend/routes/weekly_articles.py` (learner-facing read), and the `weekly_articles` table (`backend/utils/database/models.py`, catalogued in [architecture/schema-tenancy.md](../architecture/schema-tenancy.md)).
+The implementation lives in `backend/utils/generateArticle/service.py` (`run_weekly_article_generation`: fetch + trigger), `backend/utils/generateArticle/weekly_article_generator.py` (the pipeline), `backend/routes/generate_article.py` (admin HTTP wrapper), `backend/jobs/generate_weekly_articles.py` (ECS CLI), `backend/routes/weekly_articles.py` (learner-facing read), and the `weekly_articles` table (`backend/utils/database/models.py`, catalogued in [architecture/schema-tenancy.md](../architecture/schema-tenancy.md)).
 
 ## Decision
 
 ### Trigger and fetch
 
-An admin manually triggers generation from Admin → **Refresh articles** (`frontend/src/pages/AdminPage.tsx`), which calls `POST /admin/articles/generate` (`403` for non-admins). The route fetches recent China-related news through `_fetch_china_articles`, which dispatches to one of two sources by the hardcoded `ARTICLE_SOURCE` flag in `backend/routes/generate_article.py` (not an env var — a code-level choice, so switching source is a one-line deploy, not a per-environment secret change):
+Generation is the same service either way: an admin can trigger it from Admin → **Refresh articles** (`frontend/src/pages/AdminPage.tsx` → `POST /admin/articles/generate`, `403` for non-admins), or an ECS scheduled task can run `python3 -m backend.jobs.generate_weekly_articles` (needs a Flask app context for the DB session). Both call `run_weekly_article_generation()`, which fetches recent China-related news through `_fetch_china_articles`. That dispatches to one of two sources by the hardcoded `ARTICLE_SOURCE` flag in `backend/utils/generateArticle/service.py` (not an env var — a code-level choice, so switching source is a one-line deploy, not a per-environment secret change):
 
 | Source | Flag value | API key | Endpoint |
 | --- | --- | --- | --- |
@@ -70,10 +70,10 @@ The result for each level is upserted into `weekly_articles` (`_save_weekly_arti
 ### Pipeline diagram
 
 ```text
-Admin clicks "Refresh articles"
+Admin "Refresh articles"  or  python3 -m backend.jobs.generate_weekly_articles
         │
         ▼
-POST /admin/articles/generate
+run_weekly_article_generation()
         │
         ▼
 The Guardian or Currents API  (ARTICLE_SOURCE flag picks one)

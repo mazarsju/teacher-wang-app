@@ -65,7 +65,7 @@ Example header:
 | AnkiConnect ownership | [adr/anki-connect.md](adr/anki-connect.md) |
 | Push/pull sync steps | [anki/sync-protocol.md](anki/sync-protocol.md) |
 | Chat agents / challenges | [adr/ai-agents.md](adr/ai-agents.md), skill `create-challenge` |
-| Weekly articles / `POST /admin/articles/generate` / `weekly_articles` | [adr/weekly-articles.md](adr/weekly-articles.md) |
+| Weekly articles / `POST /admin/articles/generate` / `python3 -m backend.jobs.generate_weekly_articles` / `weekly_articles` | [adr/weekly-articles.md](adr/weekly-articles.md) |
 | Teacher Wang teaching behaviors (for planner/generator/validator) | [architecture/teacher-wang-behaviors.md](architecture/teacher-wang-behaviors.md) |
 | Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
 | Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |

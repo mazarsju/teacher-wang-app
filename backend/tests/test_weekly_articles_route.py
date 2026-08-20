@@ -49,13 +49,13 @@ class TestGetWeeklyArticleEndpoint(unittest.TestCase):
             {
                 "week": self.iso_week,
                 "year": self.iso_year,
-                "hsk_level": 3,
+                "hsk_level": 4,
                 "content": content,
             },
         )
         self.mock_get_level.assert_called_once_with(TEST_USER_ID)
         self.mock_article_cls.query.filter_by.assert_called_once_with(
-            week=self.iso_week, year=self.iso_year, hsk_level=3
+            week=self.iso_week, year=self.iso_year, hsk_level=4
         )
 
     def test_defaults_to_hsk_1_when_no_level_is_stored(self):
@@ -83,7 +83,7 @@ class TestGetWeeklyArticleEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.get_json()["content"])
-        self.assertEqual(response.get_json()["hsk_level"], 2)
+        self.assertEqual(response.get_json()["hsk_level"], 3)
 
 
 if __name__ == "__main__":

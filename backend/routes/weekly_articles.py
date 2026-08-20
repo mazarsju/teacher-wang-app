@@ -8,13 +8,12 @@ from backend.utils.knowledgeBase.hsk_level import get_stored_current_hsk_level
 
 bp = Blueprint("weekly_articles", __name__)
 
-MIN_ARTICLE_HSK_LEVEL = 1
 MAX_ARTICLE_HSK_LEVEL = 6
 
 
 def _article_hsk_level(user_id: str) -> int:
-    level = (get_stored_current_hsk_level(user_id) + 1) or MIN_ARTICLE_HSK_LEVEL
-    return max(MIN_ARTICLE_HSK_LEVEL, min(MAX_ARTICLE_HSK_LEVEL, level))
+    level = get_stored_current_hsk_level(user_id) or 0
+    return min(MAX_ARTICLE_HSK_LEVEL, level + 1) # need to add 1 because being on a level means you are working on the next level
 
 
 @bp.get("/weekly-articles")

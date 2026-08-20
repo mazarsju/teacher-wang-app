@@ -9,10 +9,11 @@ database_module.init_db = MagicMock()
 database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
-from backend.routes.generate_article import (  # noqa: E402
+from backend.utils.generateArticle.service import (  # noqa: E402
     _fetch_china_articles,
     _fetch_from_currents,
     _fetch_from_guardian,
+    run_weekly_article_generation,
 )
 from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 
@@ -29,25 +30,14 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         self.mock_current_user.return_value = MagicMock(email="mazarsju@gmail.com")
         self.addCleanup(self.current_user_patcher.stop)
 
-        self.fetch_patcher = patch(
-            "backend.routes.generate_article._fetch_china_articles"
+        self.run_patcher = patch(
+            "backend.routes.generate_article.run_weekly_article_generation"
         )
-        self.mock_fetch = self.fetch_patcher.start()
-        self.addCleanup(self.fetch_patcher.stop)
-
-        self.generate_weekly_patcher = patch(
-            "backend.routes.generate_article.generate_weekly_articles"
-        )
-        self.mock_generate_weekly = self.generate_weekly_patcher.start()
-        self.addCleanup(self.generate_weekly_patcher.stop)
+        self.mock_run = self.run_patcher.start()
+        self.addCleanup(self.run_patcher.stop)
 
     def test_admin_triggers_weekly_article_generation(self):
-        fetched_articles = [
-            {"id": "a1", "title": "One"},
-            {"id": "a2", "title": "Two"},
-        ]
-        self.mock_fetch.return_value = fetched_articles
-        self.mock_generate_weekly.return_value = {
+        self.mock_run.return_value = {
             "week": 33,
             "year": 2026,
             "hsk_levels": [1, 2, 3, 4, 5, 6],
@@ -66,16 +56,15 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
                 }
             },
         )
-        self.mock_generate_weekly.assert_called_once_with(fetched_articles)
+        self.mock_run.assert_called_once_with()
 
     def test_no_weekly_articles_generated_when_nothing_fetched(self):
-        self.mock_fetch.return_value = []
+        self.mock_run.return_value = None
 
         response = self.client.post("/admin/articles/generate")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["weekly_articles"], None)
-        self.mock_generate_weekly.assert_not_called()
 
     def test_non_admin_is_forbidden(self):
         self.mock_current_user.return_value = MagicMock(email="someone@example.com")
@@ -83,17 +72,51 @@ class TestGenerateArticleEndpoint(unittest.TestCase):
         response = self.client.post("/admin/articles/generate")
 
         self.assertEqual(response.status_code, 403)
-        self.mock_fetch.assert_not_called()
+        self.mock_run.assert_not_called()
 
     def test_missing_api_key_returns_400(self):
-        self.mock_fetch.side_effect = ValueError(
+        self.mock_run.side_effect = ValueError(
             "GUARDIAN_API_KEY must be set as an environment variable"
         )
 
         response = self.client.post("/admin/articles/generate")
 
         self.assertEqual(response.status_code, 400)
-        self.mock_generate_weekly.assert_not_called()
+        self.assertEqual(
+            response.get_json()["error"],
+            "GUARDIAN_API_KEY must be set as an environment variable",
+        )
+
+
+class TestRunWeeklyArticleGeneration(unittest.TestCase):
+    def test_returns_none_when_fetch_is_empty(self):
+        with (
+            patch(
+                "backend.utils.generateArticle.service._fetch_china_articles",
+                return_value=[],
+            ),
+            patch(
+                "backend.utils.generateArticle.service.generate_weekly_articles"
+            ) as mock_generate,
+        ):
+            self.assertIsNone(run_weekly_article_generation())
+            mock_generate.assert_not_called()
+
+    def test_passes_fetched_articles_to_pipeline(self):
+        fetched = [{"id": "a1", "title": "One"}]
+        summary = {"week": 33, "year": 2026, "hsk_levels": [1, 2, 3, 4, 5, 6]}
+        with (
+            patch(
+                "backend.utils.generateArticle.service._fetch_china_articles",
+                return_value=fetched,
+            ),
+            patch(
+                "backend.utils.generateArticle.service.generate_weekly_articles",
+                return_value=summary,
+            ) as mock_generate,
+        ):
+            self.assertEqual(run_weekly_article_generation(), summary)
+            mock_generate.assert_called_once_with(fetched)
 
 
 class TestArticleSourceDispatch(unittest.TestCase):
@@ -101,7 +124,7 @@ class TestArticleSourceDispatch(unittest.TestCase):
 
     def test_dispatches_to_guardian_by_default(self):
         with patch(
-            "backend.routes.generate_article._fetch_from_guardian"
+            "backend.utils.generateArticle.service._fetch_from_guardian"
         ) as mock_guardian:
             mock_guardian.return_value = [{"id": "g1"}]
 
@@ -110,9 +133,9 @@ class TestArticleSourceDispatch(unittest.TestCase):
 
     def test_dispatches_to_currents_when_flag_set(self):
         with patch(
-            "backend.routes.generate_article.ARTICLE_SOURCE", "currents"
+            "backend.utils.generateArticle.service.ARTICLE_SOURCE", "currents"
         ), patch(
-            "backend.routes.generate_article._fetch_from_currents"
+            "backend.utils.generateArticle.service._fetch_from_currents"
         ) as mock_currents:
             mock_currents.return_value = [{"id": "c1"}]
 
@@ -123,7 +146,7 @@ class TestArticleSourceDispatch(unittest.TestCase):
 class TestFetchFromCurrents(unittest.TestCase):
     def setUp(self):
         self.read_config_patcher = patch(
-            "backend.routes.generate_article.read_config_value"
+            "backend.utils.generateArticle.service.read_config_value"
         )
         self.mock_read_config = self.read_config_patcher.start()
         self.addCleanup(self.read_config_patcher.stop)
@@ -134,7 +157,7 @@ class TestFetchFromCurrents(unittest.TestCase):
         with self.assertRaises(ValueError):
             _fetch_from_currents()
 
-    @patch("backend.routes.generate_article.urlopen")
+    @patch("backend.utils.generateArticle.service.urlopen")
     def test_reads_api_key_the_same_way_as_llm_api_key(self, mock_urlopen):
         self.mock_read_config.return_value = "test-key"
         mock_response = MagicMock()
@@ -155,7 +178,7 @@ class TestFetchFromCurrents(unittest.TestCase):
 class TestFetchFromGuardian(unittest.TestCase):
     def setUp(self):
         self.read_config_patcher = patch(
-            "backend.routes.generate_article.read_config_value"
+            "backend.utils.generateArticle.service.read_config_value"
         )
         self.mock_read_config = self.read_config_patcher.start()
         self.addCleanup(self.read_config_patcher.stop)
@@ -166,7 +189,7 @@ class TestFetchFromGuardian(unittest.TestCase):
         with self.assertRaises(ValueError):
             _fetch_from_guardian()
 
-    @patch("backend.routes.generate_article.urlopen")
+    @patch("backend.utils.generateArticle.service.urlopen")
     def test_reads_api_key_the_same_way_as_currents_api_key(self, mock_urlopen):
         self.mock_read_config.return_value = "test-key"
         mock_response = MagicMock()
@@ -204,7 +227,7 @@ class TestFetchFromGuardian(unittest.TestCase):
         sent_request = mock_urlopen.call_args.args[0]
         self.assertIn("User-agent", sent_request.headers)
 
-    @patch("backend.routes.generate_article.urlopen")
+    @patch("backend.utils.generateArticle.service.urlopen")
     def test_defaults_missing_fields(self, mock_urlopen):
         self.mock_read_config.return_value = "test-key"
         mock_response = MagicMock()
