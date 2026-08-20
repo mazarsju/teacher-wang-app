@@ -92,6 +92,22 @@ class TestInvokeLlmTokenGate(PostgresTestCase):
         self.assertEqual(str(ctx.exception), FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE)
         mock_get_llm.assert_not_called()
 
+    def test_invoke_llm_without_user_skips_token_gate(self):
+        mock_response = MagicMock()
+        mock_response.content = "你好"
+        mock_response.usage_metadata = {"input_tokens": 4, "output_tokens": 2}
+        mock_response.response_metadata = {}
+
+        with patch(
+            "backend.utils.auth.user_context.current_user",
+            side_effect=RuntimeError("Authenticated user row is missing"),
+        ), patch("backend.utils.aiChat.chat_service.get_llm") as mock_get_llm:
+            mock_get_llm.return_value.invoke.return_value = mock_response
+            text, usage = _invoke_llm([])
+
+        self.assertEqual(text, "你好")
+        self.assertEqual(usage, LlmTokenUsage(input_tokens=4, output_tokens=2))
+
 
 if __name__ == "__main__":
     unittest.main()

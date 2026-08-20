@@ -215,14 +215,20 @@ def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
     from backend.utils.database.settings import assert_free_plan_has_tokens, deduct_available_token
     from backend.utils.auth.user_context import current_user
 
-    user = current_user()
-    assert_free_plan_has_tokens(user)
+    # Batch jobs (weekly articles) have an app context but no Cognito user.
+    try:
+        user = current_user()
+    except RuntimeError:
+        user = None
+
+    if user is not None:
+        assert_free_plan_has_tokens(user)
 
     response = get_llm().invoke(messages)
     text = _llm_response_text(response)
     usage = _tokens_from_response(response)
 
-    if user.plan == DEFAULT_USER_PLAN and usage.total > 0:
+    if user is not None and user.plan == DEFAULT_USER_PLAN and usage.total > 0:
         deduct_available_token(user.shortid, usage.total, commit=True)
 
     return text, usage
