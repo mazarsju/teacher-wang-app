@@ -7,6 +7,7 @@ from backend.utils.aiChat.chat_service import _extract_json_object, _invoke_llm
 from backend.utils.aiChat.teaching_strategy import get_teaching_strategy
 from backend.utils.database.extensions import db
 from backend.utils.database.models import HskWord, WeeklyArticle, utcnow
+from backend.utils.request_logging import progress_log
 
 ARTICLES_PER_LEVEL = 3
 TRANSLATION_LEVELS = {1, 2, 3}
@@ -315,13 +316,32 @@ def generate_weekly_articles(articles: list[dict]) -> dict:
     """
     now = datetime.now(timezone.utc)
     iso_year, iso_week, _ = now.isocalendar()
+    progress_log(
+        "weekly.start",
+        week=iso_week,
+        year=iso_year,
+        source_count=len(articles),
+    )
 
     for hsk_level in HSK_LEVELS:
+        progress_log("weekly.level.start", level=hsk_level)
+        progress_log("weekly.pick.start", level=hsk_level)
         selected = _pick_articles_for_level(articles, hsk_level)
+        progress_log("weekly.pick.done", level=hsk_level, count=len(selected))
+
+        progress_log("weekly.adapt.start", level=hsk_level)
         content = _adapt_articles_for_level(selected, hsk_level)
+        progress_log("weekly.adapt.done", level=hsk_level, count=len(content))
+
         if hsk_level in NEW_WORDS_LEVELS:
+            progress_log("weekly.new_words.start", level=hsk_level)
             content = _inject_new_words(content, hsk_level)
+            progress_log("weekly.new_words.done", level=hsk_level)
+
+        progress_log("weekly.save.start", level=hsk_level)
         _save_weekly_article(iso_week, iso_year, hsk_level, content)
+        progress_log("weekly.level.done", level=hsk_level)
 
     db.session.commit()
+    progress_log("weekly.commit.done", week=iso_week, year=iso_year)
     return {"week": iso_week, "year": iso_year, "hsk_levels": list(HSK_LEVELS)}

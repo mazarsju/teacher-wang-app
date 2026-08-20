@@ -8,6 +8,7 @@ from flask import Blueprint
 from backend.utils.aiChat.llm_config import read_config_value
 from backend.utils.auth.user_context import current_user
 from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.request_logging import progress_log
 from backend.routes.weekly_article_generator import generate_weekly_articles
 
 bp = Blueprint("generate_article", __name__)
@@ -88,14 +89,39 @@ def _fetch_china_articles() -> list[dict]:
 @bp.post("/admin/articles/generate")
 def generate_article():
     if current_user().email != ADMIN_EMAIL:
+        progress_log("generate_article.forbidden")
         return {"error": "Forbidden"}, 403
 
+    progress_log("generate_article.start", source=ARTICLE_SOURCE)
     try:
+        progress_log("generate_article.fetch.start", source=ARTICLE_SOURCE)
         articles = _fetch_china_articles()
-        weekly_articles = generate_weekly_articles(articles) if articles else None
+        progress_log("generate_article.fetch.done", count=len(articles))
+        if not articles:
+            progress_log("generate_article.skip_empty")
+            weekly_articles = None
+        else:
+            progress_log("generate_article.weekly.start")
+            weekly_articles = generate_weekly_articles(articles)
+            progress_log(
+                "generate_article.weekly.done",
+                week=weekly_articles.get("week"),
+                year=weekly_articles.get("year"),
+            )
     except ValueError as error:
+        progress_log(
+            "generate_article.error",
+            kind="ValueError",
+            message=repr(str(error)),
+        )
         return {"error": str(error)}, 400
-    except Exception:
+    except Exception as error:
+        progress_log(
+            "generate_article.error",
+            kind=type(error).__name__,
+            message=repr(str(error)),
+        )
         return {"error": "Failed to generate article selection"}, 500
 
+    progress_log("generate_article.done")
     return {"weekly_articles": weekly_articles}, 200
