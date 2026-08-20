@@ -1,31 +1,54 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithStore } from "../test/renderWithStore";
 import GrammarPage from "./GrammarPage";
 
+type StubGrammarPoint = {
+  id: string;
+  hsk_level: number;
+  title: string;
+  prerequisites: string[];
+  status: string;
+};
+
 function stubGrammarPointsFetch(
-  points: {
-    id: string;
-    hsk_level: number;
-    title: string;
-    prerequisites: string[];
-    status: string;
-  }[],
+  points: StubGrammarPoint[],
+  { skipOk = true }: { skipOk?: boolean } = {},
 ) {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => points,
+    vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.endsWith("/skip")) {
+        return Promise.resolve({ ok: skipOk });
+      }
+
+      return Promise.resolve({ ok: true, json: async () => points });
     }),
   );
 }
+
+const HSK2_STATE = {
+  hsk: {
+    status: {
+      current_level: 2,
+      next_level: 3,
+      characters_to_next_level: 10,
+      progress_to_next_level: 50,
+      missing_characters: [],
+      max_level: 7,
+      completion_ratio: 0.85,
+    },
+  },
+};
 
 describe("GrammarPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("renders each grammar point as a card with its HSK level, title, and status", async () => {
+  it("renders a card with its HSK level and title, hiding the TODO status", async () => {
     stubGrammarPointsFetch([
       {
         id: "1|Basic Sentence Structure",
@@ -45,7 +68,297 @@ describe("GrammarPage", () => {
     );
 
     expect(screen.getByText("HSK 1")).toBeInTheDocument();
-    expect(screen.getByText("TODO")).toBeInTheDocument();
+    expect(screen.queryByText("TODO")).not.toBeInTheDocument();
+  });
+
+  it("shows a colored badge for SKIP, WIP, and DONE statuses", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Skipped",
+        hsk_level: 1,
+        title: "Skipped Topic",
+        prerequisites: [],
+        status: "SKIP",
+      },
+      {
+        id: "1|In Progress",
+        hsk_level: 1,
+        title: "In Progress Topic",
+        prerequisites: [],
+        status: "WIP",
+      },
+      {
+        id: "1|Finished",
+        hsk_level: 1,
+        title: "Finished Topic",
+        prerequisites: [],
+        status: "DONE",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText("SKIP")).toBeInTheDocument(),
+    );
+
+    expect(screen.getByText("SKIP")).toHaveClass(
+      "grammar-point-card-status-skip",
+    );
+    expect(screen.getByText("WIP")).toHaveClass(
+      "grammar-point-card-status-wip",
+    );
+    expect(screen.getByText("DONE")).toHaveClass(
+      "grammar-point-card-status-done",
+    );
+  });
+
+  it("hides grammar points whose prerequisites aren't all DONE, keeping ones with no prerequisites or fully-DONE prerequisites", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "DONE",
+      },
+      {
+        id: "1|Questions with Ma",
+        hsk_level: 1,
+        title: "Questions with Ma",
+        prerequisites: ["1|Basic Sentence Structure"],
+        status: "TODO",
+      },
+      {
+        id: "1|Negation",
+        hsk_level: 1,
+        title: "Negation with Bu",
+        prerequisites: ["1|Basic Sentence Structure", "1|Questions with Ma"],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Questions with Ma/ }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Negation with Bu/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("treats a SKIP prerequisite as satisfied, same as DONE", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "SKIP",
+      },
+      {
+        id: "1|Questions with Ma",
+        hsk_level: 1,
+        title: "Questions with Ma",
+        prerequisites: ["1|Basic Sentence Structure"],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Questions with Ma/ }),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('shows "Know already" only for TODO topics from a level below the current one', async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "1|Already Skipped",
+        hsk_level: 1,
+        title: "Already Skipped Topic",
+        prerequisites: [],
+        status: "SKIP",
+      },
+      {
+        id: "2|Current Level Topic",
+        hsk_level: 2,
+        title: "Current Level Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK2_STATE });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.getAllByRole("button", { name: "Know already" }),
+    ).toHaveLength(1);
+  });
+
+  it('marks a topic as SKIP and hides its "Know already" button after clicking it', async () => {
+    const user = userEvent.setup();
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK2_STATE });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Know already" }),
+      ).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Know already" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Know already" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText("SKIP")).toBeInTheDocument();
+  });
+
+  it("collapses completed (DONE/SKIP) topics into a closed 'Completed grammar topics' section", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "DONE",
+      },
+      {
+        id: "1|Questions with Ma",
+        hsk_level: 1,
+        title: "Questions with Ma Topic",
+        prerequisites: [],
+        status: "SKIP",
+      },
+      {
+        id: "1|Negation",
+        hsk_level: 1,
+        title: "Negation Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    const { container } = renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Negation Topic/ }),
+      ).toBeInTheDocument(),
+    );
+
+    const detailsElement = container.querySelector("details");
+    expect(detailsElement).not.toBeNull();
+    expect(detailsElement?.open).toBe(false);
+    expect(
+      within(detailsElement as HTMLElement).getByRole("button", {
+        name: /Basic Sentence Structure/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(detailsElement as HTMLElement).getByRole("button", {
+        name: /Questions with Ma Topic/,
+      }),
+    ).toBeInTheDocument();
+    // The still-TODO topic stays in the main grid, outside the details section.
+    expect(
+      within(detailsElement as HTMLElement).queryByRole("button", {
+        name: /Negation Topic/,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("puts even a single completed topic into the collapsible section", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "DONE",
+      },
+      {
+        id: "1|Negation",
+        hsk_level: 1,
+        title: "Negation Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    const { container } = renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Negation Topic/ }),
+      ).toBeInTheDocument(),
+    );
+
+    const detailsElement = container.querySelector("details");
+    expect(detailsElement).not.toBeNull();
+    expect(detailsElement?.open).toBe(false);
+    expect(
+      within(detailsElement as HTMLElement).getByRole("button", {
+        name: /Basic Sentence Structure/,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no collapsible section when nothing is DONE or SKIP yet", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Negation",
+        hsk_level: 1,
+        title: "Negation Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    const { container } = renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Negation Topic/ }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(container.querySelector("details")).toBeNull();
   });
 
   it("shows an error message when the fetch fails", async () => {

@@ -3,3 +3,17 @@
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: 1rem;
 }
+
+.grammar-completed-section {
+  margin-top: 1.5rem;
+}
+
+.grammar-completed-section .grammar-point-grid {
+  margin-top: 1rem;
+}
+
+.grammar-completed-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #111827;
+}

@@ -32,6 +32,7 @@ def register_routes(app: Flask) -> None:
         pick_hsk_word,
         reload_grammar_rules,
         reload_hsk_content,
+        skip_grammar_point,
         smart_ai_preference,
         suggest_hsk_words,
         token_usage,
@@ -66,6 +67,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(export_database.bp)
     app.register_blueprint(delete_knowledge_base.bp)
     app.register_blueprint(list_grammar_points.bp)
+    app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(list_hsk_characters.bp)
     app.register_blueprint(list_hsk_character_words.bp)
     app.register_blueprint(get_hsk_level.bp)

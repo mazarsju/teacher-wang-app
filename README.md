@@ -254,6 +254,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `DELETE` | `/words/<word>` | Delete a word |
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |
 | `GET` | `/grammar-points` | List grammar points (`grammar_points`/`grammar_prerequisites`) with the current user's `status` from `user_grammar_progress` (Postgres only, no S3 content) |
+| `POST` | `/grammar-points/<grammar_id>/skip` | Mark a grammar point as already known (`status` = `SKIP` in `user_grammar_progress`), unlocking grammar points that list it as a prerequisite |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
