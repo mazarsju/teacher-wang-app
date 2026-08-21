@@ -30,6 +30,20 @@ function stubGrammarPointsFetch(
   );
 }
 
+const HSK1_STATE = {
+  hsk: {
+    status: {
+      current_level: 1,
+      next_level: 2,
+      characters_to_next_level: 10,
+      progress_to_next_level: 50,
+      missing_characters: [],
+      max_level: 7,
+      completion_ratio: 0.5,
+    },
+  },
+};
+
 const HSK2_STATE = {
   hsk: {
     status: {
@@ -60,7 +74,7 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    renderWithStore(<GrammarPage />);
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() =>
       expect(
@@ -68,7 +82,9 @@ describe("GrammarPage", () => {
       ).toBeInTheDocument(),
     );
 
-    expect(screen.getByText("HSK 1")).toBeInTheDocument();
+    expect(
+      screen.getByText("HSK 1", { selector: ".grammar-point-card-level" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("TODO")).not.toBeInTheDocument();
   });
 
@@ -97,7 +113,7 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    renderWithStore(<GrammarPage />);
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() =>
       expect(screen.getByText("SKIP")).toBeInTheDocument(),
@@ -126,14 +142,14 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    renderWithStore(<GrammarPage />);
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() =>
       expect(screen.getByText("DONE · 82%")).toBeInTheDocument(),
     );
   });
 
-  it("hides grammar points whose prerequisites aren't all DONE, keeping ones with no prerequisites or fully-DONE prerequisites", async () => {
+  it("shows grammar points whose prerequisites aren't all DONE as locked, non-clickable cards", async () => {
     stubGrammarPointsFetch([
       {
         id: "1|Basic Sentence Structure",
@@ -158,7 +174,7 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    renderWithStore(<GrammarPage />);
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() =>
       expect(
@@ -168,9 +184,45 @@ describe("GrammarPage", () => {
 
     expect(
       screen.getByRole("button", { name: /Basic Sentence Structure/ }),
-    ).toBeInTheDocument();
+    ).toBeEnabled();
     expect(
-      screen.queryByRole("button", { name: /Negation with Bu/ }),
+      screen.getByRole("button", { name: /Questions with Ma/ }),
+    ).toBeEnabled();
+    // Its prerequisite ("Questions with Ma") isn't DONE/SKIP yet, so it's
+    // shown but locked rather than hidden.
+    expect(
+      screen.getByRole("button", { name: /Negation with Bu/ }),
+    ).toBeDisabled();
+  });
+
+  it("keeps grammar points above the learner's HSK level fully hidden, even with no prerequisites", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "3|Advanced Topic",
+        hsk_level: 3,
+        title: "Advanced Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Advanced Topic/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -192,12 +244,12 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    renderWithStore(<GrammarPage />);
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: /Questions with Ma/ }),
-      ).toBeInTheDocument(),
+      ).toBeEnabled(),
     );
   });
 
@@ -237,6 +289,50 @@ describe("GrammarPage", () => {
     expect(
       screen.getAllByRole("button", { name: "Know already" }),
     ).toHaveLength(1);
+  });
+
+  it("shows a completion gauge per HSK level up to the current level, excluding higher levels", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Done",
+        hsk_level: 1,
+        title: "Done Topic",
+        prerequisites: [],
+        status: "DONE",
+      },
+      {
+        id: "1|Todo",
+        hsk_level: 1,
+        title: "Todo Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "2|Skip",
+        hsk_level: 2,
+        title: "Skipped Topic",
+        prerequisites: [],
+        status: "SKIP",
+      },
+      {
+        id: "3|Todo",
+        hsk_level: 3,
+        title: "Above Current Level",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK2_STATE });
+
+    await waitFor(() =>
+      expect(
+        screen.getByTitle("HSK 1: 50% complete"),
+      ).toBeInTheDocument(),
+    );
+
+    expect(screen.getByTitle("HSK 2: 100% complete")).toBeInTheDocument();
+    expect(screen.queryByTitle(/HSK 3:/)).not.toBeInTheDocument();
   });
 
   it('marks a topic as SKIP and hides its "Know already" button after clicking it', async () => {
@@ -294,7 +390,9 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    const { container } = renderWithStore(<GrammarPage />);
+    const { container } = renderWithStore(<GrammarPage />, {
+      preloadedState: HSK1_STATE,
+    });
 
     await waitFor(() =>
       expect(
@@ -341,7 +439,9 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    const { container } = renderWithStore(<GrammarPage />);
+    const { container } = renderWithStore(<GrammarPage />, {
+      preloadedState: HSK1_STATE,
+    });
 
     await waitFor(() =>
       expect(
@@ -370,7 +470,9 @@ describe("GrammarPage", () => {
       },
     ]);
 
-    const { container } = renderWithStore(<GrammarPage />);
+    const { container } = renderWithStore(<GrammarPage />, {
+      preloadedState: HSK1_STATE,
+    });
 
     await waitFor(() =>
       expect(
@@ -408,7 +510,7 @@ describe("GrammarPage", () => {
       }),
     );
 
-    renderWithStore(<GrammarPage />);
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() =>
       expect(

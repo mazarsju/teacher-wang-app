@@ -37,6 +37,27 @@
   outline-offset: 2px;
 }
 
+.grammar-point-card-locked {
+  opacity: 0.6;
+}
+
+.grammar-point-card-locked:hover {
+  border-color: var(--app-border-light);
+  box-shadow: 0 8px 24px rgba(6, 24, 36, 0.08);
+  transform: none;
+}
+
+.grammar-point-card-locked .grammar-point-card-main {
+  cursor: not-allowed;
+}
+
+.grammar-point-card-lock-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
 .grammar-point-card-header {
   display: flex;
   align-items: center;

@@ -17,3 +17,58 @@
   font-weight: 600;
   color: #111827;
 }
+
+.grammar-level-gauges {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.grammar-level-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.grammar-level-gauge-ring {
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: rotate(-90deg);
+}
+
+.grammar-level-gauge-track {
+  fill: none;
+  stroke: var(--app-border-light);
+  stroke-width: 4;
+}
+
+.grammar-level-gauge-progress {
+  fill: none;
+  stroke: var(--app-sea);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease-out;
+}
+
+.grammar-level-gauge-text {
+  transform: rotate(90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  fill: var(--app-ink);
+  text-anchor: middle;
+}
+
+.grammar-level-gauge-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+@media (max-width: 640px) {
+  .grammar-level-gauges {
+    flex-wrap: wrap;
+  }
+}

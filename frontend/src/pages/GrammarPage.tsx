@@ -18,6 +18,61 @@ import styles from "./GrammarPage.module.css";
 // "completed" section once it's DONE or SKIP (the learner already knows it).
 const COMPLETED_STATUSES = new Set(["DONE", "SKIP"]);
 
+const GAUGE_RADIUS = 18;
+const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
+
+type LevelStat = { level: number; percent: number };
+
+function levelStatsUpToLevel(
+  grammarPoints: GrammarPoint[],
+  maxLevel: number,
+): LevelStat[] {
+  const totalByLevel = new Map<number, number>();
+  const doneByLevel = new Map<number, number>();
+
+  for (const point of grammarPoints) {
+    if (point.hsk_level > maxLevel) continue;
+    totalByLevel.set(point.hsk_level, (totalByLevel.get(point.hsk_level) ?? 0) + 1);
+    if (COMPLETED_STATUSES.has(point.status)) {
+      doneByLevel.set(point.hsk_level, (doneByLevel.get(point.hsk_level) ?? 0) + 1);
+    }
+  }
+
+  return [...totalByLevel.entries()]
+    .sort(([levelA], [levelB]) => levelA - levelB)
+    .map(([level, total]) => ({
+      level,
+      percent: Math.round(((doneByLevel.get(level) ?? 0) / total) * 100),
+    }));
+}
+
+function LevelGauge({ level, percent }: LevelStat) {
+  const offset = GAUGE_CIRCUMFERENCE - (percent / 100) * GAUGE_CIRCUMFERENCE;
+
+  return (
+    <div
+      className={styles.grammarLevelGauge}
+      title={`HSK ${level}: ${percent}% complete`}
+    >
+      <svg viewBox="0 0 44 44" className={styles.grammarLevelGaugeRing}>
+        <circle cx="22" cy="22" r={GAUGE_RADIUS} className={styles.grammarLevelGaugeTrack} />
+        <circle
+          cx="22"
+          cy="22"
+          r={GAUGE_RADIUS}
+          className={styles.grammarLevelGaugeProgress}
+          strokeDasharray={GAUGE_CIRCUMFERENCE}
+          strokeDashoffset={offset}
+        />
+        <text x="22" y="25" className={styles.grammarLevelGaugeText}>
+          {percent}%
+        </text>
+      </svg>
+      <span className={styles.grammarLevelGaugeLabel}>HSK {level}</span>
+    </div>
+  );
+}
+
 // Available means unlocked, not "not yet done": no prerequisites, or every
 // prerequisite is already DONE/SKIP. A grammar point already DONE or SKIP
 // itself still shows up here as long as its own prerequisites are satisfied.
@@ -42,25 +97,36 @@ export default function GrammarPage() {
     null,
   );
 
-  const availableGrammarPoints = useMemo(() => {
+  // Grammar points requiring a higher HSK level than the learner's stay
+  // fully hidden; ones at or below their level show up either unlocked or,
+  // if a prerequisite isn't DONE/SKIP yet, locked (visible but not clickable).
+  const visibleGrammarPoints = useMemo(() => {
     const statusById = new Map(
       grammarPoints.map((point) => [point.id, point.status]),
     );
-    return grammarPoints.filter((point) =>
-      isGrammarPointAvailable(point, statusById),
-    );
-  }, [grammarPoints]);
+    return grammarPoints
+      .filter((point) => point.hsk_level <= currentHskLevel)
+      .map((point) => ({
+        grammarPoint: point,
+        locked: !isGrammarPointAvailable(point, statusById),
+      }));
+  }, [grammarPoints, currentHskLevel]);
+
+  const levelStats = useMemo(
+    () => levelStatsUpToLevel(grammarPoints, currentHskLevel),
+    [grammarPoints, currentHskLevel],
+  );
 
   const { activeGrammarPoints, completedGrammarPoints } = useMemo(() => {
     return {
-      activeGrammarPoints: availableGrammarPoints.filter(
-        (point) => !COMPLETED_STATUSES.has(point.status),
+      activeGrammarPoints: visibleGrammarPoints.filter(
+        (entry) => !COMPLETED_STATUSES.has(entry.grammarPoint.status),
       ),
-      completedGrammarPoints: availableGrammarPoints.filter((point) =>
-        COMPLETED_STATUSES.has(point.status),
+      completedGrammarPoints: visibleGrammarPoints.filter((entry) =>
+        COMPLETED_STATUSES.has(entry.grammarPoint.status),
       ),
     };
-  }, [availableGrammarPoints]);
+  }, [visibleGrammarPoints]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,18 +184,31 @@ export default function GrammarPage() {
   }
 
   return (
-    <Page title="Grammar">
+    <Page
+      title="Grammar"
+      headerAction={
+        levelStats.length > 0 && (
+          <div className={styles.grammarLevelGauges}>
+            {levelStats.map((stat) => (
+              <LevelGauge key={stat.level} level={stat.level} percent={stat.percent} />
+            ))}
+          </div>
+        )
+      }
+    >
       {isLoading && <p>Loading grammar points...</p>}
       {error && <p className="table-error">{error}</p>}
       {!isLoading && !error && (
         <>
           <div className={styles.grammarPointGrid}>
-            {activeGrammarPoints.map((grammarPoint) => (
+            {activeGrammarPoints.map(({ grammarPoint, locked }) => (
               <GrammarPointCard
                 key={grammarPoint.id}
                 grammarPoint={grammarPoint}
                 onSelect={handleSelect}
+                locked={locked}
                 canSkip={
+                  !locked &&
                   grammarPoint.hsk_level < currentHskLevel &&
                   grammarPoint.status === "TODO"
                 }
@@ -143,7 +222,7 @@ export default function GrammarPage() {
                 Completed grammar topics ({completedGrammarPoints.length})
               </summary>
               <div className={styles.grammarPointGrid}>
-                {completedGrammarPoints.map((grammarPoint) => (
+                {completedGrammarPoints.map(({ grammarPoint }) => (
                   <GrammarPointCard
                     key={grammarPoint.id}
                     grammarPoint={grammarPoint}
