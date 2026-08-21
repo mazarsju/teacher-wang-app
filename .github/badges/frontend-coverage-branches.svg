@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="158" height="20" role="img" aria-label="Frontend-branches: 73.35%">
-  <title>Frontend-branches: 73.35%</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="158" height="20" role="img" aria-label="Frontend-branches: 75.36%">
+  <title>Frontend-branches: 75.36%</title>
   <g shape-rendering="crispEdges">
     <rect width="112" height="20" fill="#555"/>
     <rect x="112" width="46" height="20" fill="#dfb317"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
     <text x="56" y="14">Frontend-branches</text>
-    <text x="135" y="14">73.35%</text>
+    <text x="135" y="14">75.36%</text>
   </g>
 </svg>
