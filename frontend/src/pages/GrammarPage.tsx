@@ -91,30 +91,37 @@ export default function GrammarPage() {
   const currentHskLevel = useAppSelector(
     (state) => state.hsk.status?.current_level ?? 0,
   );
+  const maxHskLevel = useAppSelector((state) => state.hsk.status?.max_level);
+  // Achieved level is already done; the learner is aiming at the next one
+  // (capped at the catalog max), so that level's topics are available too.
+  const targetHskLevel = Math.min(
+    currentHskLevel + 1,
+    maxHskLevel ?? currentHskLevel + 1,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGrammarId, setSelectedGrammarId] = useState<string | null>(
     null,
   );
 
-  // Grammar points requiring a higher HSK level than the learner's stay
-  // fully hidden; ones at or below their level show up either unlocked or,
-  // if a prerequisite isn't DONE/SKIP yet, locked (visible but not clickable).
+  // Grammar points above the target level stay fully hidden; ones at or
+  // below it show up either unlocked or, if a prerequisite isn't DONE/SKIP
+  // yet, locked (visible but not clickable).
   const visibleGrammarPoints = useMemo(() => {
     const statusById = new Map(
       grammarPoints.map((point) => [point.id, point.status]),
     );
     return grammarPoints
-      .filter((point) => point.hsk_level <= currentHskLevel)
+      .filter((point) => point.hsk_level <= targetHskLevel)
       .map((point) => ({
         grammarPoint: point,
         locked: !isGrammarPointAvailable(point, statusById),
       }));
-  }, [grammarPoints, currentHskLevel]);
+  }, [grammarPoints, targetHskLevel]);
 
   const levelStats = useMemo(
-    () => levelStatsUpToLevel(grammarPoints, currentHskLevel),
-    [grammarPoints, currentHskLevel],
+    () => levelStatsUpToLevel(grammarPoints, targetHskLevel),
+    [grammarPoints, targetHskLevel],
   );
 
   const { activeGrammarPoints, completedGrammarPoints } = useMemo(() => {
@@ -209,7 +216,7 @@ export default function GrammarPage() {
                 locked={locked}
                 canSkip={
                   !locked &&
-                  grammarPoint.hsk_level < currentHskLevel &&
+                  grammarPoint.hsk_level <= currentHskLevel &&
                   grammarPoint.status === "TODO"
                 }
                 onSkip={handleSkip}

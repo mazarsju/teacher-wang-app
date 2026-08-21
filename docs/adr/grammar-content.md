@@ -9,7 +9,9 @@ The content pipeline described here (repo → S3 → `grammar_points` /
 listing grammar points (`GET /grammar-points`, Postgres-only: hsk_level,
 folder `index` parsed from `s3_key`, title, prerequisites, and the current
 user's status from `user_grammar_progress`; ordered by HSK level then that
-folder index, e.g. `hsk1/01-…` before `hsk1/02-…`) and a detail view
+folder index, e.g. `hsk1/01-…` before `hsk1/02-…`). The Grammar tab shows
+points up to one HSK level above the learner's achieved level (the level
+they are aiming for; capped at the catalog max) and a detail view
 (`GET /grammar-points/<id>`,
 `backend/utils/grammar/grammar_content_loader.py:fetch_grammar_content`)
 that reads `explanation.md`/`exercises.json` from S3 at the point's

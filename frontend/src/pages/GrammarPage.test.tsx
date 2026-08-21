@@ -195,12 +195,19 @@ describe("GrammarPage", () => {
     ).toBeDisabled();
   });
 
-  it("keeps grammar points above the learner's HSK level fully hidden, even with no prerequisites", async () => {
+  it("shows grammar points one HSK level above the learner's achieved level (the target)", async () => {
     stubGrammarPointsFetch([
       {
         id: "1|Basic Sentence Structure",
         hsk_level: 1,
         title: "Basic Sentence Structure",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "2|Target Level Topic",
+        hsk_level: 2,
+        title: "Target Level Topic",
         prerequisites: [],
         status: "TODO",
       },
@@ -221,6 +228,9 @@ describe("GrammarPage", () => {
       ).toBeInTheDocument(),
     );
 
+    expect(
+      screen.getByRole("button", { name: /Target Level Topic/ }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Advanced Topic/ }),
     ).not.toBeInTheDocument();
@@ -253,7 +263,7 @@ describe("GrammarPage", () => {
     );
   });
 
-  it('shows "Know already" only for TODO topics from a level below the current one', async () => {
+  it('shows "Know already" for TODO topics at or below the current level, not the target level', async () => {
     stubGrammarPointsFetch([
       {
         id: "1|Basic Sentence Structure",
@@ -276,22 +286,34 @@ describe("GrammarPage", () => {
         prerequisites: [],
         status: "TODO",
       },
+      {
+        id: "3|Target Level Topic",
+        hsk_level: 3,
+        title: "Target Level Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
     ]);
 
     renderWithStore(<GrammarPage />, { preloadedState: HSK2_STATE });
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+        screen.getByRole("button", { name: /Target Level Topic/ }),
       ).toBeInTheDocument(),
     );
 
     expect(
       screen.getAllByRole("button", { name: "Know already" }),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
+    expect(
+      within(
+        screen.getByRole("button", { name: /Target Level Topic/ }).parentElement!,
+      ).queryByRole("button", { name: "Know already" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("shows a completion gauge per HSK level up to the current level, excluding higher levels", async () => {
+  it("shows a completion gauge per HSK level up to the target level, excluding levels above that", async () => {
     stubGrammarPointsFetch([
       {
         id: "1|Done",
@@ -317,7 +339,14 @@ describe("GrammarPage", () => {
       {
         id: "3|Todo",
         hsk_level: 3,
-        title: "Above Current Level",
+        title: "Target Level Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "4|Todo",
+        hsk_level: 4,
+        title: "Above Target Level",
         prerequisites: [],
         status: "TODO",
       },
@@ -332,7 +361,8 @@ describe("GrammarPage", () => {
     );
 
     expect(screen.getByTitle("HSK 2: 100% complete")).toBeInTheDocument();
-    expect(screen.queryByTitle(/HSK 3:/)).not.toBeInTheDocument();
+    expect(screen.getByTitle("HSK 3: 0% complete")).toBeInTheDocument();
+    expect(screen.queryByTitle(/HSK 4:/)).not.toBeInTheDocument();
   });
 
   it('marks a topic as SKIP and hides its "Know already" button after clicking it', async () => {
