@@ -40,6 +40,7 @@ export async function sendChatMessage(
   messages: ChatMessage[],
   thread?: ChatThreadContext,
   ephemeral?: boolean,
+  context?: string,
 ): Promise<ChatResponse> {
   const body: ChatRequest = {
     character_id: characterId,
@@ -53,6 +54,10 @@ export async function sendChatMessage(
 
   if (ephemeral) {
     body.ephemeral = true;
+  }
+
+  if (context) {
+    body.context = context;
   }
 
   const response = await apiFetch(`${API_BASE}/chat`, {

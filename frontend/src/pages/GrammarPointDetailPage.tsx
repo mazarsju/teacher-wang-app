@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
+import ChatModal from "../components/ChatModal";
 import ConfirmModal from "../components/ConfirmModal";
 import GrammarExercises, { scoreBand } from "../components/GrammarExercises";
 import Page from "../components/Page";
+import { TEACHER_WANG } from "../data/chatCharacters";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   setGrammarPointScore,
@@ -17,6 +19,15 @@ import {
 import styles from "./GrammarPointDetailPage.module.css";
 
 type GrammarDetailTab = "explanation" | "exercises";
+
+const LESSON_CHAT_GREETING =
+  "Ask me what you did not understand on this lesson, will be happy to help!";
+
+function buildLessonTopicContext(detail: GrammarPointDetail): string {
+  return detail.explanation
+    ? `# ${detail.title}\n\n${detail.explanation}`
+    : `# ${detail.title}`;
+}
 
 type GrammarPointDetailPageProps = {
   grammarId: string;
@@ -35,6 +46,7 @@ export default function GrammarPointDetailPage({
   const [activeTab, setActiveTab] = useState<GrammarDetailTab>("explanation");
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isLessonChatOpen, setIsLessonChatOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +154,12 @@ export default function GrammarPointDetailPage({
             {detail.explanation
               ? renderFormattedText(detail.explanation.replace(/\n{2,}/g, "\n"))
               : "No explanation available yet."}
+            <Button
+              kind="cancel"
+              variant="page"
+              text="Ask more information to Teacher Wang"
+              onClick={() => setIsLessonChatOpen(true)}
+            />
           </div>
           <div className={activeTab === "exercises" ? undefined : styles.grammarDetailHidden}>
             <GrammarExercises
@@ -153,6 +171,23 @@ export default function GrammarPointDetailPage({
               }
             />
           </div>
+          {isLessonChatOpen && (
+            <ChatModal
+              character={TEACHER_WANG}
+              onClose={() => setIsLessonChatOpen(false)}
+              initialMessages={[
+                {
+                  role: "assistant",
+                  content: LESSON_CHAT_GREETING,
+                  isDisplayOnly: true,
+                },
+              ]}
+              loadHistory={false}
+              allowClearHistory={false}
+              ephemeral
+              topicContext={buildLessonTopicContext(detail)}
+            />
+          )}
         </>
       )}
     </Page>

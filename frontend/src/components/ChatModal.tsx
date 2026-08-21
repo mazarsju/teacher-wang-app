@@ -54,6 +54,8 @@ type ChatModalProps = {
   ephemeral?: boolean;
   /** Immediately send the last (user-role) message of `initialMessages` on open, instead of waiting for the learner to type. Requires `loadHistory={false}`. */
   autoSendInitialMessage?: boolean;
+  /** Folded into the system prompt server-side (ephemeral chat only) so the agent stays scoped to this topic. */
+  topicContext?: string;
 };
 
 const GRAMMAR_SEVERITY_LABELS: Record<GrammarSeverity, string> = {
@@ -111,6 +113,7 @@ export default function ChatModal({
   grammarSeverity,
   ephemeral = false,
   autoSendInitialMessage = false,
+  topicContext,
 }: ChatModalProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -245,9 +248,10 @@ export default function ChatModal({
     setError(null);
     setIsSending(true);
 
+    const historyMessages = nextMessages.filter((entry) => !entry.isDisplayOnly);
     const isChallenge = Boolean(tasks && tasks.length > 0);
     const messagesToSend =
-      thread || isChallenge ? nextMessages : trimMessagesForContext(nextMessages);
+      thread || isChallenge ? historyMessages : trimMessagesForContext(historyMessages);
 
     try {
       const response = await sendChatMessage(
@@ -255,6 +259,7 @@ export default function ChatModal({
         messagesToSend,
         thread,
         ephemeral,
+        topicContext,
       );
       const updatedMessages = (() => {
         if (thread) {

@@ -625,6 +625,7 @@ def generate_chat_reply(
     previous_assistant_reply: str | None = None,
     revision_instruction: str | None = None,
     summary_context: dict | None = None,
+    topic_context: str | None = None,
 ) -> ChatReplyResult:
     if not messages:
         raise ValueError("At least one message is required")
@@ -678,6 +679,16 @@ def generate_chat_reply(
             system_prompt = (
                 f"{system_prompt}\n\n{_known_characters_instruction(known_characters)}"
             )
+
+    if topic_context:
+        system_prompt = (
+            f"{system_prompt}\n\n"
+            "The learner is asking about one specific grammar lesson. Stay "
+            "focused on it; small digressions are fine only if they help "
+            "explain this lesson. Do not answer questions unrelated to it. "
+            "Lesson content:\n\n"
+            f"{topic_context}"
+        )
 
     if summary_context is not None:
         system_prompt = (

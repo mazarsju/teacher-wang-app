@@ -7,6 +7,8 @@ export type ChatMessage = {
   correctionSeverity?: GrammarSeverity;
   /** Render as background context (no bubble, Markdown) instead of a chat turn. Local display only, stripped before hitting the API. */
   isContext?: boolean;
+  /** Shown normally in the transcript but never sent to the API (e.g. a scripted greeting). */
+  isDisplayOnly?: boolean;
 };
 
 export type ChatRequest = {
@@ -15,6 +17,7 @@ export type ChatRequest = {
   parent_character_id?: string;
   thread_id?: string;
   ephemeral?: boolean;
+  context?: string;
 };
 
 export type GrammarSeverity = "none" | "minor" | "awkward" | "incorrect";

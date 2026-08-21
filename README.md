@@ -236,7 +236,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
 | `POST` | `/anki/sync/mark-synchronized` | Mark words/characters synchronized after a frontend Anki push (or cancel) |
 | `POST` | `/anki/sync/pull-apply` | Import pull cards into the knowledge base and/or record ignore keys |
-| `POST` | `/chat` | Send a chat message to the selected AI character (persists to the user-scoped log store), or pass `ephemeral: true` (Teacher Wang only, no `thread_id`) for a one-off reply that isn't persisted — used for the grammar-exercises "More explanation" button |
+| `POST` | `/chat` | Send a chat message to the selected AI character (persists to the user-scoped log store), or pass `ephemeral: true` (Teacher Wang only, no `thread_id`) for a one-off reply that isn't persisted — used for the grammar-exercises "More explanation" button and the grammar Explanation tab's "Ask more information to Teacher Wang" chat; the latter also passes `context` (a lesson's title + Markdown), folded into Teacher Wang's system prompt so the reply stays scoped to that lesson |
 | `GET` | `/conversation-logs/<character_id>` | Load this user's chat transcript (and challenge task progress when applicable) |
 | `POST` | `/conversation-logs/<character_id>` | Create an empty conversation log (`409` if it already exists) |
 | `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
@@ -440,7 +440,7 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
   - [x] Sentence transformation
 - [x] Add translation exercises with AI-assisted validation
 - [x] Add AI-powered explanation if the user makes some mistakes in exercises
-- [ ] Add AI tutor mode for grammar-specific questions and explanations
+- [x] Add AI tutor mode for grammar-specific questions and explanations
 - [ ] Add AI-powered grammar practice scenarios
 - [ ] Integrate learned grammar points into AI conversations and challenges
 - [x] Create complete HSK1 grammar content

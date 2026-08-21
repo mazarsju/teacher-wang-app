@@ -101,6 +101,7 @@ def chat():
     thread_id = data.get("thread_id")
     debug_mode = data.get("debug_mode")
     ephemeral = data.get("ephemeral", False)
+    context = data.get("context")
 
     if not isinstance(character_id, str) or character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
@@ -112,6 +113,9 @@ def chat():
 
     if not isinstance(ephemeral, bool):
         return {"error": "ephemeral must be a boolean"}, 400
+
+    if context is not None and not isinstance(context, str):
+        return {"error": "context must be a string"}, 400
 
     normalized_messages, error_response = _normalize_messages(messages)
     if error_response is not None:
@@ -125,7 +129,9 @@ def chat():
             return {"error": "Ephemeral chat must use Teacher Wang"}, 400
         if is_thread_chat:
             return {"error": "Ephemeral chat cannot be a thread"}, 400
-        return _handle_ephemeral_chat(character_id, normalized_messages, debug_mode)
+        return _handle_ephemeral_chat(
+            character_id, normalized_messages, debug_mode, context
+        )
     if is_thread_chat:
         if character_id != TEACHER_CHARACTER_ID:
             return {"error": "Correction threads must use Teacher Wang"}, 400
@@ -222,17 +228,22 @@ def _handle_ephemeral_chat(
     character_id: str,
     normalized_messages: list[dict[str, str]],
     debug_mode: bool,
+    topic_context: str | None,
 ):
     """Teacher Wang reply that skips conversation persistence entirely.
 
-    Used for one-off explanations (e.g. "why was my quiz answer wrong")
-    that shouldn't show up in the learner's regular chat history.
+    Used for one-off explanations (e.g. "why was my quiz answer wrong", or
+    "ask more about this grammar lesson") that shouldn't show up in the
+    learner's regular chat history. `topic_context`, when given, is folded
+    into the system prompt so the reply stays scoped to that lesson.
     """
     user_id = current_user_id()
     token_usage = LlmTokenUsage()
 
     try:
-        reply = generate_chat_reply(user_id, character_id, normalized_messages)
+        reply = generate_chat_reply(
+            user_id, character_id, normalized_messages, topic_context=topic_context
+        )
         token_usage = token_usage + reply.token_usage
         record_token_usage(
             user_id,

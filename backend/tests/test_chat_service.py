@@ -389,6 +389,47 @@ class TestGenerateChatReply(_FreePlanTokenMixin, unittest.TestCase):
         self.assertIn("greetings", system_prompt)
         self.assertEqual(reply.system_prompt, system_prompt)
 
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=False)
+    @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=3)
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_injects_topic_context_into_system_prompt(
+        self, mock_get_llm, _mock_speaking_level, _mock_smart_ai_enabled
+    ):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="是 links two nouns.")
+        mock_get_llm.return_value = mock_llm
+
+        reply = generate_chat_reply(
+            "test-user",
+            "teacher-wang",
+            [{"role": "user", "content": "Can you explain more?"}],
+            topic_context="# The verb 是\n是 means 'to be' and links two nouns.",
+        )
+
+        system_prompt = mock_llm.invoke.call_args.args[0][0].content
+        self.assertIn("one specific grammar lesson", system_prompt)
+        self.assertIn("The verb 是", system_prompt)
+        self.assertEqual(reply.system_prompt, system_prompt)
+
+    @patch("backend.utils.database.settings.get_smart_ai_enabled", return_value=False)
+    @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=3)
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_omits_topic_context_block_when_not_given(
+        self, mock_get_llm, _mock_speaking_level, _mock_smart_ai_enabled
+    ):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content="你好！")
+        mock_get_llm.return_value = mock_llm
+
+        generate_chat_reply(
+            "test-user",
+            "teacher-wang",
+            [{"role": "user", "content": "你好"}],
+        )
+
+        system_prompt = mock_llm.invoke.call_args.args[0][0].content
+        self.assertNotIn("one specific grammar lesson", system_prompt)
+
     @patch("backend.utils.aiChat.chat_service.Character")
     @patch("backend.utils.knowledgeBase.hsk_level.get_chat_speaking_hsk_level", return_value=1)
     @patch("backend.utils.aiChat.chat_service.get_llm")

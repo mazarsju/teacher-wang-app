@@ -64,6 +64,67 @@ describe("GrammarPointDetailPage", () => {
     );
   });
 
+  it("opens an ephemeral Teacher Wang chat, scoped to this lesson, from the Explanation tab", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/chat") && (init?.method ?? "GET") === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            message: { role: "assistant", content: "Subject-Verb-Object is the base order." },
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => SAMPLE_DETAIL });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Ask more information to Teacher Wang" }),
+      ).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Ask more information to Teacher Wang" }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Ask me what you did not understand on this lesson, will be happy to help!",
+      ),
+    ).toBeInTheDocument();
+    // The greeting is a scripted display bubble, not a real API call.
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/chat"),
+      expect.anything(),
+    );
+
+    await user.type(screen.getByLabelText("Message"), "What does SVO mean?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(
+      await screen.findByText("Subject-Verb-Object is the base order."),
+    ).toBeInTheDocument();
+
+    const chatCall = fetchMock.mock.calls.find(
+      ([callUrl]) => String(callUrl).endsWith("/chat"),
+    )!;
+    const body = JSON.parse((chatCall[1] as RequestInit).body as string);
+    expect(body).toMatchObject({ character_id: "teacher-wang", ephemeral: true });
+    expect(body.messages).toEqual([
+      { role: "user", content: "What does SVO mean?" },
+    ]);
+    expect(body.context).toContain("Basic Sentence Structure");
+    expect(body.context).toContain("Subject + Verb + Object.");
+  });
+
   it("collapses runs of blank lines in the explanation before rendering", async () => {
     stubDetailFetch({
       ...SAMPLE_DETAIL,

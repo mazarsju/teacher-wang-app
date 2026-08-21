@@ -826,4 +826,59 @@ describe("ChatModal", () => {
       { role: "user", content: "**Question:** why is 我是很好 wrong?" },
     ]);
   });
+
+  it("shows an isDisplayOnly seed message as a normal bubble but never sends it, and forwards topicContext", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/chat") && (init?.method ?? "GET") === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            message: { role: "assistant", content: "是 means 'to be'." },
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ChatModal
+        character={teacherWang}
+        onClose={() => undefined}
+        initialMessages={[
+          {
+            role: "assistant",
+            content: "Ask me what you did not understand on this lesson!",
+            isDisplayOnly: true,
+          },
+        ]}
+        loadHistory={false}
+        allowClearHistory={false}
+        ephemeral
+        topicContext={"# The verb 是\n是 means 'to be' and links two nouns."}
+      />,
+    );
+
+    expect(
+      screen.getByText("Ask me what you did not understand on this lesson!"),
+    ).toHaveClass("chat-message--assistant");
+    // Nothing sent yet: the greeting is display-only, not auto-sent.
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("Message"), "Why does 是 work here?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("是 means 'to be'.")).toBeInTheDocument();
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.messages).toEqual([
+      { role: "user", content: "Why does 是 work here?" },
+    ]);
+    expect(body.context).toBe(
+      "# The verb 是\n是 means 'to be' and links two nouns.",
+    );
+  });
 });

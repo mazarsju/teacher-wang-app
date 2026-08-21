@@ -13,7 +13,10 @@ title, prerequisites, and the current user's status from
 that reads `explanation.md`/`exercises.json` from S3 at the point's
 `s3_key` and renders the Explanation tab as Markdown (reusing the chat
 agents' `renderFormattedText`, `frontend/src/utils/formatMarkdownText.tsx`).
-The Exercises tab (`frontend/src/components/GrammarExercises.tsx`) runs the
+The Explanation tab ends with an "Ask more information to Teacher Wang"
+button that opens an ephemeral, lesson-scoped chat (see the Multi-Agent
+Chat ADR's "Ephemeral chat" section). The Exercises tab
+(`frontend/src/components/GrammarExercises.tsx`) runs the
 `multiple_choice`, `sentence_reordering`, `transform`, and `translation`
 exercises one at a time with deterministic grading (exact match, trailing
 punctuation ignored) and shows a final score. `translation` additionally

@@ -568,6 +568,7 @@ class TestChatEndpoint(unittest.TestCase):
                     "content": "Why is '我是很好' wrong for question X?",
                 }
             ],
+            topic_context=None,
         )
         self.mock_append.assert_not_called()
         self.mock_append_thread.assert_not_called()
@@ -579,6 +580,45 @@ class TestChatEndpoint(unittest.TestCase):
             input_tokens=25,
             output_tokens=18,
         )
+
+    def test_ephemeral_chat_passes_topic_context_through_to_generate_chat_reply(self):
+        self.mock_generate.return_value = MagicMock(
+            content="是 links a noun to another noun.",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=10, output_tokens=5),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "ephemeral": True,
+                "context": "# The verb 是\n是 means 'to be' and links two nouns.",
+                "messages": [{"role": "user", "content": "Can you give another example?"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_generate.assert_called_once_with(
+            TEST_USER_ID,
+            "teacher-wang",
+            [{"role": "user", "content": "Can you give another example?"}],
+            topic_context="# The verb 是\n是 means 'to be' and links two nouns.",
+        )
+
+    def test_ephemeral_chat_rejects_non_string_context(self):
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "ephemeral": True,
+                "context": 42,
+                "messages": [{"role": "user", "content": "Why?"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.mock_generate.assert_not_called()
 
     def test_ephemeral_chat_rejects_non_teacher_character(self):
         response = self.client.post(
