@@ -1,6 +1,7 @@
 export type GrammarPoint = {
   id: string;
   hsk_level: number;
+  index: number;
   title: string;
   prerequisites: string[];
   status: string;

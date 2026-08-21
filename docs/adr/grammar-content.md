@@ -7,8 +7,10 @@ Accepted
 The content pipeline described here (repo → S3 → `grammar_points` /
 `grammar_prerequisites`) is implemented. The frontend has a Grammar tab
 listing grammar points (`GET /grammar-points`, Postgres-only: hsk_level,
-title, prerequisites, and the current user's status from
-`user_grammar_progress`) and a detail view (`GET /grammar-points/<id>`,
+folder `index` parsed from `s3_key`, title, prerequisites, and the current
+user's status from `user_grammar_progress`; ordered by HSK level then that
+folder index, e.g. `hsk1/01-…` before `hsk1/02-…`) and a detail view
+(`GET /grammar-points/<id>`,
 `backend/utils/grammar/grammar_content_loader.py:fetch_grammar_content`)
 that reads `explanation.md`/`exercises.json` from S3 at the point's
 `s3_key` and renders the Explanation tab as Markdown (reusing the chat
@@ -294,7 +296,9 @@ distinct concepts:
 
 Today, curriculum order is implicit in each folder's numeric prefix
 (`01-basic-sentence-structure`, `02-questions-with-ma`, ...) — no separate
-ordering file exists yet. If curriculum order needs to be reorganized
+ordering file exists yet. `GET /grammar-points` exposes that prefix as
+`index` (parsed from `s3_key`) and returns points ordered by `hsk_level`
+then `index`. If curriculum order needs to be reorganized
 independently of folder names, a dedicated file (e.g. a `curriculum.yaml`
 per HSK level listing ids in order) should hold it, rather than adding an
 ordering field back into each `grammar.yaml`.

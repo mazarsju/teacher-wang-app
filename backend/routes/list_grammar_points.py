@@ -6,15 +6,21 @@ from backend.utils.database.models import (
     GrammarPrerequisite,
     UserGrammarProgress,
 )
+from backend.utils.grammar.grammar_content_loader import curriculum_index
 
 bp = Blueprint("list_grammar_points", __name__)
 
 
 @bp.get("/grammar-points")
 def list_grammar_points():
-    points = GrammarPoint.query.order_by(
-        GrammarPoint.hsk_level, GrammarPoint.title
-    ).all()
+    points = sorted(
+        GrammarPoint.query.all(),
+        key=lambda point: (
+            point.hsk_level,
+            curriculum_index(point.s3_key),
+            point.s3_key or "",
+        ),
+    )
 
     prerequisites_by_grammar_id: dict[str, list[str]] = {}
     for prerequisite in GrammarPrerequisite.query.all():
@@ -32,6 +38,7 @@ def list_grammar_points():
         {
             "id": point.id,
             "hsk_level": point.hsk_level,
+            "index": curriculum_index(point.s3_key),
             "title": point.title,
             "prerequisites": prerequisites_by_grammar_id.get(point.id, []),
             "status": status_by_grammar_id.get(point.id, "TODO"),

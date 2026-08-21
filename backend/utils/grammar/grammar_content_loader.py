@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 import yaml
@@ -27,10 +28,24 @@ from backend.utils.database.models import GrammarPoint, GrammarPrerequisite, Use
 
 GRAMMAR_MANIFEST_SUFFIX = "/grammar.yaml"
 GRAMMAR_MANIFEST_FILENAME = "grammar.yaml"
+_FOLDER_INDEX_RE = re.compile(r"^(\d+)")
 
 
 def _grammar_point_id(hsk_level: int, title: str) -> str:
     return f"{hsk_level}|{title}"
+
+
+def curriculum_index(s3_key: str | None) -> int:
+    """Numeric prefix of the rule folder, e.g. ``hsk1/01-foo`` → 1.
+
+    Curriculum order is the folder name, not the human title (see the grammar
+    content ADR). Folders without a leading index sort as 0.
+    """
+    if not s3_key:
+        return 0
+    folder = s3_key.rstrip("/").rsplit("/", 1)[-1]
+    match = _FOLDER_INDEX_RE.match(folder)
+    return int(match.group(1)) if match else 0
 
 
 def _s3_client():

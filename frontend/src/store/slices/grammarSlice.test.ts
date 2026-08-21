@@ -9,6 +9,7 @@ import reducer, {
 const SAMPLE_POINT = {
   id: "1|Basic Sentence Structure",
   hsk_level: 1,
+  index: 1,
   title: "Basic Sentence Structure",
   prerequisites: [],
   status: "TODO",

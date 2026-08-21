@@ -16,10 +16,23 @@ from backend.utils.database.models import (
     UserGrammarProgress,
 )
 from backend.utils.grammar.grammar_content_loader import (
+    curriculum_index,
     fetch_grammar_content,
     reload_grammar_content,
 )
 from postgres_test_case import PostgresTestCase
+
+
+class TestCurriculumIndex(unittest.TestCase):
+    def test_reads_leading_digits_from_folder_name(self):
+        self.assertEqual(curriculum_index("hsk1/01-basic-sentence-structure"), 1)
+        self.assertEqual(curriculum_index("hsk2/10-complements"), 10)
+        self.assertEqual(curriculum_index("grammar/hsk1/03-questions"), 3)
+
+    def test_missing_or_unprefixed_keys_are_zero(self):
+        self.assertEqual(curriculum_index(None), 0)
+        self.assertEqual(curriculum_index(""), 0)
+        self.assertEqual(curriculum_index("hsk1/basic-sentence-structure"), 0)
 
 
 class _FakeBody:
