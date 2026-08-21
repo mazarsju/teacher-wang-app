@@ -25,7 +25,15 @@ const SAMPLE_DETAIL = {
   prerequisites: [],
   status: "TODO",
   explanation: "## Overview\n\nSubject + Verb + Object.",
-  exercises: [{ id: "mcq_001" }],
+  exercises: [
+    {
+      id: "mcq_001",
+      type: "multiple_choice",
+      question: "Which sentence means 'I like tea'?",
+      choices: ["我喜欢茶。", "我喝茶。"],
+      answer: 0,
+    },
+  ],
 };
 
 describe("GrammarPointDetailPage", () => {
@@ -78,7 +86,7 @@ describe("GrammarPointDetailPage", () => {
     expect(screen.getByText("Line two.")).toBeInTheDocument();
   });
 
-  it('switches to the Exercises tab, showing "TODO"', async () => {
+  it("switches to the Exercises tab, showing the first exercise", async () => {
     const user = userEvent.setup();
     stubDetailFetch(SAMPLE_DETAIL);
 
@@ -92,10 +100,10 @@ describe("GrammarPointDetailPage", () => {
 
     await user.click(screen.getByRole("tab", { name: "Exercises" }));
 
-    expect(screen.getByText("TODO")).toBeInTheDocument();
     expect(
-      screen.queryByText(/Subject \+ Verb \+ Object\./),
-    ).not.toBeInTheDocument();
+      screen.getByText("Which sentence means 'I like tea'?"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Subject \+ Verb \+ Object\./)).not.toBeVisible();
   });
 
   it("shows a fallback message when there's no explanation yet", async () => {
@@ -128,6 +136,154 @@ describe("GrammarPointDetailPage", () => {
     await user.click(screen.getByRole("button", { name: "Back" }));
 
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps exercise progress when switching to Explanation and back", async () => {
+    const user = userEvent.setup();
+    stubDetailFetch(SAMPLE_DETAIL);
+
+    renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "Exercises" })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("tab", { name: "Exercises" }));
+
+    await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
+    expect(screen.getByRole("button", { name: "我喜欢茶。" })).toHaveClass(
+      "choice-selected",
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Explanation" }));
+    expect(screen.getByText(/Subject \+ Verb \+ Object\./)).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Exercises" }));
+    expect(screen.getByRole("button", { name: "我喜欢茶。" })).toHaveClass(
+      "choice-selected",
+    );
+  });
+
+  it("asks for confirmation before leaving a quiz in progress via the Back button", async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    stubDetailFetch(SAMPLE_DETAIL);
+
+    renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={onBack} />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "Exercises" })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("tab", { name: "Exercises" }));
+    await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(onBack).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(onBack).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves the score to the backend and updates the store when the quiz finishes", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/complete")) {
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => SAMPLE_DETAIL });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { store } = renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+      {
+        preloadedState: {
+          grammar: {
+            items: [{ ...SAMPLE_DETAIL, score: null }],
+            quizInProgress: false,
+          },
+        },
+      },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "Exercises" })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("tab", { name: "Exercises" }));
+    await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+    await user.click(screen.getByRole("button", { name: "See score" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/complete"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ score: 100 }),
+        }),
+      ),
+    );
+    expect(store.getState().grammar.items[0]).toMatchObject({
+      status: "DONE",
+      score: 100,
+    });
+  });
+
+  it("marks the grammar point WIP instead of DONE when the score is below 80%", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/complete")) {
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => SAMPLE_DETAIL });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { store } = renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+      {
+        preloadedState: {
+          grammar: {
+            items: [{ ...SAMPLE_DETAIL, score: null }],
+            quizInProgress: false,
+          },
+        },
+      },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "Exercises" })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("tab", { name: "Exercises" }));
+    await user.click(screen.getByRole("button", { name: "我喝茶。" }));
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+    await user.click(screen.getByRole("button", { name: "See score" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/complete"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ score: 0 }),
+        }),
+      ),
+    );
+    expect(store.getState().grammar.items[0]).toMatchObject({
+      status: "WIP",
+      score: 0,
+    });
   });
 
   it("shows an error message when the fetch fails", async () => {

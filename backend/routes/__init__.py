@@ -11,6 +11,7 @@ def register_routes(app: Flask) -> None:
         bulk_create_words,
         chat,
         challenges,
+        complete_grammar_point,
         conversation_logs,
         create_character,
         create_word,
@@ -70,6 +71,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(list_grammar_points.bp)
     app.register_blueprint(get_grammar_point.bp)
     app.register_blueprint(skip_grammar_point.bp)
+    app.register_blueprint(complete_grammar_point.bp)
     app.register_blueprint(list_hsk_characters.bp)
     app.register_blueprint(list_hsk_character_words.bp)
     app.register_blueprint(get_hsk_level.bp)

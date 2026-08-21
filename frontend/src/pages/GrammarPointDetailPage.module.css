@@ -34,7 +34,6 @@
   white-space: pre-wrap;
 }
 
-.grammar-detail-todo {
-  color: #6b7280;
-  font-style: italic;
+.grammar-detail-hidden {
+  display: none;
 }

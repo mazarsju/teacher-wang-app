@@ -37,3 +37,21 @@ export async function skipGrammarPoint(grammarId: string): Promise<void> {
     throw new Error("Failed to mark grammar point as known.");
   }
 }
+
+export async function completeGrammarPoint(
+  grammarId: string,
+  score: number,
+): Promise<void> {
+  const response = await apiFetch(
+    `${API_BASE}/grammar-points/${encodeURIComponent(grammarId)}/complete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to save the quiz result.");
+  }
+}

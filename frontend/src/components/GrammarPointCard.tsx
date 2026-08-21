@@ -33,6 +33,7 @@ export default function GrammarPointCard({
               }`}
             >
               {grammarPoint.status}
+              {grammarPoint.score != null && ` · ${grammarPoint.score}%`}
             </span>
           )}
         </div>

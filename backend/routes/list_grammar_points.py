@@ -22,12 +22,11 @@ def list_grammar_points():
             prerequisite.prerequisite_id
         )
 
-    status_by_grammar_id = {
-        progress.grammar_id: progress.status
-        for progress in UserGrammarProgress.query.filter_by(
-            user_id=current_user_id()
-        ).all()
-    }
+    progress_rows = UserGrammarProgress.query.filter_by(
+        user_id=current_user_id()
+    ).all()
+    status_by_grammar_id = {row.grammar_id: row.status for row in progress_rows}
+    score_by_grammar_id = {row.grammar_id: row.score for row in progress_rows}
 
     return [
         {
@@ -36,6 +35,11 @@ def list_grammar_points():
             "title": point.title,
             "prerequisites": prerequisites_by_grammar_id.get(point.id, []),
             "status": status_by_grammar_id.get(point.id, "TODO"),
+            "score": (
+                int(score_by_grammar_id[point.id])
+                if score_by_grammar_id.get(point.id) is not None
+                else None
+            ),
         }
         for point in points
     ], 200

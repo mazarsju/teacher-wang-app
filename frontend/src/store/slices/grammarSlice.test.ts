@@ -1,5 +1,10 @@
 import { resetAppData } from "../thunks/syncAppData";
-import reducer, { setGrammarPointStatus, setGrammarPoints } from "./grammarSlice";
+import reducer, {
+  setGrammarPointScore,
+  setGrammarPointStatus,
+  setGrammarPoints,
+  setGrammarQuizInProgress,
+} from "./grammarSlice";
 
 const SAMPLE_POINT = {
   id: "1|Basic Sentence Structure",
@@ -7,11 +12,15 @@ const SAMPLE_POINT = {
   title: "Basic Sentence Structure",
   prerequisites: [],
   status: "TODO",
+  score: null,
 };
 
 describe("grammarSlice", () => {
   it("starts with no grammar points", () => {
-    expect(reducer(undefined, { type: "@@INIT" })).toEqual({ items: [] });
+    expect(reducer(undefined, { type: "@@INIT" })).toEqual({
+      items: [],
+      quizInProgress: false,
+    });
   });
 
   it("stores the fetched grammar points", () => {
@@ -42,9 +51,29 @@ describe("grammarSlice", () => {
     expect(state.items).toEqual([SAMPLE_POINT]);
   });
 
+  it("updates a single grammar point's status and score", () => {
+    const populated = reducer(undefined, setGrammarPoints([SAMPLE_POINT]));
+
+    const state = reducer(
+      populated,
+      setGrammarPointScore({ id: SAMPLE_POINT.id, status: "DONE", score: 82 }),
+    );
+
+    expect(state.items).toEqual([{ ...SAMPLE_POINT, status: "DONE", score: 82 }]);
+  });
+
+  it("tracks whether a quiz is in progress", () => {
+    const state = reducer(undefined, setGrammarQuizInProgress(true));
+
+    expect(state.quizInProgress).toBe(true);
+  });
+
   it("clears on resetAppData", () => {
     const populated = reducer(undefined, setGrammarPoints([SAMPLE_POINT]));
 
-    expect(reducer(populated, resetAppData())).toEqual({ items: [] });
+    expect(reducer(populated, resetAppData())).toEqual({
+      items: [],
+      quizInProgress: false,
+    });
   });
 });

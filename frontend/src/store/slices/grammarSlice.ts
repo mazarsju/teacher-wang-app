@@ -4,10 +4,12 @@ import { resetAppData } from "../thunks/syncAppData";
 
 export type GrammarState = {
   items: GrammarPoint[];
+  quizInProgress: boolean;
 };
 
 const initialState: GrammarState = {
   items: [],
+  quizInProgress: false,
 };
 
 const grammarSlice = createSlice({
@@ -26,11 +28,29 @@ const grammarSlice = createSlice({
         point.status = action.payload.status;
       }
     },
+    setGrammarPointScore(
+      state,
+      action: PayloadAction<{ id: string; status: string; score: number }>,
+    ) {
+      const point = state.items.find((item) => item.id === action.payload.id);
+      if (point) {
+        point.status = action.payload.status;
+        point.score = action.payload.score;
+      }
+    },
+    setGrammarQuizInProgress(state, action: PayloadAction<boolean>) {
+      state.quizInProgress = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(resetAppData, () => initialState);
   },
 });
 
-export const { setGrammarPoints, setGrammarPointStatus } = grammarSlice.actions;
+export const {
+  setGrammarPoints,
+  setGrammarPointStatus,
+  setGrammarPointScore,
+  setGrammarQuizInProgress,
+} = grammarSlice.actions;
 export default grammarSlice.reducer;

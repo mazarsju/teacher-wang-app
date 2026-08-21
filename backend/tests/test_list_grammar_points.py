@@ -46,7 +46,7 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
             ),
         ]
         self.mock_progress_cls.query.filter_by.return_value.all.return_value = [
-            MagicMock(grammar_id="1|Basic Sentence Structure", status="DONE"),
+            MagicMock(grammar_id="1|Basic Sentence Structure", status="DONE", score=82),
         ]
 
         response = self.client.get("/grammar-points")
@@ -61,6 +61,7 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                     "title": "Basic Sentence Structure",
                     "prerequisites": [],
                     "status": "DONE",
+                    "score": 82,
                 },
                 {
                     "id": "1|Questions with Ma",
@@ -68,6 +69,7 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                     "title": "Questions with Ma",
                     "prerequisites": ["1|Basic Sentence Structure"],
                     "status": "TODO",
+                    "score": None,
                 },
             ],
         )

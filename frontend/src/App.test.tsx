@@ -1,6 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
+import { setGrammarQuizInProgress } from "./store/slices/grammarSlice";
 import { renderWithStore } from "./test/renderWithStore";
 
 const {
@@ -166,6 +167,37 @@ describe("App", () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Chat" }));
+
+    expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
+  });
+
+  it("warns before leaving the Grammar tab while a quiz is in progress", async () => {
+    const user = userEvent.setup();
+
+    const { store } = renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    await user.click(screen.getByRole("button", { name: "Grammar" }));
+    await screen.findByRole("heading", { name: "Grammar" });
+
+    store.dispatch(setGrammarQuizInProgress(true));
+
+    await user.click(screen.getByRole("button", { name: "Chat" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Grammar" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Grammar" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Chat" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
   });

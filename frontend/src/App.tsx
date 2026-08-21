@@ -3,6 +3,7 @@ import "./styles/tokens.css";
 import "./styles/globals.css";
 import "./components/shared.css";
 import styles from "./App.module.css";
+import ConfirmModal from "./components/ConfirmModal";
 import HelpButton from "./components/HelpButton";
 import Navbar, { type PageId } from "./components/Navbar";
 import AdminPage from "./pages/AdminPage";
@@ -40,7 +41,17 @@ export default function App() {
   );
   const [activePage, setActivePage] = useState<PageId>("home");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingPage, setPendingPage] = useState<PageId | null>(null);
+  const quizInProgress = useAppSelector((state) => state.grammar.quizInProgress);
   const ActivePage = PAGES[activePage];
+
+  function handlePageChange(page: PageId) {
+    if (activePage === "grammar" && quizInProgress && page !== "grammar") {
+      setPendingPage(page);
+      return;
+    }
+    setActivePage(page);
+  }
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -83,16 +94,27 @@ export default function App() {
     <div className={styles.app}>
       <Navbar
         activePage={activePage}
-        onPageChange={setActivePage}
+        onPageChange={handlePageChange}
         onLogout={handleLogout}
         onSync={handleSync}
         isSyncing={syncStatus === "loading"}
         isAdmin={isAdmin}
       />
       <main className={styles.appMain}>
-        <ActivePage onNavigate={setActivePage} />
+        <ActivePage onNavigate={handlePageChange} />
       </main>
       <HelpButton />
+      <ConfirmModal
+        isOpen={pendingPage !== null}
+        message="You've started this questionnaire. Leaving now means you'll need to start it over from the first question. Leave anyway?"
+        onConfirm={() => {
+          if (pendingPage) {
+            setActivePage(pendingPage);
+          }
+          setPendingPage(null);
+        }}
+        onCancel={() => setPendingPage(null)}
+      />
     </div>
   );
 }

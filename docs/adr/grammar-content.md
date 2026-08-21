@@ -13,8 +13,16 @@ title, prerequisites, and the current user's status from
 that reads `explanation.md`/`exercises.json` from S3 at the point's
 `s3_key` and renders the Explanation tab as Markdown (reusing the chat
 agents' `renderFormattedText`, `frontend/src/utils/formatMarkdownText.tsx`).
-The Exercises tab is a placeholder; deterministic exercises and AI-powered
-practice are not yet built (README roadmap §10).
+The Exercises tab (`frontend/src/components/GrammarExercises.tsx`) runs the
+`multiple_choice`, `sentence_reordering`, `transform`, and `translation`
+exercises one at a time with deterministic grading (exact match, trailing
+punctuation ignored) and shows a final score. Finishing a quiz calls
+`POST /grammar-points/<id>/complete`, which sets `status` to `DONE` (score
+≥ 80%) or `WIP` (below 80%), plus `score` (rounded percentage) and
+`last_practiced_at`, on `user_grammar_progress`; `GET /grammar-points`
+returns that `score` alongside `status` for the list view. AI-powered
+practice and AI-assisted translation validation are not yet built (README
+roadmap §10).
 
 ## Context
 
@@ -128,8 +136,8 @@ Each grammar point has an `explanation.md` file. Markdown is used because it:
 - can be rendered by the frontend;
 - allows richer explanations without expanding the database schema.
 
-The application will retrieve the Markdown content from S3 when displaying
-a grammar lesson (not yet built — see Status).
+The application retrieves the Markdown content from S3 when displaying a
+grammar lesson (see Status).
 
 ### 4. Exercises are content and stored in S3
 
@@ -157,14 +165,24 @@ point covering all its exercise types, ordered by pedagogical progression
     "type": "translation",
     "prompt": "I like tea.",
     "accepted_answers": ["我喜欢茶。"]
+  },
+  {
+    "id": "transform_001",
+    "type": "transform",
+    "instruction": "Make this sentence negative.",
+    "source": "我喜欢茶。",
+    "accepted_answers": ["我不喜欢茶。"]
   }
 ]
 ```
 
-The initial exercise types are `multiple_choice`, `sentence_reordering`, and
-`translation` (a `transform` type is also defined in the content repo's
-authoring skill for grammar that transforms an existing sentence — negation,
-questions, aspect). The schema stays extensible for future exercise types.
+The exercise types are `multiple_choice`, `sentence_reordering`,
+`translation`, and `transform` (for grammar that transforms an existing
+sentence — negation, questions, aspect). `transform` has an `instruction`
+describing the requested transformation, a `source` sentence to transform,
+and `accepted_answers` (note: `source`, not `prompt` — `translation` and
+`transform` use different field names for their source sentence in the
+content repo). The schema stays extensible for future exercise types.
 
 ### 5. Translation exercises use AI only when deterministic validation is insufficient
 

@@ -9,6 +9,7 @@ type StubGrammarPoint = {
   title: string;
   prerequisites: string[];
   status: string;
+  score?: number | null;
 };
 
 function stubGrammarPointsFetch(
@@ -110,6 +111,25 @@ describe("GrammarPage", () => {
     );
     expect(screen.getByText("DONE")).toHaveClass(
       "grammar-point-card-status-done",
+    );
+  });
+
+  it("shows the saved score next to a DONE status badge", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Finished",
+        hsk_level: 1,
+        title: "Finished Topic",
+        prerequisites: [],
+        status: "DONE",
+        score: 82,
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText("DONE · 82%")).toBeInTheDocument(),
     );
   });
 
