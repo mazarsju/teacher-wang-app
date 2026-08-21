@@ -321,7 +321,9 @@ reorganized without touching every grammar definition.
                    │ POST /admin/grammar/reload (admin only)
                    │ grammar_content_loader.py: parses every grammar.yaml,
                    │ clears and repopulates grammar_points /
-                   │ grammar_prerequisites in one pass
+                   │ grammar_prerequisites in one pass, then rewrites
+                   │ user_grammar_progress rows whose grammar_id still
+                   │ exists (dropped/renamed ids are discarded)
                    ▼
 React frontend ◄── Flask backend
       │                │

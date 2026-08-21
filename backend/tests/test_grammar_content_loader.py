@@ -7,7 +7,14 @@ from unittest.mock import MagicMock
 
 from botocore.exceptions import ClientError
 
-from backend.utils.database.models import GrammarPoint, GrammarPrerequisite
+from datetime import datetime, timezone
+
+from backend.utils.database.extensions import db
+from backend.utils.database.models import (
+    GrammarPoint,
+    GrammarPrerequisite,
+    UserGrammarProgress,
+)
 from backend.utils.grammar.grammar_content_loader import (
     fetch_grammar_content,
     reload_grammar_content,
@@ -96,8 +103,6 @@ class TestReloadGrammarContent(PostgresTestCase):
                 "hsk_level: 1\ntitle: Basic sentence structure\n"
             ),
         }
-        from backend.utils.database.extensions import db
-
         db.session.add(GrammarPoint(id="stale", hsk_level=5, title="Stale rule"))
         db.session.commit()
 
@@ -111,6 +116,90 @@ class TestReloadGrammarContent(PostgresTestCase):
 
         self.assertIsNone(GrammarPoint.query.filter_by(id="stale").first())
         self.assertEqual(GrammarPoint.query.count(), 1)
+
+    def test_rewrites_progress_for_unchanged_ids_and_drops_the_rest(self):
+        kept_id = "1|Basic sentence structure"
+        dropped_id = "1|Old negation"
+        practiced_at = datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc)
+        db.session.add_all(
+            [
+                GrammarPoint(id=kept_id, hsk_level=1, title="Basic sentence structure"),
+                GrammarPoint(id=dropped_id, hsk_level=1, title="Old negation"),
+                UserGrammarProgress(
+                    user_id=self.user_id,
+                    grammar_id=kept_id,
+                    status="DONE",
+                    score=91,
+                    last_practiced_at=practiced_at,
+                ),
+                UserGrammarProgress(
+                    user_id=self.user_id,
+                    grammar_id=dropped_id,
+                    status="WIP",
+                    score=40,
+                ),
+            ]
+        )
+        db.session.commit()
+
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "hsk1/02-negation/grammar.yaml": (
+                "id: hsk1_negation_with_bu\n"
+                "hsk_level: 1\ntitle: Negation with 不\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        kept = UserGrammarProgress.query.filter_by(grammar_id=kept_id).one()
+        self.assertEqual(kept.user_id, self.user_id)
+        self.assertEqual(kept.status, "DONE")
+        self.assertEqual(int(kept.score), 91)
+        self.assertEqual(kept.last_practiced_at, practiced_at)
+        self.assertIsNone(
+            UserGrammarProgress.query.filter_by(grammar_id=dropped_id).first()
+        )
+        self.assertEqual(UserGrammarProgress.query.count(), 1)
+
+    def test_drops_progress_when_grammar_id_changes_with_title(self):
+        old_id = "1|Basic sentence structure"
+        db.session.add_all(
+            [
+                GrammarPoint(id=old_id, hsk_level=1, title="Basic sentence structure"),
+                UserGrammarProgress(
+                    user_id=self.user_id,
+                    grammar_id=old_id,
+                    status="DONE",
+                    score=100,
+                ),
+            ]
+        )
+        db.session.commit()
+
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Subject-verb-object\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(UserGrammarProgress.query.count(), 0)
+        self.assertIsNone(GrammarPoint.query.filter_by(id=old_id).first())
+        self.assertEqual(
+            GrammarPoint.query.one().id, "1|Subject-verb-object"
+        )
 
     def test_raises_when_bucket_env_var_missing(self):
         import os

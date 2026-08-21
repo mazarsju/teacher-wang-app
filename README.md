@@ -263,7 +263,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
 | `POST` | `/admin/articles/generate` | Same as `python3 -m backend.jobs.generate_weekly_articles`: fetch latest China-related articles (Currents API or The Guardian, per the hardcoded `ARTICLE_SOURCE` flag); for each HSK level 1-6, pick/adapt/save to `weekly_articles` (`403` unless the caller is the admin account) |
-| `POST` | `/admin/grammar/reload` | Read every `grammar.yaml` from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (see [teacher-wang-grammar](https://github.com/mazarsju/teacher-wang-grammar)), or from a local checkout at `GRAMMAR_CONTENT_S3_PATH` if set (local debugging, skips S3), and repopulate `grammar_points`/`grammar_prerequisites` (`403` unless the caller is the admin account) |
+| `POST` | `/admin/grammar/reload` | Read every `grammar.yaml` from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (see [teacher-wang-grammar](https://github.com/mazarsju/teacher-wang-grammar)), or from a local checkout at `GRAMMAR_CONTENT_S3_PATH` if set (local debugging, skips S3), and repopulate `grammar_points`/`grammar_prerequisites`, rewriting `user_grammar_progress` for ids that still exist (`403` unless the caller is the admin account) |
 
 ### Frontend
 

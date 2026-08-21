@@ -23,7 +23,7 @@ from botocore.exceptions import ClientError
 from sqlalchemy.dialects.postgresql import insert
 
 from backend.utils.database.extensions import db
-from backend.utils.database.models import GrammarPoint, GrammarPrerequisite
+from backend.utils.database.models import GrammarPoint, GrammarPrerequisite, UserGrammarProgress
 
 GRAMMAR_MANIFEST_SUFFIX = "/grammar.yaml"
 GRAMMAR_MANIFEST_FILENAME = "grammar.yaml"
@@ -82,6 +82,9 @@ def reload_grammar_content(client=None) -> dict[str, int]:
     Reads from GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout) when
     set, so grammar.yaml changes can be tested without S3. Otherwise reads
     from the GRAMMAR_CONTENT_S3_BUCKET bucket.
+
+    ``user_grammar_progress`` rows whose ``grammar_id`` still exists after the
+    reload are rewritten; rows for dropped or renamed points are discarded.
     """
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
@@ -107,6 +110,17 @@ def reload_grammar_content(client=None) -> dict[str, int]:
             raise ValueError(f"Duplicate grammar id {yaml_id!r} ({folder_key!r})")
         db_id_by_yaml_id[yaml_id] = ids_by_folder[folder_key]
 
+    kept_progress = [
+        {
+            "user_id": row.user_id,
+            "grammar_id": row.grammar_id,
+            "status": row.status,
+            "score": row.score,
+            "last_practiced_at": row.last_practiced_at,
+        }
+        for row in UserGrammarProgress.query.all()
+    ]
+    UserGrammarProgress.query.delete()
     GrammarPrerequisite.query.delete()
     GrammarPoint.query.delete()
 
@@ -134,6 +148,11 @@ def reload_grammar_content(client=None) -> dict[str, int]:
                 )
             )
             prerequisite_count += 1
+
+    kept_ids = set(ids_by_folder.values())
+    to_restore = [row for row in kept_progress if row["grammar_id"] in kept_ids]
+    if to_restore:
+        db.session.execute(insert(UserGrammarProgress), to_restore)
 
     db.session.commit()
     return {
