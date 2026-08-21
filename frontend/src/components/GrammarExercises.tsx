@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { TEACHER_WANG } from "../data/chatCharacters";
+import type { ChatMessage } from "../types/chat";
 import type { GrammarExercise } from "../types/grammarPoint";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
+import ChatModal from "./ChatModal";
 import styles from "./GrammarExercises.module.css";
 
 const GAUGE_RADIUS = 52;
@@ -10,6 +13,7 @@ const GAUGE_ANIMATION_MS = 1100;
 
 type GrammarExercisesProps = {
   exercises: GrammarExercise[];
+  grammarPointTitle?: string;
   onFinish?: (percentage: number) => void;
   onProgressChange?: (inProgress: boolean) => void;
 };
@@ -55,8 +59,34 @@ function gaugeProgressClass(band: ReturnType<typeof scoreBand>): string {
   return styles.gaugeProgressLow;
 }
 
+function buildExplanationRequest(
+  exercise: GrammarExercise,
+  userAnswerText: string,
+  correctAnswerText: string,
+  grammarPointTitle?: string,
+): string {
+  const questionText =
+    exercise.type === "multiple_choice"
+      ? `Question: "${exercise.question}"`
+      : exercise.type === "sentence_reordering"
+        ? `Question: put these words in the right order — ${exercise.tokens.join(" / ")}`
+        : exercise.type === "translation"
+          ? `Question: translate into Chinese — "${exercise.prompt}"`
+          : `Question: ${exercise.instruction ?? "transform this sentence"} — "${exercise.source}"`;
+
+  const topic = grammarPointTitle ? ` about "${grammarPointTitle}"` : "";
+
+  return (
+    `I answered a grammar exercise question wrong${topic}. ${questionText} ` +
+    `My answer: "${userAnswerText || "(no answer)"}". ` +
+    `The correct answer: "${correctAnswerText}". ` +
+    "Can you explain why my answer is wrong and the correct one is right?"
+  );
+}
+
 export default function GrammarExercises({
   exercises,
+  grammarPointTitle,
   onFinish,
   onProgressChange,
 }: GrammarExercisesProps) {
@@ -71,6 +101,9 @@ export default function GrammarExercises({
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const [scoreRevealed, setScoreRevealed] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [explanationMessages, setExplanationMessages] = useState<
+    ChatMessage[] | null
+  >(null);
 
   const inProgress =
     !finished &&
@@ -136,6 +169,34 @@ export default function GrammarExercises({
     if (correct) {
       setCorrectCount((count) => count + 1);
     }
+  }
+
+  function requestExplanation() {
+    const userAnswerText =
+      exercise.type === "multiple_choice"
+        ? (selectedChoice !== null ? exercise.choices[selectedChoice] : "")
+        : exercise.type === "sentence_reordering"
+          ? orderedIndices.map((i) => exercise.tokens[i]).join(" ")
+          : textAnswer;
+    const correctAnswerText =
+      exercise.type === "multiple_choice"
+        ? exercise.choices[exercise.answer]
+        : exercise.type === "sentence_reordering"
+          ? exercise.answer.join(" ")
+          : exercise.accepted_answers[0];
+
+    setExplanationMessages([
+      {
+        role: "user",
+        isContext: true,
+        content: buildExplanationRequest(
+          exercise,
+          userAnswerText,
+          correctAnswerText,
+          grammarPointTitle,
+        ),
+      },
+    ]);
   }
 
   function next() {
@@ -302,9 +363,19 @@ export default function GrammarExercises({
       )}
 
       <div className={styles.exercisesFooter}>
-        <p className={isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}>
-          {validated ? (isCorrect ? "Correct!" : "Not quite.") : ""}
-        </p>
+        <div className={styles.exercisesFeedback}>
+          <p className={isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}>
+            {validated ? (isCorrect ? "Correct!" : "Not quite.") : ""}
+          </p>
+          {validated && !isCorrect && (
+            <Button
+              kind="cancel"
+              variant="page"
+              text="More explanation"
+              onClick={requestExplanation}
+            />
+          )}
+        </div>
         {!validated && (
           <Button
             kind="confirm"
@@ -323,6 +394,17 @@ export default function GrammarExercises({
           />
         )}
       </div>
+      {explanationMessages && (
+        <ChatModal
+          character={TEACHER_WANG}
+          onClose={() => setExplanationMessages(null)}
+          initialMessages={explanationMessages}
+          loadHistory={false}
+          allowClearHistory={false}
+          ephemeral
+          autoSendInitialMessage
+        />
+      )}
     </div>
   );
 }

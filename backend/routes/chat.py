@@ -100,6 +100,7 @@ def chat():
     parent_character_id = data.get("parent_character_id")
     thread_id = data.get("thread_id")
     debug_mode = data.get("debug_mode")
+    ephemeral = data.get("ephemeral", False)
 
     if not isinstance(character_id, str) or character_id not in VALID_CHARACTER_IDS:
         return {"error": "Invalid character_id"}, 400
@@ -109,12 +110,22 @@ def chat():
     elif not isinstance(debug_mode, bool):
         return {"error": "debug_mode must be a boolean"}, 400
 
+    if not isinstance(ephemeral, bool):
+        return {"error": "ephemeral must be a boolean"}, 400
+
     normalized_messages, error_response = _normalize_messages(messages)
     if error_response is not None:
         return error_response
     assert normalized_messages is not None
 
     is_thread_chat = parent_character_id is not None or thread_id is not None
+
+    if ephemeral:
+        if character_id != TEACHER_CHARACTER_ID:
+            return {"error": "Ephemeral chat must use Teacher Wang"}, 400
+        if is_thread_chat:
+            return {"error": "Ephemeral chat cannot be a thread"}, 400
+        return _handle_ephemeral_chat(character_id, normalized_messages, debug_mode)
     if is_thread_chat:
         if character_id != TEACHER_CHARACTER_ID:
             return {"error": "Correction threads must use Teacher Wang"}, 400
@@ -203,6 +214,47 @@ def _handle_thread_chat(
                 "selected": reply.behavior_ids,
                 "failed": reply.behavior_failures,
             }
+
+    return response, 200
+
+
+def _handle_ephemeral_chat(
+    character_id: str,
+    normalized_messages: list[dict[str, str]],
+    debug_mode: bool,
+):
+    """Teacher Wang reply that skips conversation persistence entirely.
+
+    Used for one-off explanations (e.g. "why was my quiz answer wrong")
+    that shouldn't show up in the learner's regular chat history.
+    """
+    user_id = current_user_id()
+    token_usage = LlmTokenUsage()
+
+    try:
+        reply = generate_chat_reply(user_id, character_id, normalized_messages)
+        token_usage = token_usage + reply.token_usage
+        record_token_usage(
+            user_id,
+            input_tokens=token_usage.input_tokens,
+            output_tokens=token_usage.output_tokens,
+        )
+    except ValueError as error:
+        return {"error": str(error)}, 400
+    except Exception:
+        return {"error": "Failed to generate a chat response"}, 500
+
+    response = {
+        "message": {
+            "role": "assistant",
+            "content": reply.content,
+        },
+        "tokens": token_usage.to_dict(),
+    }
+    if reply.unknown_characters:
+        response["unknown_characters"] = reply.unknown_characters
+    if debug_mode:
+        response["final_prompt"] = reply.system_prompt
 
     return response, 200
 

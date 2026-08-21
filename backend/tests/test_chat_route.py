@@ -527,6 +527,123 @@ class TestChatEndpoint(unittest.TestCase):
             TEST_USER_ID, "巧克力", "你要香草还是巧克力？"
         )
 
+    def test_ephemeral_chat_returns_reply_without_persisting(self):
+        self.mock_generate.return_value = MagicMock(
+            content="Because 是 links a noun to a noun, not an adjective.",
+            unknown_characters=[],
+            token_usage=MagicMock(input_tokens=25, output_tokens=18),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "ephemeral": True,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Why is '我是很好' wrong for question X?",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": "Because 是 links a noun to a noun, not an adjective.",
+                },
+                "tokens": {"input": 25, "output": 18, "total": 43},
+            },
+        )
+        self.mock_generate.assert_called_once_with(
+            TEST_USER_ID,
+            "teacher-wang",
+            [
+                {
+                    "role": "user",
+                    "content": "Why is '我是很好' wrong for question X?",
+                }
+            ],
+        )
+        self.mock_append.assert_not_called()
+        self.mock_append_thread.assert_not_called()
+        self.mock_queue_summary.assert_not_called()
+        self.mock_context_summary.assert_not_called()
+        self.mock_grammar.assert_not_called()
+        self.mock_record_tokens.assert_called_once_with(
+            TEST_USER_ID,
+            input_tokens=25,
+            output_tokens=18,
+        )
+
+    def test_ephemeral_chat_rejects_non_teacher_character(self):
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "xiao-ming",
+                "ephemeral": True,
+                "messages": [{"role": "user", "content": "Why?"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.mock_generate.assert_not_called()
+
+    def test_ephemeral_chat_rejects_thread_combination(self):
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "ephemeral": True,
+                "parent_character_id": "xiao-ming",
+                "thread_id": "thread123",
+                "messages": [{"role": "user", "content": "Why?"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.mock_generate.assert_not_called()
+
+    def test_ephemeral_chat_rejects_non_boolean_flag(self):
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "ephemeral": "yes",
+                "messages": [{"role": "user", "content": "Why?"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.mock_generate.assert_not_called()
+
+    def test_ephemeral_chat_includes_final_prompt_when_debug_mode_true(self):
+        self.mock_generate.return_value = MagicMock(
+            content="Because...",
+            unknown_characters=[],
+            system_prompt="teacher wang system prompt",
+            token_usage=MagicMock(input_tokens=25, output_tokens=18),
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "character_id": "teacher-wang",
+                "ephemeral": True,
+                "debug_mode": True,
+                "messages": [{"role": "user", "content": "Why?"}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["final_prompt"], "teacher wang system prompt"
+        )
+
     def test_thread_chat_stores_messages_under_parent_conversation(self):
         self.mock_generate.return_value = MagicMock(
             content="Because 是 is not used that way.",

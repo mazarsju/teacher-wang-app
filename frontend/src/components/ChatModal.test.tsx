@@ -765,4 +765,65 @@ describe("ChatModal", () => {
     expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send" })).not.toBeInTheDocument();
   });
+
+  it("auto-sends a seeded context message on open, showing it as background text (not a bubble) with a typing indicator until the reply arrives", async () => {
+    let resolveChat: (value: unknown) => void = () => {};
+    const fetchMock = vi.fn((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/chat") && (init?.method ?? "GET") === "POST") {
+        return new Promise((resolve) => {
+          resolveChat = resolve;
+        });
+      }
+      return Promise.resolve({ ok: false, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { container } = render(
+      <ChatModal
+        character={teacherWang}
+        onClose={() => undefined}
+        initialMessages={[
+          {
+            role: "user",
+            isContext: true,
+            content: "**Question:** why is 我是很好 wrong?",
+          },
+        ]}
+        loadHistory={false}
+        autoSendInitialMessage
+        ephemeral
+      />,
+    );
+
+    const contextText = await screen.findByText(/why is 我是很好 wrong\?/);
+    expect(contextText).toHaveClass("chat-message-stage");
+    expect(container.querySelector(".chat-message--user")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("Teacher Wang is typing..."),
+    ).toBeInTheDocument();
+
+    resolveChat({
+      ok: true,
+      json: async () => ({
+        message: { role: "assistant", content: "是 links nouns, not adjectives." },
+      }),
+    });
+
+    expect(
+      await screen.findByText("是 links nouns, not adjectives."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Teacher Wang is typing..."),
+    ).not.toBeInTheDocument();
+
+    const [, init] = fetchMock.mock.calls.find(
+      ([callUrl]) => String(callUrl).endsWith("/chat"),
+    )!;
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body).toMatchObject({ character_id: "teacher-wang", ephemeral: true });
+    expect(body.messages).toEqual([
+      { role: "user", content: "**Question:** why is 我是很好 wrong?" },
+    ]);
+  });
 });

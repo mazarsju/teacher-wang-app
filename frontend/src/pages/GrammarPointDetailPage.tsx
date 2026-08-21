@@ -146,6 +146,7 @@ export default function GrammarPointDetailPage({
           <div className={activeTab === "exercises" ? undefined : styles.grammarDetailHidden}>
             <GrammarExercises
               exercises={detail.exercises ?? []}
+              grammarPointTitle={detail.title}
               onFinish={handleFinishQuiz}
               onProgressChange={(inProgress) =>
                 dispatch(setGrammarQuizInProgress(inProgress))

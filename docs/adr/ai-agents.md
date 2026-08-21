@@ -39,6 +39,14 @@ For every non–Teacher Wang conversation, Teacher Wang silently reviews the lea
 
 The API returns `{"severity": "…"}` (plus `answer` when severity is not `none`). The UI shows a badge on the user message for every level: a non-clickable green check for `none`, and clickable orange/red icons for `minor` / `awkward` / `incorrect`. Opening a note starts a Teacher Wang side thread with the short correction so the learner can ask follow-up questions without leaving the main chat. Severity is also stored on the conversation log so badges survive history reload.
 
+### Ephemeral chat (no persistence)
+
+`POST /chat` accepts an `ephemeral: true` flag (`backend/routes/chat.py:_handle_ephemeral_chat`) as a third path alongside main chat and correction threads. It's restricted to `character_id: "teacher-wang"` and cannot be combined with `thread_id`/`parent_character_id`. It calls `generate_chat_reply` exactly like main chat — same system prompt, teaching strategy, and Smart AI behaviors — and still records token usage, but skips `append_message`/`append_thread_message` and conversation-memory summarization entirely: nothing about the exchange is written to `conversation_logs` or read back on a later request.
+
+This backs the grammar-exercises "More explanation" button (`frontend/src/components/GrammarExercises.tsx`): on a wrong answer, the frontend builds a one-off message describing the question, the learner's answer, and the correct answer, and opens `ChatModal` immediately with that message as `initialMessages` (`loadHistory={false}`, `ephemeral`, `autoSendInitialMessage`) — no `thread_id`, and any follow-up the learner types in that modal is sent `ephemeral: true` too, so the whole side conversation stays out of chat history.
+
+`ChatModal`'s `autoSendInitialMessage` prop (new alongside `ephemeral`) sends the last message of `initialMessages` itself as soon as the modal opens, reusing the same `isSending` state as a manually-typed message — so the learner sees "Teacher Wang is typing..." while the ephemeral call is in flight, instead of waiting on a network call before the modal even appears. The seeded message is flagged `isContext: true` (`types/chat.ts`) rather than rendered as a normal chat bubble: `ChatModal` shows any `isContext` message as background text — the same visual treatment as a challenge character's `[[stage direction]]` segments (Markdown-rendered, no bubble, no "you asked" framing) — since it's context the frontend synthesized, not something the learner actually typed.
+
 ### Behavior planner, generator, and validator (Teacher Wang)
 
 When the character is Teacher Wang itself (not a role-play character), the

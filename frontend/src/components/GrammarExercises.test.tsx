@@ -36,6 +36,7 @@ const TRANSFORM: GrammarExercise = {
 describe("GrammarExercises", () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("shows a fallback message when there are no exercises", () => {
@@ -95,6 +96,94 @@ describe("GrammarExercises", () => {
 
     expect(screen.getByText("Not quite.")).toBeInTheDocument();
     expect(screen.getByText("Accepted: 我喜欢茶。")).toBeInTheDocument();
+  });
+
+  it("shows a 'More explanation' button only after a wrong answer, not a correct one", async () => {
+    const user = userEvent.setup();
+    render(<GrammarExercises exercises={[MCQ]} />);
+
+    await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+
+    expect(
+      screen.queryByRole("button", { name: "More explanation" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the chat modal immediately with the context and a typing indicator, then the reply", async () => {
+    const user = userEvent.setup();
+    let resolveChat: (value: unknown) => void = () => {};
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/chat")) {
+        return new Promise((resolve) => {
+          resolveChat = resolve;
+        });
+      }
+      return Promise.resolve({ ok: false, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { container } = render(
+      <GrammarExercises exercises={[MCQ]} grammarPointTitle="Basic Sentence Structure" />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "我喝茶。" }));
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+    await user.click(screen.getByRole("button", { name: "More explanation" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText(/Basic Sentence Structure/)).toBeInTheDocument();
+    // The seeded context is background text, not a "you asked this" chat bubble.
+    expect(container.querySelector(".chat-message--user")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("Teacher Wang is typing..."),
+    ).toBeInTheDocument();
+
+    resolveChat({
+      ok: true,
+      json: async () => ({
+        message: {
+          role: "assistant",
+          content: "喝 means 'to drink', not 'to like' — 喜欢 is the verb for liking something.",
+        },
+      }),
+    });
+
+    expect(
+      await screen.findByText(
+        "喝 means 'to drink', not 'to like' — 喜欢 is the verb for liking something.",
+      ),
+    ).toBeInTheDocument();
+
+    const [url, init] = fetchMock.mock.calls.find(([callUrl]) =>
+      String(callUrl).endsWith("/chat"),
+    )!;
+    expect(String(url)).toContain("/chat");
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body).toMatchObject({ character_id: "teacher-wang", ephemeral: true });
+    expect(body.messages).toHaveLength(1);
+    expect(body.messages[0].role).toBe("user");
+    expect(body.messages[0].content).toContain("Basic Sentence Structure");
+    expect(body.messages[0].content).toContain("我喝茶。");
+    expect(body.messages[0].content).toContain("我喜欢茶。");
+  });
+
+  it("shows an error inside the already-open modal when the explanation request fails", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
+
+    render(<GrammarExercises exercises={[MCQ]} />);
+
+    await user.click(screen.getByRole("button", { name: "我喝茶。" }));
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+    await user.click(screen.getByRole("button", { name: "More explanation" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Failed to send chat message."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("shows the passing score message once all questions are answered", async () => {

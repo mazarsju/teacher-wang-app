@@ -50,6 +50,10 @@ type ChatModalProps = {
   tasks?: ChallengeTask[];
   challengeTitle?: string;
   grammarSeverity?: GrammarSeverity;
+  /** Skip server-side persistence for this conversation entirely (no history, no thread). */
+  ephemeral?: boolean;
+  /** Immediately send the last (user-role) message of `initialMessages` on open, instead of waiting for the learner to type. Requires `loadHistory={false}`. */
+  autoSendInitialMessage?: boolean;
 };
 
 const GRAMMAR_SEVERITY_LABELS: Record<GrammarSeverity, string> = {
@@ -105,6 +109,8 @@ export default function ChatModal({
   tasks,
   challengeTitle,
   grammarSeverity,
+  ephemeral = false,
+  autoSendInitialMessage = false,
 }: ChatModalProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -120,6 +126,7 @@ export default function ChatModal({
   );
   const [showConfetti, setShowConfetti] = useState(false);
   const wasChallengeCompleteRef = useRef(false);
+  const autoSentRef = useRef(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
 
   const isChallengeComplete = Boolean(
@@ -160,6 +167,7 @@ export default function ChatModal({
     setCompletedTaskIds(new Set());
     setShowConfetti(false);
     wasChallengeCompleteRef.current = false;
+    autoSentRef.current = false;
 
     if (!loadHistory) {
       setMessages(initialMessages ?? []);
@@ -199,6 +207,26 @@ export default function ChatModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [character, loadHistory, thread?.threadId]);
 
+  useEffect(() => {
+    if (character === null || loadHistory || !autoSendInitialMessage) {
+      return;
+    }
+    if (autoSentRef.current) {
+      return;
+    }
+
+    const seeded = initialMessages ?? [];
+    const lastMessage = seeded[seeded.length - 1];
+    if (!lastMessage || lastMessage.role !== "user") {
+      return;
+    }
+
+    autoSentRef.current = true;
+    void sendTurn(seeded, seeded.slice(0, -1));
+    // initialMessages is only read for the seed at mount/open, same as above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character, loadHistory, autoSendInitialMessage, thread?.threadId]);
+
   if (character === null) {
     return null;
   }
@@ -209,26 +237,13 @@ export default function ChatModal({
     messageInputRef.current?.focus();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedMessage = message.trim();
-    if (
-      trimmedMessage === "" ||
-      isSending ||
-      isClearing ||
-      isChallengeComplete
-    ) {
-      return;
-    }
-
-    const userMessage: ChatMessage = { role: "user", content: trimmedMessage };
-    const nextMessages: ChatMessage[] = [...messages, userMessage];
-
+  async function sendTurn(
+    nextMessages: ChatMessage[],
+    previousMessages: ChatMessage[],
+  ): Promise<boolean> {
     setMessages(nextMessages);
-    setMessage("");
     setError(null);
     setIsSending(true);
-    focusMessageInput();
 
     const isChallenge = Boolean(tasks && tasks.length > 0);
     const messagesToSend =
@@ -239,6 +254,7 @@ export default function ChatModal({
         activeCharacter.id,
         messagesToSend,
         thread,
+        ephemeral,
       );
       const updatedMessages = (() => {
         if (thread) {
@@ -286,18 +302,44 @@ export default function ChatModal({
       if (response.completed_task_ids) {
         setCompletedTaskIds(new Set(response.completed_task_ids));
       }
+      return true;
     } catch (sendError) {
-      setMessages(messages);
-      setMessage(trimmedMessage);
+      setMessages(previousMessages);
       setError(
         sendError instanceof Error
           ? sendError.message
           : "Failed to send chat message.",
       );
+      return false;
     } finally {
       setIsSending(false);
-      focusMessageInput();
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedMessage = message.trim();
+    if (
+      trimmedMessage === "" ||
+      isSending ||
+      isClearing ||
+      isChallengeComplete
+    ) {
+      return;
+    }
+
+    const userMessage: ChatMessage = { role: "user", content: trimmedMessage };
+    const nextMessages: ChatMessage[] = [...messages, userMessage];
+    const previousMessages = messages;
+
+    setMessage("");
+    focusMessageInput();
+
+    const succeeded = await sendTurn(nextMessages, previousMessages);
+    if (!succeeded) {
+      setMessage(trimmedMessage);
+    }
+    focusMessageInput();
   }
 
   async function handleClearHistory() {
@@ -516,6 +558,21 @@ export default function ChatModal({
             ) : (
               <ul className={styles.chatMessageList}>
                 {messages.map((chatMessage, index) => {
+                  if (chatMessage.isContext) {
+                    return (
+                      <li
+                        key={`${chatMessage.role}-${index}-${chatMessage.content}`}
+                        className={`${styles.chatMessageRow} ${styles.chatMessageRowSegmented}`}
+                      >
+                        <div className={styles.chatMessageSegments}>
+                          <div className={styles.chatMessageStage}>
+                            {renderFormattedText(chatMessage.content)}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  }
+
                   if (chatMessage.role === "assistant") {
                     const segments = parseMessageSegments(chatMessage.content);
                     const hasStage = segments.some(
