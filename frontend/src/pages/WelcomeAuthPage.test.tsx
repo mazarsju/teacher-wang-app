@@ -89,17 +89,36 @@ describe("WelcomeAuthPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("lists grammar among the discoverable features", async () => {
+  it("opens a feature overview with tinted panels, checklists, and Teacher Wang", async () => {
     const user = userEvent.setup();
     render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "Discover the features →" }));
 
     expect(
+      screen.getByRole("heading", { name: "Feature overview" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Everything you need to learn Mandarin more efficiently, all in one place.",
+      ),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("heading", { name: "Build up your grammar" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/HSK grammar is more than vocabulary/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Ask Teacher Wang about a lesson/i),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".feature-panel--lilac")).toBeInTheDocument();
+    expect(document.querySelector(".feature-panel--teal")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Meet Teacher Wang" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/AI-powered Mandarin learning companion/i),
     ).toBeInTheDocument();
   });
 

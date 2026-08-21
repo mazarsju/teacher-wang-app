@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   CognitoAuthError,
   confirmSignUpAndSignIn,
@@ -22,6 +22,7 @@ import chatChallengeScreenshot from "../assets/screenshots/05-chat-challenge-wai
 import ankiSyncImage from "../assets/screenshots/anki-sync.png";
 import grammarListScreenshot from "../assets/screenshots/grammar-1.png";
 import grammarExerciseScreenshot from "../assets/screenshots/grammar-2.png";
+import teacherAvatar from "../assets/avatars/teacher.svg";
 import styles from "./WelcomeAuthPage.module.css";
 
 export type WelcomeAuthMode = "login" | "signup" | "confirm" | "forgot" | "reset";
@@ -30,36 +31,141 @@ type WelcomeAuthPageProps = {
   onAuthenticated: () => void;
 };
 
-const FEATURES = [
+type FeatureTone = "teal" | "sand" | "lilac" | "amber" | "sage";
+
+type Feature = {
+  tone: FeatureTone;
+  images: string[];
+  icon: ReactNode;
+  title: string;
+  description: string;
+  capabilities: string[];
+};
+
+function FeatureGlyph({ children }: { children: ReactNode }) {
+  return (
+    <span className={styles.featurePanelIcon} aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+function ChecklistTick() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M3.2 8.4 6.1 11.2 12.8 4.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const FEATURES: Feature[] = [
   {
+    tone: "teal",
     images: [homeScreenshot],
+    icon: (
+      <FeatureGlyph>
+        <svg viewBox="0 0 24 24">
+          <path d="M4 19V9.5M10 19V5M16 19v-7.5M20 19H3" />
+        </svg>
+      </FeatureGlyph>
+    ),
     title: "Track your progress",
     description:
-      "See at a glance where you stand on the HSK ladder — and exactly which characters still stand between you and the next level.",
+      "See where you stand on the HSK ladder — and which characters still stand between you and the next level.",
+    capabilities: [
+      "Your estimated HSK level, updated from the characters you know",
+      "A clear count of what is still missing to reach the next level",
+      "Recognized versus writing-known, so you can see both sides of mastery",
+    ],
   },
   {
+    tone: "sand",
     images: [knowledgeBaseEditScreenshot, knowledgeBaseViewScreenshot],
+    icon: (
+      <FeatureGlyph>
+        <svg viewBox="0 0 24 24">
+          <path d="M5 4.5h9.5A2.5 2.5 0 0 1 17 7v13.5H7.5A2.5 2.5 0 0 1 5 18V4.5Z" />
+          <path d="M17 7h1.5A2.5 2.5 0 0 1 21 9.5V20a1.5 1.5 0 0 1-1.5 1.5H17" />
+          <path d="M8.5 9h6M8.5 12.5h6" />
+        </svg>
+      </FeatureGlyph>
+    ),
     title: "Build your knowledge base",
     description:
-      "Add words in a clean edit view — matching characters are created automatically — then browse your vocabulary grouped by pinyin.",
+      "Grow a private vocabulary of words and characters — then browse it as a map of everything you already know.",
+    capabilities: [
+      "Add words in a clean edit view; matching characters are created for you",
+      "Browse every character grouped by pinyin, with tones easy to spot",
+      "Keep recognized and writing-known status in one place",
+    ],
   },
   {
+    tone: "lilac",
     images: [grammarListScreenshot, grammarExerciseScreenshot],
+    icon: (
+      <FeatureGlyph>
+        <svg viewBox="0 0 24 24">
+          <path d="M5 7h14M5 12h9M5 17h11" />
+          <path d="M16.5 10.5 19 13l3-4" />
+        </svg>
+      </FeatureGlyph>
+    ),
     title: "Build up your grammar",
     description:
-      "HSK grammar is more than vocabulary: read the explanation, drill the pattern with exercises, and track mastery as you close the gaps that words alone cannot fill.",
+      "HSK grammar is more than vocabulary: read the pattern, drill it, and close the gaps that words alone cannot fill.",
+    capabilities: [
+      "Explanations, examples, and common mistakes for each HSK grammar point",
+      "Guided exercises with instant grading and a score that tracks mastery",
+      "Ask Teacher Wang about a lesson without leaving the grammar page",
+    ],
   },
   {
+    tone: "amber",
     images: [ankiSyncImage],
+    icon: (
+      <FeatureGlyph>
+        <svg viewBox="0 0 24 24">
+          <path d="M4 7.5A7 7 0 0 1 16.5 6l1.5-2v6h-6l1.6-2.1A4.7 4.7 0 0 0 6.2 9.2" />
+          <path d="M20 16.5A7 7 0 0 1 7.5 18L6 20v-6h6l-1.6 2.1A4.7 4.7 0 0 0 17.8 14.8" />
+        </svg>
+      </FeatureGlyph>
+    ),
     title: "Sync with Anki",
     description:
-      "Push new words straight into your Anki decks and pull back the cards you've already mastered — one sync keeps them in lockstep.",
+      "Keep Teacher Wang and your Anki decks in lockstep — push new words out, pull mastered cards back in.",
+    capabilities: [
+      "Push knowledge-base words into your vocabulary and writing decks",
+      "Pull Anki notes back so the app reflects what you already study",
+      "Choose a full sync, a quick push, or a curated selection",
+    ],
   },
   {
+    tone: "sage",
     images: [chatScreenshot, chatChallengeScreenshot],
+    icon: (
+      <FeatureGlyph>
+        <svg viewBox="0 0 24 24">
+          <path d="M13 4.5h6.2A1.8 1.8 0 0 1 21 6.3v4.2a1.8 1.8 0 0 1-1.8 1.8H17.8L16 14.2v-1.9" />
+          <path d="M3.8 8.2h11.2A2.2 2.2 0 0 1 17.2 10.4v5.3a2.2 2.2 0 0 1-2.2 2.2H9.2L4.8 21v-3.1H3.8A2.2 2.2 0 0 1 1.6 15.7v-5.3A2.2 2.2 0 0 1 3.8 8.2Z" />
+          <path d="M6.4 12.2h5.6M6.4 14.8h3.4" />
+        </svg>
+      </FeatureGlyph>
+    ),
     title: "Practice with AI agents",
     description:
-      "Step into real scenes: role-play with characters like the waiter, clear the checklist, and win the challenge in Mandarin.",
+      "Step into real scenes: stay in character, clear the checklist, and practice Mandarin you can actually use.",
+    capabilities: [
+      "Role-play challenges with a goal, a scene, and a task checklist",
+      "Agents prefer characters you already know from your knowledge base",
+      "Grammar notes from Teacher Wang in a side thread, without leaving the chat",
+    ],
   },
 ];
 
@@ -516,21 +622,70 @@ export default function WelcomeAuthPage({
           >
             ← Back
           </button>
-          <h2 className={styles.featureShowcaseTitle}>
-            Everything you need to learn Mandarin
-          </h2>
+          <h2 className={styles.featureShowcaseTitle}>Feature overview</h2>
+          <p className={styles.featureShowcaseLead}>
+            Everything you need to learn Mandarin more efficiently, all in one place.
+          </p>
           <div className={styles.featureShowcaseList}>
             {FEATURES.map((feature) => (
-              <article className={styles.featureShowcaseCard} key={feature.title}>
-                <div className={styles.featureShowcaseImages}>
+              <article
+                className={`${styles.featurePanel} ${styles[`feature-panel--${feature.tone}`]}`}
+                key={feature.title}
+              >
+                <div className={styles.featurePanelBody}>
+                  <div className={styles.featurePanelHeading}>
+                    {feature.icon}
+                    <h3>{feature.title}</h3>
+                  </div>
+                  <p className={styles.featurePanelDescription}>{feature.description}</p>
+                  <ul className={styles.featurePanelChecklist}>
+                    {feature.capabilities.map((capability) => (
+                      <li key={capability}>
+                        <span className={styles.featurePanelTick}>
+                          <ChecklistTick />
+                        </span>
+                        <span>{capability}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className={styles.featurePanelMedia}>
                   {feature.images.map((image) => (
                     <img src={image} alt="" key={image} />
                   ))}
                 </div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
               </article>
             ))}
+            <section className={styles.featureCompanion} aria-labelledby="feature-companion-title">
+              <div className={styles.featureCompanionBody}>
+                <p className={styles.featureCompanionEyebrow}>Your companion</p>
+                <h3 id="feature-companion-title">Meet Teacher Wang</h3>
+                <p className={styles.featurePanelDescription}>
+                  An AI-powered Mandarin learning companion who leads your progress —
+                  adapting to your HSK level, explaining grammar, and guiding you from
+                  first characters to fluent practice.
+                </p>
+                <ul className={styles.featurePanelChecklist}>
+                  {[
+                    "Teaches in a mix of English and Chinese that matches your HSK level",
+                    "Explains grammar, corrects mistakes, and answers your questions",
+                    "Stays with you across chats, grammar lessons, and challenges",
+                  ].map((capability) => (
+                    <li key={capability}>
+                      <span className={styles.featurePanelTick}>
+                        <ChecklistTick />
+                      </span>
+                      <span>{capability}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <img
+                className={styles.featureCompanionAvatar}
+                src={teacherAvatar}
+                alt=""
+              />
+            </section>
           </div>
         </div>
       </div>
