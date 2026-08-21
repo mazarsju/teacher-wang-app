@@ -20,6 +20,8 @@ import knowledgeBaseEditScreenshot from "../assets/screenshots/03-knowledge-base
 import chatScreenshot from "../assets/screenshots/04-chat.png";
 import chatChallengeScreenshot from "../assets/screenshots/05-chat-challenge-waiter.png";
 import ankiSyncImage from "../assets/screenshots/anki-sync.png";
+import grammarListScreenshot from "../assets/screenshots/grammar-1.png";
+import grammarExerciseScreenshot from "../assets/screenshots/grammar-2.png";
 import styles from "./WelcomeAuthPage.module.css";
 
 export type WelcomeAuthMode = "login" | "signup" | "confirm" | "forgot" | "reset";
@@ -40,6 +42,12 @@ const FEATURES = [
     title: "Build your knowledge base",
     description:
       "Add words in a clean edit view — matching characters are created automatically — then browse your vocabulary grouped by pinyin.",
+  },
+  {
+    images: [grammarListScreenshot, grammarExerciseScreenshot],
+    title: "Build up your grammar",
+    description:
+      "HSK grammar is more than vocabulary: read the explanation, drill the pattern with exercises, and track mastery as you close the gaps that words alone cannot fill.",
   },
   {
     images: [ankiSyncImage],

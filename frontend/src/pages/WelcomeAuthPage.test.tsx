@@ -89,6 +89,20 @@ describe("WelcomeAuthPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("lists grammar among the discoverable features", async () => {
+    const user = userEvent.setup();
+    render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Discover the features →" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Build up your grammar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/HSK grammar is more than vocabulary/i),
+    ).toBeInTheDocument();
+  });
+
   it("starts Cognito Google SSO when Continue with Google is clicked", async () => {
     const user = userEvent.setup();
     render(<WelcomeAuthPage onAuthenticated={vi.fn()} />);
