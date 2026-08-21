@@ -104,16 +104,17 @@ describe("WelcomeAuthPage", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Build up your grammar" }),
+      screen.getByRole("heading", { name: "Master Chinese Grammar" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/HSK grammar is more than vocabulary/i),
+      screen.getByText(/Learn grammar the way it is actually used/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Ask Teacher Wang about a lesson/i),
+      screen.getByText(/Ask Teacher Wang questions directly from any grammar lesson/i),
     ).toBeInTheDocument();
     expect(document.querySelector(".feature-panel--lilac")).toBeInTheDocument();
     expect(document.querySelector(".feature-panel--teal")).toBeInTheDocument();
+    expect(document.querySelector(".feature-panel-media-mosaic")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Meet Teacher Wang" }),
     ).toBeInTheDocument();
