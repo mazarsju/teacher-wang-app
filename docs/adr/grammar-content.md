@@ -16,7 +16,9 @@ agents' `renderFormattedText`, `frontend/src/utils/formatMarkdownText.tsx`).
 The Exercises tab (`frontend/src/components/GrammarExercises.tsx`) runs the
 `multiple_choice`, `sentence_reordering`, `transform`, and `translation`
 exercises one at a time with deterministic grading (exact match, trailing
-punctuation ignored) and shows a final score. Finishing a quiz calls
+punctuation ignored) and shows a final score. `translation` additionally
+falls back to an AI check when the exact match fails — see decision 5 below,
+now implemented. Finishing a quiz calls
 `POST /grammar-points/<id>/complete`, which sets `status` to `DONE` (score
 ≥ 80%) or `WIP` (below 80%), plus `score` (rounded percentage) and
 `last_practiced_at`, on `user_grammar_progress`; `GET /grammar-points`
@@ -189,11 +191,19 @@ content repo). The schema stays extensible for future exercise types.
 Translation exercises are English → Chinese, with one or more accepted
 answers per exercise (as above).
 
-The application should first perform deterministic validation (exact match
-against `accepted_answers`). If the user's answer doesn't match but may
-still be valid, the application can invoke an LLM to evaluate it. This
-avoids unnecessary LLM calls for straightforward correct/incorrect answers
-while supporting legitimate variation in Chinese.
+The application first performs deterministic validation (exact match
+against `accepted_answers`, trailing punctuation ignored). If the user's
+answer doesn't match, `GrammarExercises` shows "This solution is not the
+expected one. Checking with Teacher Wang if it is a possible solution.
+Please wait..." and asks Teacher Wang, via the ephemeral `/chat` path (see
+the Multi-Agent Chat ADR's "Ephemeral chat" section), whether the answer is
+also acceptable — a plain-language question engineered to start the reply
+with `YES`/`NO`, parsed client-side (`parseAiApproval`). `YES` marks the
+answer correct; `NO` marks it incorrect and keeps that reply so "More
+explanation" opens pre-loaded with it, with no second API call. This avoids
+LLM calls for exact matches while supporting legitimate variation in
+Chinese, and keeps this check out of chat history like the rest of the
+exercises' AI usage.
 
 ### 6. AI-generated exercises are a separate concern
 

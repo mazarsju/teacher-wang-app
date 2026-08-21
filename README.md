@@ -438,7 +438,7 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
   - [x] Multiple-choice questions
   - [x] Sentence reordering
   - [x] Sentence transformation
-- [ ] Add translation exercises with AI-assisted validation
+- [x] Add translation exercises with AI-assisted validation
 - [x] Add AI-powered explanation if the user makes some mistakes in exercises
 - [ ] Add AI tutor mode for grammar-specific questions and explanations
 - [ ] Add AI-powered grammar practice scenarios

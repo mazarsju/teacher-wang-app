@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import type { ChatMessage } from "../types/chat";
-import type { GrammarExercise } from "../types/grammarPoint";
+import type { GrammarExercise, TranslationExercise } from "../types/grammarPoint";
+import { sendChatMessage } from "../utils/aiChat/chatApi";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
 import ChatModal from "./ChatModal";
@@ -84,6 +85,26 @@ function buildExplanationRequest(
   );
 }
 
+function buildTranslationCheckRequest(
+  exercise: TranslationExercise,
+  userAnswerText: string,
+  grammarPointTitle?: string,
+): string {
+  const topic = grammarPointTitle ? ` for the grammar point "${grammarPointTitle}"` : "";
+
+  return (
+    `I'm practicing a Chinese translation exercise${topic}. ` +
+    `The sentence to translate was: "${exercise.prompt}". ` +
+    `The expected answer is "${exercise.accepted_answers[0]}", but I answered: "${userAnswerText}". ` +
+    "Is my answer also a correct, acceptable translation, even if it isn't word-for-word the same? " +
+    'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student.'
+  );
+}
+
+function parseAiApproval(content: string): boolean {
+  return content.trim().replace(/^[^a-zA-Z]+/, "").toLowerCase().startsWith("yes");
+}
+
 export default function GrammarExercises({
   exercises,
   grammarPointTitle,
@@ -101,6 +122,8 @@ export default function GrammarExercises({
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const [scoreRevealed, setScoreRevealed] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isCheckingWithAi, setIsCheckingWithAi] = useState(false);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [explanationMessages, setExplanationMessages] = useState<
     ChatMessage[] | null
   >(null);
@@ -150,24 +173,66 @@ export default function GrammarExercises({
     setSelectedChoice(null);
     setOrderedIndices([]);
     setTextAnswer("");
+    setIsCheckingWithAi(false);
+    setAiExplanation(null);
   }
 
-  function validate() {
-    let correct = false;
+  async function validate() {
     if (exercise.type === "multiple_choice") {
-      correct = selectedChoice === exercise.answer;
-    } else if (exercise.type === "sentence_reordering") {
+      const correct = selectedChoice === exercise.answer;
+      setIsCorrect(correct);
+      setValidated(true);
+      if (correct) setCorrectCount((count) => count + 1);
+      return;
+    }
+
+    if (exercise.type === "sentence_reordering") {
       const orderedTokens = orderedIndices.map((i) => exercise.tokens[i]);
-      correct =
+      const correct =
         orderedTokens.length === exercise.answer.length &&
         orderedTokens.every((token, i) => token === exercise.answer[i]);
-    } else {
-      correct = isTextAnswerCorrect(textAnswer, exercise.accepted_answers);
+      setIsCorrect(correct);
+      setValidated(true);
+      if (correct) setCorrectCount((count) => count + 1);
+      return;
     }
-    setIsCorrect(correct);
-    setValidated(true);
-    if (correct) {
-      setCorrectCount((count) => count + 1);
+
+    const deterministicallyCorrect = isTextAnswerCorrect(
+      textAnswer,
+      exercise.accepted_answers,
+    );
+    if (deterministicallyCorrect || exercise.type !== "translation") {
+      setIsCorrect(deterministicallyCorrect);
+      setValidated(true);
+      if (deterministicallyCorrect) setCorrectCount((count) => count + 1);
+      return;
+    }
+
+    setIsCheckingWithAi(true);
+    try {
+      const response = await sendChatMessage(
+        TEACHER_WANG.id,
+        [
+          {
+            role: "user",
+            content: buildTranslationCheckRequest(exercise, textAnswer, grammarPointTitle),
+          },
+        ],
+        undefined,
+        true,
+      );
+      const approved = parseAiApproval(response.message.content);
+      setIsCorrect(approved);
+      if (approved) {
+        setCorrectCount((count) => count + 1);
+      } else {
+        setAiExplanation(response.message.content);
+      }
+    } catch {
+      setIsCorrect(false);
+    } finally {
+      setIsCheckingWithAi(false);
+      setValidated(true);
     }
   }
 
@@ -185,18 +250,22 @@ export default function GrammarExercises({
           ? exercise.answer.join(" ")
           : exercise.accepted_answers[0];
 
-    setExplanationMessages([
-      {
-        role: "user",
-        isContext: true,
-        content: buildExplanationRequest(
-          exercise,
-          userAnswerText,
-          correctAnswerText,
-          grammarPointTitle,
-        ),
-      },
-    ]);
+    const questionMessage: ChatMessage = {
+      role: "user",
+      isContext: true,
+      content: buildExplanationRequest(
+        exercise,
+        userAnswerText,
+        correctAnswerText,
+        grammarPointTitle,
+      ),
+    };
+
+    setExplanationMessages(
+      aiExplanation
+        ? [questionMessage, { role: "assistant", content: aiExplanation }]
+        : [questionMessage],
+    );
   }
 
   function next() {
@@ -350,7 +419,7 @@ export default function GrammarExercises({
             type="text"
             className={styles.exercisesInput}
             value={textAnswer}
-            disabled={validated}
+            disabled={validated || isCheckingWithAi}
             onChange={(event) => setTextAnswer(event.target.value)}
             placeholder="Type your answer"
           />
@@ -364,8 +433,22 @@ export default function GrammarExercises({
 
       <div className={styles.exercisesFooter}>
         <div className={styles.exercisesFeedback}>
-          <p className={isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}>
-            {validated ? (isCorrect ? "Correct!" : "Not quite.") : ""}
+          <p
+            className={
+              isCheckingWithAi
+                ? styles.exercisesInstruction
+                : isCorrect
+                  ? styles.feedbackCorrect
+                  : styles.feedbackIncorrect
+            }
+          >
+            {isCheckingWithAi
+              ? "This solution is not the expected one. Checking with Teacher Wang if it is a possible solution. Please wait..."
+              : validated
+                ? isCorrect
+                  ? "Correct!"
+                  : "Not quite."
+                : ""}
           </p>
           {validated && !isCorrect && (
             <Button
@@ -380,9 +463,9 @@ export default function GrammarExercises({
           <Button
             kind="confirm"
             variant="page"
-            text="Validate"
-            disabled={!canValidate}
-            onClick={validate}
+            text={isCheckingWithAi ? "Checking..." : "Validate"}
+            disabled={!canValidate || isCheckingWithAi}
+            onClick={() => void validate()}
           />
         )}
         {validated && (
