@@ -1,21 +1,164 @@
-.grammar-point-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1rem;
+.grammar-level-section {
+  margin-bottom: 1rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  overflow: hidden;
 }
 
-.grammar-completed-section {
-  margin-top: 1.5rem;
-}
-
-.grammar-completed-section .grammar-point-grid {
-  margin-top: 1rem;
-}
-
-.grammar-completed-summary {
+.grammar-level-summary {
   cursor: pointer;
+  padding: 0.75rem 1.25rem;
+  font-weight: 650;
+  color: #111827;
+}
+
+.grammar-level-section-1 { background: #eef5ff; }
+.grammar-level-section-2 { background: #eefbf3; }
+.grammar-level-section-3 { background: #fff8e8; }
+.grammar-level-section-4 { background: #fdf0f6; }
+.grammar-level-section-5 { background: #f3f0fd; }
+.grammar-level-section-6 { background: #eafbfa; }
+
+.grammar-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--app-surface);
+}
+
+.grammar-table th, .grammar-table td {
+  padding: 0.6rem 1.25rem;
+  text-align: left;
+  border-top: 1px solid var(--app-border-light);
+}
+
+.grammar-table th {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.grammar-table-col-number {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Lesson column soaks up the remaining width; status/score shrink to their
+   content and sit on the right, per the "give more room to the lesson name"
+   desktop layout. */
+.grammar-table th:nth-child(2), .grammar-table td:nth-child(2) {
+  width: 100%;
+}
+
+.grammar-table th:nth-child(3), .grammar-table td:nth-child(3),
+.grammar-table th:nth-child(4), .grammar-table td:nth-child(4) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.grammar-row {
+  cursor: pointer;
+}
+
+.grammar-row:hover {
+  background: var(--app-bg);
+}
+
+.grammar-row:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -2px;
+}
+
+.grammar-row-locked {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.grammar-row-locked:hover {
+  background: none;
+}
+
+.grammar-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
   font-weight: 600;
   color: #111827;
+}
+
+.grammar-row-title-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.grammar-row-lock-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.grammar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.grammar-status-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.grammar-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.grammar-status-todo {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.grammar-status-wip {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.grammar-status-done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.grammar-status-skip {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.grammar-score {
+  font-weight: 700;
+}
+
+.grammar-score-good {
+  color: #16a34a;
+}
+
+.grammar-score-medium {
+  color: #b45309;
+}
+
+.grammar-score-low {
+  color: var(--app-danger);
 }
 
 .grammar-level-gauges {
@@ -70,5 +213,50 @@
 @media (max-width: 640px) {
   .grammar-level-gauges {
     flex-wrap: wrap;
+  }
+
+  /* One column, two lines per lesson: title on top, status + score below.
+     The "#" column is dropped entirely on this narrow a screen. */
+  .grammar-table thead {
+    display: none;
+  }
+
+  .grammar-table, .grammar-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .grammar-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title title"
+      "status score";
+    gap: 0.2rem 0.5rem;
+    padding: 0.65rem 1rem;
+    border-top: 1px solid var(--app-border-light);
+  }
+
+  .grammar-table td {
+    padding: 0;
+    border-top: none;
+  }
+
+  .grammar-table td:nth-child(1) {
+    display: none;
+  }
+
+  .grammar-row-title {
+    grid-area: title;
+  }
+
+  .grammar-table td:nth-child(3) {
+    grid-area: status;
+    text-align: left;
+  }
+
+  .grammar-table td:nth-child(4) {
+    grid-area: score;
+    text-align: right;
   }
 }

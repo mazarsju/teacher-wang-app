@@ -1,22 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
-import GrammarPointCard from "../components/GrammarPointCard";
+import { scoreBand } from "../components/GrammarExercises";
+import { CheckIcon, LockIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import {
-  setGrammarPointStatus,
-  setGrammarPoints,
-} from "../store/slices/grammarSlice";
+import { setGrammarPoints } from "../store/slices/grammarSlice";
 import type { GrammarPoint } from "../types/grammarPoint";
-import {
-  fetchGrammarPoints,
-  skipGrammarPoint,
-} from "../utils/grammar/grammarPointsApi";
+import { fetchGrammarPoints } from "../utils/grammar/grammarPointsApi";
 import GrammarPointDetailPage from "./GrammarPointDetailPage";
 import styles from "./GrammarPage.module.css";
 
-// A grammar point counts as done for both prerequisite-unlocking and the
-// "completed" section once it's DONE or SKIP (the learner already knows it).
+// A grammar point counts as done for both prerequisite-unlocking and level
+// gauges once it's DONE or SKIP (the learner already knows it).
 const COMPLETED_STATUSES = new Set(["DONE", "SKIP"]);
+
+const STATUS_LABELS: Record<string, string> = {
+  TODO: "Not started",
+  WIP: "In progress",
+  DONE: "Completed",
+  SKIP: "Skipped",
+};
+
+// How many distinct pastel backgrounds the level sections cycle through.
+const LEVEL_PALETTE_SIZE = 6;
+
+const HSK_LEVEL_LABELS = [
+  "Beginner",
+  "Elementary",
+  "Intermediate",
+  "Upper Intermediate",
+  "Advanced",
+  "Mastery",
+];
+
+function hskLevelLabel(level: number): string {
+  return HSK_LEVEL_LABELS[level - 1] ?? `Level ${level}`;
+}
 
 const GAUGE_RADIUS = 18;
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
@@ -73,6 +91,28 @@ function LevelGauge({ level, percent }: LevelStat) {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const label = STATUS_LABELS[status] ?? status;
+  const modifier = styles[`grammar-status-${status.toLowerCase()}`] ?? "";
+
+  return (
+    <span className={`${styles.grammarStatus} ${modifier}`}>
+      {status === "DONE" ? (
+        <CheckIcon className={styles.grammarStatusIcon} />
+      ) : (
+        <span className={styles.grammarStatusDot} />
+      )}
+      {label}
+    </span>
+  );
+}
+
+function ScoreValue({ score }: { score: number | null }) {
+  if (score == null) return null;
+  const modifier = styles[`grammar-score-${scoreBand(score)}`] ?? "";
+  return <span className={`${styles.grammarScore} ${modifier}`}>{score}%</span>;
+}
+
 // Available means unlocked, not "not yet done": no prerequisites, or every
 // prerequisite is already DONE/SKIP. A grammar point already DONE or SKIP
 // itself still shows up here as long as its own prerequisites are satisfied.
@@ -124,15 +164,25 @@ export default function GrammarPage() {
     [grammarPoints, targetHskLevel],
   );
 
-  const { activeGrammarPoints, completedGrammarPoints } = useMemo(() => {
-    return {
-      activeGrammarPoints: visibleGrammarPoints.filter(
-        (entry) => !COMPLETED_STATUSES.has(entry.grammarPoint.status),
-      ),
-      completedGrammarPoints: visibleGrammarPoints.filter((entry) =>
-        COMPLETED_STATUSES.has(entry.grammarPoint.status),
-      ),
-    };
+  const levelSections = useMemo(() => {
+    const byLevel = new Map<number, typeof visibleGrammarPoints>();
+    for (const entry of visibleGrammarPoints) {
+      const level = entry.grammarPoint.hsk_level;
+      const bucket = byLevel.get(level);
+      if (bucket) {
+        bucket.push(entry);
+      } else {
+        byLevel.set(level, [entry]);
+      }
+    }
+    return [...byLevel.entries()]
+      .sort(([levelA], [levelB]) => levelA - levelB)
+      .map(([level, entries]) => ({
+        level,
+        entries: entries
+          .slice()
+          .sort((a, b) => a.grammarPoint.index - b.grammarPoint.index),
+      }));
   }, [visibleGrammarPoints]);
 
   useEffect(() => {
@@ -168,19 +218,6 @@ export default function GrammarPage() {
     setSelectedGrammarId(grammarPoint.id);
   }
 
-  async function handleSkip(grammarPoint: GrammarPoint) {
-    try {
-      await skipGrammarPoint(grammarPoint.id);
-      dispatch(setGrammarPointStatus({ id: grammarPoint.id, status: "SKIP" }));
-    } catch (skipError) {
-      setError(
-        skipError instanceof Error
-          ? skipError.message
-          : "Failed to mark grammar point as known.",
-      );
-    }
-  }
-
   if (selectedGrammarId !== null) {
     return (
       <GrammarPointDetailPage
@@ -205,42 +242,77 @@ export default function GrammarPage() {
     >
       {isLoading && <p>Loading grammar points...</p>}
       {error && <p className="table-error">{error}</p>}
-      {!isLoading && !error && (
-        <>
-          <div className={styles.grammarPointGrid}>
-            {activeGrammarPoints.map(({ grammarPoint, locked }) => (
-              <GrammarPointCard
-                key={grammarPoint.id}
-                grammarPoint={grammarPoint}
-                onSelect={handleSelect}
-                locked={locked}
-                canSkip={
-                  !locked &&
-                  grammarPoint.hsk_level <= currentHskLevel &&
-                  grammarPoint.status === "TODO"
-                }
-                onSkip={handleSkip}
-              />
-            ))}
-          </div>
-          {completedGrammarPoints.length > 0 && (
-            <details className={styles.grammarCompletedSection}>
-              <summary className={styles.grammarCompletedSummary}>
-                Completed grammar topics ({completedGrammarPoints.length})
+      {!isLoading &&
+        !error &&
+        levelSections.map(({ level, entries }) => {
+          const paletteIndex = ((level - 1) % LEVEL_PALETTE_SIZE) + 1;
+          return (
+            <details
+              key={level}
+              open
+              className={`${styles.grammarLevelSection} ${
+                styles[`grammar-level-section-${paletteIndex}`] ?? ""
+              }`}
+            >
+              <summary className={styles.grammarLevelSummary}>
+                HSK {level} ({hskLevelLabel(level)})
               </summary>
-              <div className={styles.grammarPointGrid}>
-                {completedGrammarPoints.map(({ grammarPoint }) => (
-                  <GrammarPointCard
-                    key={grammarPoint.id}
-                    grammarPoint={grammarPoint}
-                    onSelect={handleSelect}
-                  />
-                ))}
-              </div>
+              <table className={styles.grammarTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.grammarTableColNumber}>#</th>
+                    <th>Lesson</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map(({ grammarPoint, locked }) => (
+                    <tr
+                      key={grammarPoint.id}
+                      role="button"
+                      tabIndex={locked ? -1 : 0}
+                      aria-disabled={locked}
+                      title={grammarPoint.title}
+                      className={
+                        locked
+                          ? `${styles.grammarRow} ${styles.grammarRowLocked}`
+                          : styles.grammarRow
+                      }
+                      onClick={locked ? undefined : () => handleSelect(grammarPoint)}
+                      onKeyDown={
+                        locked
+                          ? undefined
+                          : (event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleSelect(grammarPoint);
+                              }
+                            }
+                      }
+                    >
+                      <td>{grammarPoint.index}</td>
+                      <td className={styles.grammarRowTitle}>
+                        {locked && (
+                          <LockIcon className={styles.grammarRowLockIcon} />
+                        )}
+                        <span className={styles.grammarRowTitleText}>
+                          {grammarPoint.title}
+                        </span>
+                      </td>
+                      <td>
+                        <StatusBadge status={grammarPoint.status} />
+                      </td>
+                      <td>
+                        <ScoreValue score={grammarPoint.score} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </details>
-          )}
-        </>
-      )}
+          );
+        })}
     </Page>
   );
 }

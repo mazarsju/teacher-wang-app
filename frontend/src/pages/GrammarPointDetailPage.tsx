@@ -8,6 +8,7 @@ import { TEACHER_WANG } from "../data/chatCharacters";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   setGrammarPointScore,
+  setGrammarPointStatus,
   setGrammarQuizInProgress,
 } from "../store/slices/grammarSlice";
 import type { GrammarPointDetail } from "../types/grammarPoint";
@@ -15,6 +16,7 @@ import { renderFormattedText } from "../utils/formatMarkdownText";
 import {
   completeGrammarPoint,
   fetchGrammarPointDetail,
+  skipGrammarPoint,
 } from "../utils/grammar/grammarPointsApi";
 import styles from "./GrammarPointDetailPage.module.css";
 
@@ -40,6 +42,9 @@ export default function GrammarPointDetailPage({
 }: GrammarPointDetailPageProps) {
   const dispatch = useAppDispatch();
   const quizInProgress = useAppSelector((state) => state.grammar.quizInProgress);
+  const currentHskLevel = useAppSelector(
+    (state) => state.hsk.status?.current_level ?? 0,
+  );
   const [detail, setDetail] = useState<GrammarPointDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +99,22 @@ export default function GrammarPointDetailPage({
       setSaveError("Failed to save the quiz result.");
     });
   }
+
+  async function handleSkip() {
+    try {
+      await skipGrammarPoint(grammarId);
+      dispatch(setGrammarPointStatus({ id: grammarId, status: "SKIP" }));
+      setDetail((previous) => (previous ? { ...previous, status: "SKIP" } : previous));
+    } catch (skipError) {
+      setSaveError(
+        skipError instanceof Error
+          ? skipError.message
+          : "Failed to mark this lesson as known.",
+      );
+    }
+  }
+
+  const canSkip = detail?.status === "TODO" && detail.hsk_level <= currentHskLevel;
 
   return (
     <Page
@@ -154,6 +175,19 @@ export default function GrammarPointDetailPage({
             {detail.explanation
               ? renderFormattedText(detail.explanation.replace(/\n{2,}/g, "\n"))
               : "No explanation available yet."}
+            {canSkip && (
+              <div className={styles.grammarDetailSkip}>
+                <p className={styles.grammarDetailSkipHint}>
+                  Already know this lesson? You can skip it and its exercises.
+                </p>
+                <Button
+                  kind="confirm"
+                  variant="page"
+                  text="Skip this lesson"
+                  onClick={handleSkip}
+                />
+              </div>
+            )}
             <Button
               kind="cancel"
               variant="page"

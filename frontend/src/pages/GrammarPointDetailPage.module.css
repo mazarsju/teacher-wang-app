@@ -37,3 +37,21 @@
 .grammar-detail-hidden {
   display: none;
 }
+
+.grammar-detail-skip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.5rem;
+  background: var(--app-mist);
+}
+
+.grammar-detail-skip-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+  white-space: normal;
+}

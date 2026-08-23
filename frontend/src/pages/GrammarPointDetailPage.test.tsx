@@ -36,6 +36,20 @@ const SAMPLE_DETAIL = {
   ],
 };
 
+const HSK1_STATE = {
+  hsk: {
+    status: {
+      current_level: 1,
+      next_level: 2,
+      characters_to_next_level: 10,
+      progress_to_next_level: 50,
+      missing_characters: [],
+      max_level: 7,
+      completion_ratio: 0.5,
+    },
+  },
+};
+
 describe("GrammarPointDetailPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -359,5 +373,98 @@ describe("GrammarPointDetailPage", () => {
         screen.getByText("Failed to load grammar topic."),
       ).toBeInTheDocument(),
     );
+  });
+
+  it('shows a "Skip this lesson" hint and button for a TODO lesson at or below the current level', async () => {
+    stubDetailFetch(SAMPLE_DETAIL);
+
+    renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+      { preloadedState: HSK1_STATE },
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Skip this lesson" }),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Already know this lesson\?/)).toBeInTheDocument();
+  });
+
+  it("hides the skip button for a lesson above the learner's current HSK level", async () => {
+    stubDetailFetch(SAMPLE_DETAIL);
+
+    renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Basic Sentence Structure", level: 1 }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Skip this lesson" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the skip button once the lesson is no longer TODO", async () => {
+    stubDetailFetch({ ...SAMPLE_DETAIL, status: "DONE" });
+
+    renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+      { preloadedState: HSK1_STATE },
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Basic Sentence Structure", level: 1 }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Skip this lesson" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('marks the lesson SKIP and hides the button after clicking "Skip this lesson"', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/skip")) {
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({ ok: true, json: async () => SAMPLE_DETAIL });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { store } = renderWithStore(
+      <GrammarPointDetailPage grammarId={SAMPLE_DETAIL.id} onBack={() => {}} />,
+      {
+        preloadedState: {
+          ...HSK1_STATE,
+          grammar: {
+            items: [{ ...SAMPLE_DETAIL, score: null }],
+            quizInProgress: false,
+          },
+        },
+      },
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Skip this lesson" }),
+      ).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Skip this lesson" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Skip this lesson" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(store.getState().grammar.items[0]).toMatchObject({ status: "SKIP" });
   });
 });
