@@ -1,3 +1,5 @@
+import random
+
 from flask import Blueprint
 
 from backend.utils.auth.user_context import current_user_id
@@ -9,6 +11,13 @@ from backend.utils.database.models import (
 from backend.utils.grammar.grammar_content_loader import fetch_grammar_content
 
 bp = Blueprint("get_grammar_point", __name__)
+
+
+def _pick_half(exercises):
+    """Keep exercise order, but pick 1 of every 2 consecutive exercises at random."""
+    if not exercises:
+        return exercises
+    return [random.choice(pair) for pair in zip(exercises[::2], exercises[1::2])]
 
 
 @bp.get("/grammar-points/<path:grammar_id>")
@@ -38,5 +47,5 @@ def get_grammar_point(grammar_id: str):
         "prerequisites": prerequisites,
         "status": progress.status if progress else "TODO",
         "explanation": content["explanation"],
-        "exercises": content["exercises"],
+        "exercises": _pick_half(content["exercises"]),
     }, 200

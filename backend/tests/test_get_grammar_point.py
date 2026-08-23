@@ -49,9 +49,10 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
         self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
             MagicMock(status="DONE")
         )
+        exercise = {"id": "mcq_001", "type": "multiple_choice"}
         self.mock_fetch_content.return_value = {
             "explanation": "# Basic Sentence Structure\n\nSubject + Verb + Object.",
-            "exercises": [{"id": "mcq_001", "type": "multiple_choice"}],
+            "exercises": [exercise, exercise],
         }
 
         response = self.client.get(
@@ -68,7 +69,7 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
                 "prerequisites": [],
                 "status": "DONE",
                 "explanation": "# Basic Sentence Structure\n\nSubject + Verb + Object.",
-                "exercises": [{"id": "mcq_001", "type": "multiple_choice"}],
+                "exercises": [exercise],
             },
         )
         self.mock_fetch_content.assert_called_once_with(
@@ -95,6 +96,31 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["status"], "TODO")
+
+    def test_picks_one_exercise_from_each_consecutive_pair(self):
+        self.mock_point_cls.query.get.return_value = MagicMock(
+            id="1|Basic Sentence Structure",
+            hsk_level=1,
+            title="Basic Sentence Structure",
+            s3_key="hsk1/01-basic-sentence-structure",
+        )
+        self.mock_prerequisite_cls.query.filter_by.return_value.all.return_value = []
+        self.mock_progress_cls.query.filter_by.return_value.first.return_value = None
+        exercises = [{"id": f"mcq_{i:03}"} for i in range(1, 21)]
+        self.mock_fetch_content.return_value = {
+            "explanation": None,
+            "exercises": exercises,
+        }
+
+        response = self.client.get(
+            "/grammar-points/1%7CBasic%20Sentence%20Structure"
+        )
+
+        picked = response.get_json()["exercises"]
+        self.assertEqual(len(picked), 10)
+        for i, exercise in enumerate(picked):
+            pair = exercises[2 * i : 2 * i + 2]
+            self.assertIn(exercise, pair)
 
     def test_returns_404_when_grammar_point_does_not_exist(self):
         self.mock_point_cls.query.get.return_value = None
