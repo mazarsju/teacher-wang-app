@@ -224,7 +224,7 @@ class GrammarPoint(db.Model):
 
     __tablename__ = "grammar_points"
 
-    # Composite of hsk_level + "|" + title, like HskWord.id.
+    # grammar.yaml's own `id` field, e.g. "hsk1_basic_sentence_structure".
     id = db.Column(String(128), primary_key=True)
     hsk_level = db.Column(Integer, nullable=False)
     title = db.Column(String, nullable=False)

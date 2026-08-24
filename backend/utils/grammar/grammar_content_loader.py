@@ -5,7 +5,9 @@ Layout (see the teacher-wang-grammar repo's README):
 ``explanation.md``/``exercises/``/``images/`` files. Each ``grammar.yaml`` has
 ``id``, ``hsk_level``, ``title``, and an optional ``prerequisites`` list of
 other rules' ``id`` values (e.g. ``hsk1_basic_sentence_structure`` — see that
-repo's AGENTS.md for the exact syntax), not folder paths or titles.
+repo's AGENTS.md for the exact syntax), not folder paths or titles. This
+``id`` field is also ``grammar_points.id``, the primary key used throughout
+the backend and API.
 
 Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout of that layout (e.g. a
 `teacher-wang-grammar` clone's ``grammar/`` folder) to reload from disk
@@ -98,8 +100,13 @@ def reload_grammar_content(client=None) -> dict[str, int]:
     set, so grammar.yaml changes can be tested without S3. Otherwise reads
     from the GRAMMAR_CONTENT_S3_BUCKET bucket.
 
-    ``user_grammar_progress`` rows whose ``grammar_id`` still exists after the
-    reload are rewritten; rows for dropped or renamed points are discarded.
+    ``grammar_points.id`` is grammar.yaml's own ``id`` (e.g.
+    ``hsk1_basic_sentence_structure``). Older rows — from before that field
+    was the primary key — used ``"<hsk_level>|<title>"`` (e.g.
+    ``"1|Basic Sentence Structure"``); ``user_grammar_progress`` rows still on
+    that old id are matched to the point with the same hsk_level+title and
+    rewritten onto the new id, so no progress is lost during the transition.
+    Rows for points that were dropped or renamed are discarded.
     """
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
@@ -109,21 +116,23 @@ def reload_grammar_content(client=None) -> dict[str, int]:
         client = client or _s3_client()
         manifests = _load_manifests(client, bucket)
 
-    ids_by_folder = {
-        folder_key: _grammar_point_id(manifest["hsk_level"], manifest["title"])
-        for folder_key, manifest in manifests.items()
-    }
-
-    # grammar.yaml's own `id` field (e.g. "hsk1_basic_sentence_structure") is
-    # what `prerequisites` entries reference — not the folder key.
-    db_id_by_yaml_id: dict[str, str] = {}
+    ids_by_folder: dict[str, str] = {}
+    old_id_by_folder: dict[str, str] = {}
     for folder_key, manifest in manifests.items():
         yaml_id = manifest.get("id")
         if not yaml_id:
             raise ValueError(f"Missing 'id' in grammar.yaml for {folder_key!r}")
-        if yaml_id in db_id_by_yaml_id:
+        if yaml_id in ids_by_folder.values():
             raise ValueError(f"Duplicate grammar id {yaml_id!r} ({folder_key!r})")
-        db_id_by_yaml_id[yaml_id] = ids_by_folder[folder_key]
+        ids_by_folder[folder_key] = yaml_id
+        old_id_by_folder[folder_key] = _grammar_point_id(
+            manifest["hsk_level"], manifest["title"]
+        )
+
+    new_id_by_old_id = {
+        old_id_by_folder[folder_key]: ids_by_folder[folder_key]
+        for folder_key in manifests
+    }
 
     kept_progress = [
         {
@@ -150,23 +159,29 @@ def reload_grammar_content(client=None) -> dict[str, int]:
             )
         )
 
+    valid_ids = set(ids_by_folder.values())
     prerequisite_count = 0
     for folder_key, manifest in manifests.items():
         for prerequisite_id in manifest.get("prerequisites") or []:
-            if prerequisite_id not in db_id_by_yaml_id:
+            if prerequisite_id not in valid_ids:
                 raise ValueError(
                     f"Unknown prerequisite {prerequisite_id!r} for {folder_key!r}"
                 )
             db.session.execute(
                 insert(GrammarPrerequisite).values(
                     grammar_id=ids_by_folder[folder_key],
-                    prerequisite_id=db_id_by_yaml_id[prerequisite_id],
+                    prerequisite_id=prerequisite_id,
                 )
             )
             prerequisite_count += 1
 
-    kept_ids = set(ids_by_folder.values())
-    to_restore = [row for row in kept_progress if row["grammar_id"] in kept_ids]
+    to_restore = []
+    for row in kept_progress:
+        grammar_id = row["grammar_id"]
+        if grammar_id in valid_ids:
+            to_restore.append(row)
+        elif grammar_id in new_id_by_old_id:
+            to_restore.append({**row, "grammar_id": new_id_by_old_id[grammar_id]})
     if to_restore:
         db.session.execute(insert(UserGrammarProgress), to_restore)
 

@@ -179,6 +179,29 @@ describe("AddWordModal", () => {
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
   });
 
+  it("shows a warning and disables confirm when the definition is over 100 characters", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        hskCharacterPinyin={{ 爱: "ai4", 好: "hao3" }}
+        characterPinyin={{}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("words"), "爱好");
+    await user.type(screen.getByLabelText("definition"), "a".repeat(101));
+
+    expect(
+      screen.getByText("Definition must be no more than 100 characters long."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
+  });
+
   it("shows a warning and disables confirm when the pinyin doesn't match the word", async () => {
     const user = userEvent.setup();
 

@@ -83,10 +83,12 @@ export default function AddWordModal({
   const isPinyinValid =
     trimmedPinyin !== "" && isWordPinyinValid(word, pinyin);
   const showPinyinWarning = trimmedPinyin !== "" && !isPinyinValid;
+  const isDefinitionTooLong = trimmedDefinition.length > 100;
   const isConfirmDisabled =
     trimmedWord === "" ||
     trimmedDefinition === "" ||
     !isPinyinValid ||
+    isDefinitionTooLong ||
     (mode === "add" && isDuplicateWord);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -167,10 +169,18 @@ export default function AddWordModal({
             <input
               type="text"
               value={definition}
-              maxLength={100}
+              aria-invalid={isDefinitionTooLong}
+              aria-describedby={
+                isDefinitionTooLong ? "word-definition-warning" : undefined
+              }
               onChange={(event) => setDefinition(event.target.value)}
             />
           </label>
+          {isDefinitionTooLong && (
+            <p id="word-definition-warning" className={styles.formWarning}>
+              Definition must be no more than 100 characters long.
+            </p>
+          )}
           {customFields.map((field) => (
             <label key={field.id} className="modal-field">
               <span className="modal-field-label">

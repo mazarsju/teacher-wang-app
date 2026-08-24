@@ -101,6 +101,7 @@ class TestReloadGrammarContent(PostgresTestCase):
         self.assertEqual(GrammarPoint.query.count(), 2)
 
         base = GrammarPoint.query.filter_by(title="Basic sentence structure").one()
+        self.assertEqual(base.id, "hsk1_basic_sentence_structure")
         self.assertEqual(base.hsk_level, 1)
         self.assertEqual(base.s3_key, "hsk1/01-basic-sentence-structure")
         self.assertEqual(base.new_words, ["我", "你"])
@@ -132,24 +133,26 @@ class TestReloadGrammarContent(PostgresTestCase):
         self.assertIsNone(GrammarPoint.query.filter_by(id="stale").first())
         self.assertEqual(GrammarPoint.query.count(), 1)
 
-    def test_rewrites_progress_for_unchanged_ids_and_drops_the_rest(self):
-        kept_id = "1|Basic sentence structure"
-        dropped_id = "1|Old negation"
+    def test_migrates_progress_from_old_id_format_to_new_id(self):
+        old_kept_id = "1|Basic sentence structure"
+        old_dropped_id = "1|Old negation"
         practiced_at = datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc)
         db.session.add_all(
             [
-                GrammarPoint(id=kept_id, hsk_level=1, title="Basic sentence structure"),
-                GrammarPoint(id=dropped_id, hsk_level=1, title="Old negation"),
+                GrammarPoint(
+                    id=old_kept_id, hsk_level=1, title="Basic sentence structure"
+                ),
+                GrammarPoint(id=old_dropped_id, hsk_level=1, title="Old negation"),
                 UserGrammarProgress(
                     user_id=self.user_id,
-                    grammar_id=kept_id,
+                    grammar_id=old_kept_id,
                     status="DONE",
                     score=91,
                     last_practiced_at=practiced_at,
                 ),
                 UserGrammarProgress(
                     user_id=self.user_id,
-                    grammar_id=dropped_id,
+                    grammar_id=old_dropped_id,
                     status="WIP",
                     score=40,
                 ),
@@ -173,17 +176,56 @@ class TestReloadGrammarContent(PostgresTestCase):
         finally:
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
-        kept = UserGrammarProgress.query.filter_by(grammar_id=kept_id).one()
+        kept = UserGrammarProgress.query.filter_by(
+            grammar_id="hsk1_basic_sentence_structure"
+        ).one()
         self.assertEqual(kept.user_id, self.user_id)
         self.assertEqual(kept.status, "DONE")
         self.assertEqual(int(kept.score), 91)
         self.assertEqual(kept.last_practiced_at, practiced_at)
         self.assertIsNone(
-            UserGrammarProgress.query.filter_by(grammar_id=dropped_id).first()
+            UserGrammarProgress.query.filter_by(grammar_id=old_kept_id).first()
+        )
+        self.assertIsNone(
+            UserGrammarProgress.query.filter_by(grammar_id=old_dropped_id).first()
         )
         self.assertEqual(UserGrammarProgress.query.count(), 1)
 
-    def test_drops_progress_when_grammar_id_changes_with_title(self):
+    def test_keeps_progress_already_on_new_id_format(self):
+        new_id = "hsk1_basic_sentence_structure"
+        db.session.add_all(
+            [
+                GrammarPoint(
+                    id=new_id, hsk_level=1, title="Basic sentence structure"
+                ),
+                UserGrammarProgress(
+                    user_id=self.user_id,
+                    grammar_id=new_id,
+                    status="DONE",
+                    score=91,
+                ),
+            ]
+        )
+        db.session.commit()
+
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        kept = UserGrammarProgress.query.filter_by(grammar_id=new_id).one()
+        self.assertEqual(kept.status, "DONE")
+        self.assertEqual(int(kept.score), 91)
+        self.assertEqual(UserGrammarProgress.query.count(), 1)
+
+    def test_drops_progress_when_title_changes(self):
         old_id = "1|Basic sentence structure"
         db.session.add_all(
             [
@@ -213,7 +255,7 @@ class TestReloadGrammarContent(PostgresTestCase):
         self.assertEqual(UserGrammarProgress.query.count(), 0)
         self.assertIsNone(GrammarPoint.query.filter_by(id=old_id).first())
         self.assertEqual(
-            GrammarPoint.query.one().id, "1|Subject-verb-object"
+            GrammarPoint.query.one().id, "hsk1_basic_sentence_structure"
         )
 
     def test_raises_when_bucket_env_var_missing(self):
