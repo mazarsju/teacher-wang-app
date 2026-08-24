@@ -30,4 +30,71 @@ describe("renderFormattedText", () => {
     expect(container.querySelector("h2")?.textContent).toBe("Section");
     expect(container.textContent).toContain("Some body text.");
   });
+
+  it("renders a GFM table", () => {
+    const markdown = [
+      "| Particle | Use |",
+      "| --- | --- |",
+      "| 了 | completed action |",
+      "| 过 | past experience |",
+    ].join("\n");
+    const { container } = render(<div>{renderFormattedText(markdown)}</div>);
+
+    expect(container.querySelector("table")).toBeTruthy();
+    expect(
+      [...container.querySelectorAll("th")].map((th) => th.textContent),
+    ).toEqual(["Particle", "Use"]);
+    expect(container.querySelectorAll("td")[0]?.textContent).toBe("了");
+    expect(container.querySelectorAll("td")[1]?.textContent).toBe(
+      "completed action",
+    );
+  });
+
+  it("renders 【brackets】 in blue", () => {
+    const { container } = render(
+      <div>{renderFormattedText("Use 【了】 after the verb.")}</div>,
+    );
+
+    const marked = container.querySelector("span");
+    expect(marked?.textContent).toBe("了");
+    expect(marked).not.toBeNull();
+    expect(marked?.className).toMatch(/lenticular/);
+  });
+
+  it("colors 【brackets】 inside bold", () => {
+    const { container } = render(
+      <div>{renderFormattedText("**我【也】喜欢茶。** ")}</div>,
+    );
+
+    expect(container.querySelector("strong")?.textContent).toBe("我也喜欢茶。");
+    const marked = [...container.querySelectorAll("span")].find((el) =>
+      el.className.includes("lenticular"),
+    );
+    expect(marked?.textContent).toBe("也");
+  });
+
+  it("does not color 【brackets】 inside a TIP alert", () => {
+    const markdown = ["> [!TIP]", "> Remember 【了】 here."].join("\n");
+    const { container } = render(<div>{renderFormattedText(markdown)}</div>);
+
+    expect(container.querySelector("aside")?.textContent).toContain("【了】");
+    expect(
+      [...container.querySelectorAll("span")].some((el) =>
+        el.className.includes("lenticular"),
+      ),
+    ).toBe(false);
+  });
+
+  it("renders a GitHub-style TIP alert", () => {
+    const markdown = [
+      "> [!TIP]",
+      "> Helpful advice for doing things better or more easily.",
+    ].join("\n");
+    const { container } = render(<div>{renderFormattedText(markdown)}</div>);
+
+    expect(container.querySelector("aside")?.textContent).toContain("TIP");
+    expect(container.querySelector("aside")?.textContent).toContain(
+      "Helpful advice for doing things better or more easily.",
+    );
+  });
 });
