@@ -55,7 +55,7 @@ export default function AddWordModal({
       return;
     }
 
-    if (mode === "edit" && initialWord) {
+    if (initialWord) {
       setWord(initialWord.word);
       setDefinition(initialWord.definition ?? "");
       setPinyin(initialWord.pinyin ?? "");

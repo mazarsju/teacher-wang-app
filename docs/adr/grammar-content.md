@@ -33,6 +33,18 @@ returns that `score` alongside `status` for the list view. AI-powered
 practice and AI-assisted translation validation are not yet built (README
 roadmap §10).
 
+A third Vocabulary tab (`frontend/src/components/GrammarVocabularyTab.tsx`)
+lists the grammar point's `new_words` (plain word strings in `grammar.yaml`,
+stored as-is on `grammar_points.new_words`). `GET /grammar-points/<id>`
+resolves each word against `hsk_words` server-side
+(`get_grammar_point.py:_resolve_new_words`, reusing
+`suggest_hsk_words.serialize_word`), keeping the lowest-level/lowest-frequency
+row per word — the same shape as `GET /hsk-words/suggestions`. Each row shows
+a green check (already in the learner's `words` table) or an "Add" button
+that opens `AddWordModal` in `add` mode pre-filled with the word/pinyin/
+definition, matching the Knowledge base's own add-word flow (`POST /words`,
+auto-creating any missing characters).
+
 ## Context
 
 Teacher Wang needs a structured grammar-learning feature consisting of:
@@ -413,7 +425,6 @@ The content model can later be extended with:
 - Additional exercise types
 - AI exercise-generation templates
 - Richer mastery models
-- Grammar-to-vocabulary relationships
 - Grammar-aware AI conversations
 - Personalized grammar recommendations
 

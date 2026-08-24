@@ -38,17 +38,33 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
         self.mock_fetch_content = self.fetch_content_patcher.start()
         self.addCleanup(self.fetch_content_patcher.stop)
 
+        self.hsk_word_patcher = patch("backend.routes.get_grammar_point.HskWord")
+        self.mock_hsk_word_cls = self.hsk_word_patcher.start()
+        self.addCleanup(self.hsk_word_patcher.stop)
+        self.mock_hsk_word_cls.query.filter.return_value.order_by.return_value.all.return_value = (
+            []
+        )
+
     def test_returns_grammar_point_with_content(self):
         self.mock_point_cls.query.get.return_value = MagicMock(
             id="1|Basic Sentence Structure",
             hsk_level=1,
             title="Basic Sentence Structure",
             s3_key="hsk1/01-basic-sentence-structure",
+            new_words=["我", "你"],
         )
         self.mock_prerequisite_cls.query.filter_by.return_value.all.return_value = []
         self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
             MagicMock(status="DONE")
         )
+        self.mock_hsk_word_cls.query.filter.return_value.order_by.return_value.all.return_value = [
+            MagicMock(
+                id="我|wo3", word="我", level=1, frequency=5, pinyin="wǒ", definition="I; me"
+            ),
+            MagicMock(
+                id="你|ni3", word="你", level=1, frequency=8, pinyin="nǐ", definition="you"
+            ),
+        ]
         exercise = {"id": "mcq_001", "type": "multiple_choice"}
         self.mock_fetch_content.return_value = {
             "explanation": "# Basic Sentence Structure\n\nSubject + Verb + Object.",
@@ -67,6 +83,24 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
                 "hsk_level": 1,
                 "title": "Basic Sentence Structure",
                 "prerequisites": [],
+                "new_words": [
+                    {
+                        "id": "我|wo3",
+                        "word": "我",
+                        "level": 1,
+                        "frequency": 5,
+                        "pinyin": "wǒ",
+                        "definition": "I; me",
+                    },
+                    {
+                        "id": "你|ni3",
+                        "word": "你",
+                        "level": 1,
+                        "frequency": 8,
+                        "pinyin": "nǐ",
+                        "definition": "you",
+                    },
+                ],
                 "status": "DONE",
                 "explanation": "# Basic Sentence Structure\n\nSubject + Verb + Object.",
                 "exercises": [exercise],
@@ -85,6 +119,7 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
             hsk_level=1,
             title="Basic Sentence Structure",
             s3_key="hsk1/01-basic-sentence-structure",
+            new_words=None,
         )
         self.mock_prerequisite_cls.query.filter_by.return_value.all.return_value = []
         self.mock_progress_cls.query.filter_by.return_value.first.return_value = None
@@ -103,6 +138,7 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
             hsk_level=1,
             title="Basic Sentence Structure",
             s3_key="hsk1/01-basic-sentence-structure",
+            new_words=None,
         )
         self.mock_prerequisite_cls.query.filter_by.return_value.all.return_value = []
         self.mock_progress_cls.query.filter_by.return_value.first.return_value = None

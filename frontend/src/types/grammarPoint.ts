@@ -1,3 +1,5 @@
+import type { HskWord } from "./hskWord";
+
 export type GrammarPoint = {
   id: string;
   hsk_level: number;
@@ -47,4 +49,5 @@ export type GrammarExercise =
 export type GrammarPointDetail = GrammarPoint & {
   explanation: string | null;
   exercises: GrammarExercise[] | null;
+  new_words: HskWord[];
 };

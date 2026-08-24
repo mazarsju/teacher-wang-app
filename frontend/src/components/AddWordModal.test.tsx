@@ -355,6 +355,46 @@ describe("AddWordModal", () => {
     });
   });
 
+  it("pre-fills but keeps the word field editable when adding from a suggestion", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+
+    render(
+      <AddWordModal
+        mode="add"
+        isOpen
+        initialWord={{
+          word: "我",
+          definition: "I; me",
+          pinyin: "wo3",
+          writing_known: false,
+          custom_fields: {},
+          updated_at: "",
+          characters: [],
+        }}
+        hskCharacterPinyin={{}}
+        characterPinyin={{}}
+        onConfirm={onConfirm}
+        onCancel={() => {}}
+      />,
+    );
+
+    expect(screen.getByLabelText("words")).toHaveValue("我");
+    expect(screen.getByLabelText("words")).not.toHaveAttribute("readonly");
+    expect(screen.getByLabelText("pinyin")).toHaveValue("wo3");
+    expect(screen.getByLabelText("definition")).toHaveValue("I; me");
+
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      word: "我",
+      definition: "I; me",
+      pinyin: "wo3",
+      writing_known: false,
+      custom_fields: {},
+    });
+  });
+
   it("preloads writing known from the word being edited", () => {
     render(
       <AddWordModal

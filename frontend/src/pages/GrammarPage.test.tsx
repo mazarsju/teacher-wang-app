@@ -385,6 +385,7 @@ describe("GrammarPage", () => {
             ...listPoint,
             explanation: "# Basic Sentence Structure",
             exercises: null,
+            new_words: [],
           }),
         });
       }),

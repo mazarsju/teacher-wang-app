@@ -229,6 +229,7 @@ class GrammarPoint(db.Model):
     hsk_level = db.Column(Integer, nullable=False)
     title = db.Column(String, nullable=False)
     s3_key = db.Column(String, nullable=True)
+    new_words = db.Column(JSONB, nullable=True)
 
 
 class GrammarPrerequisite(db.Model):

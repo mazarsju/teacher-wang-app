@@ -146,6 +146,7 @@ def reload_grammar_content(client=None) -> dict[str, int]:
                 hsk_level=manifest["hsk_level"],
                 title=manifest["title"],
                 s3_key=folder_key,
+                new_words=manifest.get("new_words"),
             )
         )
 

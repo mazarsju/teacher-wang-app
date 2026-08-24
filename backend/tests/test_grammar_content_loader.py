@@ -76,6 +76,7 @@ class TestReloadGrammarContent(PostgresTestCase):
             "hsk1/01-basic-sentence-structure/grammar.yaml": (
                 "id: hsk1_basic_sentence_structure\n"
                 "hsk_level: 1\ntitle: Basic sentence structure\n"
+                "new_words:\n  - 我\n  - 你\n"
             ),
             "hsk1/01-basic-sentence-structure/explanation.md": "# not a manifest",
             "hsk1/02-negation/grammar.yaml": (
@@ -102,6 +103,7 @@ class TestReloadGrammarContent(PostgresTestCase):
         base = GrammarPoint.query.filter_by(title="Basic sentence structure").one()
         self.assertEqual(base.hsk_level, 1)
         self.assertEqual(base.s3_key, "hsk1/01-basic-sentence-structure")
+        self.assertEqual(base.new_words, ["我", "你"])
 
         negation = GrammarPoint.query.filter_by(title="Negation with 不").one()
         prerequisite = GrammarPrerequisite.query.filter_by(

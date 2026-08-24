@@ -256,7 +256,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/hsk-characters` | List HSK characters with level and frequency |
 | `GET` | `/grammar-points` | List grammar points (`grammar_points`/`grammar_prerequisites`) with the current user's `status` and `score` from `user_grammar_progress` (Postgres only, no S3 content), ordered by HSK level then the numeric folder prefix in `s3_key` (`index`) |
 | `POST` | `/grammar-points/<grammar_id>/skip` | Mark a grammar point as already known (`status` = `SKIP` in `user_grammar_progress`), unlocking grammar points that list it as a prerequisite |
-| `GET` | `/grammar-points/<grammar_id>` | Fetch one grammar point's detail: Postgres metadata plus its `explanation.md`/`exercises.json` content read from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (or `GRAMMAR_CONTENT_S3_PATH` local checkout) at its `s3_key` |
+| `GET` | `/grammar-points/<grammar_id>` | Fetch one grammar point's detail: Postgres metadata plus its `explanation.md`/`exercises.json` content read from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (or `GRAMMAR_CONTENT_S3_PATH` local checkout) at its `s3_key`, plus `new_words` — the point's `grammar.yaml` word list resolved against `hsk_words` (lowest level/frequency per word) for the Vocabulary tab |
 | `POST` | `/grammar-points/<grammar_id>/complete` | Save a finished exercises quiz: sets `status` to `DONE` (score ≥ 80) or `WIP` (below 80), plus `score` (rounded percentage) and `last_practiced_at`, in `user_grammar_progress` |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |

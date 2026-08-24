@@ -3,6 +3,7 @@ import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
 import ConfirmModal from "../components/ConfirmModal";
 import GrammarExercises, { scoreBand } from "../components/GrammarExercises";
+import GrammarVocabularyTab from "../components/GrammarVocabularyTab";
 import Page from "../components/Page";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -20,7 +21,7 @@ import {
 } from "../utils/grammar/grammarPointsApi";
 import styles from "./GrammarPointDetailPage.module.css";
 
-type GrammarDetailTab = "explanation" | "exercises";
+type GrammarDetailTab = "explanation" | "exercises" | "vocabulary";
 
 const LESSON_CHAT_GREETING =
   "Ask me what you did not understand on this lesson, will be happy to help!";
@@ -164,6 +165,19 @@ export default function GrammarPointDetailPage({
             >
               Exercises
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "vocabulary"}
+              className={
+                activeTab === "vocabulary"
+                  ? `${styles.grammarDetailTab} ${styles.grammarDetailTabActive}`
+                  : styles.grammarDetailTab
+              }
+              onClick={() => setActiveTab("vocabulary")}
+            >
+              Vocabulary
+            </button>
           </div>
           <div
             className={
@@ -204,6 +218,9 @@ export default function GrammarPointDetailPage({
                 dispatch(setGrammarQuizInProgress(inProgress))
               }
             />
+          </div>
+          <div className={activeTab === "vocabulary" ? undefined : styles.grammarDetailHidden}>
+            <GrammarVocabularyTab words={detail.new_words} />
           </div>
           {isLessonChatOpen && (
             <ChatModal

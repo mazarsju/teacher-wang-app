@@ -11,6 +11,7 @@ function stubDetailFetch(detail: {
   status: string;
   explanation: string | null;
   exercises: unknown;
+  new_words: unknown;
 }) {
   vi.stubGlobal(
     "fetch",
@@ -25,6 +26,7 @@ const SAMPLE_DETAIL = {
   prerequisites: [],
   status: "TODO",
   explanation: "## Overview\n\nSubject + Verb + Object.",
+  new_words: [],
   exercises: [
     {
       id: "mcq_001",
