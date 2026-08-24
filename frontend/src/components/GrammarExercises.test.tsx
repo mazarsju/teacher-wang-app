@@ -37,6 +37,43 @@ describe("GrammarExercises", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("shuffles multiple-choice answers on display and reshuffles after Try again", () => {
+    vi.useFakeTimers();
+    const randomValues = [0, 0.9, 0.9, 0];
+    vi.spyOn(Math, "random").mockImplementation(() => randomValues.shift() ?? 0);
+
+    const threeChoices: GrammarExercise = {
+      id: "mcq_shuffle",
+      type: "multiple_choice",
+      question: "Pick one",
+      choices: ["A", "B", "C"],
+      answer: 0,
+    };
+
+    render(<GrammarExercises exercises={[threeChoices]} />);
+
+    const choiceOrder = () =>
+      screen
+        .getAllByRole("button")
+        .map((button) => button.textContent)
+        .filter((text): text is string => !!text && ["A", "B", "C"].includes(text));
+
+    expect(choiceOrder()).toEqual(["C", "B", "A"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "A" }));
+    fireEvent.click(screen.getByRole("button", { name: "Validate" }));
+    fireEvent.click(screen.getByRole("button", { name: "See score" }));
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(choiceOrder()).toEqual(["B", "A", "C"]);
   });
 
   it("shows a fallback message when there are no exercises", () => {

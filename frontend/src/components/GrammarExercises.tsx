@@ -19,6 +19,25 @@ type GrammarExercisesProps = {
   onProgressChange?: (inProgress: boolean) => void;
 };
 
+function shuffledIndices(length: number): number[] {
+  const indices = Array.from({ length }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices;
+}
+
+function displayOrderFor(exercise: GrammarExercise | undefined): number[] {
+  if (exercise?.type === "multiple_choice") {
+    return shuffledIndices(exercise.choices.length);
+  }
+  if (exercise?.type === "sentence_reordering") {
+    return shuffledIndices(exercise.tokens.length);
+  }
+  return [];
+}
+
 function normalizeAnswer(value: string): string {
   return value.trim().replace(/[。.!?！？，,]+$/g, "");
 }
@@ -117,6 +136,9 @@ export default function GrammarExercises({
   const [validated, setValidated] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
+  const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
+    displayOrderFor(exercises[0]),
+  );
   const [orderedIndices, setOrderedIndices] = useState<number[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
@@ -274,8 +296,10 @@ export default function GrammarExercises({
       onFinish?.(Math.round((correctCount / exercises.length) * 100));
       return;
     }
-    setIndex((i) => i + 1);
+    const nextIndex = index + 1;
+    setIndex(nextIndex);
     resetQuestionState();
+    setDisplayOrder(displayOrderFor(exercises[nextIndex]));
   }
 
   function restart() {
@@ -286,6 +310,7 @@ export default function GrammarExercises({
     setScoreRevealed(false);
     setShowConfetti(false);
     resetQuestionState();
+    setDisplayOrder(displayOrderFor(exercises[0]));
   }
 
   if (finished) {
@@ -336,7 +361,8 @@ export default function GrammarExercises({
         <div className={styles.exercisesQuestion}>
           <p>{exercise.question}</p>
           <div className={styles.exercisesChoices}>
-            {exercise.choices.map((choice, choiceIndex) => {
+            {displayOrder.map((choiceIndex) => {
+              const choice = exercise.choices[choiceIndex];
               const isSelected = selectedChoice === choiceIndex;
               const isAnswer = choiceIndex === exercise.answer;
               let stateClass = "";
@@ -385,7 +411,7 @@ export default function GrammarExercises({
             ))}
           </div>
           <div className={styles.exercisesChoices}>
-            {exercise.tokens.map((token, tokenIndex) => (
+            {displayOrder.map((tokenIndex) => (
               <button
                 key={tokenIndex}
                 type="button"
@@ -393,7 +419,7 @@ export default function GrammarExercises({
                 disabled={validated || orderedIndices.includes(tokenIndex)}
                 onClick={() => setOrderedIndices((indices) => [...indices, tokenIndex])}
               >
-                {token}
+                {exercise.tokens[tokenIndex]}
               </button>
             ))}
           </div>
