@@ -7,6 +7,8 @@ export type ChatMessage = {
   correctionSeverity?: GrammarSeverity;
   /** Render as background context (no bubble, Markdown) instead of a chat turn. Local display only, stripped before hitting the API. */
   isContext?: boolean;
+  /** For isContext messages: Markdown shown instead of `content`. `content` still goes to the API; this does not. */
+  displayContent?: string;
   /** Shown normally in the transcript but never sent to the API (e.g. a scripted greeting). */
   isDisplayOnly?: boolean;
 };

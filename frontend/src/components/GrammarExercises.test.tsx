@@ -276,7 +276,11 @@ describe("GrammarExercises", () => {
     await user.click(screen.getByRole("button", { name: "More explanation" }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText(/Basic Sentence Structure/)).toBeInTheDocument();
+    // The displayed context is a short recap, not the verbose prompt sent to the API.
+    expect(container.textContent).toContain("Question:");
+    expect(container.textContent).toContain("Wrong answer:");
+    expect(container.textContent).toContain("Correct answer:");
+    expect(screen.queryByText(/Basic Sentence Structure/)).not.toBeInTheDocument();
     // The seeded context is background text, not a "you asked this" chat bubble.
     expect(container.querySelector(".chat-message--user")).not.toBeInTheDocument();
     expect(

@@ -571,7 +571,9 @@ export default function ChatModal({
                       >
                         <div className={styles.chatMessageSegments}>
                           <div className={styles.chatMessageStage}>
-                            {renderFormattedText(chatMessage.content)}
+                            {renderFormattedText(
+                              chatMessage.displayContent ?? chatMessage.content,
+                            )}
                           </div>
                         </div>
                       </li>

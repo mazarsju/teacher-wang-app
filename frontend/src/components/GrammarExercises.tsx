@@ -79,28 +79,43 @@ function gaugeProgressClass(band: ReturnType<typeof scoreBand>): string {
   return styles.gaugeProgressLow;
 }
 
+function exerciseQuestionText(exercise: GrammarExercise): string {
+  if (exercise.type === "multiple_choice") return exercise.question;
+  if (exercise.type === "sentence_reordering") {
+    return `put these words in the right order — ${exercise.tokens.join(" / ")}`;
+  }
+  if (exercise.type === "translation") {
+    return `translate into Chinese — "${exercise.prompt}"`;
+  }
+  return `${exercise.instruction ?? "transform this sentence"} — "${exercise.source}"`;
+}
+
 function buildExplanationRequest(
   exercise: GrammarExercise,
   userAnswerText: string,
   correctAnswerText: string,
   grammarPointTitle?: string,
 ): string {
-  const questionText =
-    exercise.type === "multiple_choice"
-      ? `Question: "${exercise.question}"`
-      : exercise.type === "sentence_reordering"
-        ? `Question: put these words in the right order — ${exercise.tokens.join(" / ")}`
-        : exercise.type === "translation"
-          ? `Question: translate into Chinese — "${exercise.prompt}"`
-          : `Question: ${exercise.instruction ?? "transform this sentence"} — "${exercise.source}"`;
-
   const topic = grammarPointTitle ? ` about "${grammarPointTitle}"` : "";
 
   return (
-    `I answered a grammar exercise question wrong${topic}. ${questionText} ` +
+    `I answered a grammar exercise question wrong${topic}. Question: "${exerciseQuestionText(exercise)}" ` +
     `My answer: "${userAnswerText || "(no answer)"}". ` +
     `The correct answer: "${correctAnswerText}". ` +
-    "Can you explain why my answer is wrong and the correct one is right?"
+    "Can you explain why my answer is wrong and the correct one is right? " +
+    "Answer concisely, in English only — use Chinese exclusively for quoting example words or sentences."
+  );
+}
+
+function buildExplanationDisplayText(
+  exercise: GrammarExercise,
+  userAnswerText: string,
+  correctAnswerText: string,
+): string {
+  return (
+    `**Question**: ${exerciseQuestionText(exercise)}\n` +
+    `**Wrong answer**: ${userAnswerText || "(no answer)"}\n` +
+    `**Correct answer**: ${correctAnswerText}`
   );
 }
 
@@ -116,7 +131,8 @@ function buildTranslationCheckRequest(
     `The sentence to translate was: "${exercise.prompt}". ` +
     `The expected answer is "${exercise.accepted_answers[0]}", but I answered: "${userAnswerText}". ` +
     "Is my answer also a correct, acceptable translation, even if it isn't word-for-word the same? " +
-    'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student.'
+    'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student. ' +
+    "Keep the explanation concise, in English only — use Chinese exclusively for quoting example words or sentences."
   );
 }
 
@@ -280,6 +296,11 @@ export default function GrammarExercises({
         userAnswerText,
         correctAnswerText,
         grammarPointTitle,
+      ),
+      displayContent: buildExplanationDisplayText(
+        exercise,
+        userAnswerText,
+        correctAnswerText,
       ),
     };
 

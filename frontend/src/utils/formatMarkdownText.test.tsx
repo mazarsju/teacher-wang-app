@@ -73,6 +73,30 @@ describe("renderFormattedText", () => {
     expect(marked?.textContent).toBe("也");
   });
 
+  it("renders **【也】** as bold and blue without leftover asterisks", () => {
+    const { container } = render(<div>{renderFormattedText("**【也】**")}</div>);
+
+    expect(container.textContent).toBe("也");
+    expect(container.querySelector("strong")?.textContent).toBe("也");
+    const marked = [...container.querySelectorAll("span")].find((el) =>
+      el.className.includes("lenticular"),
+    );
+    expect(marked?.textContent).toBe("也");
+    expect(marked?.closest("strong")).toBeTruthy();
+  });
+
+  it("renders 【**也**】 as bold and blue without leftover asterisks", () => {
+    const { container } = render(<div>{renderFormattedText("【**也**】")}</div>);
+
+    expect(container.textContent).toBe("也");
+    expect(container.querySelector("strong")?.textContent).toBe("也");
+    const marked = [...container.querySelectorAll("span")].find((el) =>
+      el.className.includes("lenticular"),
+    );
+    expect(marked?.textContent).toBe("也");
+    expect(marked?.querySelector("strong")).toBeTruthy();
+  });
+
   it("does not color 【brackets】 inside a TIP alert", () => {
     const markdown = ["> [!TIP]", "> Remember 【了】 here."].join("\n");
     const { container } = render(<div>{renderFormattedText(markdown)}</div>);

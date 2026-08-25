@@ -1,50 +1,103 @@
 import type { ReactNode } from "react";
 import styles from "./formatMarkdownText.module.css";
 
-const MARKDOWN_INLINE_PATTERN = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|【[^】]+】)/g;
 const MARKDOWN_HEADER_PATTERN = /^(#{1,6})\s+(.*)$/;
 const ALERT_START_PATTERN =
   /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i;
 const TABLE_SEPARATOR_PATTERN =
   /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/;
 
+function nextMarkupIndex(
+  text: string,
+  from: number,
+  highlightLenticular: boolean,
+) {
+  const found = [
+    text.indexOf("**", from),
+    text.indexOf("`", from),
+    text.indexOf("*", from),
+    highlightLenticular ? text.indexOf("【", from) : -1,
+  ].filter((index) => index >= 0);
+  return found.length ? Math.min(...found) : -1;
+}
+
 function renderInlineFormattedText(
   text: string,
   keyPrefix: string,
   highlightLenticular = true,
-) {
-  return text.split(MARKDOWN_INLINE_PATTERN).map((part, index) => {
-    const key = `${keyPrefix}-${index}`;
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong key={key}>
-          {renderInlineFormattedText(
-            part.slice(2, -2),
-            key,
-            highlightLenticular,
-          )}
-        </strong>
-      );
+): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let i = 0;
+  let n = 0;
+  while (i < text.length) {
+    const key = `${keyPrefix}-${n}`;
+    n += 1;
+    if (text.startsWith("**", i)) {
+      const close = text.indexOf("**", i + 2);
+      if (close !== -1) {
+        nodes.push(
+          <strong key={key}>
+            {renderInlineFormattedText(
+              text.slice(i + 2, close),
+              key,
+              highlightLenticular,
+            )}
+          </strong>,
+        );
+        i = close + 2;
+        continue;
+      }
     }
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return <code key={key}>{part.slice(1, -1)}</code>;
+    if (text[i] === "`") {
+      const close = text.indexOf("`", i + 1);
+      if (close !== -1) {
+        nodes.push(<code key={key}>{text.slice(i + 1, close)}</code>);
+        i = close + 1;
+        continue;
+      }
     }
-    if (part.startsWith("*") && part.endsWith("*")) {
-      return (
-        <em key={key}>
-          {renderInlineFormattedText(part.slice(1, -1), key, highlightLenticular)}
-        </em>
-      );
+    if (text[i] === "*" && !text.startsWith("**", i)) {
+      const close = text.indexOf("*", i + 1);
+      if (close !== -1) {
+        nodes.push(
+          <em key={key}>
+            {renderInlineFormattedText(
+              text.slice(i + 1, close),
+              key,
+              highlightLenticular,
+            )}
+          </em>,
+        );
+        i = close + 1;
+        continue;
+      }
     }
-    if (highlightLenticular && part.startsWith("【") && part.endsWith("】")) {
-      return (
-        <span key={key} className={styles.lenticular}>
-          {part.slice(1, -1)}
-        </span>
-      );
+    if (highlightLenticular && text[i] === "【") {
+      const close = text.indexOf("】", i + 1);
+      if (close !== -1) {
+        nodes.push(
+          <span key={key} className={styles.lenticular}>
+            {renderInlineFormattedText(text.slice(i + 1, close), key, false)}
+          </span>,
+        );
+        i = close + 1;
+        continue;
+      }
     }
-    return part;
-  });
+    const next = nextMarkupIndex(text, i, highlightLenticular);
+    if (next === -1) {
+      nodes.push(text.slice(i));
+      break;
+    }
+    if (next === i) {
+      nodes.push(text[i]);
+      i += 1;
+      continue;
+    }
+    nodes.push(text.slice(i, next));
+    i = next;
+  }
+  return nodes;
 }
 
 function isTableRow(line: string) {
