@@ -29,9 +29,19 @@ now implemented. Finishing a quiz calls
 `POST /grammar-points/<id>/complete`, which sets `status` to `DONE` (score
 ≥ 80%) or `WIP` (below 80%), plus `score` (rounded percentage) and
 `last_practiced_at`, on `user_grammar_progress`; `GET /grammar-points`
-returns that `score` alongside `status` for the list view. AI-powered
-practice and AI-assisted translation validation are not yet built (README
-roadmap §10).
+returns that `score` alongside `status` for the list view. Grammar points
+also loop back into chat: after any Teacher Wang chat reply where the
+grammar correction agent found no mistake (`correction.severity === "none"`),
+the frontend calls `POST /grammar-points/check` (`pro` plan only) with the
+learner's last message; an LLM agent (`check_grammar_usage`,
+`backend/utils/aiChat/chat_service.py`) checks it against the learner's
+`DONE` grammar points and increments `usage_in_real_life` for each one it
+finds used. After 3 real-life uses a point's `status` flips to `MASTERED`
+(shown with a blue badge/star icon and blue score on the Grammar tab,
+`frontend/src/pages/GrammarPage.tsx`), and the frontend shows a
+`GrammarMasteryModal` with the completion confetti listing the newly
+mastered lesson titles. AI-powered practice and AI-assisted translation
+validation are not yet built (README roadmap §10).
 
 A third Vocabulary tab (`frontend/src/components/GrammarVocabularyTab.tsx`)
 lists the grammar point's `new_words` (plain word strings in `grammar.yaml`,
@@ -287,12 +297,19 @@ Learner-specific state belongs in PostgreSQL:
 ```text
 user_grammar_progress
 ---------------------
-user_id            FK -> users.shortid
-grammar_id         FK -> grammar_points.id
-status
+user_id             FK -> users.shortid
+grammar_id          FK -> grammar_points.id
+status               TODO | WIP | DONE | SKIP | MASTERED
 score
 last_practiced_at
+usage_in_real_life   times the LLM has confirmed correct real-conversation use
 ```
+
+`usage_in_real_life` is incremented by `POST /grammar-points/check`
+(`backend/routes/check_grammar_point.py`) each time the `check_grammar_usage`
+agent confirms the rule was used in a chat message; `status` moves from
+`DONE` to `MASTERED` once it reaches 3 — a point already `MASTERED` no
+longer matches the endpoint's `DONE`-only query, so it can't re-trigger.
 
 Exercise attempts and other learning analytics can be added there as the
 feature evolves. Full table/partition layout:
@@ -424,8 +441,8 @@ The content model can later be extended with:
 - Images
 - Additional exercise types
 - AI exercise-generation templates
-- Richer mastery models
-- Grammar-aware AI conversations
+- Richer mastery models (e.g. usage decay, per-skill breakdown — beyond the
+  current 3-uses-in-chat `MASTERED` threshold)
 - Personalized grammar recommendations
 
 These additions should preserve the fundamental separation between

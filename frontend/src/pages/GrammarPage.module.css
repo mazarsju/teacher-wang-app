@@ -145,6 +145,11 @@
   color: #374151;
 }
 
+.grammar-status-mastered {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .grammar-score {
   font-weight: 700;
 }
@@ -159,6 +164,10 @@
 
 .grammar-score-low {
   color: var(--app-danger);
+}
+
+.grammar-score-mastered {
+  color: #1d4ed8;
 }
 
 .grammar-level-gauges {

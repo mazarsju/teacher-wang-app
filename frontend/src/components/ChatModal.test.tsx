@@ -83,6 +83,119 @@ describe("ChatModal", () => {
     );
   });
 
+  it("checks grammar point usage when the correction severity is none", async () => {
+    const user = userEvent.setup();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [] }),
+          });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: { role: "assistant", content: "你好！" },
+              correction: { severity: "none" },
+            }),
+          });
+        }
+
+        if (url.endsWith("/grammar-points/check") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              grammar_points_covered: [],
+              new_grammar_points_mastered: [],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "我很好");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("你好！")).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/grammar-points/check",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ text: "我很好" }),
+      }),
+    );
+  });
+
+  it("opens a mastery modal listing newly mastered grammar points", async () => {
+    const user = userEvent.setup();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [] }),
+          });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: { role: "assistant", content: "你好！" },
+              correction: { severity: "none" },
+            }),
+          });
+        }
+
+        if (url.endsWith("/grammar-points/check") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              grammar_points_covered: ["Ba construction"],
+              new_grammar_points_mastered: ["Ba construction"],
+            }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        });
+      }),
+    );
+
+    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "我把书放下了");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("Grammar mastered!")).toBeInTheDocument();
+    expect(screen.getByText("Ba construction")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Nice!" }));
+    expect(screen.queryByText("Grammar mastered!")).not.toBeInTheDocument();
+  });
+
   it("loads and displays saved chat history", async () => {
     vi.stubGlobal(
       "fetch",

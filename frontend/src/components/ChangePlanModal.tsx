@@ -53,8 +53,8 @@ const PLAN_FEATURES: Array<{
   },
   {
     label: "Grammar exercises",
-    free: { text: "Not available", icon: "cross" },
-    pro: { text: "Coming soon", icon: "hourglass" },
+    free: { text: "Limited", icon: "warning" },
+    pro: { text: "Full access", icon: "check" },
   },
 ];
 

@@ -385,18 +385,18 @@ def _format_challenge_transcript(messages: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
-def _parse_completed_task_ids(raw_ids, valid_task_ids: set[str]) -> list[str]:
+def _parse_string_id_list(raw_ids, valid_ids: set[str]) -> list[str]:
     if not isinstance(raw_ids, list):
-        raise ValueError("Challenge judge response must include completed_task_ids list")
+        raise ValueError("LLM response must include a list of ids")
 
-    completed_task_ids: list[str] = []
-    for task_id in raw_ids:
-        if not isinstance(task_id, str):
+    ids: list[str] = []
+    for item in raw_ids:
+        if not isinstance(item, str):
             continue
-        normalized = task_id.strip()
-        if normalized in valid_task_ids and normalized not in completed_task_ids:
-            completed_task_ids.append(normalized)
-    return completed_task_ids
+        normalized = item.strip()
+        if normalized in valid_ids and normalized not in ids:
+            ids.append(normalized)
+    return ids
 
 
 def _parse_coherence(parsed: dict) -> tuple[bool, str | None]:
@@ -465,7 +465,7 @@ def judge_challenge_progress(
         ]
     )
     parsed = _extract_json_object(raw)
-    completed_task_ids = _parse_completed_task_ids(
+    completed_task_ids = _parse_string_id_list(
         parsed.get("completed_task_ids"),
         valid_task_ids,
     )
@@ -475,6 +475,72 @@ def judge_challenge_progress(
         completed_task_ids=completed_task_ids,
         coherent=coherent,
         incoherence_reason=incoherence_reason,
+        token_usage=token_usage,
+    )
+
+
+@dataclass(frozen=True)
+class GrammarUsageResult:
+    covered_grammar_ids: list[str]
+    token_usage: LlmTokenUsage = LlmTokenUsage()
+
+
+GRAMMAR_USAGE_CHECK_SYSTEM_PROMPT = (
+    "You check whether a piece of Chinese text uses any of a list of "
+    "grammar points the learner has already mastered. "
+    "A grammar point counts as used only if the text actually applies its "
+    "grammatical structure, not merely because it contains related words. "
+    "Reply with ONLY a JSON object and no other text, exactly in this form: "
+    '{"covered_grammar_ids": ["id-1", "id-2"]}. '
+    "If none of the grammar points are used, respond exactly: "
+    '{"covered_grammar_ids": []}.'
+)
+
+
+def check_grammar_usage(
+    text: str,
+    grammar_points: list[dict[str, str]],
+) -> GrammarUsageResult:
+    """Ask the LLM which of the given grammar points the text uses."""
+    content = text.strip()
+    if content == "":
+        raise ValueError("text must be a non-empty string")
+
+    if not grammar_points:
+        raise ValueError("At least one grammar point is required")
+
+    valid_ids: set[str] = set()
+    point_lines: list[str] = []
+    for point in grammar_points:
+        grammar_id = point.get("id")
+        title = point.get("title")
+        if not isinstance(grammar_id, str) or grammar_id.strip() == "":
+            raise ValueError("Each grammar point must include a non-empty id")
+        if not isinstance(title, str) or title.strip() == "":
+            raise ValueError("Each grammar point must include a non-empty title")
+        valid_ids.add(grammar_id)
+        point_lines.append(f"- {grammar_id}: {title.strip()}")
+
+    prompt = (
+        "Grammar points already mastered:\n"
+        f"{chr(10).join(point_lines)}\n\n"
+        f'Text to check: "{content}"\n\n'
+        "Return the JSON object with covered_grammar_ids."
+    )
+
+    raw, token_usage = _invoke_llm(
+        [
+            SystemMessage(content=GRAMMAR_USAGE_CHECK_SYSTEM_PROMPT),
+            HumanMessage(content=prompt),
+        ]
+    )
+    parsed = _extract_json_object(raw)
+    covered_grammar_ids = _parse_string_id_list(
+        parsed.get("covered_grammar_ids"), valid_ids
+    )
+
+    return GrammarUsageResult(
+        covered_grammar_ids=covered_grammar_ids,
         token_usage=token_usage,
     )
 

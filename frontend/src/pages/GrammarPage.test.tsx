@@ -20,6 +20,33 @@ function stubGrammarPointsFetch(points: StubGrammarPoint[]) {
   );
 }
 
+function stubGrammarPointsAndPlanFetch(points: StubGrammarPoint[], plan: string) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo) => {
+      if (String(input).endsWith("/auth/me")) {
+        return Promise.resolve({ ok: true, json: async () => ({ plan }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => points });
+    }),
+  );
+}
+
+function stubGrammarPoint(
+  index: number,
+  overrides: Partial<StubGrammarPoint> = {},
+): StubGrammarPoint {
+  return {
+    id: `1|Lesson ${index}`,
+    hsk_level: 1,
+    index,
+    title: `Lesson ${index}`,
+    prerequisites: [],
+    status: "TODO",
+    ...overrides,
+  };
+}
+
 const HSK1_STATE = {
   hsk: {
     status: {
@@ -133,6 +160,27 @@ describe("GrammarPage", () => {
     await waitFor(() => expect(screen.getByText("82%")).toBeInTheDocument());
   });
 
+  it("shows a blue, star-labeled badge and blue score for a MASTERED lesson", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Mastered Topic",
+        hsk_level: 1,
+        index: 1,
+        title: "Mastered Topic",
+        prerequisites: [],
+        status: "MASTERED",
+        score: 82,
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    await waitFor(() => expect(screen.getByText("Mastered")).toBeInTheDocument());
+
+    expect(screen.getByText("Mastered")).toHaveClass("grammar-status-mastered");
+    expect(screen.getByText("82%")).toHaveClass("grammar-score-mastered");
+  });
+
   it("shows grammar points whose prerequisites aren't all DONE as locked, non-clickable rows", async () => {
     stubGrammarPointsFetch([
       {
@@ -183,6 +231,39 @@ describe("GrammarPage", () => {
     const user = userEvent.setup();
     await user.click(lockedRow);
     expect(screen.queryByRole("tab", { name: "Explanation" })).not.toBeInTheDocument();
+  });
+
+  it("locks lessons past the 10th of a level for the free plan", async () => {
+    const points = [stubGrammarPoint(10), stubGrammarPoint(11)];
+    stubGrammarPointsAndPlanFetch(points, "free");
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Lesson 11/ })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      ),
+    );
+
+    expect(screen.getByRole("button", { name: /Lesson 10/ })).toHaveAttribute(
+      "aria-disabled",
+      "false",
+    );
+  });
+
+  it("does not lock lessons past the 10th of a level for the pro plan", async () => {
+    const points = [stubGrammarPoint(10), stubGrammarPoint(11)];
+    stubGrammarPointsAndPlanFetch(points, "pro");
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Lesson 11/ })).toHaveAttribute(
+        "aria-disabled",
+        "false",
+      ),
+    );
   });
 
   it("shows grammar points one HSK level above the learner's achieved level (the target)", async () => {

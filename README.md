@@ -258,6 +258,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/grammar-points/<grammar_id>/skip` | Mark a grammar point as already known (`status` = `SKIP` in `user_grammar_progress`), unlocking grammar points that list it as a prerequisite |
 | `GET` | `/grammar-points/<grammar_id>` | Fetch one grammar point's detail: Postgres metadata plus its `explanation.md`/`exercises.json` content read from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (or `GRAMMAR_CONTENT_S3_PATH` local checkout) at its `s3_key`, plus `new_words` — the point's `grammar.yaml` word list resolved against `hsk_words` (lowest level/frequency per word) for the Vocabulary tab |
 | `POST` | `/grammar-points/<grammar_id>/complete` | Save a finished exercises quiz: sets `status` to `DONE` (score ≥ 80) or `WIP` (below 80), plus `score` (rounded percentage) and `last_practiced_at`, in `user_grammar_progress` |
+| `POST` | `/grammar-points/check` | `pro` plan only: given a chat message (`{ "text": "..." }`), ask the LLM which `DONE` grammar points it uses, increment their `usage_in_real_life`, and flip `status` to `MASTERED` after 3 uses; returns `grammar_points_covered` and `new_grammar_points_mastered` (titles) |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
@@ -442,12 +443,13 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 - [x] Add AI-powered explanation if the user makes some mistakes in exercises
 - [x] Add AI tutor mode for grammar-specific questions and explanations
 - [ ] Add AI-powered grammar practice scenarios
-- [ ] Integrate learned grammar points into AI conversations and challenges
+- [x] Integrate learned grammar points into AI conversations and challenges
+  - Detects grammar rules used correctly in chat and counts them toward mastery
+  - After 3 real-life uses, a grammar point's status flips to `MASTERED` (blue badge, star icon)
 - [x] Create complete HSK1 grammar content
 - [x] Create complete HSK2 grammar content
 - [x] Create complete HSK3 grammar content
-- [ ] Create complete HSK4 grammar content
-- [ ] Add some nice KPIs to follow on HSK grammar progress
+- [x] Create complete HSK4 grammar content
 
 ### 11. Multi-language management
 

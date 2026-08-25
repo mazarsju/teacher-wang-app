@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  checkGrammarPoint,
   fetchGrammarPointDetail,
   fetchGrammarPoints,
   skipGrammarPoint,
@@ -91,5 +92,36 @@ describe("grammarPointsApi", () => {
     await expect(
       fetchGrammarPointDetail("1|Basic Sentence Structure"),
     ).rejects.toThrow(/Failed to load grammar topic/);
+  });
+
+  it("checks grammar point usage in a text, sending it in the JSON body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        grammar_points_covered: ["Ba construction"],
+        new_grammar_points_mastered: [],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(checkGrammarPoint("我把书放下了")).resolves.toEqual({
+      grammar_points_covered: ["Ba construction"],
+      new_grammar_points_mastered: [],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/grammar-points/check",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ text: "我把书放下了" }),
+      }),
+    );
+  });
+
+  it("throws when checking grammar point usage fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+
+    await expect(checkGrammarPoint("我把书放下了")).rejects.toThrow(
+      /Failed to check grammar point usage/,
+    );
   });
 });

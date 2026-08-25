@@ -168,6 +168,22 @@ export function TrophyIcon({ className }: IconProps) {
   );
 }
 
+export function StarIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 2.5l2.95 6.28 6.85.82-5.13 4.75 1.45 6.9L12 17.9l-6.12 3.35 1.45-6.9-5.13-4.75 6.85-.82L12 2.5z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 export function InfoIcon({ className }: IconProps) {
   return (
     <svg

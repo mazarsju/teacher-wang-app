@@ -38,6 +38,25 @@ export async function skipGrammarPoint(grammarId: string): Promise<void> {
   }
 }
 
+export type CheckGrammarPointResult = {
+  grammar_points_covered: string[];
+  new_grammar_points_mastered: string[];
+};
+
+export async function checkGrammarPoint(text: string): Promise<CheckGrammarPointResult> {
+  const response = await apiFetch(`${API_BASE}/grammar-points/check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to check grammar point usage.");
+  }
+
+  return (await response.json()) as CheckGrammarPointResult;
+}
+
 export async function completeGrammarPoint(
   grammarId: string,
   score: number,

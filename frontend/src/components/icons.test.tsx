@@ -19,6 +19,7 @@ import {
   CheckIcon,
   IncorrectIcon,
   QuestionIcon,
+  StarIcon,
 } from "./icons";
 
 describe("icons", () => {
@@ -40,6 +41,7 @@ describe("icons", () => {
     ["CheckIcon", CheckIcon],
     ["IncorrectIcon", IncorrectIcon],
     ["QuestionIcon", QuestionIcon],
+    ["StarIcon", StarIcon],
     ["ProfileIcon", ProfileIcon],
     ["PowerIcon", PowerIcon],
   ])("renders %s as an accessible decorative svg", (_name, Icon) => {

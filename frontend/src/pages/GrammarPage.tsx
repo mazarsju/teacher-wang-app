@@ -1,23 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { scoreBand } from "../components/GrammarExercises";
-import { CheckIcon, LockIcon } from "../components/icons";
+import { CheckIcon, LockIcon, StarIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setGrammarPoints } from "../store/slices/grammarSlice";
 import type { GrammarPoint } from "../types/grammarPoint";
+import { fetchCurrentUser } from "../utils/auth/meApi";
 import { fetchGrammarPoints } from "../utils/grammar/grammarPointsApi";
 import GrammarPointDetailPage from "./GrammarPointDetailPage";
 import styles from "./GrammarPage.module.css";
 
 // A grammar point counts as done for both prerequisite-unlocking and level
-// gauges once it's DONE or SKIP (the learner already knows it).
-const COMPLETED_STATUSES = new Set(["DONE", "SKIP"]);
+// gauges once it's DONE, SKIP, or MASTERED (the learner already knows it).
+const COMPLETED_STATUSES = new Set(["DONE", "SKIP", "MASTERED"]);
+
+// Free-plan users only get the first 10 lessons of each HSK level unlocked.
+const FREE_PLAN_LESSON_LIMIT = 10;
 
 const STATUS_LABELS: Record<string, string> = {
   TODO: "Not started",
   WIP: "In progress",
   DONE: "Completed",
   SKIP: "Skipped",
+  MASTERED: "Mastered",
 };
 
 // How many distinct pastel backgrounds the level sections cycle through.
@@ -99,6 +104,8 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`${styles.grammarStatus} ${modifier}`}>
       {status === "DONE" ? (
         <CheckIcon className={styles.grammarStatusIcon} />
+      ) : status === "MASTERED" ? (
+        <StarIcon className={styles.grammarStatusIcon} />
       ) : (
         <span className={styles.grammarStatusDot} />
       )}
@@ -107,9 +114,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ScoreValue({ score }: { score: number | null }) {
+function ScoreValue({ score, status }: { score: number | null; status: string }) {
   if (score == null) return null;
-  const modifier = styles[`grammar-score-${scoreBand(score)}`] ?? "";
+  const modifier =
+    (status === "MASTERED"
+      ? styles["grammar-score-mastered"]
+      : styles[`grammar-score-${scoreBand(score)}`]) ?? "";
   return <span className={`${styles.grammarScore} ${modifier}`}>{score}%</span>;
 }
 
@@ -143,10 +153,18 @@ export default function GrammarPage() {
   const [selectedGrammarId, setSelectedGrammarId] = useState<string | null>(
     null,
   );
+  const [plan, setPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCurrentUser()
+      .then((user) => setPlan(user.plan))
+      .catch(() => setPlan(null));
+  }, []);
 
   // Grammar points above the target level stay fully hidden; ones at or
   // below it show up either unlocked or, if a prerequisite isn't DONE/SKIP
-  // yet, locked (visible but not clickable).
+  // yet, or (on the free plan) past the first 10 lessons of their level,
+  // locked (visible but not clickable).
   const visibleGrammarPoints = useMemo(() => {
     const statusById = new Map(
       grammarPoints.map((point) => [point.id, point.status]),
@@ -155,9 +173,11 @@ export default function GrammarPage() {
       .filter((point) => point.hsk_level <= targetHskLevel)
       .map((point) => ({
         grammarPoint: point,
-        locked: !isGrammarPointAvailable(point, statusById),
+        locked:
+          !isGrammarPointAvailable(point, statusById) ||
+          (plan === "free" && point.index > FREE_PLAN_LESSON_LIMIT),
       }));
-  }, [grammarPoints, targetHskLevel]);
+  }, [grammarPoints, targetHskLevel, plan]);
 
   const levelStats = useMemo(
     () => levelStatsUpToLevel(grammarPoints, targetHskLevel),
@@ -304,7 +324,10 @@ export default function GrammarPage() {
                         <StatusBadge status={grammarPoint.status} />
                       </td>
                       <td>
-                        <ScoreValue score={grammarPoint.score} />
+                        <ScoreValue
+                          score={grammarPoint.score}
+                          status={grammarPoint.status}
+                        />
                       </td>
                     </tr>
                   ))}

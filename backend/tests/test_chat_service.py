@@ -11,7 +11,9 @@ from backend.utils.aiChat.behavior_spec import ALWAYS_ON_BEHAVIOR_IDS, get_behav
 from backend.utils.aiChat.chat_service import (  # noqa: E402
     BEHAVIOR_CHECK_ENABLED,
     GrammarCorrection,
+    GrammarUsageResult,
     LlmTokenUsage,
+    check_grammar_usage,
     check_user_grammar,
     find_unknown_characters,
     generate_chat_reply,
@@ -599,6 +601,62 @@ class TestCheckUserGrammar(_FreePlanTokenMixin, unittest.TestCase):
             result.to_dict(),
             {"severity": "incorrect", "answer": "Use 我很好 instead."},
         )
+
+
+class TestCheckGrammarUsage(_FreePlanTokenMixin, unittest.TestCase):
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_returns_covered_grammar_ids(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content='{"covered_grammar_ids": ["g1"]}'
+        )
+        mock_get_llm.return_value = mock_llm
+
+        result = check_grammar_usage(
+            "我把书放下了",
+            [{"id": "g1", "title": "Ba construction"}, {"id": "g2", "title": "Le aspect"}],
+        )
+
+        self.assertEqual(result, GrammarUsageResult(covered_grammar_ids=["g1"]))
+        invoked_messages = mock_llm.invoke.call_args.args[0]
+        self.assertIn("g1: Ba construction", invoked_messages[1].content)
+        self.assertIn("我把书放下了", invoked_messages[1].content)
+
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_ignores_ids_not_in_candidate_list(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content='{"covered_grammar_ids": ["g1", "unknown"]}'
+        )
+        mock_get_llm.return_value = mock_llm
+
+        result = check_grammar_usage(
+            "我把书放下了", [{"id": "g1", "title": "Ba construction"}]
+        )
+
+        self.assertEqual(result.covered_grammar_ids, ["g1"])
+
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_returns_empty_when_nothing_covered(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content='{"covered_grammar_ids": []}'
+        )
+        mock_get_llm.return_value = mock_llm
+
+        result = check_grammar_usage(
+            "你好", [{"id": "g1", "title": "Ba construction"}]
+        )
+
+        self.assertEqual(result.covered_grammar_ids, [])
+
+    def test_rejects_empty_text(self):
+        with self.assertRaises(ValueError):
+            check_grammar_usage("  ", [{"id": "g1", "title": "Ba construction"}])
+
+    def test_rejects_empty_grammar_points(self):
+        with self.assertRaises(ValueError):
+            check_grammar_usage("你好", [])
 
 
 if __name__ == "__main__":

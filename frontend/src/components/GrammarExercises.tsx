@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import type { ChatMessage } from "../types/chat";
-import type { GrammarExercise, TranslationExercise } from "../types/grammarPoint";
+import type {
+  GrammarExercise,
+  SentenceReorderingExercise,
+  TransformExercise,
+  TranslationExercise,
+} from "../types/grammarPoint";
 import { sendChatMessage } from "../utils/aiChat/chatApi";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
@@ -119,18 +124,39 @@ function buildExplanationDisplayText(
   );
 }
 
-function buildTranslationCheckRequest(
-  exercise: TranslationExercise,
+function buildAnswerCheckRequest(
+  exercise: TranslationExercise | TransformExercise,
   userAnswerText: string,
+  grammarPointTitle?: string,
+): string {
+  const topic = grammarPointTitle ? ` for the grammar point "${grammarPointTitle}"` : "";
+  const task =
+    exercise.type === "translation"
+      ? `translate into Chinese: "${exercise.prompt}"`
+      : `${exercise.instruction ?? "transform this sentence"}: "${exercise.source}"`;
+
+  return (
+    `I'm practicing a Chinese grammar exercise${topic}. ` +
+    `The task was to ${task}. ` +
+    `The expected answer is "${exercise.accepted_answers[0]}", but I answered: "${userAnswerText}". ` +
+    "Is my answer also a correct, acceptable answer, even if it isn't word-for-word the same? " +
+    'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student. ' +
+    "Keep the explanation concise, in English only — use Chinese exclusively for quoting example words or sentences."
+  );
+}
+
+function buildReorderCheckRequest(
+  exercise: SentenceReorderingExercise,
+  userOrderText: string,
   grammarPointTitle?: string,
 ): string {
   const topic = grammarPointTitle ? ` for the grammar point "${grammarPointTitle}"` : "";
 
   return (
-    `I'm practicing a Chinese translation exercise${topic}. ` +
-    `The sentence to translate was: "${exercise.prompt}". ` +
-    `The expected answer is "${exercise.accepted_answers[0]}", but I answered: "${userAnswerText}". ` +
-    "Is my answer also a correct, acceptable translation, even if it isn't word-for-word the same? " +
+    `I'm practicing Chinese sentence ordering${topic}. ` +
+    `The words to order were: ${exercise.tokens.join(" / ")}. ` +
+    `The expected order is "${exercise.answer.join(" ")}", but I answered: "${userOrderText}". ` +
+    "Is my order also grammatically correct and natural, even if it isn't the same as the expected order? " +
     'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student. ' +
     "Keep the explanation concise, in English only — use Chinese exclusively for quoting example words or sentences."
   );
@@ -162,6 +188,7 @@ export default function GrammarExercises({
   const [showConfetti, setShowConfetti] = useState(false);
   const [isCheckingWithAi, setIsCheckingWithAi] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [reorderApprovedByAi, setReorderApprovedByAi] = useState(false);
   const [explanationMessages, setExplanationMessages] = useState<
     ChatMessage[] | null
   >(null);
@@ -213,6 +240,7 @@ export default function GrammarExercises({
     setTextAnswer("");
     setIsCheckingWithAi(false);
     setAiExplanation(null);
+    setReorderApprovedByAi(false);
   }
 
   async function validate() {
@@ -239,7 +267,10 @@ export default function GrammarExercises({
       textAnswer,
       exercise.accepted_answers,
     );
-    if (deterministicallyCorrect || exercise.type !== "translation") {
+    if (
+      deterministicallyCorrect ||
+      (exercise.type !== "translation" && exercise.type !== "transform")
+    ) {
       setIsCorrect(deterministicallyCorrect);
       setValidated(true);
       if (deterministicallyCorrect) setCorrectCount((count) => count + 1);
@@ -253,7 +284,7 @@ export default function GrammarExercises({
         [
           {
             role: "user",
-            content: buildTranslationCheckRequest(exercise, textAnswer, grammarPointTitle),
+            content: buildAnswerCheckRequest(exercise, textAnswer, grammarPointTitle),
           },
         ],
         undefined,
@@ -291,12 +322,10 @@ export default function GrammarExercises({
     const questionMessage: ChatMessage = {
       role: "user",
       isContext: true,
-      content: buildExplanationRequest(
-        exercise,
-        userAnswerText,
-        correctAnswerText,
-        grammarPointTitle,
-      ),
+      content:
+        exercise.type === "sentence_reordering"
+          ? buildReorderCheckRequest(exercise, userAnswerText, grammarPointTitle)
+          : buildExplanationRequest(exercise, userAnswerText, correctAnswerText, grammarPointTitle),
       displayContent: buildExplanationDisplayText(
         exercise,
         userAnswerText,
@@ -309,6 +338,18 @@ export default function GrammarExercises({
         ? [questionMessage, { role: "assistant", content: aiExplanation }]
         : [questionMessage],
     );
+  }
+
+  function handleExplanationThreadChange(threadMessages: ChatMessage[]) {
+    if (exercise.type !== "sentence_reordering" || threadMessages.length !== 2) {
+      return;
+    }
+    const reply = threadMessages[1];
+    if (reply.role === "assistant" && parseAiApproval(reply.content)) {
+      setIsCorrect(true);
+      setReorderApprovedByAi(true);
+      setCorrectCount((count) => count + 1);
+    }
   }
 
   function next() {
@@ -497,6 +538,11 @@ export default function GrammarExercises({
                   : "Not quite."
                 : ""}
           </p>
+          {reorderApprovedByAi && (
+            <p className={styles.feedbackCorrect}>
+              Teacher Wang detected this answer as correct
+            </p>
+          )}
           {validated && !isCorrect && (
             <Button
               kind="cancel"
@@ -533,6 +579,7 @@ export default function GrammarExercises({
           allowClearHistory={false}
           ephemeral
           autoSendInitialMessage
+          onThreadMessagesChange={handleExplanationThreadChange}
         />
       )}
     </div>

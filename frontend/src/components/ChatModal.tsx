@@ -4,6 +4,7 @@ import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
 import ConfirmModal from "./ConfirmModal";
+import GrammarMasteryModal from "./GrammarMasteryModal";
 import {
   CheckIcon,
   CloseIcon,
@@ -28,6 +29,7 @@ import {
 import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
 import { renderFormattedText } from "../utils/formatMarkdownText";
+import { checkGrammarPoint } from "../utils/grammar/grammarPointsApi";
 import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
 import styles from "./ChatModal.module.css";
 
@@ -128,6 +130,10 @@ export default function ChatModal({
     () => new Set(),
   );
   const [showConfetti, setShowConfetti] = useState(false);
+  const [masteredGrammarPoints, setMasteredGrammarPoints] = useState<
+    string[] | null
+  >(null);
+  const [showMasteryConfetti, setShowMasteryConfetti] = useState(false);
   const wasChallengeCompleteRef = useRef(false);
   const autoSentRef = useRef(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -155,6 +161,19 @@ export default function ChatModal({
   }, [isChallengeComplete]);
 
   useEffect(() => {
+    if (masteredGrammarPoints === null) {
+      setShowMasteryConfetti(false);
+      return;
+    }
+
+    setShowMasteryConfetti(true);
+    const timeoutId = window.setTimeout(() => {
+      setShowMasteryConfetti(false);
+    }, 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [masteredGrammarPoints]);
+
+  useEffect(() => {
     if (character === null) {
       return;
     }
@@ -169,6 +188,7 @@ export default function ChatModal({
     setActiveCorrection(null);
     setCompletedTaskIds(new Set());
     setShowConfetti(false);
+    setMasteredGrammarPoints(null);
     wasChallengeCompleteRef.current = false;
     autoSentRef.current = false;
 
@@ -267,6 +287,20 @@ export default function ChatModal({
         }
 
         const correction = response.correction;
+        if (correction?.severity === "none") {
+          const lastUserMessage = nextMessages[nextMessages.length - 1];
+          if (lastUserMessage?.role === "user") {
+            checkGrammarPoint(lastUserMessage.content)
+              .then((result) => {
+                if (result.new_grammar_points_mastered.length > 0) {
+                  setMasteredGrammarPoints(result.new_grammar_points_mastered);
+                }
+              })
+              .catch(() => {
+                // Best-effort; grammar mastery tracking is non-critical.
+              });
+          }
+        }
         const withCorrection =
           correction != null
             ? nextMessages.map((entry, index) => {
@@ -756,6 +790,16 @@ export default function ChatModal({
             );
           }}
         />
+      )}
+
+      {masteredGrammarPoints !== null && (
+        <>
+          <ChallengeConfetti active={showMasteryConfetti} />
+          <GrammarMasteryModal
+            grammarPointTitles={masteredGrammarPoints}
+            onClose={() => setMasteredGrammarPoints(null)}
+          />
+        </>
       )}
     </>
   );

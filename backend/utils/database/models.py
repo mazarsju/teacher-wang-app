@@ -257,6 +257,7 @@ class UserGrammarProgress(db.Model):
     status = db.Column(String, nullable=False, default="TODO")
     score = db.Column(Numeric, nullable=True)
     last_practiced_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    usage_in_real_life = db.Column(Numeric, nullable=True)
 
 
 class ConversationSummary(db.Model):

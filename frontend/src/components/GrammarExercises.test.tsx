@@ -108,6 +108,85 @@ describe("GrammarExercises", () => {
     expect(screen.getByText("Correct!")).toBeInTheDocument();
   });
 
+  it("opens the explanation chat immediately for a wrong reorder answer, and flags it correct once Teacher Wang approves it", async () => {
+    const user = userEvent.setup();
+    let resolveChat: (value: unknown) => void = () => {};
+    const fetchMock = vi.fn(() => new Promise((resolve) => { resolveChat = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GrammarExercises exercises={[REORDER]} />);
+
+    await user.click(screen.getAllByRole("button", { name: "茶" })[0]);
+    await user.click(screen.getAllByRole("button", { name: "我" })[0]);
+    await user.click(screen.getAllByRole("button", { name: "喜欢" })[0]);
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+
+    expect(screen.getByText("Not quite.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "More explanation" }));
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Teacher Wang detected this answer as correct"),
+    ).not.toBeInTheDocument();
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.messages[0].content).toContain("茶 我 喜欢");
+    expect(body.messages[0].content).toContain("我 喜欢 茶");
+
+    await act(async () => {
+      resolveChat({
+        ok: true,
+        json: async () => ({
+          message: { role: "assistant", content: "YES, that order is also valid." },
+        }),
+      });
+    });
+
+    expect(
+      await screen.findByText("Teacher Wang detected this answer as correct"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close chat" }));
+
+    expect(screen.getByText("Correct!")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "More explanation" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps a wrong reorder answer flagged as wrong when Teacher Wang rejects it in the explanation chat", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          message: { role: "assistant", content: "NO, that order is not natural." },
+        }),
+      }),
+    );
+
+    render(<GrammarExercises exercises={[REORDER]} />);
+
+    await user.click(screen.getAllByRole("button", { name: "茶" })[0]);
+    await user.click(screen.getAllByRole("button", { name: "我" })[0]);
+    await user.click(screen.getAllByRole("button", { name: "喜欢" })[0]);
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+    await user.click(screen.getByRole("button", { name: "More explanation" }));
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    await screen.findByText("NO, that order is not natural.");
+
+    await user.click(screen.getByRole("button", { name: "Close chat" }));
+
+    expect(screen.getByText("Not quite.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Teacher Wang detected this answer as correct"),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows a generic instruction before the translation prompt", () => {
     render(<GrammarExercises exercises={[TRANSLATION]} />);
 
@@ -227,18 +306,46 @@ describe("GrammarExercises", () => {
     expect(await screen.findByText("Not quite.")).toBeInTheDocument();
   });
 
-  it("does not call Teacher Wang for a non-matching transform answer (deterministic only)", async () => {
+  it("checks a non-matching transform answer with Teacher Wang", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        message: { role: "assistant", content: "YES, that's a valid alternative." },
+      }),
+    });
     vi.stubGlobal("fetch", fetchMock);
+
+    render(<GrammarExercises exercises={[TRANSFORM]} />);
+
+    await user.type(screen.getByPlaceholderText("Type your answer"), "茶，我不喜欢。");
+    await user.click(screen.getByRole("button", { name: "Validate" }));
+
+    expect(await screen.findByText("Correct!")).toBeInTheDocument();
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.messages[0].content).toContain("Make this sentence negative.");
+    expect(body.messages[0].content).toContain("我喜欢茶。");
+    expect(body.messages[0].content).toContain("茶，我不喜欢。");
+  });
+
+  it("flags a Teacher-Wang-rejected transform answer as incorrect", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ message: { role: "assistant", content: "NO, that's wrong." } }),
+      }),
+    );
 
     render(<GrammarExercises exercises={[TRANSFORM]} />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "wrong");
     await user.click(screen.getByRole("button", { name: "Validate" }));
 
-    expect(screen.getByText("Not quite.")).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await screen.findByText("Not quite.")).toBeInTheDocument();
+    expect(screen.getByText("Accepted: 我不喜欢茶。")).toBeInTheDocument();
   });
 
   it("shows a 'More explanation' button only after a wrong answer, not a correct one", async () => {

@@ -150,6 +150,7 @@ const FEATURES: Feature[] = [
     capabilities: [
       "Clear explanations with examples and common learner mistakes",
       "Interactive exercises with instant correction and mastery tracking",
+      "Move from 'learned' to 'mastered' by using grammar correctly in real situations",
       "Ask Teacher Wang questions directly from any grammar lesson",
       "Track your progress and see where you need to focus your study",
     ],
