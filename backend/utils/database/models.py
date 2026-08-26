@@ -219,6 +219,16 @@ class ChallengeProgress(db.Model):
     completed = db.Column(db.Boolean, nullable=False, default=True)
 
 
+class WritingProgress(db.Model):
+    """A user's score on a writing topic."""
+
+    __tablename__ = "writing_progress"
+
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
+    writing_topic = db.Column(String, primary_key=True)
+    score = db.Column(Numeric, nullable=True)
+
+
 class GrammarPoint(db.Model):
     """A grammar point taught at a given HSK level."""
 

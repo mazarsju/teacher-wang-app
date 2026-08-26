@@ -1,0 +1,70 @@
+.writing-detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--app-border-light);
+  margin-bottom: 1.25rem;
+}
+
+.writing-detail-tab {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: #4b5563;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.writing-detail-tab:hover {
+  color: var(--app-sea);
+}
+
+.writing-detail-tab-active {
+  color: var(--app-sea);
+  border-bottom-color: var(--app-sea);
+}
+
+.writing-detail-context {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  line-height: 1.6;
+  color: #111827;
+  white-space: pre-wrap;
+}
+
+.writing-detail-hidden {
+  display: none;
+}
+
+.writing-detail-writing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.writing-detail-textarea {
+  width: 100%;
+  min-height: 60vh;
+  max-height: 70vh;
+  overflow-y: auto;
+  resize: vertical;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  color: #111827;
+  font: inherit;
+  line-height: 1.6;
+}
+
+.writing-detail-textarea:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -2px;
+}
+
+.writing-detail-submit-row {
+  display: flex;
+  justify-content: flex-end;
+}

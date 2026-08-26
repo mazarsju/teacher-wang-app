@@ -25,6 +25,7 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 | `ignore_hsk_words` | `(user_id, writing)` |
 | `token_count` | `(user_id, recorded_at, type)` |
 | `challenge_progress` | `(user_id, challenge_scenario)` |
+| `writing_progress` | `(user_id, writing_topic)` — `score` (`NUMERIC`, nullable) instead of a completed flag |
 | `conversation_summary` | `(user_id, id)` — `id` is a `BIGINT GENERATED ALWAYS AS IDENTITY`, unique on its own; `conversation_id` (= character id) + `latest` are queried, not part of the PK |
 | `user_grammar_progress` | `(user_id, grammar_id)` — `grammar_id` FK → `grammar_points.id` |
 

@@ -443,6 +443,80 @@ describe("GrammarPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a writing topic right after the grammar lesson it follows, with a pen icon and a 'Practice:' prefix", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "hsk1_existence_with_you",
+        hsk_level: 1,
+        index: 1,
+        title: "Existence with You",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "1|Next Lesson",
+        hsk_level: 1,
+        index: 2,
+        title: "Next Lesson",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    const { container } = renderWithStore(<GrammarPage />, {
+      preloadedState: HSK1_STATE,
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText("Practice: Present yourself")).toBeInTheDocument(),
+    );
+
+    const rows = container.querySelectorAll("tbody tr");
+    expect(rows).toHaveLength(3);
+    expect(rows[1]).toBe(
+      screen.getByRole("button", { name: /Practice: Present yourself/ }),
+    );
+    expect(rows[2]).toBe(
+      screen.getByRole("button", { name: /Next Lesson/ }),
+    );
+  });
+
+  it("opens the writing practice detail page when a writing topic row is clicked", async () => {
+    const user = userEvent.setup();
+    stubGrammarPointsFetch([
+      {
+        id: "hsk1_existence_with_you",
+        hsk_level: 1,
+        index: 1,
+        title: "Existence with You",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Practice: Present yourself/ }),
+      ).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Practice: Present yourself/ }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Present yourself" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Context" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Writing" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(screen.getByRole("heading", { name: "Grammar" })).toBeInTheDocument();
+  });
+
   it("navigates to the grammar point detail page when a row is clicked", async () => {
     const user = userEvent.setup();
     const listPoint = {

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { scoreBand } from "../components/GrammarExercises";
-import { CheckIcon, LockIcon, StarIcon } from "../components/icons";
+import { CheckIcon, LockIcon, PenIcon, StarIcon } from "../components/icons";
 import Page from "../components/Page";
+import { WRITING_TOPICS } from "../data/writingTopics";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setGrammarPoints } from "../store/slices/grammarSlice";
 import type { GrammarPoint } from "../types/grammarPoint";
+import type { WritingTopic } from "../types/writingTopic";
 import { fetchCurrentUser } from "../utils/auth/meApi";
 import { fetchGrammarPoints } from "../utils/grammar/grammarPointsApi";
 import GrammarPointDetailPage from "./GrammarPointDetailPage";
 import styles from "./GrammarPage.module.css";
+import WritingPracticeDetailPage from "./WritingPracticeDetailPage";
 
 // A grammar point counts as done for both prerequisite-unlocking and level
 // gauges once it's DONE, SKIP, or MASTERED (the learner already knows it).
@@ -45,6 +48,10 @@ const GAUGE_RADIUS = 18;
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 
 type LevelStat = { level: number; percent: number };
+
+type LevelRow =
+  | { kind: "grammar"; grammarPoint: GrammarPoint; locked: boolean }
+  | { kind: "writing"; topic: WritingTopic };
 
 function levelStatsUpToLevel(
   grammarPoints: GrammarPoint[],
@@ -153,6 +160,9 @@ export default function GrammarPage() {
   const [selectedGrammarId, setSelectedGrammarId] = useState<string | null>(
     null,
   );
+  const [selectedWritingTopicId, setSelectedWritingTopicId] = useState<
+    string | null
+  >(null);
   const [plan, setPlan] = useState<string | null>(null);
 
   useEffect(() => {
@@ -197,12 +207,21 @@ export default function GrammarPage() {
     }
     return [...byLevel.entries()]
       .sort(([levelA], [levelB]) => levelA - levelB)
-      .map(([level, entries]) => ({
-        level,
-        entries: entries
+      .map(([level, entries]) => {
+        const sortedEntries = entries
           .slice()
-          .sort((a, b) => a.grammarPoint.index - b.grammarPoint.index),
-      }));
+          .sort((a, b) => a.grammarPoint.index - b.grammarPoint.index);
+        const rows: LevelRow[] = [];
+        for (const entry of sortedEntries) {
+          rows.push({ kind: "grammar", ...entry });
+          for (const topic of WRITING_TOPICS) {
+            if (topic.afterGrammarId === entry.grammarPoint.id) {
+              rows.push({ kind: "writing", topic });
+            }
+          }
+        }
+        return { level, rows };
+      });
   }, [visibleGrammarPoints]);
 
   useEffect(() => {
@@ -247,6 +266,15 @@ export default function GrammarPage() {
     );
   }
 
+  if (selectedWritingTopicId !== null) {
+    return (
+      <WritingPracticeDetailPage
+        topicId={selectedWritingTopicId}
+        onBack={() => setSelectedWritingTopicId(null)}
+      />
+    );
+  }
+
   return (
     <Page
       title="Grammar"
@@ -264,7 +292,7 @@ export default function GrammarPage() {
       {error && <p className="table-error">{error}</p>}
       {!isLoading &&
         !error &&
-        levelSections.map(({ level, entries }) => {
+        levelSections.map(({ level, rows }) => {
           const paletteIndex = ((level - 1) % LEVEL_PALETTE_SIZE) + 1;
           return (
             <details
@@ -287,50 +315,79 @@ export default function GrammarPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map(({ grammarPoint, locked }) => (
-                    <tr
-                      key={grammarPoint.id}
-                      role="button"
-                      tabIndex={locked ? -1 : 0}
-                      aria-disabled={locked}
-                      title={grammarPoint.title}
-                      className={
-                        locked
-                          ? `${styles.grammarRow} ${styles.grammarRowLocked}`
-                          : styles.grammarRow
-                      }
-                      onClick={locked ? undefined : () => handleSelect(grammarPoint)}
-                      onKeyDown={
-                        locked
-                          ? undefined
-                          : (event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                handleSelect(grammarPoint);
+                  {rows.map((row) =>
+                    row.kind === "writing" ? (
+                      <tr
+                        key={row.topic.id}
+                        role="button"
+                        tabIndex={0}
+                        title={row.topic.title}
+                        className={styles.grammarRowWriting}
+                        onClick={() => setSelectedWritingTopicId(row.topic.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedWritingTopicId(row.topic.id);
+                          }
+                        }}
+                      >
+                        <td />
+                        <td className={styles.grammarRowTitle}>
+                          <PenIcon className={styles.grammarRowWritingIcon} />
+                          <span className={styles.grammarRowTitleText}>
+                            Practice: {row.topic.title}
+                          </span>
+                        </td>
+                        <td />
+                        <td />
+                      </tr>
+                    ) : (
+                      <tr
+                        key={row.grammarPoint.id}
+                        role="button"
+                        tabIndex={row.locked ? -1 : 0}
+                        aria-disabled={row.locked}
+                        title={row.grammarPoint.title}
+                        className={
+                          row.locked
+                            ? `${styles.grammarRow} ${styles.grammarRowLocked}`
+                            : styles.grammarRow
+                        }
+                        onClick={
+                          row.locked ? undefined : () => handleSelect(row.grammarPoint)
+                        }
+                        onKeyDown={
+                          row.locked
+                            ? undefined
+                            : (event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  handleSelect(row.grammarPoint);
+                                }
                               }
-                            }
-                      }
-                    >
-                      <td>{grammarPoint.index}</td>
-                      <td className={styles.grammarRowTitle}>
-                        {locked && (
-                          <LockIcon className={styles.grammarRowLockIcon} />
-                        )}
-                        <span className={styles.grammarRowTitleText}>
-                          {grammarPoint.title}
-                        </span>
-                      </td>
-                      <td>
-                        <StatusBadge status={grammarPoint.status} />
-                      </td>
-                      <td>
-                        <ScoreValue
-                          score={grammarPoint.score}
-                          status={grammarPoint.status}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                        }
+                      >
+                        <td>{row.grammarPoint.index}</td>
+                        <td className={styles.grammarRowTitle}>
+                          {row.locked && (
+                            <LockIcon className={styles.grammarRowLockIcon} />
+                          )}
+                          <span className={styles.grammarRowTitleText}>
+                            {row.grammarPoint.title}
+                          </span>
+                        </td>
+                        <td>
+                          <StatusBadge status={row.grammarPoint.status} />
+                        </td>
+                        <td>
+                          <ScoreValue
+                            score={row.grammarPoint.score}
+                            status={row.grammarPoint.status}
+                          />
+                        </td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
             </details>

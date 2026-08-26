@@ -32,6 +32,7 @@ _TRUNCATE_TABLES = (
     "ignore_hsk_words",
     "token_count",
     "challenge_progress",
+    "writing_progress",
     "conversation_summary",
     "weekly_articles",
     "user_grammar_progress",
