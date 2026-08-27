@@ -15,6 +15,7 @@ from backend.utils.database.models import (
     GrammarPrerequisite,
     UserGrammarProgress,
     WritingPractice,
+    WritingProgress,
 )
 from backend.utils.grammar.grammar_content_loader import (
     curriculum_index,
@@ -499,6 +500,94 @@ class TestReloadGrammarContent(PostgresTestCase):
                 reload_grammar_content(client=_make_client(objects))
         finally:
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+    def test_reload_keeps_writing_progress_for_still_valid_topics(self):
+        db.session.add(
+            GrammarPoint(
+                id="hsk1_basic_sentence_structure",
+                hsk_level=1,
+                title="Basic sentence structure",
+            )
+        )
+        db.session.add(
+            WritingPractice(
+                id="writing-present-yourself",
+                title="Present yourself",
+                after_grammar_point="hsk1_basic_sentence_structure",
+            )
+        )
+        db.session.commit()
+        db.session.add(
+            WritingProgress(
+                user_id=self.user_id,
+                writing_topic="writing-present-yourself",
+                status="DONE",
+            )
+        )
+        db.session.commit()
+
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            counts = reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(counts["writing_practice"], 1)
+        kept = WritingProgress.query.filter_by(
+            user_id=self.user_id, writing_topic="writing-present-yourself"
+        ).one()
+        self.assertEqual(kept.status, "DONE")
+
+    def test_reload_drops_writing_progress_for_removed_topics(self):
+        db.session.add(
+            GrammarPoint(
+                id="hsk1_basic_sentence_structure",
+                hsk_level=1,
+                title="Basic sentence structure",
+            )
+        )
+        db.session.add(
+            WritingPractice(
+                id="writing-stale-topic",
+                title="Stale topic",
+                after_grammar_point="hsk1_basic_sentence_structure",
+            )
+        )
+        db.session.commit()
+        db.session.add(
+            WritingProgress(
+                user_id=self.user_id,
+                writing_topic="writing-stale-topic",
+                status="DONE",
+            )
+        )
+        db.session.commit()
+
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(WritingPractice.query.count(), 0)
+        self.assertEqual(WritingProgress.query.count(), 0)
 
     def test_raises_on_writing_practice_duplicate_id(self):
         objects = {

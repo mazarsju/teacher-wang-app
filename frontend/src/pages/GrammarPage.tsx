@@ -323,7 +323,9 @@ export default function GrammarPage() {
                         role="button"
                         tabIndex={0}
                         title={row.topic.title}
-                        className={styles.grammarRowWriting}
+                        className={`${styles.grammarRowWriting} ${
+                          styles[`grammar-row-writing-${paletteIndex}`] ?? ""
+                        }`}
                         onClick={() => setSelectedWritingTopicId(row.topic.id)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {

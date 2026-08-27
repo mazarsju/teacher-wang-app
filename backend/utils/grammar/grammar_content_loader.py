@@ -36,6 +36,7 @@ from backend.utils.database.models import (
     GrammarPrerequisite,
     UserGrammarProgress,
     WritingPractice,
+    WritingProgress,
 )
 
 GRAMMAR_MANIFEST_SUFFIX = "/grammar.yaml"
@@ -167,7 +168,12 @@ def reload_grammar_content(client=None) -> dict[str, int]:
         }
         for row in UserGrammarProgress.query.all()
     ]
+    kept_writing_progress = [
+        {"user_id": row.user_id, "writing_topic": row.writing_topic, "status": row.status}
+        for row in WritingProgress.query.all()
+    ]
     UserGrammarProgress.query.delete()
+    WritingProgress.query.delete()
     WritingPractice.query.delete()
     GrammarPrerequisite.query.delete()
     GrammarPoint.query.delete()
@@ -241,6 +247,12 @@ def reload_grammar_content(client=None) -> dict[str, int]:
             to_restore.append({**row, "grammar_id": new_id_by_old_id[grammar_id]})
     if to_restore:
         db.session.execute(insert(UserGrammarProgress), to_restore)
+
+    writing_progress_to_restore = [
+        row for row in kept_writing_progress if row["writing_topic"] in practice_ids_seen
+    ]
+    if writing_progress_to_restore:
+        db.session.execute(insert(WritingProgress), writing_progress_to_restore)
 
     db.session.commit()
     return {

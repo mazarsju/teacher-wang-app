@@ -79,7 +79,6 @@
 
 .grammar-row-writing {
   cursor: pointer;
-  font-style: italic;
   color: var(--app-ink);
 }
 
@@ -92,16 +91,13 @@
   outline-offset: -2px;
 }
 
-/* box-shadow per cell instead of border-bottom: border-collapse resolves
-   each td's border independently, and with the "#" column at width: 1% the
-   column edges land on fractional pixels, so a border split across cells
-   doesn't line up into one straight stroke. box-shadow paints against each
-   cell's own laid-out box instead of going through border conflict
-   resolution, so the edges line up. (Not put on the tr itself: box-shadow
-   on table-row elements is unreliable in collapsed-border tables.) */
-.grammar-row-writing td {
-  box-shadow: inset 0 -2px 0 0 var(--app-border);
-}
+/* Lighter tints of the section palette in grammar-level-section-N above. */
+.grammar-row-writing-1 { background: #f6faff; }
+.grammar-row-writing-2 { background: #f6fdf9; }
+.grammar-row-writing-3 { background: #fffbf3; }
+.grammar-row-writing-4 { background: #fef7fa; }
+.grammar-row-writing-5 { background: #f9f7fe; }
+.grammar-row-writing-6 { background: #f4fdfc; }
 
 .grammar-row-writing-icon {
   width: 0.9rem;

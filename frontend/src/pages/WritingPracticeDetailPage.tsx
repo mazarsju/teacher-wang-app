@@ -326,7 +326,6 @@ export default function WritingPracticeDetailPage({
   return (
     <Page
       title={topicTitle ?? "Writing"}
-      fullWidth={activeTab === "writing"}
       headerAction={
         <Button kind="cancel" variant="page" text="Back" onClick={onBack} />
       }
