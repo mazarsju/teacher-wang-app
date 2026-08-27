@@ -62,10 +62,10 @@ export async function checkGrammarPoint(text: string): Promise<CheckGrammarPoint
  * recording any usage. Pair with `recordGrammarUsage` once the usage should
  * actually count. */
 export async function detectGrammarPoints(text: string): Promise<CoveredGrammarPoint[]> {
-  const response = await apiFetch(`${API_BASE}/grammar-points/detect`, {
+  const response = await apiFetch(`${API_BASE}/grammar-points/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, check_only: true }),
   });
 
   if (!response.ok) {

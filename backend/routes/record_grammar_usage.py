@@ -11,9 +11,10 @@ MASTERY_THRESHOLD = 3
 
 @bp.post("/grammar-points/record-usage")
 def record_grammar_usage():
-    """Apply usages detected by POST /grammar-points/detect. ``grammar_ids``
-    has one entry per usage (a grammar point used in 3 sentences appears 3
-    times), matching how POST /grammar-points/check increments per call."""
+    """Apply usages detected by POST /grammar-points/check with
+    check_only: true. ``grammar_ids`` has one entry per usage (a grammar
+    point used in 3 sentences appears 3 times), matching how
+    POST /grammar-points/check increments per call."""
     user = current_user()
 
     if user.plan == DEFAULT_USER_PLAN:

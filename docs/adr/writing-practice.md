@@ -41,9 +41,9 @@ sentences client-side (decision 2), swaps the textarea for a read-only
 per-sentence render, and checks each sentence **sequentially**:
 
 1. `POST /writing/check-sentence` — grammar correctness (decision 3).
-2. If that came back clean, `POST /grammar-points/detect` — which of the
-   learner's in-progress grammar points this sentence uses, **without**
-   recording anything yet (decision 4).
+2. If that came back clean, `POST /grammar-points/check` with
+   `check_only: true` — which of the learner's in-progress grammar points
+   this sentence uses, **without** recording anything yet (decision 4).
 
 Once every sentence has settled, a `WritingReviewModal` opens: if every
 sentence's severity is `"none"`, it plays the same completion confetti as a
@@ -133,28 +133,39 @@ sent in chat.
 
 ### 4. Grammar-rule usage is detected per sentence but only recorded once the whole text is correct
 
-Crediting real-life usage sentence-by-sentence, the way chat does via the
-single `POST /grammar-points/check`, would let a mostly-wrong paragraph
-advance a grammar point toward `MASTERED` on the strength of one lucky
-sentence. Writing practice instead splits that endpoint's two halves apart:
+Crediting real-life usage sentence-by-sentence, the way chat does via
+`POST /grammar-points/check`, would let a mostly-wrong paragraph advance a
+grammar point toward `MASTERED` on the strength of one lucky sentence.
+Writing practice instead splits detection from recording:
 
-- `POST /grammar-points/detect` (`backend/routes/detect_grammar_points.py`)
-  — runs the same `check_grammar_usage` LLM check against the learner's
-  `DONE` grammar points and returns which are covered, **without** touching
-  `user_grammar_progress`.
+- `POST /grammar-points/check` with `"check_only": true`
+  (`backend/routes/check_grammar_point.py`) — runs the same
+  `check_grammar_usage` LLM check against the learner's `DONE` grammar
+  points and returns which are covered, **without** touching
+  `user_grammar_progress`. `check_only` is a parameter on the existing
+  chat-facing route, not a separate endpoint: both branches share the same
+  query and LLM call, and diverge only after `check_grammar_usage` returns
+  (`check_only` returns `{id, title}` pairs and stops; the default path
+  additionally increments `usage_in_real_life`, applies `MASTERED`-at-3, and
+  commits). A prior version of this route split detection into its own
+  `POST /grammar-points/detect` endpoint; that duplicated the query/LLM-call
+  code across two routes for no benefit `check_only` doesn't already give,
+  so it was folded back in.
 - `POST /grammar-points/record-usage`
   (`backend/routes/record_grammar_usage.py`) — takes a flat list of
   grammar-ids, one entry per usage (not deduplicated), and applies the
-  same increment/`MASTERED`-at-3 logic `/grammar-points/check` applies
-  inline.
+  same increment/`MASTERED`-at-3 logic the non-`check_only` path applies
+  inline. This stays a separate endpoint rather than folding into
+  `/grammar-points/check` too: it has no text to run the LLM against, only
+  ids a caller already decided are usages.
 
 The frontend accumulates detected grammar points per sentence in local
 state (`WritingSentenceCheck.grammarPointsCovered`) and only calls
 `record-usage` once every sentence's severity is `"none"` — whether that
 happens right after Submit or only after the learner fixes the last
-mistake through the correction modal. `POST /grammar-points/check` itself
-is untouched and still used by chat exactly as before; this is an
-additional pair of endpoints, not a replacement.
+mistake through the correction modal. Chat's call to
+`POST /grammar-points/check` is untouched (it omits `check_only`, so it
+defaults to `false` and behaves exactly as before).
 
 ### 5. Mistake explanations and corrections reuse existing chat/modal patterns
 
@@ -165,8 +176,8 @@ scripted opening message (no `/chat` call for the explanation itself, only
 for a learner follow-up question) and a `topicContext` describing the
 mistake. Editing a sentence opens `SentenceCorrectionModal`, a plain
 pre-filled text field; saving it re-runs the same
-check-sentence → detect-grammar-points pipeline used for the initial
-submission rather than a separate "re-check" code path.
+check-sentence → `grammar-points/check` (`check_only`) pipeline used for
+the initial submission rather than a separate "re-check" code path.
 
 ### 6. Drafts are a JSON blob in the existing conversation-logs S3 bucket
 
@@ -259,6 +270,28 @@ gate", not to "the learner can no longer submit writing practice" — the
 per-sentence grammar/usage checks after it are the features that actually
 matter.
 
+### 9. Per-sentence checks stay sequential — deliberately, not a missing optimization
+
+Submit checks sentences one LLM round trip at a time (decision 3/4) instead
+of firing them all at once or batching them into a single call. This is a
+choice, not something left for later, for two reasons:
+
+- **Incremental feedback.** A learner watches each sentence resolve and
+  turn green/red as it finishes, instead of staring at "under review" for
+  the entire duration of the longest submission. On a long piece of
+  writing, sequential checking is the difference between seeing progress
+  after a few seconds and seeing nothing until everything is done.
+- **Load control.** Firing N LLM calls concurrently per Submit multiplies
+  worst-case backend/LLM load by however long a submission is; sequential
+  keeps one writing-practice submission's concurrency the same as one chat
+  message's, regardless of how many sentences it contains.
+
+Batching every sentence into one LLM call would dodge both the latency
+*and* the concurrency cost, but was rejected for the same reason as
+decision 2's heuristic splitter: it would trade the sentence-by-sentence
+progressive coloring (and per-sentence severity/answer) for a single
+round trip, which is a worse learner experience even though it's faster.
+
 ## Runtime Architecture
 
 ```text
@@ -284,8 +317,8 @@ WritingPracticeDetailPage
   │   POST /writing/check-sentence ──────► check_user_grammar (chat_service.py) ──► LLM
   │      │ severity === "none"?
   │      ▼ yes
-  │   POST /grammar-points/detect ───────► check_grammar_usage (chat_service.py) ──► LLM
-  │      │                                  (reads user_grammar_progress, DONE only)
+  │   POST /grammar-points/check ────────► check_grammar_usage (chat_service.py) ──► LLM
+  │      (check_only: true)                 (reads user_grammar_progress, DONE only)
   │      ▼
   │   WritingReviewModal (all correct → confetti | some wrong → fix-and-retry)
   │      │ every sentence now "none"
@@ -293,7 +326,7 @@ WritingPracticeDetailPage
   │      └──────────────────────────────► POST /writing/draft/<topic_id>/complete ─► S3 (archive += entry)
   │
   │   flawed sentence clicked  ──► ephemeral ChatModal (seeded, no extra /chat call)
-  │   pencil icon clicked      ──► SentenceCorrectionModal ──► re-run check-sentence + detect
+  │   pencil icon clicked      ──► SentenceCorrectionModal ──► re-run check-sentence + check_only check
   │
   └─ Completed versions tab (only if archive non-empty)
          one <details> per archive entry, newest first, newest expanded
@@ -320,22 +353,23 @@ WritingPracticeDetailPage
   limitation (see decision 2), not solved.
 - Sentences are checked strictly sequentially, one LLM round trip at a
   time; a long submission takes noticeably longer to fully review than a
-  single chat message does. Decision 8's topic-relevance check adds one
-  more LLM round trip in front of that, once per Submit click (it isn't
-  re-run when a sentence correction is saved).
-- Decision 8's fail-open behavior means a struggling LLM/network silently
-  turns the on-topic gate off rather than blocking submission — correct for
-  availability, but a learner never sees "the check couldn't run", only
-  that off-topic text unexpectedly got through.
+  single chat message does — an accepted trade-off, not an oversight (see
+  decision 9). Decision 8's topic-relevance check adds one more LLM round
+  trip in front of that, once per Submit click (it isn't re-run when a
+  sentence correction is saved).
+- Decision 8's `except:` swallows every exception with no logging. A
+  genuine LLM/network outage degrading to "no gate" is the intended
+  behavior, but a persistent bug in the check itself (a prompt regression,
+  a response-shape mismatch) fails exactly the same silent way — there's no
+  log line or metric anywhere that would distinguish an occasional blip
+  from this endpoint having been broken for weeks.
 - There is a completion record in S3 (decision 7) but still no row in
   Postgres — there's no way to show "you've practiced this topic" or a
   score anywhere that isn't the topic's own Completed versions tab.
-- `grammar-points/detect` and `grammar-points/check` now both implement the
-  "call `check_grammar_usage` against the learner's DONE points" step;
-  keeping their prompt/behavior in sync is a shared-code-not-shared-route
-  situation rather than one endpoint reused by both callers. Decision 7's
-  archive-completion check is a third independent place that re-derives
-  "is this text fully correct" from the same per-sentence severities.
+- Decision 7's archive-completion check is a third independent place
+  (alongside the two branches of `POST /grammar-points/check`) that
+  re-derives "is this text fully correct" from the same per-sentence
+  severities, rather than reading it from one shared spot.
 
 ## Future Evolution
 
@@ -348,5 +382,6 @@ WritingPracticeDetailPage
   the topic catalog somewhere the backend can see it (or accepting an
   unrecognized topic id as "just a bucket for a draft") is an open
   question if this needs tightening later.
-- Parallelizing the per-sentence checks (or batching them into one LLM
-  call) would reduce review latency on longer submissions.
+- Decision 8's on-topic check has no logging on failure (see Drawbacks);
+  adding a log line or metric in the `except` branch would make a silently
+  broken check visible without giving up the fail-open behavior itself.

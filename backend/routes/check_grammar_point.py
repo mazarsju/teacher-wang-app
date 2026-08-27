@@ -12,12 +12,21 @@ MASTERY_THRESHOLD = 3
 
 @bp.post("/grammar-points/check")
 def check_grammar_point():
+    """Report which of the user's DONE grammar points a text uses. With
+    check_only, this only reports usage (for detect-then-record-usage
+    flows like writing practice); otherwise it also records usage inline,
+    same as before check_only existed (chat's flow)."""
     user = current_user()
+    body = request.get_json(silent=True) or {}
+    check_only = bool(body.get("check_only", False))
+
+    empty_response: dict = {"grammar_points_covered": []}
+    if not check_only:
+        empty_response["new_grammar_points_mastered"] = []
 
     if user.plan == DEFAULT_USER_PLAN:
-        return {"grammar_points_covered": [], "new_grammar_points_mastered": []}, 200
+        return empty_response, 200
 
-    body = request.get_json(silent=True) or {}
     text = body.get("text")
     if not isinstance(text, str) or text.strip() == "":
         return {"error": "text must be a non-empty string"}, 400
@@ -32,7 +41,7 @@ def check_grammar_point():
         .all()
     )
     if not rows:
-        return {"grammar_points_covered": [], "new_grammar_points_mastered": []}, 200
+        return empty_response, 200
 
     progress_by_id = {progress.grammar_id: (progress, title) for progress, title in rows}
     candidates = [
@@ -41,6 +50,13 @@ def check_grammar_point():
     ]
 
     result = check_grammar_usage(text, candidates)
+
+    if check_only:
+        covered = [
+            {"id": grammar_id, "title": progress_by_id[grammar_id][1]}
+            for grammar_id in result.covered_grammar_ids
+        ]
+        return {"grammar_points_covered": covered}, 200
 
     grammar_points_covered: list[str] = []
     new_grammar_points_mastered: list[str] = []

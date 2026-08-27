@@ -51,7 +51,7 @@ function stubApiFetch(handlers: {
         const result = (await handlers.checkSentence?.(body.text)) ?? { severity: "none" };
         return { ok: true, json: async () => result };
       }
-      if (url.endsWith("/grammar-points/detect")) {
+      if (url.endsWith("/grammar-points/check") && body.check_only) {
         detectGrammarPointCalls.push(body.text);
         const grammar_points_covered = handlers.detectGrammarPoints?.(body.text) ?? [];
         return { ok: true, json: async () => ({ grammar_points_covered }) };

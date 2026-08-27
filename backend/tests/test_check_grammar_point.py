@@ -108,6 +108,57 @@ class TestCheckGrammarPointEndpoint(unittest.TestCase):
         self.assertEqual(body["new_grammar_points_mastered"], [])
         self.assertEqual(progress.usage_in_real_life, 1)
 
+    # check_only=True: report usage without touching the database. Pairs
+    # with POST /grammar-points/record-usage, called once the caller decides
+    # the usage should actually count (e.g. once a whole piece of writing is
+    # fully correct, not sentence by sentence).
+    def test_check_only_returns_empty_for_free_plan_without_calling_llm(self):
+        self.user.plan = "free"
+
+        response = self.client.post(
+            "/grammar-points/check", json={"text": "我吃饭了", "check_only": True}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"grammar_points_covered": []})
+        self.mock_check_usage.assert_not_called()
+
+    def test_check_only_rejects_missing_text(self):
+        response = self.client.post(
+            "/grammar-points/check", json={"check_only": True}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.mock_check_usage.assert_not_called()
+
+    def test_check_only_returns_empty_when_no_done_grammar_points(self):
+        self._set_query_rows([])
+
+        response = self.client.post(
+            "/grammar-points/check", json={"text": "我吃饭了", "check_only": True}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"grammar_points_covered": []})
+        self.mock_check_usage.assert_not_called()
+
+    def test_check_only_returns_covered_points_without_writing_to_the_database(self):
+        progress = MagicMock(grammar_id="g1", usage_in_real_life=0, status="DONE")
+        self._set_query_rows([(progress, "Ba construction")])
+        self.mock_check_usage.return_value = MagicMock(covered_grammar_ids=["g1"])
+
+        response = self.client.post(
+            "/grammar-points/check", json={"text": "我把书放下了", "check_only": True}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"grammar_points_covered": [{"id": "g1", "title": "Ba construction"}]},
+        )
+        self.mock_db.session.commit.assert_not_called()
+        self.assertEqual(progress.usage_in_real_life, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
