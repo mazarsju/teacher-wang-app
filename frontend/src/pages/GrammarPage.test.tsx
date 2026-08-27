@@ -653,6 +653,42 @@ describe("GrammarPage", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
 
+  it("does not refetch grammar points when they are already loaded in the store", async () => {
+    const fetchSpy = vi.fn(() =>
+      Promise.resolve({ ok: true, json: async () => ({}) }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    renderWithStore(<GrammarPage />, {
+      preloadedState: {
+        ...HSK1_STATE,
+        grammar: {
+          items: [
+            {
+              id: "1|Basic Sentence Structure",
+              hsk_level: 1,
+              index: 1,
+              title: "Basic Sentence Structure",
+              prerequisites: [],
+              status: "TODO",
+              score: null,
+            },
+          ],
+          writingPractices: [],
+          loaded: true,
+          quizInProgress: false,
+        },
+      },
+    });
+
+    expect(
+      await screen.findByRole("button", { name: /Basic Sentence Structure/ }),
+    ).toBeInTheDocument();
+    expect(
+      fetchSpy.mock.calls.some((call) => String(call[0]).endsWith("/grammar-points")),
+    ).toBe(false);
+  });
+
   it("shows an error message when the fetch fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 

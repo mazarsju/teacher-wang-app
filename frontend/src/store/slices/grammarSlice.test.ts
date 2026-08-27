@@ -1,5 +1,6 @@
 import { resetAppData } from "../thunks/syncAppData";
 import reducer, {
+  setGrammarData,
   setGrammarPointScore,
   setGrammarPointStatus,
   setGrammarPoints,
@@ -16,10 +17,19 @@ const SAMPLE_POINT = {
   score: null,
 };
 
+const SAMPLE_WRITING_TOPIC = {
+  id: "writing-present-yourself",
+  title: "Present yourself",
+  after_grammar_point: SAMPLE_POINT.id,
+  status: "TODO",
+};
+
 describe("grammarSlice", () => {
   it("starts with no grammar points", () => {
     expect(reducer(undefined, { type: "@@INIT" })).toEqual({
       items: [],
+      writingPractices: [],
+      loaded: false,
       quizInProgress: false,
     });
   });
@@ -28,6 +38,20 @@ describe("grammarSlice", () => {
     const state = reducer(undefined, setGrammarPoints([SAMPLE_POINT]));
 
     expect(state.items).toEqual([SAMPLE_POINT]);
+  });
+
+  it("stores the fetched grammar points and writing practices, marking them loaded", () => {
+    const state = reducer(
+      undefined,
+      setGrammarData({
+        grammarPoints: [SAMPLE_POINT],
+        writingPractices: [SAMPLE_WRITING_TOPIC],
+      }),
+    );
+
+    expect(state.items).toEqual([SAMPLE_POINT]);
+    expect(state.writingPractices).toEqual([SAMPLE_WRITING_TOPIC]);
+    expect(state.loaded).toBe(true);
   });
 
   it("updates a single grammar point's status", () => {
@@ -70,10 +94,15 @@ describe("grammarSlice", () => {
   });
 
   it("clears on resetAppData", () => {
-    const populated = reducer(undefined, setGrammarPoints([SAMPLE_POINT]));
+    const populated = reducer(
+      undefined,
+      setGrammarData({ grammarPoints: [SAMPLE_POINT], writingPractices: [SAMPLE_WRITING_TOPIC] }),
+    );
 
     expect(reducer(populated, resetAppData())).toEqual({
       items: [],
+      writingPractices: [],
+      loaded: false,
       quizInProgress: false,
     });
   });

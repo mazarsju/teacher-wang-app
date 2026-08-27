@@ -301,6 +301,27 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not refetch the weekly article when it is already loaded in the store", async () => {
+    fetchWeeklyArticle.mockClear();
+    renderWithStore(<HomePage />, {
+      preloadedState: {
+        ...syncedState,
+        weeklyArticle: {
+          article: {
+            week: 33,
+            year: 2026,
+            hsk_level: 2,
+            content: [{ title: "第一篇", content: "你好" }],
+          },
+          loaded: true,
+        },
+      },
+    });
+
+    expect(await screen.findByText("第一篇")).toBeInTheDocument();
+    expect(fetchWeeklyArticle).not.toHaveBeenCalled();
+  });
+
   it("shows an error when loading the weekly article fails", async () => {
     fetchWeeklyArticle.mockRejectedValue(
       new Error("Failed to load your weekly articles."),

@@ -3,7 +3,7 @@ import { scoreBand } from "../components/GrammarExercises";
 import { CheckIcon, LockIcon, PenIcon, StarIcon } from "../components/icons";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { setGrammarPoints } from "../store/slices/grammarSlice";
+import { setGrammarData } from "../store/slices/grammarSlice";
 import type { GrammarPoint } from "../types/grammarPoint";
 import type { WritingTopic } from "../types/writingTopic";
 import { fetchCurrentUser } from "../utils/auth/meApi";
@@ -144,6 +144,8 @@ function isGrammarPointAvailable(
 export default function GrammarPage() {
   const dispatch = useAppDispatch();
   const grammarPoints = useAppSelector((state) => state.grammar.items);
+  const writingPractices = useAppSelector((state) => state.grammar.writingPractices);
+  const grammarLoaded = useAppSelector((state) => state.grammar.loaded);
   const currentHskLevel = useAppSelector(
     (state) => state.hsk.status?.current_level ?? 0,
   );
@@ -154,7 +156,7 @@ export default function GrammarPage() {
     currentHskLevel + 1,
     maxHskLevel ?? currentHskLevel + 1,
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!grammarLoaded);
   const [error, setError] = useState<string | null>(null);
   const [selectedGrammarId, setSelectedGrammarId] = useState<string | null>(
     null,
@@ -163,7 +165,6 @@ export default function GrammarPage() {
     string | null
   >(null);
   const [plan, setPlan] = useState<string | null>(null);
-  const [writingPractices, setWritingPractices] = useState<WritingTopic[]>([]);
 
   useEffect(() => {
     fetchCurrentUser()
@@ -225,13 +226,13 @@ export default function GrammarPage() {
   }, [visibleGrammarPoints, writingPractices]);
 
   useEffect(() => {
+    if (grammarLoaded) return;
     let cancelled = false;
 
     fetchGrammarPoints()
       .then(({ grammarPoints, writingPractices }) => {
         if (!cancelled) {
-          dispatch(setGrammarPoints(grammarPoints));
-          setWritingPractices(writingPractices);
+          dispatch(setGrammarData({ grammarPoints, writingPractices }));
         }
       })
       .catch((fetchError) => {
@@ -252,6 +253,10 @@ export default function GrammarPage() {
     return () => {
       cancelled = true;
     };
+    // grammarLoaded is intentionally excluded: this dispatches setGrammarData,
+    // which flips grammarLoaded itself, and re-running on that flip would
+    // cancel this same in-flight fetch before its `finally` clears isLoading.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   function handleSelect(grammarPoint: GrammarPoint) {

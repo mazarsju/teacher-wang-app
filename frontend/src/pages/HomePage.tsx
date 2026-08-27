@@ -5,12 +5,10 @@ import MissingHskCharactersModal from "../components/MissingHskCharactersModal";
 import type { PageId } from "../components/Navbar";
 import { InfoIcon, TrophyIcon } from "../components/icons";
 import Page from "../components/Page";
-import { useAppSelector } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setWeeklyArticle } from "../store/slices/weeklyArticleSlice";
 import { getMotivationMessages } from "../utils/knowledgeBase/homeMotivation";
-import {
-  fetchWeeklyArticle,
-  type WeeklyArticle,
-} from "../utils/knowledgeBase/weeklyArticleApi";
+import { fetchWeeklyArticle } from "../utils/knowledgeBase/weeklyArticleApi";
 import Button from "../components/Button";
 import characterWordsStyles from "../components/CharacterWordsModal.module.css";
 import styles from "./HomePage.module.css";
@@ -20,17 +18,21 @@ const ONBOARDING_WORD_THRESHOLD = 10;
 type HomePageProps = { onNavigate?: (page: PageId) => void };
 
 export default function HomePage({ onNavigate }: HomePageProps) {
+  const dispatch = useAppDispatch();
   const characters = useAppSelector((state) => state.characters.items);
   const words = useAppSelector((state) => state.words.items);
   const hskLevelStatus = useAppSelector((state) => state.hsk.status);
   const syncStatus = useAppSelector((state) => state.sync.status);
   const syncError = useAppSelector((state) => state.sync.error);
   const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
+  const weeklyArticle = useAppSelector((state) => state.weeklyArticle.article);
+  const weeklyArticleLoaded = useAppSelector((state) => state.weeklyArticle.loaded);
   const [isMissingModalOpen, setIsMissingModalOpen] = useState(false);
   const [isHskInfoOpen, setIsHskInfoOpen] = useState(false);
   const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
-  const [weeklyArticle, setWeeklyArticle] = useState<WeeklyArticle | null>(null);
-  const [isWeeklyArticleLoading, setIsWeeklyArticleLoading] = useState(true);
+  const [isWeeklyArticleLoading, setIsWeeklyArticleLoading] = useState(
+    !weeklyArticleLoaded,
+  );
   const [weeklyArticleError, setWeeklyArticleError] = useState<string | null>(
     null,
   );
@@ -38,7 +40,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   const loadWeeklyArticle = useCallback(async () => {
     setWeeklyArticleError(null);
     try {
-      setWeeklyArticle(await fetchWeeklyArticle());
+      dispatch(setWeeklyArticle(await fetchWeeklyArticle()));
     } catch (loadError) {
       setWeeklyArticleError(
         loadError instanceof Error
@@ -48,11 +50,12 @@ export default function HomePage({ onNavigate }: HomePageProps) {
     } finally {
       setIsWeeklyArticleLoading(false);
     }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
+    if (weeklyArticleLoaded) return;
     void loadWeeklyArticle();
-  }, [loadWeeklyArticle]);
+  }, [loadWeeklyArticle, weeklyArticleLoaded]);
 
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =

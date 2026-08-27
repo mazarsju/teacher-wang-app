@@ -291,6 +291,8 @@ Important learner data is kept in a Redux store so navigating between tabs does 
 
 Home, Knowledge base, and Preferences read from that store. Mutations (add / edit / delete) update the store after a successful API call. Logout clears the store. Chat transcripts, token-usage charts, and other ephemeral UI state are not cached this way. LLM credentials are never stored in Redux (see [LLM configuration](#llm-configuration-operators-only--never-exposed-to-users)).
 
+Weekly articles (`GET /weekly-articles`) and grammar points / writing practices (`GET /grammar-points`) follow a lazier pattern instead: Home and Grammar fetch them once on first visit and cache the result in their own slice (`weeklyArticle`, `grammar`), so navigating away and back does not refetch. They still clear on logout along with the rest of the store.
+
 #### Tests
 
 From the `frontend/` directory:

@@ -6,6 +6,7 @@ import grammarReducer from "./slices/grammarSlice";
 import hskReducer from "./slices/hskSlice";
 import hskCharactersReducer from "./slices/hskCharactersSlice";
 import syncReducer from "./slices/syncSlice";
+import weeklyArticleReducer from "./slices/weeklyArticleSlice";
 import wordsReducer from "./slices/wordsSlice";
 
 const rootReducer = combineReducers({
@@ -17,6 +18,7 @@ const rootReducer = combineReducers({
   anki: ankiReducer,
   sync: syncReducer,
   challengeProgress: challengeProgressReducer,
+  weeklyArticle: weeklyArticleReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
