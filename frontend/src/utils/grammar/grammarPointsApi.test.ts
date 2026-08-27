@@ -49,6 +49,18 @@ describe("grammarPointsApi", () => {
     await expect(fetchGrammarPoints()).rejects.toThrow(/Failed to load grammar/);
   });
 
+  it("throws when the response body isn't the expected shape (e.g. a stale bundle vs. a new API)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ grammar_points: [], writing_practices: {} }),
+      }),
+    );
+
+    await expect(fetchGrammarPoints()).rejects.toThrow(/Failed to load grammar/);
+  });
+
   it("marks a grammar point as known, encoding its id in the URL", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);

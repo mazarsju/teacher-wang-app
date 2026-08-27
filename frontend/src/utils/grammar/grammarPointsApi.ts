@@ -20,6 +20,12 @@ export async function fetchGrammarPoints(): Promise<FetchGrammarPointsResult> {
     grammar_points: GrammarPoint[];
     writing_practices: WritingTopic[];
   };
+  if (!Array.isArray(data.grammar_points) || !Array.isArray(data.writing_practices)) {
+    // A stale cached bundle can still be talking to the current API's shape
+    // mismatch (or vice versa); fail loudly here instead of crashing the
+    // page deep inside a render.
+    throw new Error("Failed to load grammar points.");
+  }
   return { grammarPoints: data.grammar_points, writingPractices: data.writing_practices };
 }
 
