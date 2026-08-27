@@ -1,9 +1,22 @@
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Button from "../components/Button";
+import ChatModal from "../components/ChatModal";
+import { PenIcon } from "../components/icons";
 import Page from "../components/Page";
+import SentenceCorrectionModal from "../components/SentenceCorrectionModal";
+import WritingReviewModal from "../components/WritingReviewModal";
+import { TEACHER_WANG } from "../data/chatCharacters";
 import { getWritingContext } from "../data/writingContext";
 import { WRITING_TOPICS } from "../data/writingTopics";
+import type { CoveredGrammarPoint, WritingSentenceCheck } from "../types/writingSentence";
 import { renderFormattedText } from "../utils/formatMarkdownText";
+import { detectGrammarPoints, recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
+import { splitIntoSentences } from "../utils/writing/splitSentences";
+import {
+  checkWritingSentence,
+  fetchWritingDraft,
+  saveWritingDraft,
+} from "../utils/writing/writingApi";
 import styles from "./WritingPracticeDetailPage.module.css";
 
 type WritingDetailTab = "context" | "writing";
@@ -13,6 +26,83 @@ type WritingPracticeDetailPageProps = {
   onBack: () => void;
 };
 
+type ReviewSummary = {
+  allCorrect: boolean;
+  grammarPointTitles: string[];
+};
+
+function groupByParagraph(sentences: WritingSentenceCheck[]): WritingSentenceCheck[][] {
+  const paragraphs: WritingSentenceCheck[][] = [];
+  for (const sentence of sentences) {
+    const lastParagraph = paragraphs[paragraphs.length - 1];
+    if (lastParagraph && lastParagraph[0]?.paragraphIndex === sentence.paragraphIndex) {
+      lastParagraph.push(sentence);
+    } else {
+      paragraphs.push([sentence]);
+    }
+  }
+  return paragraphs;
+}
+
+function isFlawed(sentence: WritingSentenceCheck): boolean {
+  return sentence.status === "done" && sentence.severity !== null && sentence.severity !== "none";
+}
+
+function buildSentenceCorrectionContext(sentence: WritingSentenceCheck): string {
+  return `# Writing correction\n\nThe learner wrote: "${sentence.text}"\n\n${sentence.answer}`;
+}
+
+type SentenceCheckResult = Pick<
+  WritingSentenceCheck,
+  "status" | "severity" | "answer" | "grammarPointsCovered"
+>;
+
+async function runSentenceCheck(text: string): Promise<SentenceCheckResult> {
+  try {
+    const correction = await checkWritingSentence(text);
+    let grammarPointsCovered: CoveredGrammarPoint[] = [];
+    if (correction.severity === "none") {
+      try {
+        grammarPointsCovered = await detectGrammarPoints(text);
+      } catch {
+        // Grammar-rule detection is a bonus signal; a failure here
+        // shouldn't block showing the correctness result.
+      }
+    }
+    return {
+      status: "done",
+      severity: correction.severity,
+      answer: correction.answer ?? null,
+      grammarPointsCovered,
+    };
+  } catch {
+    return { status: "error", severity: null, answer: null, grammarPointsCovered: [] };
+  }
+}
+
+function buildReviewSummary(checks: WritingSentenceCheck[]): ReviewSummary {
+  const covered = checks.flatMap((sentence) => sentence.grammarPointsCovered);
+  return {
+    allCorrect: checks.every((sentence) => sentence.severity === "none"),
+    grammarPointTitles: [...new Set(covered.map((point) => point.title))],
+  };
+}
+
+// Only recorded once the whole text is correct — a point used while other
+// sentences still have mistakes doesn't get credit yet. One id per usage
+// (not deduped), matching how the backend increments per occurrence.
+function recordGrammarUsageIfAllCorrect(checks: WritingSentenceCheck[]): void {
+  if (!checks.every((sentence) => sentence.severity === "none")) return;
+  const grammarIds = checks.flatMap((sentence) =>
+    sentence.grammarPointsCovered.map((point) => point.id),
+  );
+  if (grammarIds.length === 0) return;
+  recordGrammarUsage(grammarIds).catch(() => {
+    // Best-effort: the review modal already celebrated the correct text;
+    // a failed usage recording shouldn't surface as a user-facing error.
+  });
+}
+
 export default function WritingPracticeDetailPage({
   topicId,
   onBack,
@@ -21,6 +111,122 @@ export default function WritingPracticeDetailPage({
   const context = getWritingContext(topicId);
   const [activeTab, setActiveTab] = useState<WritingDetailTab>("context");
   const [draft, setDraft] = useState("");
+  const [sentenceChecks, setSentenceChecks] = useState<WritingSentenceCheck[] | null>(
+    null,
+  );
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [activeSentenceChat, setActiveSentenceChat] = useState<WritingSentenceCheck | null>(
+    null,
+  );
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
+  const [correctingSentence, setCorrectingSentence] = useState<WritingSentenceCheck | null>(
+    null,
+  );
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchWritingDraft(topicId)
+      .then((saved) => {
+        if (!cancelled && typeof saved.draft === "string") setDraft(saved.draft);
+      })
+      .catch(() => {
+        // No saved draft yet (or it failed to load) — start from a blank page.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId]);
+
+  async function handleSaveDraft() {
+    setIsSavingDraft(true);
+    setDraftSaveError(null);
+    try {
+      await saveWritingDraft(topicId, draft);
+    } catch (error) {
+      setDraftSaveError(
+        error instanceof Error ? error.message : "Failed to save your draft.",
+      );
+    } finally {
+      setIsSavingDraft(false);
+    }
+  }
+
+  function updateSentence(id: string, changes: Partial<WritingSentenceCheck>) {
+    setSentenceChecks(
+      (previous) =>
+        previous?.map((sentence) =>
+          sentence.id === id ? { ...sentence, ...changes } : sentence,
+        ) ?? previous,
+    );
+  }
+
+  async function handleSubmit() {
+    const lines = splitIntoSentences(draft);
+    if (lines.length === 0) return;
+
+    const initialChecks: WritingSentenceCheck[] = lines.map((line, index) => ({
+      id: `${index}`,
+      paragraphIndex: line.paragraphIndex,
+      text: line.text,
+      status: "pending",
+      severity: null,
+      answer: null,
+      grammarPointsCovered: [],
+    }));
+
+    setSentenceChecks(initialChecks);
+    setIsReviewing(true);
+
+    // Tracked locally (not read back from state) since state updates from
+    // the loop below don't land in this closure's `sentenceChecks`.
+    const finalChecks: WritingSentenceCheck[] = [];
+
+    for (const sentence of initialChecks) {
+      updateSentence(sentence.id, { status: "checking" });
+
+      const result = await runSentenceCheck(sentence.text);
+      const finalSentence: WritingSentenceCheck = { ...sentence, ...result };
+
+      finalChecks.push(finalSentence);
+      updateSentence(sentence.id, finalSentence);
+    }
+
+    setIsReviewing(false);
+    setReviewSummary(buildReviewSummary(finalChecks));
+    recordGrammarUsageIfAllCorrect(finalChecks);
+  }
+
+  async function handleConfirmCorrection(sentenceId: string, correctedText: string) {
+    setCorrectingSentence(null);
+    updateSentence(sentenceId, {
+      text: correctedText,
+      status: "checking",
+      severity: null,
+      answer: null,
+      grammarPointsCovered: [],
+    });
+
+    const result = await runSentenceCheck(correctedText);
+
+    // Computed from this closure's `sentenceChecks`, not a setState updater:
+    // nothing else touches sentence state while a correction is in flight
+    // (only one correction modal can be open at a time), and recording usage
+    // is a real network side effect that must not run twice, which a React
+    // 18 Strict Mode double-invoked updater would risk.
+    const updated = (sentenceChecks ?? []).map((sentence) =>
+      sentence.id === sentenceId ? { ...sentence, text: correctedText, ...result } : sentence,
+    );
+    setSentenceChecks(updated);
+
+    if (updated.every((sentence) => sentence.severity === "none")) {
+      setReviewSummary(buildReviewSummary(updated));
+      recordGrammarUsageIfAllCorrect(updated);
+    }
+  }
 
   return (
     <Page
@@ -70,17 +276,129 @@ export default function WritingPracticeDetailPage({
           activeTab === "writing" ? styles.writingDetailWriting : styles.writingDetailHidden
         }
       >
-        <textarea
-          className={styles.writingDetailTextarea}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Write in Chinese..."
-          aria-label="Your writing"
-        />
-        <div className={styles.writingDetailSubmitRow}>
-          <Button kind="confirm" variant="page" text="Submit" />
-        </div>
+        {sentenceChecks === null ? (
+          <>
+            <textarea
+              className={styles.writingDetailTextarea}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Write in Chinese..."
+              aria-label="Your writing"
+            />
+            {draftSaveError && <p className="table-error">{draftSaveError}</p>}
+            <div className={styles.writingDetailSubmitRow}>
+              <Button
+                kind="cancel"
+                variant="page"
+                text={isSavingDraft ? "Saving..." : "Save draft"}
+                disabled={isSavingDraft}
+                onClick={handleSaveDraft}
+              />
+              <Button
+                kind="confirm"
+                variant="page"
+                text="Submit"
+                disabled={draft.trim() === ""}
+                onClick={handleSubmit}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {isReviewing && (
+              <p className={styles.writingDetailReviewingMessage}>
+                Your text is currently under review...
+              </p>
+            )}
+            <div className={styles.writingDetailReviewed} aria-label="Your writing">
+              {groupByParagraph(sentenceChecks).map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex} className={styles.writingDetailParagraph}>
+                  {paragraph.map((sentence) => {
+                    const clickable = isFlawed(sentence);
+                    return (
+                      <Fragment key={sentence.id}>
+                        <span
+                          role={clickable ? "button" : undefined}
+                          tabIndex={clickable ? 0 : undefined}
+                          className={[
+                            styles.writingSentence,
+                            sentence.status === "checking"
+                              ? styles["writing-sentence--checking"]
+                              : "",
+                            sentence.severity
+                              ? styles[`writing-sentence--${sentence.severity}`]
+                              : "",
+                            clickable ? styles["writing-sentence--clickable"] : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          title={sentence.answer ?? undefined}
+                          onClick={clickable ? () => setActiveSentenceChat(sentence) : undefined}
+                          onKeyDown={
+                            clickable
+                              ? (event) => {
+                                  if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    setActiveSentenceChat(sentence);
+                                  }
+                                }
+                              : undefined
+                          }
+                        >
+                          {sentence.text}
+                        </span>
+                        {clickable && (
+                          <button
+                            type="button"
+                            className={styles.writingSentenceEditButton}
+                            aria-label={`Correct: ${sentence.text}`}
+                            onClick={() => setCorrectingSentence(sentence)}
+                          >
+                            <PenIcon className={styles.writingSentenceEditIcon} />
+                          </button>
+                        )}{" "}
+                      </Fragment>
+                    );
+                  })}
+                </p>
+              ))}
+            </div>
+          </>
+        )}
       </div>
+      {activeSentenceChat && (
+        <ChatModal
+          character={TEACHER_WANG}
+          onClose={() => setActiveSentenceChat(null)}
+          initialMessages={[
+            {
+              role: "assistant",
+              content: activeSentenceChat.answer ?? "",
+              isDisplayOnly: true,
+            },
+          ]}
+          loadHistory={false}
+          allowClearHistory={false}
+          ephemeral
+          topicContext={buildSentenceCorrectionContext(activeSentenceChat)}
+        />
+      )}
+      {correctingSentence && (
+        <SentenceCorrectionModal
+          originalText={correctingSentence.text}
+          onCancel={() => setCorrectingSentence(null)}
+          onConfirm={(correctedText) =>
+            handleConfirmCorrection(correctingSentence.id, correctedText)
+          }
+        />
+      )}
+      {reviewSummary && (
+        <WritingReviewModal
+          allCorrect={reviewSummary.allCorrect}
+          grammarPointTitles={reviewSummary.grammarPointTitles}
+          onClose={() => setReviewSummary(null)}
+        />
+      )}
     </Page>
   );
 }

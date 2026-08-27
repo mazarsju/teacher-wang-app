@@ -1,0 +1,20 @@
+.sentence-correction-modal-textarea {
+  width: 100%;
+  min-height: 6rem;
+  margin-top: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.55rem;
+  background: #ffffff;
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.15s ease, outline 0.15s ease;
+}
+
+.sentence-correction-modal-textarea:focus {
+  outline: 2px solid var(--app-focus);
+  border-color: var(--app-sea);
+}

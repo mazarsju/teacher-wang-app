@@ -28,6 +28,8 @@ Use this index to find the right document. Prefer **one source of truth** and li
 | Data isolation / tenancy | [adr/data-isolation.md](adr/data-isolation.md) |
 | Plan / token budget | [adr/plan-management.md](adr/plan-management.md) |
 | Frontend CSS organization | [adr/frontend-styling.md](adr/frontend-styling.md) |
+| Grammar content (lessons, exercises, mastery) | [adr/grammar-content.md](adr/grammar-content.md) |
+| Writing practice | [adr/writing-practice.md](adr/writing-practice.md) |
 
 Obsolete decisions: [adr/archived/](adr/archived/) (history only).
 
@@ -70,6 +72,8 @@ Example header:
 | Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
 | Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |
 | Component CSS / `Button` design system | [adr/frontend-styling.md](adr/frontend-styling.md) |
+| Grammar lessons / exercises / mastery | [adr/grammar-content.md](adr/grammar-content.md) |
+| Writing topics / drafts / sentence correction / `writing_progress` | [adr/writing-practice.md](adr/writing-practice.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |
 | Product screenshots | [screenshots/](screenshots/) |
 | AnkiConnect install UI | [anki/setup/](anki/setup/) |

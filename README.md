@@ -50,6 +50,7 @@ teacher-wang/
 │   │   │                   # hsk_source.py/hsk_content_loader.py/load_hsk_content.py (HSK vocabulary load)
 │   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml files from S3 into
 │   │   │                   # grammar_points/grammar_prerequisites)
+│   │   ├── writing/        # writing_drafts.py (S3-backed draft load/save, conversation-logs bucket)
 │   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
 │   └── requirements.txt
 ├── alembic.ini             # Alembic config (URL overridden from .env)
@@ -81,6 +82,7 @@ teacher-wang/
 │   │       ├── anki/           # AnkiConnect (localhost:8765) + /api/anki bookkeeping
 │   │       ├── knowledgeBase/  # Words, characters, HSK helpers
 │   │       ├── grammar/        # Grammar points API
+│   │       ├── writing/        # Sentence splitting, check/draft APIs
 │   │       └── aiChat/         # Chat and token usage APIs
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
@@ -114,6 +116,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Plan management](docs/adr/plan-management.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
 - [Frontend CSS organization](docs/adr/frontend-styling.md) — CSS Modules per component, `shared.css` design system, the `Button` component
 - [Grammar content architecture](docs/adr/grammar-content.md) — content in Git/S3 vs. metadata and learner progress in Postgres, prerequisite resolution
+- [Writing practice](docs/adr/writing-practice.md) — topics anchored to grammar lessons, sentence-level checks reusing chat's grammar correction, S3 drafts, deferred grammar-usage recording
 
 Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
 

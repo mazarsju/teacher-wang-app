@@ -12,3 +12,13 @@ API: `GET/POST/PATCH/DELETE /conversation-logs/<character_id>` (and `POST /chat`
 `DELETE /database/knowledge-base` also wipes every object under a user's `users/{sub}/` prefix (all transcripts, threads, and challenge task progress), not just one character's.
 
 Each character's transcript also has a companion row (or two) in the `conversation_summary` Postgres table, keyed by the same `character_id` — see [conversation memory](../adr/ai-agents.md#conversation-memory-summarization). `DELETE /conversation-logs/<character_id>` and `DELETE /database/knowledge-base` both purge those rows too (`delete_conversation_summaries`), so a cleared or deleted conversation never leaves behind a stale summary.
+
+## Writing practice drafts
+
+Same bucket/backend switch, different layout: `users/{sub}/writing/{topic_id}.json`, written by `backend/utils/writing/writing_drafts.py` (`load_draft`/`save_draft`) via the same `get_storage()`/`object_key()` helpers. Shape:
+
+```json
+{ "draft": "<current draft text>", "archive": [] }
+```
+
+`archive` is reserved for a future revision-history feature — `save_draft` always preserves whatever is already there and only overwrites `draft`. API: `GET/POST /writing/draft/<topic_id>`; the frontend fetches on opening a writing topic to resume work, and saves via a "Save draft" button. Being under the same `users/{sub}/` prefix, drafts are also wiped by `DELETE /database/knowledge-base`'s prefix delete, same as transcripts.

@@ -12,6 +12,7 @@ def register_routes(app: Flask) -> None:
         chat,
         challenges,
         check_grammar_point,
+        check_writing_sentence,
         complete_grammar_point,
         conversation_logs,
         create_character,
@@ -20,6 +21,7 @@ def register_routes(app: Flask) -> None:
         delete_knowledge_base,
         delete_user,
         delete_word,
+        detect_grammar_points,
         export_database,
         generate_article,
         get_grammar_point,
@@ -33,6 +35,7 @@ def register_routes(app: Flask) -> None:
         list_users,
         list_words,
         pick_hsk_word,
+        record_grammar_usage,
         reload_grammar_rules,
         reload_hsk_content,
         skip_grammar_point,
@@ -43,6 +46,7 @@ def register_routes(app: Flask) -> None:
         update_user,
         update_word,
         weekly_articles,
+        writing_draft,
     )
     from backend.utils.auth.user_context import register_user_context
 
@@ -74,6 +78,9 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(complete_grammar_point.bp)
     app.register_blueprint(check_grammar_point.bp)
+    app.register_blueprint(check_writing_sentence.bp)
+    app.register_blueprint(detect_grammar_points.bp)
+    app.register_blueprint(record_grammar_usage.bp)
     app.register_blueprint(list_hsk_characters.bp)
     app.register_blueprint(list_hsk_character_words.bp)
     app.register_blueprint(get_hsk_level.bp)
@@ -88,3 +95,4 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(smart_ai_preference.bp)
     app.register_blueprint(generate_article.bp)
     app.register_blueprint(weekly_articles.bp)
+    app.register_blueprint(writing_draft.bp)

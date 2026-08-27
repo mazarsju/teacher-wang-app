@@ -1,4 +1,5 @@
 import type { GrammarPoint, GrammarPointDetail } from "../../types/grammarPoint";
+import type { CoveredGrammarPoint } from "../../types/writingSentence";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
 
@@ -55,6 +56,45 @@ export async function checkGrammarPoint(text: string): Promise<CheckGrammarPoint
   }
 
   return (await response.json()) as CheckGrammarPointResult;
+}
+
+/** Detects which mastered-in-progress grammar points `text` uses, without
+ * recording any usage. Pair with `recordGrammarUsage` once the usage should
+ * actually count. */
+export async function detectGrammarPoints(text: string): Promise<CoveredGrammarPoint[]> {
+  const response = await apiFetch(`${API_BASE}/grammar-points/detect`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to detect grammar point usage.");
+  }
+
+  const data = (await response.json()) as { grammar_points_covered: CoveredGrammarPoint[] };
+  return data.grammar_points_covered;
+}
+
+export type RecordGrammarUsageResult = {
+  new_grammar_points_mastered: string[];
+};
+
+/** `grammarIds` has one entry per usage (a point used in 3 sentences appears 3 times). */
+export async function recordGrammarUsage(
+  grammarIds: string[],
+): Promise<RecordGrammarUsageResult> {
+  const response = await apiFetch(`${API_BASE}/grammar-points/record-usage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ grammar_ids: grammarIds }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to record grammar point usage.");
+  }
+
+  return (await response.json()) as RecordGrammarUsageResult;
 }
 
 export async function completeGrammarPoint(

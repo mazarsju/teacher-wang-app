@@ -67,4 +67,98 @@
 .writing-detail-submit-row {
   display: flex;
   justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.writing-detail-reviewing-message {
+  margin: 0;
+  font-style: italic;
+  color: #4b5563;
+}
+
+.writing-detail-reviewed {
+  width: 100%;
+  min-height: 60vh;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  color: #111827;
+  line-height: 1.6;
+}
+
+.writing-detail-paragraph {
+  margin: 0 0 0.75rem;
+}
+
+.writing-detail-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.writing-sentence {
+  transition: color 0.2s ease-out;
+}
+
+.writing-sentence--checking {
+  opacity: 0.6;
+}
+
+.writing-sentence--none {
+  color: #16a34a;
+}
+
+.writing-sentence--minor {
+  color: #d97706;
+}
+
+.writing-sentence--awkward {
+  color: #ea580c;
+}
+
+.writing-sentence--incorrect {
+  color: #dc2626;
+}
+
+.writing-sentence--clickable {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.writing-sentence--clickable:hover {
+  opacity: 0.8;
+}
+
+.writing-sentence--clickable:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.writing-sentence-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0 0.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.writing-sentence-edit-button:hover,
+.writing-sentence-edit-button:focus-visible {
+  color: var(--app-sea);
+  outline: none;
+}
+
+.writing-sentence-edit-icon {
+  width: 0.8rem;
+  height: 0.8rem;
 }
