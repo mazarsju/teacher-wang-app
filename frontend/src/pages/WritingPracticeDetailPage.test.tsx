@@ -9,11 +9,14 @@ function stubApiFetch(handlers: {
   checkSentence?: (text: string) => SentenceCheckResponse | Promise<SentenceCheckResponse>;
   detectGrammarPoints?: (text: string) => CoveredGrammarPointResponse[];
   savedDraft?: string;
+  savedArchive?: { timestamp: string; content: string }[];
 }) {
   const detectGrammarPointCalls: string[] = [];
   const recordUsageCalls: string[][] = [];
   const chatCalls: unknown[] = [];
   const saveDraftCalls: string[] = [];
+  const completeDraftCalls: string[] = [];
+  let archive = handlers.savedArchive ?? [];
 
   vi.stubGlobal(
     "fetch",
@@ -22,12 +25,17 @@ function stubApiFetch(handlers: {
       const method = init?.method ?? "GET";
       const body = init?.body ? JSON.parse(init.body as string) : {};
 
+      if (url.includes("/writing/draft/") && url.endsWith("/complete") && method === "POST") {
+        completeDraftCalls.push(body.draft);
+        archive = [...archive, { timestamp: new Date().toISOString(), content: body.draft }];
+        return { ok: true, json: async () => ({ draft: body.draft, archive }) };
+      }
       if (url.includes("/writing/draft/") && method === "GET") {
-        return { ok: true, json: async () => ({ draft: handlers.savedDraft ?? "", archive: [] }) };
+        return { ok: true, json: async () => ({ draft: handlers.savedDraft ?? "", archive }) };
       }
       if (url.includes("/writing/draft/") && method === "POST") {
         saveDraftCalls.push(body.draft);
-        return { ok: true, json: async () => ({ draft: body.draft, archive: [] }) };
+        return { ok: true, json: async () => ({ draft: body.draft, archive }) };
       }
       if (url.endsWith("/writing/check-sentence")) {
         const result = (await handlers.checkSentence?.(body.text)) ?? { severity: "none" };
@@ -53,7 +61,7 @@ function stubApiFetch(handlers: {
     }),
   );
 
-  return { detectGrammarPointCalls, recordUsageCalls, chatCalls, saveDraftCalls };
+  return { detectGrammarPointCalls, recordUsageCalls, chatCalls, saveDraftCalls, completeDraftCalls };
 }
 
 describe("WritingPracticeDetailPage", () => {
@@ -157,6 +165,81 @@ describe("WritingPracticeDetailPage", () => {
       await user.click(screen.getByRole("button", { name: "Save draft" }));
 
       expect(await screen.findByText("Failed to save your draft.")).toBeInTheDocument();
+    });
+
+    it("asks for confirmation before deleting the draft, and does nothing if cancelled", async () => {
+      const user = userEvent.setup();
+      const { saveDraftCalls } = stubApiFetch({});
+      render(
+        <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+      );
+      await user.click(screen.getByRole("tab", { name: "Writing" }));
+      await user.type(screen.getByLabelText("Your writing"), "我叫小明。");
+
+      await user.click(screen.getByRole("button", { name: "Delete draft" }));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Your writing")).toHaveValue("我叫小明。");
+      expect(saveDraftCalls).toEqual([]);
+    });
+
+    it("removes the draft and returns to a blank edit mode once deletion is confirmed", async () => {
+      const user = userEvent.setup();
+      const { saveDraftCalls } = stubApiFetch({});
+      render(
+        <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+      );
+      await user.click(screen.getByRole("tab", { name: "Writing" }));
+      await user.type(screen.getByLabelText("Your writing"), "我叫小明。");
+
+      await user.click(screen.getByRole("button", { name: "Delete draft" }));
+      await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+      await waitFor(() => expect(saveDraftCalls).toEqual([""]));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Your writing")).toHaveValue("");
+    });
+
+    it("shows an error when deleting the draft fails", async () => {
+      const user = userEvent.setup();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input);
+          const method = init?.method ?? "GET";
+          if (url.includes("/writing/draft/") && method === "GET") {
+            return { ok: true, json: async () => ({ draft: "", archive: [] }) };
+          }
+          return { ok: false };
+        }),
+      );
+      render(
+        <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+      );
+      await user.click(screen.getByRole("tab", { name: "Writing" }));
+      await user.type(screen.getByLabelText("Your writing"), "我叫小明。");
+
+      await user.click(screen.getByRole("button", { name: "Delete draft" }));
+      await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+      expect(await screen.findByText("Failed to delete your draft.")).toBeInTheDocument();
+    });
+
+    it("saves the draft when Submit is clicked", async () => {
+      const user = userEvent.setup();
+      const { saveDraftCalls } = stubApiFetch({ checkSentence: () => ({ severity: "none" }) });
+      render(
+        <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+      );
+      await user.click(screen.getByRole("tab", { name: "Writing" }));
+      await user.type(screen.getByLabelText("Your writing"), "我是学生。");
+
+      await user.click(screen.getByRole("button", { name: "Submit" }));
+
+      await waitFor(() => expect(saveDraftCalls).toEqual(["我是学生。"]));
     });
   });
 
@@ -403,6 +486,86 @@ describe("WritingPracticeDetailPage", () => {
       expect(
         await screen.findByRole("heading", { name: "Everything is correct!" }),
       ).toBeInTheDocument();
+    });
+
+    it("wipes the draft and returns to edit mode once the success modal is closed", async () => {
+      const user = userEvent.setup();
+      const { saveDraftCalls } = stubApiFetch({ checkSentence: () => ({ severity: "none" }) });
+
+      await typeAndSubmit("我是学生。");
+
+      await screen.findByRole("heading", { name: "Everything is correct!" });
+      // Still shows the reviewed (colored) sentence while the modal is open.
+      expect(screen.getByText("我是学生。")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "OK" }));
+
+      const textarea = await screen.findByLabelText("Your writing");
+      expect(textarea).toHaveValue("");
+      await waitFor(() => expect(saveDraftCalls.at(-1)).toBe(""));
+    });
+
+    it("keeps the reviewed text visible when the modal is closed after an incorrect submission", async () => {
+      const user = userEvent.setup();
+      stubApiFetch({ checkSentence: () => ({ severity: "incorrect", answer: "x" }) });
+
+      await typeAndSubmit("错误句子。");
+
+      await screen.findByRole("heading", { name: "Almost there" });
+      await user.click(screen.getByRole("button", { name: "OK" }));
+
+      expect(screen.getByText("错误句子。")).toBeInTheDocument();
+      expect(screen.queryByRole("textbox", { name: "Your writing" })).not.toBeInTheDocument();
+    });
+
+    it("archives the text and shows a Completed versions tab once it's fully correct", async () => {
+      const { completeDraftCalls } = stubApiFetch({
+        checkSentence: () => ({ severity: "none" }),
+      });
+
+      expect(screen.queryByRole("tab", { name: "Completed versions" })).not.toBeInTheDocument();
+
+      await typeAndSubmit("我是学生。");
+
+      await waitFor(() => expect(completeDraftCalls).toEqual(["我是学生。"]));
+      expect(
+        await screen.findByRole("tab", { name: "Completed versions" }),
+      ).toBeInTheDocument();
+    });
+
+    it("does not archive when some sentences are still wrong", async () => {
+      const { completeDraftCalls } = stubApiFetch({
+        checkSentence: () => ({ severity: "incorrect", answer: "x" }),
+      });
+
+      await typeAndSubmit("错误句子。");
+
+      await screen.findByRole("heading", { name: "Almost there" });
+      expect(completeDraftCalls).toEqual([]);
+      expect(screen.queryByRole("tab", { name: "Completed versions" })).not.toBeInTheDocument();
+    });
+
+    it("lists archived versions by completion time, most recent expanded by default", async () => {
+      const user = userEvent.setup();
+      stubApiFetch({
+        savedArchive: [
+          { timestamp: "2026-01-01T10:00:00.000Z", content: "old version" },
+          { timestamp: "2026-01-02T10:00:00.000Z", content: "newer version" },
+        ],
+      });
+      render(
+        <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+      );
+
+      await user.click(await screen.findByRole("tab", { name: "Completed versions" }));
+
+      const entries = screen.getAllByText(/version$/);
+      expect(entries.map((entry) => entry.textContent)).toEqual([
+        "newer version",
+        "old version",
+      ]);
+      expect(screen.getByText("newer version")).toBeVisible();
+      expect(screen.getByText("old version")).not.toBeVisible();
     });
   });
 });

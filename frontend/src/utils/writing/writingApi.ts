@@ -23,9 +23,14 @@ export async function checkWritingSentence(
   return (await response.json()) as WritingSentenceCorrection;
 }
 
+export type WritingArchiveEntry = {
+  timestamp: string;
+  content: string;
+};
+
 export type WritingDraft = {
   draft: string;
-  archive: unknown[];
+  archive: WritingArchiveEntry[];
 };
 
 export async function fetchWritingDraft(topicId: string): Promise<WritingDraft> {
@@ -56,6 +61,26 @@ export async function saveWritingDraft(
 
   if (!response.ok) {
     throw new Error("Failed to save your draft.");
+  }
+
+  return (await response.json()) as WritingDraft;
+}
+
+export async function completeWritingDraft(
+  topicId: string,
+  draft: string,
+): Promise<WritingDraft> {
+  const response = await apiFetch(
+    `${API_BASE}/writing/draft/${encodeURIComponent(topicId)}/complete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draft }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to archive the completed text.");
   }
 
   return (await response.json()) as WritingDraft;

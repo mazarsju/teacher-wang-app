@@ -8,7 +8,7 @@ from backend.utils.aiChat.conversation_log_storage import (
     LocalConversationLogStorage,
     reset_storage_for_tests,
 )
-from backend.utils.writing.writing_drafts import load_draft, save_draft
+from backend.utils.writing.writing_drafts import complete_draft, load_draft, save_draft
 
 TEST_USER = "user-a"
 
@@ -86,6 +86,30 @@ class TestWritingDrafts(unittest.TestCase):
             save_draft(TEST_USER, "../secrets", "x")
         with self.assertRaises(ValueError):
             load_draft(TEST_USER, "not/a/topic")
+
+    def test_complete_draft_appends_a_timestamped_archive_entry(self):
+        save_draft(TEST_USER, "writing-present-yourself", "draft in progress")
+
+        result = complete_draft(TEST_USER, "writing-present-yourself", "我叫小明。")
+
+        self.assertEqual(result["draft"], "我叫小明。")
+        self.assertEqual(len(result["archive"]), 1)
+        self.assertEqual(result["archive"][0]["content"], "我叫小明。")
+        self.assertTrue(result["archive"][0]["timestamp"])
+        self.assertEqual(load_draft(TEST_USER, "writing-present-yourself"), result)
+
+    def test_complete_draft_appends_to_existing_archive(self):
+        complete_draft(TEST_USER, "writing-present-yourself", "first version")
+
+        result = complete_draft(TEST_USER, "writing-present-yourself", "second version")
+
+        self.assertEqual(len(result["archive"]), 2)
+        self.assertEqual(result["archive"][0]["content"], "first version")
+        self.assertEqual(result["archive"][1]["content"], "second version")
+
+    def test_complete_draft_rejects_invalid_topic_id(self):
+        with self.assertRaises(ValueError):
+            complete_draft(TEST_USER, "../secrets", "x")
 
 
 if __name__ == "__main__":

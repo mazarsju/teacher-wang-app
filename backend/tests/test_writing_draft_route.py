@@ -31,6 +31,10 @@ class TestWritingDraftRoute(unittest.TestCase):
         self.mock_save = self.save_patcher.start()
         self.addCleanup(self.save_patcher.stop)
 
+        self.complete_patcher = patch("backend.routes.writing_draft.complete_draft")
+        self.mock_complete = self.complete_patcher.start()
+        self.addCleanup(self.complete_patcher.stop)
+
     def test_get_returns_the_stored_draft(self):
         self.mock_load.return_value = {"draft": "我叫小明。", "archive": []}
 
@@ -85,6 +89,43 @@ class TestWritingDraftRoute(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.mock_save.assert_called_once_with(TEST_USER_ID, "writing-present-yourself", "")
+
+    def test_complete_rejects_missing_draft(self):
+        response = self.client.post(
+            "/writing/draft/writing-present-yourself/complete", json={}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.mock_complete.assert_not_called()
+
+    def test_complete_saves_and_returns_the_archived_draft(self):
+        self.mock_complete.return_value = {
+            "draft": "我叫小明。",
+            "archive": [{"timestamp": "t", "content": "我叫小明。"}],
+        }
+
+        response = self.client.post(
+            "/writing/draft/writing-present-yourself/complete",
+            json={"draft": "我叫小明。"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"draft": "我叫小明。", "archive": [{"timestamp": "t", "content": "我叫小明。"}]},
+        )
+        self.mock_complete.assert_called_once_with(
+            TEST_USER_ID, "writing-present-yourself", "我叫小明。"
+        )
+
+    def test_complete_rejects_an_invalid_topic_id(self):
+        self.mock_complete.side_effect = ValueError("Invalid topic_id")
+
+        response = self.client.post(
+            "/writing/draft/bad id/complete", json={"draft": "x"}
+        )
+
+        self.assertEqual(response.status_code, 400)
 
 
 if __name__ == "__main__":

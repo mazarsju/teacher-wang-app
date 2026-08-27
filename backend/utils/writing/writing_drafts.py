@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 from backend.utils.aiChat.conversation_log_storage import get_storage, object_key
 
@@ -43,5 +44,14 @@ def save_draft(user_id: str, topic_id: str, draft: str) -> dict:
     # archive is managed separately later; preserve whatever is already there.
     existing = load_draft(user_id, topic_id)
     payload = {"draft": draft, "archive": existing["archive"]}
+    get_storage().write_text(draft_object_key(user_id, topic_id), json.dumps(payload))
+    return payload
+
+
+def complete_draft(user_id: str, topic_id: str, text: str) -> dict:
+    """Save a fully-corrected text and append it to the revision archive."""
+    existing = load_draft(user_id, topic_id)
+    entry = {"timestamp": datetime.now(timezone.utc).isoformat(), "content": text}
+    payload = {"draft": text, "archive": existing["archive"] + [entry]}
     get_storage().write_text(draft_object_key(user_id, topic_id), json.dumps(payload))
     return payload

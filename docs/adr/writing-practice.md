@@ -14,7 +14,7 @@ a pen icon in place of the usual lesson number. Clicking it sets
 `selectedWritingTopicId` and renders
 `<WritingPracticeDetailPage topicId onBack>`.
 
-That page has two tabs, `context` and `writing`
+That page has up to three tabs, `context`, `writing`, and `completed`
 (`frontend/src/pages/WritingPracticeDetailPage.tsx`). **Context** renders a
 static per-topic Markdown file from `frontend/src/data/writingContext/`
 (one `<topic-id>.md` per topic, bundled at build time via
@@ -22,7 +22,15 @@ static per-topic Markdown file from `frontend/src/data/writingContext/`
 **Writing** holds a full-width textarea. On mount the page calls
 `GET /writing/draft/<topic_id>` to resume any previously saved draft; a
 "Save draft" button calls `POST /writing/draft/<topic_id>` to persist the
-current text (see decision 6).
+current text, and the same save fires automatically on Submit and after
+every sentence correction is saved (see decision 6). A "Delete draft"
+button next to it — confirmed via `ConfirmModal` since it's destructive —
+clears the draft the same way (an empty-string save) and resets the page to
+a blank textarea, without touching the topic's `archive`. **Completed versions**
+only appears once the topic's `archive` array is non-empty; it lists every
+past fully-correct submission as a collapsible `<details>` entry titled by
+its completion timestamp, most-recent first and expanded by default (see
+decision 7).
 
 Clicking **Submit** splits the draft into sentences client-side
 (decision 2), swaps the textarea for a read-only per-sentence render, and
@@ -37,19 +45,25 @@ Once every sentence has settled, a `WritingReviewModal` opens: if every
 sentence's severity is `"none"`, it plays the same completion confetti as a
 challenge and lists the grammar points used; otherwise it explains that
 some sentences still need fixing and lists whatever was already detected.
+Dismissing an all-correct modal wipes the draft and puts the page back in
+edit mode (empty textarea) so the learner can start a new attempt; dismissing
+a still-has-mistakes modal leaves the reviewed, colored sentences on screen
+so they can keep fixing them.
 Clicking a flawed sentence opens an ephemeral Teacher Wang chat seeded with
 the correction's explanation (decision 5); the pencil icon next to it opens
 `SentenceCorrectionModal` to edit the sentence in place, which re-runs the
 same two-step check and re-evaluates whether the whole text is now correct.
 The moment it is, `POST /grammar-points/record-usage` fires once with one
-grammar-id per usage across all sentences (decision 4).
+grammar-id per usage across all sentences (decision 4), and
+`POST /writing/draft/<topic_id>/complete` archives the fully-correct text
+(decision 7) — whether that moment is right after Submit or only after the
+learner fixes the last mistake through the correction modal.
 
 **Not yet wired up**: the `writing_progress` table
 (`backend/utils/database/models.py`, `WritingProgress`) and its migration
 exist but nothing reads or writes them — there is currently no persisted
-score or completion state for a writing topic, only the draft text. The
-`archive` field in the draft JSON (decision 6) is reserved for a future
-revision-history feature and is always round-tripped as-is.
+score in Postgres for a writing topic, only the draft text and its S3
+archive.
 
 ## Context
 
@@ -165,11 +179,49 @@ users/{sub}/writing/{topic_id}.json
 
 `backend/utils/writing/writing_drafts.py` (`load_draft`/`save_draft`) reads
 and writes that JSON directly; `save_draft` always preserves whatever is
-already in `archive` and only overwrites `draft`, since revision history is
-a deliberately deferred feature (see Future Evolution). Being under the same
+already in `archive` and only overwrites `draft`. Being under the same
 `users/{sub}/` prefix, a draft is also deleted by
 `DELETE /database/knowledge-base`'s existing prefix wipe, with no extra
 code. Full layout: [conversation logs](../architecture/conversation-logs.md).
+
+The frontend calls `saveWritingDraft` (not just from the "Save draft"
+button) on Submit and again after every sentence correction is saved, each
+time with the current full text reassembled from the sentence checks —
+so a closed tab loses at most the in-flight review, not the corrections
+already applied. Every one of these calls is fire-and-forget (`.catch(() =>
+{})`): a failed autosave doesn't block or interrupt the review flow the way
+a failed explicit "Save draft" click does. Closing the review modal after a
+fully-correct submission saves an empty draft the same way, clearing the
+textarea for a new attempt now that the text has been archived.
+
+"Delete draft" reuses this same empty-string save rather than a dedicated
+delete endpoint or `ConversationLogStorage.delete` — from the frontend's
+point of view, "no draft" and "an empty draft" are the same state, and the
+existing route already round-trips `archive` untouched. A no-op backend
+change; the only new pieces are the button (`kind="danger"`) and a
+`ConfirmModal` confirmation, matching the delete-word pattern in
+`KnowledgeBasePage.tsx`.
+
+### 7. Completion archives the text; `archive` entries are `{timestamp, content}`
+
+`complete_draft` (`backend/utils/writing/writing_drafts.py`) is `save_draft`
+with one difference: instead of overwriting `archive`, it appends
+`{"timestamp": <ISO 8601 UTC>, "content": <text>}` to it and sets `draft` to
+that same text. It's called through
+`POST /writing/draft/<topic_id>/complete` at the exact moment the frontend
+would otherwise call `recordGrammarUsageIfAllCorrect` — i.e. once every
+sentence in the text has severity `"none"` — so a submission only gets
+archived when a real fully-correct piece of writing was produced, same
+guard as decision 4's usage recording. Both calls read the same "is
+everything correct" condition independently; there's no shared endpoint
+because one writes Postgres and the other writes S3.
+
+Archiving is also fire-and-forget: the review modal already told the
+learner they succeeded, so a failed archive call shouldn't surface as an
+error on top of that. On success the frontend replaces its local `archive`
+state with the response's `archive` array (rather than appending its own
+guess of the entry), which is what makes the "Completed versions" tab
+appear immediately without a page reload.
 
 ## Runtime Architecture
 
@@ -181,27 +233,31 @@ GrammarPage (Grammar tab)
 WritingPracticeDetailPage
   ├─ Context tab ── static Markdown (frontend/src/data/writingContext/*.md)
   │
-  └─ Writing tab
-        │ mount                         GET  /writing/draft/<topic_id>  ──► S3 (or local fs)
-        │ "Save draft"                  POST /writing/draft/<topic_id>  ──► S3 (or local fs)
-        │ "Submit"
-        ▼
-     splitIntoSentences (client-side)
-        │
-        ▼ per sentence, sequentially
-     POST /writing/check-sentence ──────► check_user_grammar (chat_service.py) ──► LLM
-        │ severity === "none"?
-        ▼ yes
-     POST /grammar-points/detect ───────► check_grammar_usage (chat_service.py) ──► LLM
-        │                                  (reads user_grammar_progress, DONE only)
-        ▼
-     WritingReviewModal (all correct → confetti | some wrong → fix-and-retry)
-        │ every sentence now "none"
-        ▼
-     POST /grammar-points/record-usage ─► user_grammar_progress (increment / MASTERED)
-
-     flawed sentence clicked  ──► ephemeral ChatModal (seeded, no extra /chat call)
-     pencil icon clicked      ──► SentenceCorrectionModal ──► re-run check-sentence + detect
+  ├─ Writing tab
+  │      │ mount                         GET  /writing/draft/<topic_id>          ──► S3 (or local fs)
+  │      │ "Save draft" / Submit /       POST /writing/draft/<topic_id>          ──► S3 (or local fs)
+  │      │ sentence correction saved
+  │      │ "Submit"
+  │      ▼
+  │   splitIntoSentences (client-side)
+  │      │
+  │      ▼ per sentence, sequentially
+  │   POST /writing/check-sentence ──────► check_user_grammar (chat_service.py) ──► LLM
+  │      │ severity === "none"?
+  │      ▼ yes
+  │   POST /grammar-points/detect ───────► check_grammar_usage (chat_service.py) ──► LLM
+  │      │                                  (reads user_grammar_progress, DONE only)
+  │      ▼
+  │   WritingReviewModal (all correct → confetti | some wrong → fix-and-retry)
+  │      │ every sentence now "none"
+  │      ├──────────────────────────────► POST /grammar-points/record-usage ─► user_grammar_progress
+  │      └──────────────────────────────► POST /writing/draft/<topic_id>/complete ─► S3 (archive += entry)
+  │
+  │   flawed sentence clicked  ──► ephemeral ChatModal (seeded, no extra /chat call)
+  │   pencil icon clicked      ──► SentenceCorrectionModal ──► re-run check-sentence + detect
+  │
+  └─ Completed versions tab (only if archive non-empty)
+         one <details> per archive entry, newest first, newest expanded
 ```
 
 ## Consequences
@@ -226,21 +282,21 @@ WritingPracticeDetailPage
 - Sentences are checked strictly sequentially, one LLM round trip at a
   time; a long submission takes noticeably longer to fully review than a
   single chat message does.
-- There is currently no persisted record that a writing topic was
-  completed, nor any score — see Future Evolution.
+- There is a completion record in S3 (decision 7) but still no row in
+  Postgres — there's no way to show "you've practiced this topic" or a
+  score anywhere that isn't the topic's own Completed versions tab.
 - `grammar-points/detect` and `grammar-points/check` now both implement the
   "call `check_grammar_usage` against the learner's DONE points" step;
   keeping their prompt/behavior in sync is a shared-code-not-shared-route
-  situation rather than one endpoint reused by both callers.
+  situation rather than one endpoint reused by both callers. Decision 7's
+  archive-completion check is a third independent place that re-derives
+  "is this text fully correct" from the same per-sentence severities.
 
 ## Future Evolution
 
 - Wire up (or remove) the `writing_progress` table — right now finishing a
   writing topic updates nothing in Postgres; there's no way to show "you've
   practiced this topic" or a score anywhere outside the current session.
-- Use the draft JSON's reserved `archive` array to keep prior submissions
-  (each with a timestamp), enabling a revision history per topic instead of
-  only ever overwriting the current draft.
 - Server-side validation of `topic_id` today is only a safe-charset check
   (`_is_valid_topic_id`, alnum + hyphen) — it doesn't confirm the id is one
   of `WRITING_TOPICS`, since that list only exists in the frontend. Adding

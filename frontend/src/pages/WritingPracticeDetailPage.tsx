@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
+import ConfirmModal from "../components/ConfirmModal";
 import { PenIcon } from "../components/icons";
 import Page from "../components/Page";
 import SentenceCorrectionModal from "../components/SentenceCorrectionModal";
@@ -11,15 +12,18 @@ import { WRITING_TOPICS } from "../data/writingTopics";
 import type { CoveredGrammarPoint, WritingSentenceCheck } from "../types/writingSentence";
 import { renderFormattedText } from "../utils/formatMarkdownText";
 import { detectGrammarPoints, recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
+import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { splitIntoSentences } from "../utils/writing/splitSentences";
 import {
   checkWritingSentence,
+  completeWritingDraft,
   fetchWritingDraft,
   saveWritingDraft,
 } from "../utils/writing/writingApi";
+import type { WritingArchiveEntry } from "../utils/writing/writingApi";
 import styles from "./WritingPracticeDetailPage.module.css";
 
-type WritingDetailTab = "context" | "writing";
+type WritingDetailTab = "context" | "writing" | "completed";
 
 type WritingPracticeDetailPageProps = {
   topicId: string;
@@ -42,6 +46,15 @@ function groupByParagraph(sentences: WritingSentenceCheck[]): WritingSentenceChe
     }
   }
   return paragraphs;
+}
+
+// Reconstructs the full draft text from sentence checks so edits made
+// through the correction modal are what gets saved/archived, not the
+// pre-submit textarea value.
+function joinSentenceChecks(checks: WritingSentenceCheck[]): string {
+  return groupByParagraph(checks)
+    .map((paragraph) => paragraph.map((sentence) => sentence.text).join(" "))
+    .join("\n");
 }
 
 function isFlawed(sentence: WritingSentenceCheck): boolean {
@@ -124,13 +137,18 @@ export default function WritingPracticeDetailPage({
   );
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
+  const [archive, setArchive] = useState<WritingArchiveEntry[]>([]);
+  const [isDeletingDraft, setIsDeletingDraft] = useState(false);
+  const [isDeleteDraftConfirmOpen, setIsDeleteDraftConfirmOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     fetchWritingDraft(topicId)
       .then((saved) => {
-        if (!cancelled && typeof saved.draft === "string") setDraft(saved.draft);
+        if (cancelled) return;
+        if (typeof saved.draft === "string") setDraft(saved.draft);
+        if (Array.isArray(saved.archive)) setArchive(saved.archive);
       })
       .catch(() => {
         // No saved draft yet (or it failed to load) — start from a blank page.
@@ -140,6 +158,16 @@ export default function WritingPracticeDetailPage({
       cancelled = true;
     };
   }, [topicId]);
+
+  // Best-effort, like recordGrammarUsageIfAllCorrect below: archiving is a
+  // bonus record of a completed text, not something that should surface as
+  // a user-facing error on top of the review modal that already celebrated it.
+  function archiveIfAllCorrect(checks: WritingSentenceCheck[]): void {
+    if (!checks.every((sentence) => sentence.severity === "none")) return;
+    completeWritingDraft(topicId, joinSentenceChecks(checks))
+      .then((saved) => setArchive(saved.archive))
+      .catch(() => {});
+  }
 
   async function handleSaveDraft() {
     setIsSavingDraft(true);
@@ -152,6 +180,23 @@ export default function WritingPracticeDetailPage({
       );
     } finally {
       setIsSavingDraft(false);
+    }
+  }
+
+  async function handleDeleteDraft() {
+    setIsDeleteDraftConfirmOpen(false);
+    setIsDeletingDraft(true);
+    setDraftSaveError(null);
+    try {
+      await saveWritingDraft(topicId, "");
+      setDraft("");
+      setSentenceChecks(null);
+    } catch {
+      // saveWritingDraft's own error message is written for the "Save draft"
+      // button; show a delete-specific one here instead.
+      setDraftSaveError("Failed to delete your draft.");
+    } finally {
+      setIsDeletingDraft(false);
     }
   }
 
@@ -180,6 +225,7 @@ export default function WritingPracticeDetailPage({
 
     setSentenceChecks(initialChecks);
     setIsReviewing(true);
+    saveWritingDraft(topicId, draft).catch(() => {});
 
     // Tracked locally (not read back from state) since state updates from
     // the loop below don't land in this closure's `sentenceChecks`.
@@ -198,6 +244,7 @@ export default function WritingPracticeDetailPage({
     setIsReviewing(false);
     setReviewSummary(buildReviewSummary(finalChecks));
     recordGrammarUsageIfAllCorrect(finalChecks);
+    archiveIfAllCorrect(finalChecks);
   }
 
   async function handleConfirmCorrection(sentenceId: string, correctedText: string) {
@@ -221,10 +268,12 @@ export default function WritingPracticeDetailPage({
       sentence.id === sentenceId ? { ...sentence, text: correctedText, ...result } : sentence,
     );
     setSentenceChecks(updated);
+    saveWritingDraft(topicId, joinSentenceChecks(updated)).catch(() => {});
 
     if (updated.every((sentence) => sentence.severity === "none")) {
       setReviewSummary(buildReviewSummary(updated));
       recordGrammarUsageIfAllCorrect(updated);
+      archiveIfAllCorrect(updated);
     }
   }
 
@@ -263,6 +312,21 @@ export default function WritingPracticeDetailPage({
         >
           Writing
         </button>
+        {archive.length > 0 && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "completed"}
+            className={
+              activeTab === "completed"
+                ? `${styles.writingDetailTab} ${styles.writingDetailTabActive}`
+                : styles.writingDetailTab
+            }
+            onClick={() => setActiveTab("completed")}
+          >
+            Completed versions
+          </button>
+        )}
       </div>
       <div
         className={
@@ -293,6 +357,13 @@ export default function WritingPracticeDetailPage({
                 text={isSavingDraft ? "Saving..." : "Save draft"}
                 disabled={isSavingDraft}
                 onClick={handleSaveDraft}
+              />
+              <Button
+                kind="danger"
+                variant="page"
+                text={isDeletingDraft ? "Deleting..." : "Delete draft"}
+                disabled={isDeletingDraft || draft.trim() === ""}
+                onClick={() => setIsDeleteDraftConfirmOpen(true)}
               />
               <Button
                 kind="confirm"
@@ -366,6 +437,29 @@ export default function WritingPracticeDetailPage({
           </>
         )}
       </div>
+      {activeTab === "completed" && archive.length > 0 && (
+        <div className={styles.writingDetailContext}>
+          {[...archive].reverse().map((entry, index) => (
+            <details
+              key={entry.timestamp}
+              open={index === 0}
+              className={styles.writingArchiveEntry}
+            >
+              <summary className={styles.writingArchiveSummary}>
+                {formatDateTime(entry.timestamp)}
+              </summary>
+              <div className={styles.writingArchiveContent}>{entry.content}</div>
+            </details>
+          ))}
+        </div>
+      )}
+      <ConfirmModal
+        isOpen={isDeleteDraftConfirmOpen}
+        message="Are you sure you want to delete your draft for this topic?"
+        danger
+        onCancel={() => setIsDeleteDraftConfirmOpen(false)}
+        onConfirm={handleDeleteDraft}
+      />
       {activeSentenceChat && (
         <ChatModal
           character={TEACHER_WANG}
@@ -396,7 +490,15 @@ export default function WritingPracticeDetailPage({
         <WritingReviewModal
           allCorrect={reviewSummary.allCorrect}
           grammarPointTitles={reviewSummary.grammarPointTitles}
-          onClose={() => setReviewSummary(null)}
+          onClose={() => {
+            const wasAllCorrect = reviewSummary.allCorrect;
+            setReviewSummary(null);
+            if (wasAllCorrect) {
+              setDraft("");
+              setSentenceChecks(null);
+              saveWritingDraft(topicId, "").catch(() => {});
+            }
+          }}
         />
       )}
     </Page>
