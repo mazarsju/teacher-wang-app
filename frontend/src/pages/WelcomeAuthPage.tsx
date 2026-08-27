@@ -429,12 +429,12 @@ export default function WelcomeAuthPage({
       <div className={styles.welcomeAuthContent}>
         <header className={styles.welcomeAuthBrand}>
           <div className={styles.welcomeAuthBrandRow}>
-            <img className={styles.welcomeAuthLogo} src={logo} alt="" />
+            <img className={styles.welcomeAuthLogo} src={logo} alt="Teacher Wang logo" />
             <p className={styles.welcomeAuthBrandMark}>Teacher Wang</p>
           </div>
-          <p className={styles.welcomeAuthTagline}>
-            Chat, track knowledge, and climb HSK.
-          </p>
+          <h1 className={styles.welcomeAuthTagline}>
+            Learn Mandarin with an AI tutor — chat, track knowledge, and climb HSK.
+          </h1>
           <button
             type="button"
             className={styles.welcomeAuthDiscoverButton}
@@ -445,7 +445,7 @@ export default function WelcomeAuthPage({
         </header>
 
         <form className={styles.welcomeAuthForm} onSubmit={handleSubmit} noValidate>
-          <h1 className={styles.welcomeAuthFormTitle}>{formTitle}</h1>
+          <h2 className={styles.welcomeAuthFormTitle}>{formTitle}</h2>
 
           {codeHint ? <p className={styles.welcomeAuthHint}>{codeHint}</p> : null}
 
@@ -687,7 +687,7 @@ export default function WelcomeAuthPage({
               <img
                 className={styles.featureCompanionAvatar}
                 src={teacherAvatar}
-                alt=""
+                alt="Teacher Wang, the AI Mandarin tutor"
               />
             </section>
           </div>
