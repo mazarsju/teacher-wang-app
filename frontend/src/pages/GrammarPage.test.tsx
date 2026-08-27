@@ -13,10 +13,45 @@ type StubGrammarPoint = {
   score?: number | null;
 };
 
-function stubGrammarPointsFetch(points: StubGrammarPoint[]) {
+type StubWritingPractice = {
+  id: string;
+  title: string;
+  after_grammar_point: string;
+  context?: string | null;
+};
+
+function stubWritingPracticeDetailResponse(input: RequestInfo | URL, practices: StubWritingPractice[]) {
+  const url = String(input);
+  const practice = practices.find((candidate) => url.endsWith(`/writing-practice/${candidate.id}`));
+  if (!practice) return null;
+  return Promise.resolve({
+    ok: true,
+    json: async () => ({
+      id: practice.id,
+      title: practice.title,
+      after_grammar_point: practice.after_grammar_point,
+      context: practice.context ?? null,
+    }),
+  });
+}
+
+function stubGrammarPointsFetch(
+  points: StubGrammarPoint[],
+  writingPractices: StubWritingPractice[] = [],
+) {
   vi.stubGlobal(
     "fetch",
-    vi.fn(() => Promise.resolve({ ok: true, json: async () => points })),
+    vi.fn((input: RequestInfo | URL) => {
+      const practiceResponse = stubWritingPracticeDetailResponse(input, writingPractices);
+      if (practiceResponse) return practiceResponse;
+      if (String(input).endsWith("/grammar-points")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ grammar_points: points, writing_practices: writingPractices }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    }),
   );
 }
 
@@ -27,7 +62,10 @@ function stubGrammarPointsAndPlanFetch(points: StubGrammarPoint[], plan: string)
       if (String(input).endsWith("/auth/me")) {
         return Promise.resolve({ ok: true, json: async () => ({ plan }) });
       }
-      return Promise.resolve({ ok: true, json: async () => points });
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ grammar_points: points, writing_practices: [] }),
+      });
     }),
   );
 }
@@ -461,6 +499,12 @@ describe("GrammarPage", () => {
         prerequisites: [],
         status: "TODO",
       },
+    ], [
+      {
+        id: "writing-present-yourself",
+        title: "Present yourself",
+        after_grammar_point: "hsk1_existence_with_you",
+      },
     ]);
 
     const { container } = renderWithStore(<GrammarPage />, {
@@ -492,6 +536,12 @@ describe("GrammarPage", () => {
         prerequisites: [],
         status: "TODO",
       },
+    ], [
+      {
+        id: "writing-present-yourself",
+        title: "Present yourself",
+        after_grammar_point: "hsk1_existence_with_you",
+      },
     ]);
 
     renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
@@ -506,9 +556,11 @@ describe("GrammarPage", () => {
       screen.getByRole("button", { name: /Practice: Present yourself/ }),
     );
 
-    expect(
-      screen.getByRole("heading", { name: "Present yourself" }),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Present yourself" }),
+      ).toBeInTheDocument(),
+    );
     expect(screen.getByRole("tab", { name: "Context" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Writing" })).toBeInTheDocument();
 
@@ -532,7 +584,10 @@ describe("GrammarPage", () => {
       vi.fn((input: RequestInfo | URL) => {
         const url = String(input);
         if (url.endsWith("/grammar-points")) {
-          return Promise.resolve({ ok: true, json: async () => [listPoint] });
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ grammar_points: [listPoint], writing_practices: [] }),
+          });
         }
         return Promise.resolve({
           ok: true,

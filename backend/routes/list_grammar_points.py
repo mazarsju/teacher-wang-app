@@ -5,6 +5,7 @@ from backend.utils.database.models import (
     GrammarPoint,
     GrammarPrerequisite,
     UserGrammarProgress,
+    WritingPractice,
 )
 from backend.utils.grammar.grammar_content_loader import curriculum_index
 
@@ -34,19 +35,29 @@ def list_grammar_points():
     status_by_grammar_id = {row.grammar_id: row.status for row in progress_rows}
     score_by_grammar_id = {row.grammar_id: row.score for row in progress_rows}
 
-    return [
-        {
-            "id": point.id,
-            "hsk_level": point.hsk_level,
-            "index": curriculum_index(point.s3_key),
-            "title": point.title,
-            "prerequisites": prerequisites_by_grammar_id.get(point.id, []),
-            "status": status_by_grammar_id.get(point.id, "TODO"),
-            "score": (
-                int(score_by_grammar_id[point.id])
-                if score_by_grammar_id.get(point.id) is not None
-                else None
-            ),
-        }
-        for point in points
-    ], 200
+    return {
+        "grammar_points": [
+            {
+                "id": point.id,
+                "hsk_level": point.hsk_level,
+                "index": curriculum_index(point.s3_key),
+                "title": point.title,
+                "prerequisites": prerequisites_by_grammar_id.get(point.id, []),
+                "status": status_by_grammar_id.get(point.id, "TODO"),
+                "score": (
+                    int(score_by_grammar_id[point.id])
+                    if score_by_grammar_id.get(point.id) is not None
+                    else None
+                ),
+            }
+            for point in points
+        ],
+        "writing_practices": [
+            {
+                "id": practice.id,
+                "title": practice.title,
+                "after_grammar_point": practice.after_grammar_point,
+            }
+            for practice in WritingPractice.query.all()
+        ],
+    }, 200

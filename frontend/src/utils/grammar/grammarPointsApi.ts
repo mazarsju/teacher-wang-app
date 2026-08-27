@@ -1,16 +1,26 @@
 import type { GrammarPoint, GrammarPointDetail } from "../../types/grammarPoint";
 import type { CoveredGrammarPoint } from "../../types/writingSentence";
+import type { WritingTopic } from "../../types/writingTopic";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
 
-export async function fetchGrammarPoints(): Promise<GrammarPoint[]> {
+export type FetchGrammarPointsResult = {
+  grammarPoints: GrammarPoint[];
+  writingPractices: WritingTopic[];
+};
+
+export async function fetchGrammarPoints(): Promise<FetchGrammarPointsResult> {
   const response = await apiFetch(`${API_BASE}/grammar-points`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load grammar points.");
   }
 
-  return (await response.json()) as GrammarPoint[];
+  const data = (await response.json()) as {
+    grammar_points: GrammarPoint[];
+    writing_practices: WritingTopic[];
+  };
+  return { grammarPoints: data.grammar_points, writingPractices: data.writing_practices };
 }
 
 export async function fetchGrammarPointDetail(

@@ -8,8 +8,6 @@ import SentenceCorrectionModal from "../components/SentenceCorrectionModal";
 import WarningModal from "../components/WarningModal";
 import WritingReviewModal from "../components/WritingReviewModal";
 import { TEACHER_WANG } from "../data/chatCharacters";
-import { getWritingContext } from "../data/writingContext";
-import { WRITING_TOPICS } from "../data/writingTopics";
 import type { CoveredGrammarPoint, WritingSentenceCheck } from "../types/writingSentence";
 import { renderFormattedText } from "../utils/formatMarkdownText";
 import { detectGrammarPoints, recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
@@ -19,7 +17,7 @@ import {
   checkWritingSentence,
   checkWritingTopicRelevance,
   completeWritingDraft,
-  fetchWritingDraft,
+  fetchWritingPractice,
   saveWritingDraft,
 } from "../utils/writing/writingApi";
 import type { WritingArchiveEntry } from "../utils/writing/writingApi";
@@ -122,8 +120,10 @@ export default function WritingPracticeDetailPage({
   topicId,
   onBack,
 }: WritingPracticeDetailPageProps) {
-  const topic = WRITING_TOPICS.find((candidate) => candidate.id === topicId);
-  const context = getWritingContext(topicId);
+  const [topicTitle, setTopicTitle] = useState<string | null>(null);
+  const [context, setContext] = useState<string | null>(null);
+  const [isLoadingTopic, setIsLoadingTopic] = useState(true);
+  const [loadTopicError, setLoadTopicError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WritingDetailTab>("context");
   const [draft, setDraft] = useState("");
   const [sentenceChecks, setSentenceChecks] = useState<WritingSentenceCheck[] | null>(
@@ -148,14 +148,24 @@ export default function WritingPracticeDetailPage({
   useEffect(() => {
     let cancelled = false;
 
-    fetchWritingDraft(topicId)
-      .then((saved) => {
+    setIsLoadingTopic(true);
+    setLoadTopicError(null);
+    fetchWritingPractice(topicId)
+      .then((practice) => {
         if (cancelled) return;
-        if (typeof saved.draft === "string") setDraft(saved.draft);
-        if (Array.isArray(saved.archive)) setArchive(saved.archive);
+        setTopicTitle(practice.title);
+        setContext(practice.context);
+        if (typeof practice.draft === "string") setDraft(practice.draft);
+        if (Array.isArray(practice.archive)) setArchive(practice.archive);
       })
-      .catch(() => {
-        // No saved draft yet (or it failed to load) — start from a blank page.
+      .catch((error) => {
+        if (cancelled) return;
+        setLoadTopicError(
+          error instanceof Error ? error.message : "Failed to load this writing topic.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingTopic(false);
       });
 
     return () => {
@@ -217,7 +227,7 @@ export default function WritingPracticeDetailPage({
     const lines = splitIntoSentences(draft);
     if (lines.length === 0) return;
 
-    const topicDescription = context ?? topic?.title;
+    const topicDescription = context ?? topicTitle;
     if (topicDescription) {
       setIsCheckingTopic(true);
       try {
@@ -304,7 +314,7 @@ export default function WritingPracticeDetailPage({
 
   return (
     <Page
-      title={topic?.title ?? "Writing"}
+      title={topicTitle ?? "Writing"}
       fullWidth={activeTab === "writing"}
       headerAction={
         <Button kind="cancel" variant="page" text="Back" onClick={onBack} />
@@ -358,7 +368,15 @@ export default function WritingPracticeDetailPage({
           activeTab === "context" ? styles.writingDetailContext : styles.writingDetailHidden
         }
       >
-        {context ? renderFormattedText(context) : "No context available yet."}
+        {isLoadingTopic ? (
+          "Loading..."
+        ) : loadTopicError ? (
+          <p className="table-error">{loadTopicError}</p>
+        ) : context ? (
+          renderFormattedText(context)
+        ) : (
+          "No context available yet."
+        )}
       </div>
       <div
         className={

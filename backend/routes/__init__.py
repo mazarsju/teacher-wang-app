@@ -46,7 +46,7 @@ def register_routes(app: Flask) -> None:
         update_user,
         update_word,
         weekly_articles,
-        writing_draft,
+        writing_practice,
     )
     from backend.utils.auth.user_context import register_user_context
 
@@ -75,6 +75,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(delete_knowledge_base.bp)
     app.register_blueprint(list_grammar_points.bp)
     app.register_blueprint(get_grammar_point.bp)
+    app.register_blueprint(writing_practice.bp)
     app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(complete_grammar_point.bp)
     app.register_blueprint(check_grammar_point.bp)
@@ -95,4 +96,3 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(smart_ai_preference.bp)
     app.register_blueprint(generate_article.bp)
     app.register_blueprint(weekly_articles.bp)
-    app.register_blueprint(writing_draft.bp)

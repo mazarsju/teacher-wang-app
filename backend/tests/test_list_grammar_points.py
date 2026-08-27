@@ -34,6 +34,13 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
         self.mock_progress_cls = self.progress_patcher.start()
         self.addCleanup(self.progress_patcher.stop)
 
+        self.writing_practice_patcher = patch(
+            "backend.routes.list_grammar_points.WritingPractice"
+        )
+        self.mock_writing_practice_cls = self.writing_practice_patcher.start()
+        self.mock_writing_practice_cls.query.all.return_value = []
+        self.addCleanup(self.writing_practice_patcher.stop)
+
     def test_list_grammar_points_merges_prerequisites_and_status(self):
         self.mock_point_cls.query.all.return_value = [
             MagicMock(
@@ -59,31 +66,48 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
             MagicMock(grammar_id="1|Basic Sentence Structure", status="DONE", score=82),
         ]
 
+        self.mock_writing_practice_cls.query.all.return_value = [
+            MagicMock(
+                id="writing-present-yourself",
+                title="Present yourself",
+                after_grammar_point="1|Basic Sentence Structure",
+            ),
+        ]
+
         response = self.client.get("/grammar-points")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.get_json(),
-            [
-                {
-                    "id": "1|Basic Sentence Structure",
-                    "hsk_level": 1,
-                    "index": 1,
-                    "title": "Basic Sentence Structure",
-                    "prerequisites": [],
-                    "status": "DONE",
-                    "score": 82,
-                },
-                {
-                    "id": "1|Questions with Ma",
-                    "hsk_level": 1,
-                    "index": 2,
-                    "title": "Questions with Ma",
-                    "prerequisites": ["1|Basic Sentence Structure"],
-                    "status": "TODO",
-                    "score": None,
-                },
-            ],
+            {
+                "grammar_points": [
+                    {
+                        "id": "1|Basic Sentence Structure",
+                        "hsk_level": 1,
+                        "index": 1,
+                        "title": "Basic Sentence Structure",
+                        "prerequisites": [],
+                        "status": "DONE",
+                        "score": 82,
+                    },
+                    {
+                        "id": "1|Questions with Ma",
+                        "hsk_level": 1,
+                        "index": 2,
+                        "title": "Questions with Ma",
+                        "prerequisites": ["1|Basic Sentence Structure"],
+                        "status": "TODO",
+                        "score": None,
+                    },
+                ],
+                "writing_practices": [
+                    {
+                        "id": "writing-present-yourself",
+                        "title": "Present yourself",
+                        "after_grammar_point": "1|Basic Sentence Structure",
+                    },
+                ],
+            },
         )
         self.mock_progress_cls.query.filter_by.assert_called_once_with(
             user_id=TEST_USER_ID
@@ -123,7 +147,10 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            [(item["hsk_level"], item["index"], item["title"]) for item in response.get_json()],
+            [
+                (item["hsk_level"], item["index"], item["title"])
+                for item in response.get_json()["grammar_points"]
+            ],
             [
                 (1, 1, "Basic Sentence Structure"),
                 (1, 2, "Questions with Ma"),

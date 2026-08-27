@@ -331,7 +331,14 @@ This is a shared table (no `user_id`), like `grammar_points` itself, since
 it's curriculum catalog data rather than learner state — `overview.yaml`
 plays the same role for a writing topic that `grammar.yaml` plays for a
 grammar point, and reuses the loader's existing S3-listing/local-checkout
-code path rather than a second implementation.
+code path rather than a second implementation. `GET /grammar-points`
+returns `writing_practices` alongside `grammar_points` (replacing what used
+to be a hardcoded frontend array), and `GET /writing-practice/<topic_id>`
+(`backend/routes/writing_practice.py`) fetches one topic's row plus its
+sibling `context.md` — the same explanation-content-lives-in-S3 split
+`fetch_grammar_content` uses for `explanation.md` — alongside the learner's
+draft/archive for that topic. See the
+[writing practice ADR](writing-practice.md), decision 1.
 
 ### 8. Curriculum ordering is separate from prerequisites
 

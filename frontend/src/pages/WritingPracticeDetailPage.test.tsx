@@ -11,6 +11,7 @@ function stubApiFetch(handlers: {
   onTopic?: boolean | ((text: string) => boolean);
   savedDraft?: string;
   savedArchive?: { timestamp: string; content: string }[];
+  topic?: { title?: string; context?: string | null };
 }) {
   const detectGrammarPointCalls: string[] = [];
   const recordUsageCalls: string[][] = [];
@@ -27,6 +28,29 @@ function stubApiFetch(handlers: {
       const method = init?.method ?? "GET";
       const body = init?.body ? JSON.parse(init.body as string) : {};
 
+      if (url.includes("/writing-practice/") && url.endsWith("/complete") && method === "POST") {
+        completeDraftCalls.push(body.draft);
+        archive = [...archive, { timestamp: new Date().toISOString(), content: body.draft }];
+        return { ok: true, json: async () => ({ draft: body.draft, archive }) };
+      }
+      if (url.includes("/writing-practice/") && method === "GET") {
+        return {
+          ok: true,
+          json: async () => ({
+            title: handlers.topic?.title ?? "Present yourself",
+            context:
+              handlers.topic && "context" in handlers.topic
+                ? handlers.topic.context
+                : "Write about yourself.",
+            draft: handlers.savedDraft ?? "",
+            archive,
+          }),
+        };
+      }
+      if (url.includes("/writing-practice/") && method === "POST") {
+        saveDraftCalls.push(body.draft);
+        return { ok: true, json: async () => ({ draft: body.draft, archive }) };
+      }
       if (url.endsWith("/writing/check-topic-relevance")) {
         topicRelevanceCalls.push(body.text);
         const onTopic =
@@ -34,18 +58,6 @@ function stubApiFetch(handlers: {
             ? handlers.onTopic(body.text)
             : (handlers.onTopic ?? true);
         return { ok: true, json: async () => ({ on_topic: onTopic }) };
-      }
-      if (url.includes("/writing/draft/") && url.endsWith("/complete") && method === "POST") {
-        completeDraftCalls.push(body.draft);
-        archive = [...archive, { timestamp: new Date().toISOString(), content: body.draft }];
-        return { ok: true, json: async () => ({ draft: body.draft, archive }) };
-      }
-      if (url.includes("/writing/draft/") && method === "GET") {
-        return { ok: true, json: async () => ({ draft: handlers.savedDraft ?? "", archive }) };
-      }
-      if (url.includes("/writing/draft/") && method === "POST") {
-        saveDraftCalls.push(body.draft);
-        return { ok: true, json: async () => ({ draft: body.draft, archive }) };
       }
       if (url.endsWith("/writing/check-sentence")) {
         const result = (await handlers.checkSentence?.(body.text)) ?? { severity: "none" };
@@ -82,23 +94,48 @@ function stubApiFetch(handlers: {
 }
 
 describe("WritingPracticeDetailPage", () => {
-  it("shows the topic title and its context by default", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("shows the topic title and its context by default", async () => {
+    stubApiFetch({
+      topic: {
+        title: "Present yourself",
+        context:
+          "Write a short introduction of yourself.\n\n## Grammar you can use\n- 是",
+      },
+    });
     render(
       <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
     );
 
     expect(
-      screen.getByRole("heading", { name: "Present yourself" }),
+      await screen.findByRole("heading", { name: "Present yourself" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Context", selected: true })).toBeInTheDocument();
     expect(screen.getByText(/Write a short introduction of yourself/)).toBeInTheDocument();
     expect(screen.getByText("Grammar you can use")).toBeInTheDocument();
   });
 
-  it("shows a fallback message when a topic has no context file", () => {
-    render(<WritingPracticeDetailPage topicId="writing-unknown" onBack={vi.fn()} />);
+  it("shows a fallback message when a topic has no context yet", async () => {
+    stubApiFetch({ topic: { title: "Present yourself", context: null } });
+    render(
+      <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+    );
 
-    expect(screen.getByText("No context available yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No context available yet.")).toBeInTheDocument();
+  });
+
+  it("shows an error when the writing practice topic fails to load", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    render(
+      <WritingPracticeDetailPage topicId="writing-unknown" onBack={vi.fn()} />,
+    );
+
+    expect(
+      await screen.findByText("Failed to load this writing practice topic."),
+    ).toBeInTheDocument();
   });
 
   it("switches to the writing tab and lets the user type multi-line text", async () => {
@@ -167,7 +204,7 @@ describe("WritingPracticeDetailPage", () => {
         vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input);
           const method = init?.method ?? "GET";
-          if (url.includes("/writing/draft/") && method === "GET") {
+          if (url.includes("/writing-practice/") && method === "GET") {
             return { ok: true, json: async () => ({ draft: "", archive: [] }) };
           }
           return { ok: false };
@@ -227,7 +264,7 @@ describe("WritingPracticeDetailPage", () => {
         vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input);
           const method = init?.method ?? "GET";
-          if (url.includes("/writing/draft/") && method === "GET") {
+          if (url.includes("/writing-practice/") && method === "GET") {
             return { ok: true, json: async () => ({ draft: "", archive: [] }) };
           }
           return { ok: false };
@@ -308,10 +345,7 @@ describe("WritingPracticeDetailPage", () => {
           if (url.endsWith("/writing/check-topic-relevance")) {
             return { ok: false };
           }
-          if (url.includes("/writing/draft/") && (init?.method ?? "GET") === "GET") {
-            return { ok: true, json: async () => ({ draft: "", archive: [] }) };
-          }
-          if (url.includes("/writing/draft/")) {
+          if (url.includes("/writing-practice/")) {
             return { ok: true, json: async () => ({ draft: "", archive: [] }) };
           }
           if (url.endsWith("/writing/check-sentence")) {

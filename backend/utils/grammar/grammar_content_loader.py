@@ -287,3 +287,25 @@ def fetch_grammar_content(s3_key: str, client=None) -> dict:
         "explanation": explanation,
         "exercises": json.loads(exercises_raw) if exercises_raw else None,
     }
+
+
+def fetch_writing_practice_content(practice_id: str, client=None) -> dict:
+    """Fetches a writing-practice topic's context.md.
+
+    Reads from GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout)
+    when set, otherwise from the GRAMMAR_CONTENT_S3_BUCKET bucket. Assumes
+    the topic's S3 folder name is its own id (``writing_practice/<id>/``),
+    true of every topic authored so far — unlike grammar points, writing
+    practice has no separate ``s3_key`` column to look up instead. A missing
+    file returns None rather than raising.
+    """
+    key = f"writing_practice/{practice_id}/context.md"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        context = _read_local_file(Path(local_path), key)
+    else:
+        bucket = _bucket()
+        client = client or _s3_client()
+        context = _read_s3_object(client, bucket, key)
+
+    return {"context": context}

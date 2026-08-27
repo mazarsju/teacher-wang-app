@@ -11,26 +11,36 @@ describe("grammarPointsApi", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads grammar points", async () => {
+  it("loads grammar points and writing practices", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => [
-          {
-            id: "1|Basic Sentence Structure",
-            hsk_level: 1,
-            title: "Basic Sentence Structure",
-            prerequisites: [],
-            status: "TODO",
-          },
-        ],
+        json: async () => ({
+          grammar_points: [
+            {
+              id: "1|Basic Sentence Structure",
+              hsk_level: 1,
+              title: "Basic Sentence Structure",
+              prerequisites: [],
+              status: "TODO",
+            },
+          ],
+          writing_practices: [
+            {
+              id: "writing-present-yourself",
+              title: "Present yourself",
+              after_grammar_point: "1|Basic Sentence Structure",
+            },
+          ],
+        }),
       }),
     );
 
-    await expect(fetchGrammarPoints()).resolves.toMatchObject([
-      { id: "1|Basic Sentence Structure", hsk_level: 1 },
-    ]);
+    await expect(fetchGrammarPoints()).resolves.toMatchObject({
+      grammarPoints: [{ id: "1|Basic Sentence Structure", hsk_level: 1 }],
+      writingPractices: [{ id: "writing-present-yourself", title: "Present yourself" }],
+    });
   });
 
   it("throws when the request fails", async () => {

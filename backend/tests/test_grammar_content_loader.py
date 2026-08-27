@@ -19,6 +19,7 @@ from backend.utils.database.models import (
 from backend.utils.grammar.grammar_content_loader import (
     curriculum_index,
     fetch_grammar_content,
+    fetch_writing_practice_content,
     reload_grammar_content,
 )
 from postgres_test_case import PostgresTestCase
@@ -596,6 +597,72 @@ class TestFetchGrammarContent(unittest.TestCase):
 
         self.assertIsNone(content["explanation"])
         self.assertIsNone(content["exercises"])
+
+
+class TestFetchWritingPracticeContent(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_reads_from_local_path_when_env_var_set(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "writing_practice" / "writing-present-yourself"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "context.md").write_text("Write about yourself.")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                content = fetch_writing_practice_content("writing-present-yourself")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(content["context"], "Write about yourself.")
+
+    def test_local_path_missing_file_returns_none(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                content = fetch_writing_practice_content("writing-present-yourself")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertIsNone(content["context"])
+
+    def test_reads_from_s3_when_local_path_not_set(self):
+        client = _make_client(
+            {"writing_practice/writing-present-yourself/context.md": "Write about yourself."}
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_writing_practice_content(
+                "writing-present-yourself", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(content["context"], "Write about yourself.")
+
+    def test_s3_missing_key_returns_none(self):
+        client = MagicMock()
+        client.get_object.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchKey"}}, "GetObject"
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_writing_practice_content(
+                "writing-present-yourself", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertIsNone(content["context"])
 
 
 if __name__ == "__main__":

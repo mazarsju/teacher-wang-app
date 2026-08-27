@@ -1,21 +1,35 @@
 from flask import Blueprint, request
 
 from backend.utils.auth.user_context import current_user
+from backend.utils.database.models import WritingPractice
+from backend.utils.grammar.grammar_content_loader import fetch_writing_practice_content
 from backend.utils.writing.writing_drafts import complete_draft, load_draft, save_draft
 
-bp = Blueprint("writing_draft", __name__)
+bp = Blueprint("writing_practice", __name__)
 
 
-@bp.get("/writing/draft/<topic_id>")
-def get_writing_draft(topic_id: str):
+@bp.get("/writing-practice/<topic_id>")
+def get_writing_practice(topic_id: str):
+    practice = WritingPractice.query.get(topic_id)
+    if practice is None:
+        return {"error": "Writing practice topic not found"}, 404
+
+    content = fetch_writing_practice_content(practice.id)
     try:
-        return load_draft(current_user().id, topic_id), 200
+        draft = load_draft(current_user().id, topic_id)
     except ValueError as error:
         return {"error": str(error)}, 400
 
+    return {
+        "title": practice.title,
+        "context": content["context"],
+        "draft": draft["draft"],
+        "archive": draft["archive"],
+    }, 200
 
-@bp.post("/writing/draft/<topic_id>")
-def save_writing_draft(topic_id: str):
+
+@bp.post("/writing-practice/<topic_id>")
+def save_writing_practice_draft(topic_id: str):
     body = request.get_json(silent=True) or {}
     draft = body.get("draft")
     if not isinstance(draft, str):
@@ -27,8 +41,8 @@ def save_writing_draft(topic_id: str):
         return {"error": str(error)}, 400
 
 
-@bp.post("/writing/draft/<topic_id>/complete")
-def complete_writing_draft(topic_id: str):
+@bp.post("/writing-practice/<topic_id>/complete")
+def complete_writing_practice_draft(topic_id: str):
     body = request.get_json(silent=True) or {}
     draft = body.get("draft")
     if not isinstance(draft, str):

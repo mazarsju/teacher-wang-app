@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { scoreBand } from "../components/GrammarExercises";
 import { CheckIcon, LockIcon, PenIcon, StarIcon } from "../components/icons";
 import Page from "../components/Page";
-import { WRITING_TOPICS } from "../data/writingTopics";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setGrammarPoints } from "../store/slices/grammarSlice";
 import type { GrammarPoint } from "../types/grammarPoint";
@@ -164,6 +163,7 @@ export default function GrammarPage() {
     string | null
   >(null);
   const [plan, setPlan] = useState<string | null>(null);
+  const [writingPractices, setWritingPractices] = useState<WritingTopic[]>([]);
 
   useEffect(() => {
     fetchCurrentUser()
@@ -214,23 +214,24 @@ export default function GrammarPage() {
         const rows: LevelRow[] = [];
         for (const entry of sortedEntries) {
           rows.push({ kind: "grammar", ...entry });
-          for (const topic of WRITING_TOPICS) {
-            if (topic.afterGrammarId === entry.grammarPoint.id) {
+          for (const topic of writingPractices) {
+            if (topic.after_grammar_point === entry.grammarPoint.id) {
               rows.push({ kind: "writing", topic });
             }
           }
         }
         return { level, rows };
       });
-  }, [visibleGrammarPoints]);
+  }, [visibleGrammarPoints, writingPractices]);
 
   useEffect(() => {
     let cancelled = false;
 
     fetchGrammarPoints()
-      .then((points) => {
+      .then(({ grammarPoints, writingPractices }) => {
         if (!cancelled) {
-          dispatch(setGrammarPoints(points));
+          dispatch(setGrammarPoints(grammarPoints));
+          setWritingPractices(writingPractices);
         }
       })
       .catch((fetchError) => {

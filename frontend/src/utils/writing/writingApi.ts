@@ -46,30 +46,43 @@ export type WritingArchiveEntry = {
   content: string;
 };
 
-export type WritingDraft = {
+export type WritingPracticeDetail = {
+  title: string;
+  context: string | null;
   draft: string;
   archive: WritingArchiveEntry[];
 };
 
-export async function fetchWritingDraft(topicId: string): Promise<WritingDraft> {
+/** Fetches everything about one writing-practice topic: its title and
+ * prompt (`context`, from S3) plus the learner's saved `draft` and
+ * `archive` of past fully-correct submissions (Postgres + the
+ * conversation-logs S3 bucket). */
+export async function fetchWritingPractice(
+  topicId: string,
+): Promise<WritingPracticeDetail> {
   const response = await apiFetch(
-    `${API_BASE}/writing/draft/${encodeURIComponent(topicId)}`,
+    `${API_BASE}/writing-practice/${encodeURIComponent(topicId)}`,
     { method: "GET" },
   );
 
   if (!response.ok) {
-    throw new Error("Failed to load your saved draft.");
+    throw new Error("Failed to load this writing practice topic.");
   }
 
-  return (await response.json()) as WritingDraft;
+  return (await response.json()) as WritingPracticeDetail;
 }
+
+export type WritingDraft = {
+  draft: string;
+  archive: WritingArchiveEntry[];
+};
 
 export async function saveWritingDraft(
   topicId: string,
   draft: string,
 ): Promise<WritingDraft> {
   const response = await apiFetch(
-    `${API_BASE}/writing/draft/${encodeURIComponent(topicId)}`,
+    `${API_BASE}/writing-practice/${encodeURIComponent(topicId)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -89,7 +102,7 @@ export async function completeWritingDraft(
   draft: string,
 ): Promise<WritingDraft> {
   const response = await apiFetch(
-    `${API_BASE}/writing/draft/${encodeURIComponent(topicId)}/complete`,
+    `${API_BASE}/writing-practice/${encodeURIComponent(topicId)}/complete`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
