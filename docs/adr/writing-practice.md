@@ -378,10 +378,16 @@ WritingPracticeDetailPage
   practiced this topic" or a score anywhere outside the current session.
 - Server-side validation of `topic_id` today is only a safe-charset check
   (`_is_valid_topic_id`, alnum + hyphen) — it doesn't confirm the id is one
-  of `WRITING_TOPICS`, since that list only exists in the frontend. Adding
-  the topic catalog somewhere the backend can see it (or accepting an
-  unrecognized topic id as "just a bucket for a draft") is an open
-  question if this needs tightening later.
+  of `WRITING_TOPICS`, since that list only exists in the frontend. A
+  backend-visible `writing_practice` table now exists (see the
+  [grammar content ADR](grammar-content.md), decision 7, and
+  [schema tenancy](../architecture/schema-tenancy.md)), populated from
+  `writing_practice/<name>/overview.yaml` by the same
+  `POST /admin/grammar/reload` that populates `grammar_points` — but
+  nothing reads it yet; `WRITING_TOPICS` is still the frontend's only
+  source of truth for the writing-practice tab. Validating `topic_id`
+  against this table (or replacing `WRITING_TOPICS` with an API backed by
+  it) is the natural next step if this needs tightening.
 - Decision 8's on-topic check has no logging on failure (see Drawbacks);
   adding a log line or metric in the `except` branch would make a silently
   broken check visible without giving up the fail-open behavior itself.

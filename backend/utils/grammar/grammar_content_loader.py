@@ -9,6 +9,11 @@ repo's AGENTS.md for the exact syntax), not folder paths or titles. This
 ``id`` field is also ``grammar_points.id``, the primary key used throughout
 the backend and API.
 
+The same bucket also has ``writing_practice/<name>/overview.yaml`` (plus a
+sibling ``context.md``, not read here), each with ``id``, ``title``, and
+``afterGrammarId`` — a ``grammar_points.id`` this writing topic follows in
+the curriculum. These populate ``writing_practice``.
+
 Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout of that layout (e.g. a
 `teacher-wang-grammar` clone's ``grammar/`` folder) to reload from disk
 instead of S3, for local debugging.
@@ -26,10 +31,17 @@ from botocore.exceptions import ClientError
 from sqlalchemy.dialects.postgresql import insert
 
 from backend.utils.database.extensions import db
-from backend.utils.database.models import GrammarPoint, GrammarPrerequisite, UserGrammarProgress
+from backend.utils.database.models import (
+    GrammarPoint,
+    GrammarPrerequisite,
+    UserGrammarProgress,
+    WritingPractice,
+)
 
 GRAMMAR_MANIFEST_SUFFIX = "/grammar.yaml"
 GRAMMAR_MANIFEST_FILENAME = "grammar.yaml"
+WRITING_PRACTICE_MANIFEST_SUFFIX = "/overview.yaml"
+WRITING_PRACTICE_MANIFEST_FILENAME = "overview.yaml"
 _FOLDER_INDEX_RE = re.compile(r"^(\d+)")
 
 
@@ -69,36 +81,40 @@ def _bucket() -> str:
     return bucket
 
 
-def _load_manifests(client, bucket: str) -> dict[str, dict]:
-    """Maps each rule's folder key to its parsed grammar.yaml."""
+def _load_manifests(client, bucket: str, suffix: str) -> dict[str, dict]:
+    """Maps each item's folder key to its parsed manifest YAML.
+
+    ``suffix`` picks which manifest kind to collect (e.g. ``/grammar.yaml``
+    or ``/overview.yaml``) out of the bucket's single object listing.
+    """
     manifests: dict[str, dict] = {}
     paginator = client.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=bucket):
         for item in page.get("Contents", []) or []:
             key = item.get("Key", "")
-            if not key.endswith(GRAMMAR_MANIFEST_SUFFIX):
+            if not key.endswith(suffix):
                 continue
-            folder_key = key[: -len(GRAMMAR_MANIFEST_SUFFIX)]
+            folder_key = key[: -len(suffix)]
             body = client.get_object(Bucket=bucket, Key=key)["Body"].read()
             manifests[folder_key] = yaml.safe_load(body) or {}
     return manifests
 
 
-def _load_manifests_from_local(root: Path) -> dict[str, dict]:
+def _load_manifests_from_local(root: Path, filename: str) -> dict[str, dict]:
     """Same as _load_manifests, but walks a local grammar-content checkout."""
     manifests: dict[str, dict] = {}
-    for manifest_path in root.rglob(GRAMMAR_MANIFEST_FILENAME):
+    for manifest_path in root.rglob(filename):
         folder_key = manifest_path.parent.relative_to(root).as_posix()
         manifests[folder_key] = yaml.safe_load(manifest_path.read_text()) or {}
     return manifests
 
 
 def reload_grammar_content(client=None) -> dict[str, int]:
-    """Clear and repopulate grammar_points/grammar_prerequisites.
+    """Clear and repopulate grammar_points/grammar_prerequisites/writing_practice.
 
     Reads from GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout) when
-    set, so grammar.yaml changes can be tested without S3. Otherwise reads
-    from the GRAMMAR_CONTENT_S3_BUCKET bucket.
+    set, so grammar.yaml/overview.yaml changes can be tested without S3.
+    Otherwise reads from the GRAMMAR_CONTENT_S3_BUCKET bucket.
 
     ``grammar_points.id`` is grammar.yaml's own ``id`` (e.g.
     ``hsk1_basic_sentence_structure``). Older rows — from before that field
@@ -110,11 +126,18 @@ def reload_grammar_content(client=None) -> dict[str, int]:
     """
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
-        manifests = _load_manifests_from_local(Path(local_path))
+        root = Path(local_path)
+        manifests = _load_manifests_from_local(root, GRAMMAR_MANIFEST_FILENAME)
+        writing_practice_manifests = _load_manifests_from_local(
+            root, WRITING_PRACTICE_MANIFEST_FILENAME
+        )
     else:
         bucket = _bucket()
         client = client or _s3_client()
-        manifests = _load_manifests(client, bucket)
+        manifests = _load_manifests(client, bucket, GRAMMAR_MANIFEST_SUFFIX)
+        writing_practice_manifests = _load_manifests(
+            client, bucket, WRITING_PRACTICE_MANIFEST_SUFFIX
+        )
 
     ids_by_folder: dict[str, str] = {}
     old_id_by_folder: dict[str, str] = {}
@@ -145,6 +168,7 @@ def reload_grammar_content(client=None) -> dict[str, int]:
         for row in UserGrammarProgress.query.all()
     ]
     UserGrammarProgress.query.delete()
+    WritingPractice.query.delete()
     GrammarPrerequisite.query.delete()
     GrammarPoint.query.delete()
 
@@ -175,6 +199,39 @@ def reload_grammar_content(client=None) -> dict[str, int]:
             )
             prerequisite_count += 1
 
+    practice_ids_seen: set[str] = set()
+    for folder_key, manifest in writing_practice_manifests.items():
+        practice_id = manifest.get("id")
+        if not practice_id:
+            raise ValueError(f"Missing 'id' in overview.yaml for {folder_key!r}")
+        if practice_id in practice_ids_seen:
+            raise ValueError(
+                f"Duplicate writing practice id {practice_id!r} ({folder_key!r})"
+            )
+        practice_ids_seen.add(practice_id)
+
+        title = manifest.get("title")
+        if not title:
+            raise ValueError(f"Missing 'title' in overview.yaml for {folder_key!r}")
+
+        after_grammar_point = manifest.get("afterGrammarId")
+        if not after_grammar_point:
+            raise ValueError(
+                f"Missing 'afterGrammarId' in overview.yaml for {folder_key!r}"
+            )
+        if after_grammar_point not in valid_ids:
+            raise ValueError(
+                f"Unknown afterGrammarId {after_grammar_point!r} for {folder_key!r}"
+            )
+
+        db.session.execute(
+            insert(WritingPractice).values(
+                id=practice_id,
+                title=title,
+                after_grammar_point=after_grammar_point,
+            )
+        )
+
     to_restore = []
     for row in kept_progress:
         grammar_id = row["grammar_id"]
@@ -189,6 +246,7 @@ def reload_grammar_content(client=None) -> dict[str, int]:
     return {
         "grammar_points": len(manifests),
         "grammar_prerequisites": prerequisite_count,
+        "writing_practice": len(writing_practice_manifests),
     }
 
 

@@ -48,8 +48,8 @@ teacher-wang/
 │   │   ├── knowledgeBase/  # hsk_level.py, hsk_level_corrections.py, hsk_word_picker.py, pinyin.py,
 │   │   │                   # chinese_validation.py, character_sync.py, anki_sync.py (Anki deck mapping/sync),
 │   │   │                   # hsk_source.py/hsk_content_loader.py/load_hsk_content.py (HSK vocabulary load)
-│   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml files from S3 into
-│   │   │                   # grammar_points/grammar_prerequisites)
+│   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml/overview.yaml files from S3
+│   │   │                   # into grammar_points/grammar_prerequisites/writing_practice)
 │   │   ├── writing/        # writing_drafts.py (S3-backed draft load/save, conversation-logs bucket)
 │   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
 │   └── requirements.txt

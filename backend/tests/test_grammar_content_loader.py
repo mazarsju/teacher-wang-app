@@ -14,6 +14,7 @@ from backend.utils.database.models import (
     GrammarPoint,
     GrammarPrerequisite,
     UserGrammarProgress,
+    WritingPractice,
 )
 from backend.utils.grammar.grammar_content_loader import (
     curriculum_index,
@@ -97,7 +98,10 @@ class TestReloadGrammarContent(PostgresTestCase):
         finally:
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
-        self.assertEqual(counts, {"grammar_points": 2, "grammar_prerequisites": 1})
+        self.assertEqual(
+            counts,
+            {"grammar_points": 2, "grammar_prerequisites": 1, "writing_practice": 0},
+        )
         self.assertEqual(GrammarPoint.query.count(), 2)
 
         base = GrammarPoint.query.filter_by(title="Basic sentence structure").one()
@@ -281,7 +285,10 @@ class TestReloadGrammarContent(PostgresTestCase):
             finally:
                 del os.environ["GRAMMAR_CONTENT_S3_PATH"]
 
-        self.assertEqual(counts, {"grammar_points": 1, "grammar_prerequisites": 0})
+        self.assertEqual(
+            counts,
+            {"grammar_points": 1, "grammar_prerequisites": 0, "writing_practice": 0},
+        )
         point = GrammarPoint.query.one()
         self.assertEqual(point.title, "Basic sentence structure")
         self.assertEqual(point.s3_key, "hsk1/01-basic-sentence-structure")
@@ -333,6 +340,182 @@ class TestReloadGrammarContent(PostgresTestCase):
         }
         import os
 
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            with self.assertRaises(ValueError):
+                reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+    def test_loads_writing_practice_topics(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            counts = reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(
+            counts,
+            {"grammar_points": 1, "grammar_prerequisites": 0, "writing_practice": 1},
+        )
+        topic = WritingPractice.query.one()
+        self.assertEqual(topic.id, "writing-present-yourself")
+        self.assertEqual(topic.title, "Present yourself")
+        self.assertEqual(topic.after_grammar_point, "hsk1_basic_sentence_structure")
+
+    def test_clears_existing_writing_practice_rows_before_reload(self):
+        db.session.add(
+            GrammarPoint(id="hsk1_stale", hsk_level=1, title="Stale point")
+        )
+        db.session.commit()
+        db.session.add(
+            WritingPractice(
+                id="writing-stale", title="Stale topic", after_grammar_point="hsk1_stale"
+            )
+        )
+        db.session.commit()
+
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(WritingPractice.query.count(), 0)
+
+    def test_reads_writing_practice_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            rule_dir = root / "hsk1" / "01-basic-sentence-structure"
+            rule_dir.mkdir(parents=True)
+            (rule_dir / "grammar.yaml").write_text(
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            )
+            topic_dir = root / "writing_practice" / "writing-present-yourself"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "overview.yaml").write_text(
+                "id: writing-present-yourself\n"
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                counts = reload_grammar_content()
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(counts["writing_practice"], 1)
+        topic = WritingPractice.query.one()
+        self.assertEqual(topic.title, "Present yourself")
+
+    def test_raises_on_writing_practice_missing_id(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            with self.assertRaises(ValueError):
+                reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+    def test_raises_on_writing_practice_missing_title(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            with self.assertRaises(ValueError):
+                reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+    def test_raises_on_writing_practice_missing_after_grammar_id(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\ntitle: Present yourself\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            with self.assertRaises(ValueError):
+                reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+    def test_raises_on_writing_practice_unknown_after_grammar_id(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_does_not_exist\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            with self.assertRaises(ValueError):
+                reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+    def test_raises_on_writing_practice_duplicate_id(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+            "writing_practice/writing-present-yourself-2/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "title: Duplicate\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+        }
         os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
         try:
             with self.assertRaises(ValueError):

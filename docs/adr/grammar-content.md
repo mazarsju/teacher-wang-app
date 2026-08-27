@@ -315,6 +315,24 @@ Exercise attempts and other learning analytics can be added there as the
 feature evolves. Full table/partition layout:
 [schema tenancy](../architecture/schema-tenancy.md).
 
+The same reload also populates a `writing_practice` table, one row per
+`writing_practice/<name>/overview.yaml` in the bucket (see the
+[writing practice ADR](writing-practice.md)):
+
+```text
+writing_practice
+----------------
+id                     overview.yaml's own id, e.g. "writing-present-yourself"
+title
+after_grammar_point    FK -> grammar_points.id
+```
+
+This is a shared table (no `user_id`), like `grammar_points` itself, since
+it's curriculum catalog data rather than learner state — `overview.yaml`
+plays the same role for a writing topic that `grammar.yaml` plays for a
+grammar point, and reuses the loader's existing S3-listing/local-checkout
+code path rather than a second implementation.
+
 ### 8. Curriculum ordering is separate from prerequisites
 
 Grammar points must not contain a `difficulty_order` field. There are two
@@ -354,9 +372,10 @@ reorganized without touching every grammar definition.
                   S3 (GRAMMAR_CONTENT_S3_BUCKET)
                    │
                    │ POST /admin/grammar/reload (admin only)
-                   │ grammar_content_loader.py: parses every grammar.yaml,
-                   │ clears and repopulates grammar_points /
-                   │ grammar_prerequisites in one pass, then rewrites
+                   │ grammar_content_loader.py: parses every grammar.yaml
+                   │ and writing_practice/*/overview.yaml, clears and
+                   │ repopulates grammar_points / grammar_prerequisites /
+                   │ writing_practice in one pass, then rewrites
                    │ user_grammar_progress rows whose grammar_id still
                    │ exists (dropped/renamed ids are discarded)
                    ▼
@@ -364,6 +383,7 @@ React frontend ◄── Flask backend
       │                │
       │                ├── PostgreSQL
       │                │     ├── grammar_points / grammar_prerequisites
+      │                │     ├── writing_practice
       │                │     └── user_grammar_progress
       │                │
       │                └── AI services (translation validation, future
@@ -378,9 +398,10 @@ checkout instead, so reload can be tested without S3/AWS credentials
 
 The reload is a full clear-and-repopulate, not an incremental upsert: any
 malformed or invalid `grammar.yaml` (parse error, missing/duplicate `id`,
-unresolved `prerequisites` entry) aborts the whole reload rather than
-partially applying it, so `grammar_points`/`grammar_prerequisites` are never
-left half-updated.
+unresolved `prerequisites` entry) or `overview.yaml` (missing/duplicate
+`id`/`title`, unresolved `afterGrammarId`) aborts the whole reload rather
+than partially applying it, so `grammar_points`/`grammar_prerequisites`/
+`writing_practice` are never left half-updated.
 
 The backend owns application state and the content layer; the frontend
 renders the learning experience and deterministic exercise interactions.

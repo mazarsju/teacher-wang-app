@@ -33,6 +33,7 @@ class TestReloadGrammarRulesEndpoint(unittest.TestCase):
         self.mock_reload.return_value = {
             "grammar_points": 12,
             "grammar_prerequisites": 4,
+            "writing_practice": 3,
         }
 
         response = self.client.post("/admin/grammar/reload")
@@ -42,7 +43,11 @@ class TestReloadGrammarRulesEndpoint(unittest.TestCase):
             response.get_json(),
             {
                 "message": "Grammar rules reloaded",
-                "counts": {"grammar_points": 12, "grammar_prerequisites": 4},
+                "counts": {
+                    "grammar_points": 12,
+                    "grammar_prerequisites": 4,
+                    "writing_practice": 3,
+                },
             },
         )
         self.mock_reload.assert_called_once_with()

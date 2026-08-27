@@ -36,6 +36,7 @@ _TRUNCATE_TABLES = (
     "conversation_summary",
     "weekly_articles",
     "user_grammar_progress",
+    "writing_practice",
     "grammar_prerequisites",
     "grammar_points",
 )

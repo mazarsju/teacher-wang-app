@@ -270,6 +270,19 @@ class UserGrammarProgress(db.Model):
     usage_in_real_life = db.Column(Numeric, nullable=True)
 
 
+class WritingPractice(db.Model):
+    """A writing-practice topic, anchored to a point in the grammar curriculum."""
+
+    __tablename__ = "writing_practice"
+
+    # overview.yaml's own `id` field, e.g. "writing-present-yourself".
+    id = db.Column(String(128), primary_key=True)
+    title = db.Column(String, nullable=False)
+    after_grammar_point = db.Column(
+        String(128), ForeignKey("grammar_points.id"), nullable=False
+    )
+
+
 class ConversationSummary(db.Model):
     """Stored summary of an AI agent conversation.
 
