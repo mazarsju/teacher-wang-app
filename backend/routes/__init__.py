@@ -13,6 +13,7 @@ def register_routes(app: Flask) -> None:
         challenges,
         check_grammar_point,
         check_writing_sentence,
+        check_writing_topic_relevance,
         complete_grammar_point,
         conversation_logs,
         create_character,
@@ -79,6 +80,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(complete_grammar_point.bp)
     app.register_blueprint(check_grammar_point.bp)
     app.register_blueprint(check_writing_sentence.bp)
+    app.register_blueprint(check_writing_topic_relevance.bp)
     app.register_blueprint(detect_grammar_points.bp)
     app.register_blueprint(record_grammar_usage.bp)
     app.register_blueprint(list_hsk_characters.bp)

@@ -5,6 +5,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { PenIcon } from "../components/icons";
 import Page from "../components/Page";
 import SentenceCorrectionModal from "../components/SentenceCorrectionModal";
+import WarningModal from "../components/WarningModal";
 import WritingReviewModal from "../components/WritingReviewModal";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import { getWritingContext } from "../data/writingContext";
@@ -16,6 +17,7 @@ import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { splitIntoSentences } from "../utils/writing/splitSentences";
 import {
   checkWritingSentence,
+  checkWritingTopicRelevance,
   completeWritingDraft,
   fetchWritingDraft,
   saveWritingDraft,
@@ -140,6 +142,8 @@ export default function WritingPracticeDetailPage({
   const [archive, setArchive] = useState<WritingArchiveEntry[]>([]);
   const [isDeletingDraft, setIsDeletingDraft] = useState(false);
   const [isDeleteDraftConfirmOpen, setIsDeleteDraftConfirmOpen] = useState(false);
+  const [isCheckingTopic, setIsCheckingTopic] = useState(false);
+  const [offTopicWarning, setOffTopicWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -212,6 +216,27 @@ export default function WritingPracticeDetailPage({
   async function handleSubmit() {
     const lines = splitIntoSentences(draft);
     if (lines.length === 0) return;
+
+    const topicDescription = context ?? topic?.title;
+    if (topicDescription) {
+      setIsCheckingTopic(true);
+      try {
+        const onTopic = await checkWritingTopicRelevance(draft, topicDescription);
+        if (!onTopic) {
+          setOffTopicWarning(
+            "Your text doesn't seem to answer this exercise yet. Take another " +
+              "look at the prompt in the Context tab, then rewrite your text to " +
+              "address it before submitting.",
+          );
+          return;
+        }
+      } catch {
+        // Best-effort gate: if the check itself fails, don't block the
+        // learner from submitting — fall through to the normal review flow.
+      } finally {
+        setIsCheckingTopic(false);
+      }
+    }
 
     const initialChecks: WritingSentenceCheck[] = lines.map((line, index) => ({
       id: `${index}`,
@@ -368,8 +393,8 @@ export default function WritingPracticeDetailPage({
               <Button
                 kind="confirm"
                 variant="page"
-                text="Submit"
-                disabled={draft.trim() === ""}
+                text={isCheckingTopic ? "Checking..." : "Submit"}
+                disabled={draft.trim() === "" || isCheckingTopic}
                 onClick={handleSubmit}
               />
             </div>
@@ -459,6 +484,11 @@ export default function WritingPracticeDetailPage({
         danger
         onCancel={() => setIsDeleteDraftConfirmOpen(false)}
         onConfirm={handleDeleteDraft}
+      />
+      <WarningModal
+        isOpen={offTopicWarning !== null}
+        message={offTopicWarning ?? ""}
+        onClose={() => setOffTopicWarning(null)}
       />
       {activeSentenceChat && (
         <ChatModal

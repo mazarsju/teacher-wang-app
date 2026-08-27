@@ -545,6 +545,54 @@ def check_grammar_usage(
     )
 
 
+@dataclass(frozen=True)
+class TopicRelevanceResult:
+    on_topic: bool
+    token_usage: LlmTokenUsage = LlmTokenUsage()
+
+
+TOPIC_RELEVANCE_SYSTEM_PROMPT = (
+    "You check whether a learner's Chinese writing actually addresses a "
+    "given writing prompt, regardless of whether the Chinese is grammatically "
+    "correct. A short text that genuinely responds to the prompt (e.g. one "
+    "relevant fact) is on topic; a text that ignores the prompt (e.g. an "
+    "unrelated greeting or small talk) is not. "
+    "Reply with ONLY a JSON object and no other text, exactly in this form: "
+    '{"on_topic": true} or {"on_topic": false}.'
+)
+
+
+def check_writing_topic_relevance(text: str, topic: str) -> TopicRelevanceResult:
+    """Ask the LLM whether `text` addresses the given writing prompt."""
+    content = text.strip()
+    if content == "":
+        raise ValueError("text must be a non-empty string")
+
+    topic_description = topic.strip()
+    if topic_description == "":
+        raise ValueError("topic must be a non-empty string")
+
+    prompt = (
+        f'Writing prompt: "{topic_description}"\n\n'
+        f'Learner\'s text: "{content}"\n\n'
+        "Does the text address this prompt? Return the JSON object."
+    )
+
+    raw, token_usage = _invoke_llm(
+        [
+            SystemMessage(content=TOPIC_RELEVANCE_SYSTEM_PROMPT),
+            HumanMessage(content=prompt),
+        ]
+    )
+    parsed = _extract_json_object(raw)
+
+    on_topic = parsed.get("on_topic")
+    if not isinstance(on_topic, bool):
+        raise ValueError("Topic relevance response must include boolean 'on_topic'")
+
+    return TopicRelevanceResult(on_topic=on_topic, token_usage=token_usage)
+
+
 BEHAVIOR_PLANNER_SYSTEM_PROMPT = (
     "You are the Behavior Planner for Teacher Wang, a Mandarin teaching "
     "agent. Given the learner's latest message and the conversation so "

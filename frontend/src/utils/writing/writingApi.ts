@@ -23,6 +23,24 @@ export async function checkWritingSentence(
   return (await response.json()) as WritingSentenceCorrection;
 }
 
+export async function checkWritingTopicRelevance(
+  text: string,
+  topic: string,
+): Promise<boolean> {
+  const response = await apiFetch(`${API_BASE}/writing/check-topic-relevance`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, topic }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to check whether the text answers the topic.");
+  }
+
+  const data = (await response.json()) as { on_topic: boolean };
+  return data.on_topic;
+}
+
 export type WritingArchiveEntry = {
   timestamp: string;
   content: string;

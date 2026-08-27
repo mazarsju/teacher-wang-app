@@ -32,9 +32,13 @@ past fully-correct submission as a collapsible `<details>` entry titled by
 its completion timestamp, most-recent first and expanded by default (see
 decision 7).
 
-Clicking **Submit** splits the draft into sentences client-side
-(decision 2), swaps the textarea for a read-only per-sentence render, and
-checks each sentence **sequentially**:
+Clicking **Submit** first calls `POST /writing/check-topic-relevance` with
+the whole draft and the topic's prompt (decision 8); if the text doesn't
+address the topic, a `WarningModal` explains that and the textarea is left
+untouched — none of the per-sentence flow below runs. If it's on topic (or
+the check itself fails — see decision 8), Submit splits the draft into
+sentences client-side (decision 2), swaps the textarea for a read-only
+per-sentence render, and checks each sentence **sequentially**:
 
 1. `POST /writing/check-sentence` — grammar correctness (decision 3).
 2. If that came back clean, `POST /grammar-points/detect` — which of the
@@ -223,6 +227,38 @@ state with the response's `archive` array (rather than appending its own
 guess of the entry), which is what makes the "Completed versions" tab
 appear immediately without a page reload.
 
+### 8. On-topic gating is a new LLM check, run once per Submit, fail-open
+
+Grammar correctness (decision 3) says nothing about whether a sentence is
+*relevant* — "你好！" is grammatically fine but doesn't answer a "present
+yourself" prompt. `check_writing_topic_relevance`
+(`backend/utils/aiChat/chat_service.py`) is a new LLM call (no existing
+function covered this) that takes the raw text and a `topic` string and
+returns a single `on_topic` boolean, exposed as
+`POST /writing/check-topic-relevance`
+(`backend/routes/check_writing_topic_relevance.py`). It runs once against
+the whole draft, before sentence splitting — unlike decisions 3/4, which
+are deliberately per-sentence, "does this answer the prompt" is a
+whole-text judgment that a per-sentence pass can't make (a single on-topic
+sentence buried in three off-topic ones shouldn't pass either, and this
+check doesn't try to draw that line — it's a coarse yes/no gate, not part
+of the per-sentence severity model).
+
+The `topic` argument is the frontend's `getWritingContext(topicId)` Markdown
+(falling back to the topic's `title` if no context file exists) — the same
+text already rendered in the Context tab. The backend has no writing-topic
+catalog of its own (decision 1), so rather than build one just for this
+check, the frontend passes the prompt text it already has, the same way
+decision 6's `topic_id` charset check accepts what it's given without
+validating against a catalog.
+
+The check is fire-open on failure: a thrown error (network, LLM, 500) is
+caught and swallowed, and Submit proceeds to the normal review flow exactly
+as if the text had passed. An outage in this gate should degrade to "no
+gate", not to "the learner can no longer submit writing practice" — the
+per-sentence grammar/usage checks after it are the features that actually
+matter.
+
 ## Runtime Architecture
 
 ```text
@@ -239,6 +275,9 @@ WritingPracticeDetailPage
   │      │ sentence correction saved
   │      │ "Submit"
   │      ▼
+  │   POST /writing/check-topic-relevance ─► check_writing_topic_relevance (chat_service.py) ─► LLM
+  │      │ on_topic === false? ──► WarningModal, stop here
+  │      ▼ true (or the check itself failed — fail open)
   │   splitIntoSentences (client-side)
   │      │
   │      ▼ per sentence, sequentially
@@ -281,7 +320,13 @@ WritingPracticeDetailPage
   limitation (see decision 2), not solved.
 - Sentences are checked strictly sequentially, one LLM round trip at a
   time; a long submission takes noticeably longer to fully review than a
-  single chat message does.
+  single chat message does. Decision 8's topic-relevance check adds one
+  more LLM round trip in front of that, once per Submit click (it isn't
+  re-run when a sentence correction is saved).
+- Decision 8's fail-open behavior means a struggling LLM/network silently
+  turns the on-topic gate off rather than blocking submission — correct for
+  availability, but a learner never sees "the check couldn't run", only
+  that off-topic text unexpectedly got through.
 - There is a completion record in S3 (decision 7) but still no row in
   Postgres — there's no way to show "you've practiced this topic" or a
   score anywhere that isn't the topic's own Completed versions tab.

@@ -13,8 +13,10 @@ from backend.utils.aiChat.chat_service import (  # noqa: E402
     GrammarCorrection,
     GrammarUsageResult,
     LlmTokenUsage,
+    TopicRelevanceResult,
     check_grammar_usage,
     check_user_grammar,
+    check_writing_topic_relevance,
     find_unknown_characters,
     generate_chat_reply,
     select_behaviors,
@@ -657,6 +659,48 @@ class TestCheckGrammarUsage(_FreePlanTokenMixin, unittest.TestCase):
     def test_rejects_empty_grammar_points(self):
         with self.assertRaises(ValueError):
             check_grammar_usage("你好", [])
+
+
+class TestCheckWritingTopicRelevance(_FreePlanTokenMixin, unittest.TestCase):
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_returns_on_topic_true(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content='{"on_topic": true}')
+        mock_get_llm.return_value = mock_llm
+
+        result = check_writing_topic_relevance("我叫小明，我是学生。", "Present yourself")
+
+        self.assertEqual(result, TopicRelevanceResult(on_topic=True))
+        invoked_messages = mock_llm.invoke.call_args.args[0]
+        self.assertIn("Present yourself", invoked_messages[1].content)
+        self.assertIn("我叫小明", invoked_messages[1].content)
+
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_returns_on_topic_false(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content='{"on_topic": false}')
+        mock_get_llm.return_value = mock_llm
+
+        result = check_writing_topic_relevance("你好！", "Present yourself")
+
+        self.assertEqual(result.on_topic, False)
+
+    def test_rejects_empty_text(self):
+        with self.assertRaises(ValueError):
+            check_writing_topic_relevance("  ", "Present yourself")
+
+    def test_rejects_empty_topic(self):
+        with self.assertRaises(ValueError):
+            check_writing_topic_relevance("你好", "  ")
+
+    @patch("backend.utils.aiChat.chat_service.get_llm")
+    def test_rejects_non_boolean_on_topic(self, mock_get_llm):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(content='{"on_topic": "yes"}')
+        mock_get_llm.return_value = mock_llm
+
+        with self.assertRaises(ValueError):
+            check_writing_topic_relevance("你好", "Present yourself")
 
 
 if __name__ == "__main__":

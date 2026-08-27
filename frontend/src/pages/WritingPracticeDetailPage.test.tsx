@@ -8,6 +8,7 @@ type CoveredGrammarPointResponse = { id: string; title: string };
 function stubApiFetch(handlers: {
   checkSentence?: (text: string) => SentenceCheckResponse | Promise<SentenceCheckResponse>;
   detectGrammarPoints?: (text: string) => CoveredGrammarPointResponse[];
+  onTopic?: boolean | ((text: string) => boolean);
   savedDraft?: string;
   savedArchive?: { timestamp: string; content: string }[];
 }) {
@@ -16,6 +17,7 @@ function stubApiFetch(handlers: {
   const chatCalls: unknown[] = [];
   const saveDraftCalls: string[] = [];
   const completeDraftCalls: string[] = [];
+  const topicRelevanceCalls: string[] = [];
   let archive = handlers.savedArchive ?? [];
 
   vi.stubGlobal(
@@ -25,6 +27,14 @@ function stubApiFetch(handlers: {
       const method = init?.method ?? "GET";
       const body = init?.body ? JSON.parse(init.body as string) : {};
 
+      if (url.endsWith("/writing/check-topic-relevance")) {
+        topicRelevanceCalls.push(body.text);
+        const onTopic =
+          typeof handlers.onTopic === "function"
+            ? handlers.onTopic(body.text)
+            : (handlers.onTopic ?? true);
+        return { ok: true, json: async () => ({ on_topic: onTopic }) };
+      }
       if (url.includes("/writing/draft/") && url.endsWith("/complete") && method === "POST") {
         completeDraftCalls.push(body.draft);
         archive = [...archive, { timestamp: new Date().toISOString(), content: body.draft }];
@@ -61,7 +71,14 @@ function stubApiFetch(handlers: {
     }),
   );
 
-  return { detectGrammarPointCalls, recordUsageCalls, chatCalls, saveDraftCalls, completeDraftCalls };
+  return {
+    detectGrammarPointCalls,
+    recordUsageCalls,
+    chatCalls,
+    saveDraftCalls,
+    completeDraftCalls,
+    topicRelevanceCalls,
+  };
 }
 
 describe("WritingPracticeDetailPage", () => {
@@ -258,6 +275,58 @@ describe("WritingPracticeDetailPage", () => {
       await user.click(screen.getByRole("button", { name: "Submit" }));
       return user;
     }
+
+    it("checks whether the text answers the topic before reviewing it", async () => {
+      const { topicRelevanceCalls } = stubApiFetch({
+        checkSentence: () => ({ severity: "none" }),
+      });
+
+      await typeAndSubmit("我是学生。");
+
+      await waitFor(() => expect(topicRelevanceCalls).toEqual(["我是学生。"]));
+    });
+
+    it("shows a warning instead of reviewing the text when it's off topic", async () => {
+      const { detectGrammarPointCalls } = stubApiFetch({ onTopic: false });
+
+      await typeAndSubmit("你好！");
+
+      expect(await screen.findByText("Warning")).toBeInTheDocument();
+      expect(
+        screen.getByText(/doesn't seem to answer this exercise/),
+      ).toBeInTheDocument();
+      // The text stays editable — no per-sentence review was started.
+      expect(screen.getByLabelText("Your writing")).toHaveValue("你好！");
+      expect(detectGrammarPointCalls).toEqual([]);
+    });
+
+    it("still reviews the text if the topic-relevance check itself fails", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input);
+          if (url.endsWith("/writing/check-topic-relevance")) {
+            return { ok: false };
+          }
+          if (url.includes("/writing/draft/") && (init?.method ?? "GET") === "GET") {
+            return { ok: true, json: async () => ({ draft: "", archive: [] }) };
+          }
+          if (url.includes("/writing/draft/")) {
+            return { ok: true, json: async () => ({ draft: "", archive: [] }) };
+          }
+          if (url.endsWith("/writing/check-sentence")) {
+            return { ok: true, json: async () => ({ severity: "none" }) };
+          }
+          throw new Error(`Unexpected fetch call: ${url}`);
+        }),
+      );
+
+      await typeAndSubmit("我是学生。");
+
+      expect(
+        await screen.findByRole("heading", { name: "Everything is correct!" }),
+      ).toBeInTheDocument();
+    });
 
     it("makes the text non-editable, shows an under-review message, then colors a correct sentence green", async () => {
       let resolveCheck!: (value: SentenceCheckResponse) => void;
