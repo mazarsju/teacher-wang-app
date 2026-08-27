@@ -93,19 +93,23 @@ async function runSentenceCheck(text: string): Promise<SentenceCheckResult> {
   }
 }
 
-function buildReviewSummary(checks: WritingSentenceCheck[]): ReviewSummary {
+function isAllCorrect(checks: WritingSentenceCheck[]): boolean {
+  return checks.every((sentence) => sentence.severity === "none");
+}
+
+function buildReviewSummary(checks: WritingSentenceCheck[], allCorrect: boolean): ReviewSummary {
   const covered = checks.flatMap((sentence) => sentence.grammarPointsCovered);
   return {
-    allCorrect: checks.every((sentence) => sentence.severity === "none"),
+    allCorrect,
     grammarPointTitles: [...new Set(covered.map((point) => point.title))],
   };
 }
 
-// Only recorded once the whole text is correct — a point used while other
-// sentences still have mistakes doesn't get credit yet. One id per usage
-// (not deduped), matching how the backend increments per occurrence.
-function recordGrammarUsageIfAllCorrect(checks: WritingSentenceCheck[]): void {
-  if (!checks.every((sentence) => sentence.severity === "none")) return;
+// Only called once the whole text is correct (see settleReview) — a point
+// used while other sentences still have mistakes doesn't get credit yet.
+// One id per usage (not deduped), matching how the backend increments per
+// occurrence.
+function creditGrammarUsage(checks: WritingSentenceCheck[]): void {
   const grammarIds = checks.flatMap((sentence) =>
     sentence.grammarPointsCovered.map((point) => point.id),
   );
@@ -173,14 +177,27 @@ export default function WritingPracticeDetailPage({
     };
   }, [topicId]);
 
-  // Best-effort, like recordGrammarUsageIfAllCorrect below: archiving is a
-  // bonus record of a completed text, not something that should surface as
-  // a user-facing error on top of the review modal that already celebrated it.
-  function archiveIfAllCorrect(checks: WritingSentenceCheck[]): void {
-    if (!checks.every((sentence) => sentence.severity === "none")) return;
+  // Best-effort, like creditGrammarUsage above: archiving is a bonus record
+  // of a completed text, not something that should surface as a user-facing
+  // error on top of the review modal that already celebrated it.
+  function archiveDraft(checks: WritingSentenceCheck[]): void {
     completeWritingDraft(topicId, joinSentenceChecks(checks))
       .then((saved) => setArchive(saved.archive))
       .catch(() => {});
+  }
+
+  // The one place that decides whether a just-settled set of sentence checks
+  // amounts to a fully correct submission. Everything downstream (review
+  // modal, grammar-usage credit, archiving/writing_progress) reads this one
+  // `allCorrect` instead of independently re-deriving it from `checks`.
+  function settleReview(checks: WritingSentenceCheck[], alwaysShowSummary: boolean): void {
+    const allCorrect = isAllCorrect(checks);
+    if (alwaysShowSummary || allCorrect) {
+      setReviewSummary(buildReviewSummary(checks, allCorrect));
+    }
+    if (!allCorrect) return;
+    creditGrammarUsage(checks);
+    archiveDraft(checks);
   }
 
   async function handleSaveDraft() {
@@ -277,9 +294,7 @@ export default function WritingPracticeDetailPage({
     }
 
     setIsReviewing(false);
-    setReviewSummary(buildReviewSummary(finalChecks));
-    recordGrammarUsageIfAllCorrect(finalChecks);
-    archiveIfAllCorrect(finalChecks);
+    settleReview(finalChecks, true);
   }
 
   async function handleConfirmCorrection(sentenceId: string, correctedText: string) {
@@ -305,11 +320,7 @@ export default function WritingPracticeDetailPage({
     setSentenceChecks(updated);
     saveWritingDraft(topicId, joinSentenceChecks(updated)).catch(() => {});
 
-    if (updated.every((sentence) => sentence.severity === "none")) {
-      setReviewSummary(buildReviewSummary(updated));
-      recordGrammarUsageIfAllCorrect(updated);
-      archiveIfAllCorrect(updated);
-    }
+    settleReview(updated, false);
   }
 
   return (

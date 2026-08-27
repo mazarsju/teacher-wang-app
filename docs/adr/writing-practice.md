@@ -4,7 +4,7 @@
 
 Accepted
 
-Writing topics appear inline in the Grammar tab's lesson list (`frontend/src/pages/GrammarPage.tsx`), not as a separate top-level nav item: `GET /grammar-points` returns `writing_practices` (`{id, title, after_grammar_point}[]`, read from the `writing_practice` Postgres table — see decision 1) alongside `grammar_points`, and each entry is inserted as a "Practice: `<title>`" row immediately after the grammar lesson whose id matches `after_grammar_point`, with a pen icon in place of the usual lesson number. Clicking it sets `selectedWritingTopicId` and renders `<WritingPracticeDetailPage topicId onBack>`.
+Writing topics appear inline in the Grammar tab's lesson list (`frontend/src/pages/GrammarPage.tsx`), not as a separate top-level nav item: `GET /grammar-points` returns `writing_practices` (`{id, title, after_grammar_point, status}[]`, read from the `writing_practice` Postgres table — see decision 1) alongside `grammar_points`, and each entry is inserted as a "Practice: `<title>`" row immediately after the grammar lesson whose id matches `after_grammar_point`, with a pen icon in place of the usual lesson number and the same `StatusBadge` grammar-point rows use. Clicking it sets `selectedWritingTopicId` and renders `<WritingPracticeDetailPage topicId onBack>`.
 
 That page has up to three tabs, `context`, `writing`, and `completed` (`frontend/src/pages/WritingPracticeDetailPage.tsx`). On mount it makes one call, `GET /writing-practice/<topic_id>`, for the topic's `title`, `context`, `draft`, and `archive` (decisions 1 and 10). **Context** renders `context` as Markdown, describing the prompt and which grammar patterns to use. **Writing** holds a full-width textarea, pre-filled with any previously saved `draft`; a "Save draft" button calls `POST /writing-practice/<topic_id>` to persist the current text, and the same save fires automatically on Submit and after every sentence correction is saved (see decision 6). A "Delete draft" button next to it — confirmed via `ConfirmModal` since it's destructive — clears the draft the same way (an empty-string save) and resets the page to a blank textarea, without touching the topic's `archive`. **Completed versions** only appears once the topic's `archive` array is non-empty; it lists every past fully-correct submission as a collapsible `<details>` entry titled by its completion timestamp, most-recent first and expanded by default (see decision 7).
 
@@ -15,7 +15,7 @@ Clicking **Submit** first calls `POST /writing/check-topic-relevance` with the w
 
 Once every sentence has settled, a `WritingReviewModal` opens: if every sentence's severity is `"none"`, it plays the same completion confetti as a challenge and lists the grammar points used; otherwise it explains that some sentences still need fixing and lists whatever was already detected. Dismissing an all-correct modal wipes the draft and puts the page back in edit mode (empty textarea) so the learner can start a new attempt; dismissing a still-has-mistakes modal leaves the reviewed, colored sentences on screen so they can keep fixing them. Clicking a flawed sentence opens an ephemeral Teacher Wang chat seeded with the correction's explanation (decision 5); the pencil icon next to it opens `SentenceCorrectionModal` to edit the sentence in place, which re-runs the same two-step check and re-evaluates whether the whole text is now correct. The moment it is, `POST /grammar-points/record-usage` fires once with one grammar-id per usage across all sentences (decision 4), and `POST /writing-practice/<topic_id>/complete` archives the fully-correct text (decision 7) — whether that moment is right after Submit or only after the learner fixes the last mistake through the correction modal.
 
-**Not yet wired up**: the `writing_progress` table (`backend/utils/database/models.py`, `WritingProgress`) and its migration exist but nothing reads or writes them — there is currently no persisted score in Postgres for a writing topic, only the draft text and its S3 archive.
+`writing_progress` (`user_id`, `writing_topic` FK → `writing_practice.id`, `status`) is the Postgres side of a topic's progress: `WIP`/`DONE`, read back as `writing_practices[].status` above. See decision 7 for how it's kept up to date.
 
 ## Context
 
@@ -35,7 +35,7 @@ None of this needed new NLP or a new LLM prompt: grammar-correctness checking an
 
 Writing topics used to be a hardcoded frontend array (`frontend/src/data/writingTopics.ts`) plus a static Markdown file per topic (`frontend/src/data/writingContext/<id>.md`) — the same limitation the grammar-content ADR's decision 1 solved for grammar points, now solved the same way here: a `writing_practice` Postgres table (`id`, `title`, `after_grammar_point` FK → `grammar_points.id`) populated by the same `POST /admin/grammar/reload` that populates `grammar_points`, reading every `writing_practice/<name>/overview.yaml` from the grammar-content S3 bucket (see the [grammar content ADR](grammar-content.md), decision 7, and [schema tenancy](../architecture/schema-tenancy.md) for the full schema and reload logic). The topic's prompt text lives in a sibling `context.md`, fetched on demand by `GET /writing-practice/<topic_id>` (`backend/routes/writing_practice.py`) rather than stored in Postgres — the same explanation-content-lives-in-S3 split `grammar_points`/ `explanation.md` already uses.
 
-`GrammarPage.tsx` no longer imports a static array: `GET /grammar-points` returns `writing_practices` alongside `grammar_points` in one call (a `WritingTopic[]` of `{id, title, after_grammar_point}`), and `WritingPracticeDetailPage.tsx` fetches its own `title`/`context` (plus `draft`/`archive` — decision 10) from `GET /writing-practice/<topic_id>` on mount instead of doing a synchronous local lookup — the tradeoff is a network round trip (and a brief loading state) where there used to be none. Adding a topic today is a content change — a new `writing_practice/<name>/overview.yaml` + `context.md` in the content repo, then a reload — not a frontend code change, a migration, or a new endpoint.
+`GrammarPage.tsx` no longer imports a static array: `GET /grammar-points` returns `writing_practices` alongside `grammar_points` in one call (a `WritingTopic[]` of `{id, title, after_grammar_point, status}` — `status` is the learner's own `writing_progress` row, decision 7), and `WritingPracticeDetailPage.tsx` fetches its own `title`/`context` (plus `draft`/`archive` — decision 10) from `GET /writing-practice/<topic_id>` on mount instead of doing a synchronous local lookup — the tradeoff is a network round trip (and a brief loading state) where there used to be none. Adding a topic today is a content change — a new `writing_practice/<name>/overview.yaml` + `context.md` in the content repo, then a reload — not a frontend code change, a migration, or a new endpoint.
 
 ### 2. Sentence splitting is a client-side punctuation heuristic
 
@@ -73,11 +73,15 @@ The frontend calls `saveWritingDraft` (not just from the "Save draft" button) on
 
 "Delete draft" reuses this same empty-string save rather than a dedicated delete endpoint or `ConversationLogStorage.delete` — from the frontend's point of view, "no draft" and "an empty draft" are the same state, and the existing route already round-trips `archive` untouched. A no-op backend change; the only new pieces are the button (`kind="danger"`) and a `ConfirmModal` confirmation, matching the delete-word pattern in `KnowledgeBasePage.tsx`.
 
+**Note:** `draft_object_key` gates `topic_id` with `_is_valid_topic_id` (alnum + hyphen) before building the S3 key — a path-safety check (no `/` or `..` reaching the object key), not a catalog lookup. `topic_id` values are minted by the grammar-content pipeline (decision 1's `overview.yaml` files, generated in the separate content repo), so whether a given id is a *real, current* topic is that pipeline's responsibility, not this app's — the same reasoning decision 8 uses for not validating `topic` against a catalog either.
+
 ### 7. Completion archives the text; `archive` entries are `{timestamp, content}`
 
-`complete_draft` (`backend/utils/writing/writing_drafts.py`) is `save_draft` with one difference: instead of overwriting `archive`, it appends `{"timestamp": <ISO 8601 UTC>, "content": <text>}` to it and sets `draft` to that same text. It's called through `POST /writing-practice/<topic_id>/complete` at the exact moment the frontend would otherwise call `recordGrammarUsageIfAllCorrect` — i.e. once every sentence in the text has severity `"none"` — so a submission only gets archived when a real fully-correct piece of writing was produced, same guard as decision 4's usage recording. Both calls read the same "is everything correct" condition independently; there's no shared endpoint because one writes Postgres and the other writes S3.
+`complete_draft` (`backend/utils/writing/writing_drafts.py`) is `save_draft` with one difference: instead of overwriting `archive`, it appends `{"timestamp": <ISO 8601 UTC>, "content": <text>}` to it and sets `draft` to that same text. It's called through `POST /writing-practice/<topic_id>/complete` from `WritingPracticeDetailPage.tsx`'s `settleReview` — the single frontend function that decides "is this text fully correct" (`checks.every(sentence => severity === "none")`, computed once) once every per-sentence check has settled, whether that's right after Submit or after the last mistake is fixed through the correction modal. `settleReview` is also what gates calling `record-usage` (decision 4) and the `writing_progress` `DONE` write below, so all three consequences of "the text is now fully correct" read the same one boolean instead of each re-deriving it.
 
 Archiving is also fire-and-forget: the review modal already told the learner they succeeded, so a failed archive call shouldn't surface as an error on top of that. On success the frontend replaces its local `archive` state with the response's `archive` array (rather than appending its own guess of the entry), which is what makes the "Completed versions" tab appear immediately without a page reload.
+
+**Postgres status.** `writing_practice.py`'s `_mark_progress` helper upserts a `writing_progress` row (`user_id`, `writing_topic` FK → `writing_practice.id`, `status`): `GET /writing-practice/<topic_id>` sets it to `WIP` on every open (including a re-open of an already-`DONE` topic — opening it to write something new is treated the same as starting), and `POST .../complete` sets it to `DONE`. Neither route re-checks correctness itself — both simply trust that the frontend only calls them when `settleReview` decided the text is fully correct, same as decision 4's usage recording. `GET /grammar-points` reads `status` back per topic (decision 1), defaulting to `TODO` for a topic never opened.
 
 ### 8. On-topic gating is a new LLM check, run once per Submit, fail-open
 
@@ -109,12 +113,14 @@ The response also drops `id` and `after_grammar_point`, which the old `GET /writ
 ```text
 GrammarPage (Grammar tab)
   │ mount          GET /grammar-points ──► { grammar_points, writing_practices } (Postgres)
+  │                                         writing_practices[].status ◄─ writing_progress
   └─ "Practice: <title>" row, placed after after_grammar_point's lesson
         │ click
         ▼
 WritingPracticeDetailPage
   │ mount          GET  /writing-practice/<topic_id> ─► { title, context, draft, archive }
   │                                                      (Postgres + S3/local fs, both)
+  │                                                      + writing_progress.status = WIP (upsert)
   ├─ Context tab ── renders the fetched `context` as Markdown
   │
   ├─ Writing tab ── textarea pre-filled with the fetched `draft`
@@ -137,7 +143,9 @@ WritingPracticeDetailPage
   │   WritingReviewModal (all correct → confetti | some wrong → fix-and-retry)
   │      │ every sentence now "none"
   │      ├──────────────────────────────► POST /grammar-points/record-usage ─► user_grammar_progress
-  │      └──────────────────────────────► POST /writing-practice/<topic_id>/complete ─► S3 (archive += entry)
+  │      └──────────────────────────────► POST /writing-practice/<topic_id>/complete
+  │                                           ├─► S3 (archive += entry)
+  │                                           └─► writing_progress.status = DONE (upsert)
   │
   │   flawed sentence clicked  ──► ephemeral ChatModal (seeded, no extra /chat call)
   │   pencil icon clicked      ──► SentenceCorrectionModal ──► re-run check-sentence + check_only check
@@ -159,12 +167,3 @@ WritingPracticeDetailPage
 
 - `splitIntoSentences` is a heuristic and will occasionally mis-split on abbreviations, decimals, or unusual punctuation — accepted as a known limitation (see decision 2), not solved.
 - Sentences are checked strictly sequentially, one LLM round trip at a time; a long submission takes noticeably longer to fully review than a single chat message does — an accepted trade-off, not an oversight (see decision 9). Decision 8's topic-relevance check adds one more LLM round trip in front of that, once per Submit click (it isn't re-run when a sentence correction is saved).
-- Decision 8's `except:` swallows every exception with no logging. A genuine LLM/network outage degrading to "no gate" is the intended behavior, but a persistent bug in the check itself (a prompt regression, a response-shape mismatch) fails exactly the same silent way — there's no log line or metric anywhere that would distinguish an occasional blip from this endpoint having been broken for weeks.
-- There is a completion record in S3 (decision 7) but still no row in Postgres — there's no way to show "you've practiced this topic" or a score anywhere that isn't the topic's own Completed versions tab.
-- Decision 7's archive-completion check is a third independent place (alongside the two branches of `POST /grammar-points/check`) that re-derives "is this text fully correct" from the same per-sentence severities, rather than reading it from one shared spot.
-
-## Future Evolution
-
-- Wire up (or remove) the `writing_progress` table — right now finishing a writing topic updates nothing in Postgres; there's no way to show "you've practiced this topic" or a score anywhere outside the current session.
-- `POST /writing-practice/<topic_id>` and `.../complete` (decisions 6/10) still only validate `topic_id` with a safe-charset check (`_is_valid_topic_id`, alnum + hyphen) — unlike the merged `GET`, which 404s via `WritingPractice.query.get` (decision 10), these two never check the id is a real row in `writing_practice`. A learner can still save a draft under a made-up `topic_id` that no longer (or never did) correspond to a real topic; adding the same existence check there is the natural next step if this needs tightening.
-- Decision 8's on-topic check has no logging on failure (see Drawbacks); adding a log line or metric in the `except` branch would make a silently broken check visible without giving up the fail-open behavior itself.
