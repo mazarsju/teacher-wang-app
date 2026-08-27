@@ -74,7 +74,9 @@ BACKEND_SVC="$(terraform output -raw ecs_backend_service_name)"
 FRONTEND_SVC="$(terraform output -raw ecs_frontend_service_name)"
 
 redeploy_service() {
-  local service="$1"
+  local service="$1" repo_url="$2"
+  local repo_name="${repo_url##*/}"
+
   echo "Forcing new ECS deployment: cluster=${CLUSTER} service=${service}…"
   aws ecs update-service \
     --cluster "$CLUSTER" \
@@ -83,18 +85,36 @@ redeploy_service() {
     --region "$AWS_REGION" \
     --query 'service.{name:serviceName,status:status,desired:desiredCount,running:runningCount,rollout:deployments[0].rolloutState}' \
     --output json
+
+  # force-new-deployment only submits the request — it does not confirm the new
+  # image actually ended up running. Wait for steady state, then check the
+  # running task's digest against :latest so a stale rollout fails loudly here
+  # instead of silently serving old code in prod.
+  echo "Waiting for ${service} to reach steady state…"
+  aws ecs wait services-stable --cluster "$CLUSTER" --services "$service" --region "$AWS_REGION"
+
+  local expected_digest running_task running_digest
+  expected_digest="$(aws ecr describe-images --repository-name "$repo_name" --image-ids imageTag=latest --region "$AWS_REGION" --query 'imageDetails[0].imageDigest' --output text)"
+  running_task="$(aws ecs list-tasks --cluster "$CLUSTER" --service-name "$service" --region "$AWS_REGION" --query 'taskArns[0]' --output text)"
+  running_digest="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$running_task" --region "$AWS_REGION" --query 'tasks[0].containers[0].imageDigest' --output text)"
+
+  if [[ "$expected_digest" != "$running_digest" ]]; then
+    echo "ERROR: ${service} is running ${running_digest} but :latest is ${expected_digest} — deployment did not take." >&2
+    exit 1
+  fi
+  echo "${service} confirmed running :latest (${running_digest})"
 }
 
 case "$TARGET" in
   all)
-    redeploy_service "$BACKEND_SVC"
-    redeploy_service "$FRONTEND_SVC"
+    redeploy_service "$BACKEND_SVC" "$ECR_BACKEND"
+    redeploy_service "$FRONTEND_SVC" "$ECR_FRONTEND"
     ;;
   backend)
-    redeploy_service "$BACKEND_SVC"
+    redeploy_service "$BACKEND_SVC" "$ECR_BACKEND"
     ;;
   frontend)
-    redeploy_service "$FRONTEND_SVC"
+    redeploy_service "$FRONTEND_SVC" "$ECR_FRONTEND"
     ;;
   *)
     echo "Unknown target '${TARGET}' (expected all|backend|frontend); skipping ECS redeploy." >&2
