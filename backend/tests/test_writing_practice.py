@@ -45,6 +45,15 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
         self.mock_complete = self.complete_patcher.start()
         self.addCleanup(self.complete_patcher.stop)
 
+        self.progress_patcher = patch("backend.routes.writing_practice.WritingProgress")
+        self.mock_progress_cls = self.progress_patcher.start()
+        self.addCleanup(self.progress_patcher.stop)
+        self.mock_progress_cls.query.filter_by.return_value.first.return_value = None
+
+        self.db_patcher = patch("backend.routes.writing_practice.db")
+        self.mock_db = self.db_patcher.start()
+        self.addCleanup(self.db_patcher.stop)
+
     def _stub_practice(self, title="Present yourself"):
         self.mock_practice_cls.query.get.return_value = MagicMock(
             id="writing-present-yourself", title=title
@@ -83,6 +92,34 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.get_json()["context"])
 
+    def test_get_marks_progress_as_wip_when_none_exists(self):
+        self._stub_practice()
+        self.mock_fetch_content.return_value = {"context": "Write about yourself."}
+        self.mock_load.return_value = {"draft": "", "archive": []}
+
+        self.client.get("/writing-practice/writing-present-yourself")
+
+        self.mock_progress_cls.query.filter_by.assert_called_once_with(
+            user_id=TEST_USER_ID, writing_topic="writing-present-yourself"
+        )
+        self.mock_db.session.add.assert_called_once()
+        self.mock_db.session.commit.assert_called_once()
+
+    def test_get_marks_existing_progress_as_wip(self):
+        self._stub_practice()
+        self.mock_fetch_content.return_value = {"context": "Write about yourself."}
+        self.mock_load.return_value = {"draft": "", "archive": []}
+        existing_progress = MagicMock(status="DONE")
+        self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
+            existing_progress
+        )
+
+        self.client.get("/writing-practice/writing-present-yourself")
+
+        self.assertEqual(existing_progress.status, "WIP")
+        self.mock_db.session.add.assert_not_called()
+        self.mock_db.session.commit.assert_called_once()
+
     def test_get_returns_404_when_topic_not_found(self):
         self.mock_practice_cls.query.get.return_value = None
 
@@ -91,6 +128,7 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.mock_fetch_content.assert_not_called()
         self.mock_load.assert_not_called()
+        self.mock_db.session.commit.assert_not_called()
 
     def test_get_rejects_an_invalid_topic_id(self):
         self._stub_practice()
@@ -177,6 +215,21 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
             TEST_USER_ID, "writing-present-yourself", "我叫小明。"
         )
 
+    def test_complete_marks_progress_as_done(self):
+        self.mock_complete.return_value = {"draft": "我叫小明。", "archive": []}
+
+        self.client.post(
+            "/writing-practice/writing-present-yourself/complete",
+            json={"draft": "我叫小明。"},
+        )
+
+        self.mock_progress_cls.query.filter_by.assert_called_once_with(
+            user_id=TEST_USER_ID, writing_topic="writing-present-yourself"
+        )
+        added_progress = self.mock_db.session.add.call_args[0][0]
+        self.assertEqual(added_progress.status, "DONE")
+        self.mock_db.session.commit.assert_called_once()
+
     def test_complete_rejects_an_invalid_topic_id(self):
         self.mock_complete.side_effect = ValueError("Invalid topic_id")
 
@@ -185,6 +238,7 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+        self.mock_db.session.commit.assert_not_called()
 
 
 if __name__ == "__main__":

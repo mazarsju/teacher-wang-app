@@ -1,17 +1,10 @@
 ---
-name: update-app-screenshots
-description: >-
-  Starts the teacher-wang frontend and backend, captures fresh UI screenshots
-  into docs/screenshots/, then updates the README.md Feature section with those
-  images. Use when the user asks to update app screenshots, refresh README/docs
-  screenshots, or re-capture Home, Knowledge base, Chat, or Preferences screens.
+name: update-app-screenshots description: >- Starts the teacher-wang frontend and backend, captures fresh UI screenshots into docs/screenshots/, then updates the README.md Feature section with those images. Use when the user asks to update app screenshots, refresh README/docs screenshots, or re-capture Home, Knowledge base, Chat, or Preferences screens.
 ---
 
 # Update app screenshots
 
-Capture the current teacher-wang UI into `docs/screenshots/`, then insert those
-screenshots into `README.md` under a **Feature** section placed after
-**Getting started**.
+Capture the current teacher-wang UI into `docs/screenshots/`, then insert those screenshots into `README.md` under a **Feature** section placed after **Getting started**.
 
 ## Screenshots to capture
 
@@ -66,8 +59,7 @@ Health check: `curl -s http://127.0.0.1:5000/health` → `{"status":"ok"}`.
 cd frontend && npm run dev
 ```
 
-Health check: `curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/` → `200`.
-Use `http://localhost:5173` (not `127.0.0.1`) — Vite may bind IPv6-only.
+Health check: `curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/` → `200`. Use `http://localhost:5173` (not `127.0.0.1`) — Vite may bind IPv6-only.
 
 ### 3. Install Playwright deps (first run / when missing)
 
@@ -98,17 +90,14 @@ Confirm all six files above were written. Spot-check:
 
 ### 6. Update README.md Feature section
 
-Preserve the existing **Feature** section structure and prose in `README.md`.
-Only refresh the image paths / PNG contents so they stay in sync with the six
-files above (relative to the repo root: `docs/screenshots/...`).
+Preserve the existing **Feature** section structure and prose in `README.md`. Only refresh the image paths / PNG contents so they stay in sync with the six files above (relative to the repo root: `docs/screenshots/...`).
 
 Rules:
 
 - Section title is **Feature** (singular), not Features.
 - Keep placement after **Getting started** / **AI logic**, before **Roadmap**.
 - Do not rewrite marketing copy unless a screenshot rename requires it.
-- After a successful capture, remove obsolete `docs/screenshots/05-chat-xiao-ming.png`
-  if it still exists.
+- After a successful capture, remove obsolete `docs/screenshots/05-chat-xiao-ming.png` if it still exists.
 
 ## Notes
 

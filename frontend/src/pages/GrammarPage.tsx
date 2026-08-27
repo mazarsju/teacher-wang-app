@@ -339,7 +339,9 @@ export default function GrammarPage() {
                             Practice: {row.topic.title}
                           </span>
                         </td>
-                        <td />
+                        <td>
+                          <StatusBadge status={row.topic.status} />
+                        </td>
                         <td />
                       </tr>
                     ) : (

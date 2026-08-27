@@ -1,19 +1,12 @@
 > 🚧 **Work in progress** — This repository is currently under active development. See the [roadmap](#roadmap) for planned features and progress.
 
-Check application online: [teacherwang.xyz](https://teacherwang.xyz/)
-And the Overview presentation video: https://www.youtube.com/watch?v=TvgJ_hcDlrk
+Check application online: [teacherwang.xyz](https://teacherwang.xyz/) And the Overview presentation video: https://www.youtube.com/watch?v=TvgJ_hcDlrk
 
 # teacher-wang
 
-![Frontend-Statements](.github/badges/frontend-coverage-statements.svg)
-![Frontend-Branches](.github/badges/frontend-coverage-branches.svg)
-![Frontend-Functions](.github/badges/frontend-coverage-functions.svg)
-![Frontend-Lines](.github/badges/frontend-coverage-lines.svg)
+![Frontend-Statements](.github/badges/frontend-coverage-statements.svg) ![Frontend-Branches](.github/badges/frontend-coverage-branches.svg) ![Frontend-Functions](.github/badges/frontend-coverage-functions.svg) ![Frontend-Lines](.github/badges/frontend-coverage-lines.svg)
 
-![Backend-Statements](.github/badges/backend-coverage-statements.svg)
-![Backend-Branches](.github/badges/backend-coverage-branches.svg)
-![Backend-Functions](.github/badges/backend-coverage-functions.svg)
-![Backend-Lines](.github/badges/backend-coverage-lines.svg)
+![Backend-Statements](.github/badges/backend-coverage-statements.svg) ![Backend-Branches](.github/badges/backend-coverage-branches.svg) ![Backend-Functions](.github/badges/backend-coverage-functions.svg) ![Backend-Lines](.github/badges/backend-coverage-lines.svg)
 
 An app to learn Mandarin.
 
@@ -335,8 +328,7 @@ Browse every character you know, grouped by pinyin, for a motivating snapshot of
 
 ### Practice your skills with AI agents
 
-Discuss with predefined chat agents to practice your level (LLM access is
-configured by the operator in infrastructure, not in the app UI).
+Discuss with predefined chat agents to practice your level (LLM access is configured by the operator in infrastructure, not in the app UI).
 
 ![Preferences](docs/screenshots/06-preferences.png)
 

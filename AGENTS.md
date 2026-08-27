@@ -10,3 +10,5 @@ Durable coding instructions live in **`.cursor/rules/`** (loaded by concern via 
 | Reusable workflows (challenge, ECR, screenshots, …) | [`.cursor/skills/`](.cursor/skills/) |
 
 Do not restate ADRs or deployment tables here — open the linked doc for that concern.
+
+Markdown files: no artificial line breaks — write each paragraph and list item as a single line, and let the editor/viewer soft-wrap.

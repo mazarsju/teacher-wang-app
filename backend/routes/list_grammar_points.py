@@ -6,6 +6,7 @@ from backend.utils.database.models import (
     GrammarPrerequisite,
     UserGrammarProgress,
     WritingPractice,
+    WritingProgress,
 )
 from backend.utils.grammar.grammar_content_loader import curriculum_index
 
@@ -35,6 +36,13 @@ def list_grammar_points():
     status_by_grammar_id = {row.grammar_id: row.status for row in progress_rows}
     score_by_grammar_id = {row.grammar_id: row.score for row in progress_rows}
 
+    writing_progress_rows = WritingProgress.query.filter_by(
+        user_id=current_user_id()
+    ).all()
+    status_by_writing_topic = {
+        row.writing_topic: row.status for row in writing_progress_rows
+    }
+
     return {
         "grammar_points": [
             {
@@ -57,6 +65,7 @@ def list_grammar_points():
                 "id": practice.id,
                 "title": practice.title,
                 "after_grammar_point": practice.after_grammar_point,
+                "status": status_by_writing_topic.get(practice.id, "TODO"),
             }
             for practice in WritingPractice.query.all()
         ],

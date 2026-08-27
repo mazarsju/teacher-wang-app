@@ -53,38 +53,13 @@ The modal opens with a scripted Teacher Wang greeting ("Ask me what you did not 
 
 ### Behavior planner, generator, and validator (Teacher Wang)
 
-When the character is Teacher Wang itself (not a role-play character), the
-reply is produced by three extra collaborating calls on top of the base
-character agent, described in
-[architecture/teacher-wang-behaviors.md](../architecture/teacher-wang-behaviors.md):
+When the character is Teacher Wang itself (not a role-play character), the reply is produced by three extra collaborating calls on top of the base character agent, described in [architecture/teacher-wang-behaviors.md](../architecture/teacher-wang-behaviors.md):
 
-1. **Planner** — given the learner's message and conversation so far, selects
-   which teaching *behaviors* (answering directly, explaining grammar,
-   correcting an error, …) apply to this turn.
-2. **Generator** — the character agent call, whose system prompt is Teacher
-   Wang's base persona plus the selected behaviors' requirements. A few
-   behaviors that apply to every turn (bilingual balance, encouragement,
-   response formatting) are unioned in unconditionally rather than left to
-   the planner, since per-turn selection of "always true" behaviors proved
-   unreliable.
-3. **Validator** — (deactivated for now. Should change BEHAVIOR_CHECK_ENABLED
-   flag to put it back) checks the generated reply against the selected
-   behaviors' success criteria. If any fail, it explains what was wrong per
-   behavior and the generator gets one revision attempt, given that specific
-   feedback. The revised reply is re-validated; whichever of the two
-   attempts has fewer unresolved failures is kept (ties keep the original).
-   The generator never gets a second revision — one retry only.
+1. **Planner** — given the learner's message and conversation so far, selects which teaching *behaviors* (answering directly, explaining grammar, correcting an error, …) apply to this turn.
+2. **Generator** — the character agent call, whose system prompt is Teacher Wang's base persona plus the selected behaviors' requirements. A few behaviors that apply to every turn (bilingual balance, encouragement, response formatting) are unioned in unconditionally rather than left to the planner, since per-turn selection of "always true" behaviors proved unreliable.
+3. **Validator** — (deactivated for now. Should change BEHAVIOR_CHECK_ENABLED flag to put it back) checks the generated reply against the selected behaviors' success criteria. If any fail, it explains what was wrong per behavior and the generator gets one revision attempt, given that specific feedback. The revised reply is re-validated; whichever of the two attempts has fewer unresolved failures is kept (ties keep the original). The generator never gets a second revision — one retry only.
 
-Proficiency-level adaptation is handled separately by the **Teaching
-Strategy** (`backend/utils/aiChat/teaching_strategy.py`,
-[architecture/teacher-wang-teaching-strategy.md](../architecture/teacher-wang-teaching-strategy.md)):
-a deterministic, code-defined mapping from the learner's HSK level to
-language balance, pinyin/translation policy, vocabulary scope, and
-encouragement style. It is not planner-selected — the learner's level is
-known in advance, so there is nothing for a planner to judge — and its
-rendered instructions are given to both the planner (as context) and the
-generator (as concrete instructions), replacing what used to be a generic
-"answer at HSK N" sentence.
+Proficiency-level adaptation is handled separately by the **Teaching Strategy** (`backend/utils/aiChat/teaching_strategy.py`, [architecture/teacher-wang-teaching-strategy.md](../architecture/teacher-wang-teaching-strategy.md)): a deterministic, code-defined mapping from the learner's HSK level to language balance, pinyin/translation policy, vocabulary scope, and encouragement style. It is not planner-selected — the learner's level is known in advance, so there is nothing for a planner to judge — and its rendered instructions are given to both the planner (as context) and the generator (as concrete instructions), replacing what used to be a generic "answer at HSK N" sentence.
 
 ### Challenge judge
 
@@ -115,30 +90,15 @@ Non-challenge conversations (Teacher Wang and roleplay characters) no longer gro
 
 ### Smart AI toggle (light vs. full pipeline)
 
-Learners can turn **Smart AI** off from Preferences → AI usage. The setting
-(`smart_ai_enabled` in `backend/utils/database/settings.py`, default **on**) is read
-directly by `chat_service.py`; it is a plain boolean check, not something
-the planner or any model reasons about.
+Learners can turn **Smart AI** off from Preferences → AI usage. The setting (`smart_ai_enabled` in `backend/utils/database/settings.py`, default **on**) is read directly by `chat_service.py`; it is a plain boolean check, not something the planner or any model reasons about.
 
 When Smart AI is **off**:
 
-* **Teacher Wang** skips the planner, every behavior from
-  [architecture/teacher-wang-behaviors.md](../architecture/teacher-wang-behaviors.md)
-  — including the three marked "always-on" above (bilingual balance,
-  encouragement, response formatting) — the validator, and the retry. The
-  reply becomes a single LLM call using only the base persona plus the
-  Teaching Strategy. HSK-level language adaptation is unaffected either way,
-  since it costs no extra call and isn't part of the toggle.
-* **Challenges** still run the Challenge Judge to detect completed tasks —
-  that is core functionality, not an "extra" — but skip the coherence-check
-  revision round trip. An incoherent reply is sent as-is instead of being
-  revised once.
-* **Grammar severity checking** on non–Teacher-Wang conversations is
-  unaffected either way; it was never part of Smart AI.
+* **Teacher Wang** skips the planner, every behavior from [architecture/teacher-wang-behaviors.md](../architecture/teacher-wang-behaviors.md) — including the three marked "always-on" above (bilingual balance, encouragement, response formatting) — the validator, and the retry. The reply becomes a single LLM call using only the base persona plus the Teaching Strategy. HSK-level language adaptation is unaffected either way, since it costs no extra call and isn't part of the toggle.
+* **Challenges** still run the Challenge Judge to detect completed tasks — that is core functionality, not an "extra" — but skip the coherence-check revision round trip. An incoherent reply is sent as-is instead of being revised once.
+* **Grammar severity checking** on non–Teacher-Wang conversations is unaffected either way; it was never part of Smart AI.
 
-Net effect: a Teacher Wang turn drops from up to 5 LLM calls to 1, and a
-challenge turn drops from up to 4 (character + judge + revision + re-judge)
-to 2 (character + judge, never revised).
+Net effect: a Teacher Wang turn drops from up to 5 LLM calls to 1, and a challenge turn drops from up to 4 (character + judge + revision + re-judge) to 2 (character + judge, never revised).
 
 ### Interaction overview
 

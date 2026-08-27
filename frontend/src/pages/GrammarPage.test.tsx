@@ -18,6 +18,7 @@ type StubWritingPractice = {
   title: string;
   after_grammar_point: string;
   context?: string | null;
+  status?: string;
 };
 
 function stubWritingPracticeDetailResponse(input: RequestInfo | URL, practices: StubWritingPractice[]) {
@@ -47,7 +48,13 @@ function stubGrammarPointsFetch(
       if (String(input).endsWith("/grammar-points")) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({ grammar_points: points, writing_practices: writingPractices }),
+          json: async () => ({
+            grammar_points: points,
+            writing_practices: writingPractices.map((practice) => ({
+              ...practice,
+              status: practice.status ?? "TODO",
+            })),
+          }),
         });
       }
       return Promise.resolve({ ok: true, json: async () => ({}) });
@@ -523,6 +530,33 @@ describe("GrammarPage", () => {
     expect(rows[2]).toBe(
       screen.getByRole("button", { name: /Next Lesson/ }),
     );
+  });
+
+  it("shows the writing topic's status badge", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "hsk1_existence_with_you",
+        hsk_level: 1,
+        index: 1,
+        title: "Existence with You",
+        prerequisites: [],
+        status: "TODO",
+      },
+    ], [
+      {
+        id: "writing-present-yourself",
+        title: "Present yourself",
+        after_grammar_point: "hsk1_existence_with_you",
+        status: "WIP",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    const row = await screen.findByRole("button", {
+      name: /Practice: Present yourself/,
+    });
+    expect(within(row).getByText("In progress")).toBeInTheDocument();
   });
 
   it("opens the writing practice detail page when a writing topic row is clicked", async () => {

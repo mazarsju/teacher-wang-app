@@ -1,23 +1,14 @@
 ---
-name: update-ecr-images
-description: >-
-  Builds linux/arm64 backend and frontend Docker images and pushes them to AWS
-  ECR for teacher-wang ECS. Use when the user asks to update ECR images, push
-  Docker images to AWS, rebuild/redeploy frontend or backend containers, or run
-  the README “Push images to AWS ECR” steps.
+name: update-ecr-images description: >- Builds linux/arm64 backend and frontend Docker images and pushes them to AWS ECR for teacher-wang ECS. Use when the user asks to update ECR images, push Docker images to AWS, rebuild/redeploy frontend or backend containers, or run the README “Push images to AWS ECR” steps.
 ---
 
 # Update ECR images
 
-Push **teacher-wang** container images to the ECR repos provisioned by the sibling
-**teacher-wang-infra** Terraform stack. Prefer the wrapper script below over
-re-typing manual docker/terraform commands (quoting mistakes break ECR login).
+Push **teacher-wang** container images to the ECR repos provisioned by the sibling **teacher-wang-infra** Terraform stack. Prefer the wrapper script below over re-typing manual docker/terraform commands (quoting mistakes break ECR login).
 
-Container ports, `/api` proxy, and healthchecks: `docs/deployment/ecs-containers.md`.
-Coding invariants when editing Dockerfiles: `.cursor/rules/ecs-containers.mdc`.
+Container ports, `/api` proxy, and healthchecks: `docs/deployment/ecs-containers.md`. Coding invariants when editing Dockerfiles: `.cursor/rules/ecs-containers.mdc`.
 
-**ECS does not auto-load a new `:latest` image.** After push, the wrapper forces a
-new deployment so running tasks pull again.
+**ECS does not auto-load a new `:latest` image.** After push, the wrapper forces a new deployment so running tasks pull again.
 
 ## Layout assumptions
 
@@ -56,9 +47,7 @@ ECR image update:
 
 ### 2. Run the wrapper (preferred)
 
-From the **app repo root**, with Shell permissions that can reach the Docker
-socket and the network (`all` / unrestricted as needed). Force-new-deployment is a
-**prod write** — if Auto-review blocks it, ask the user to approve.
+From the **app repo root**, with Shell permissions that can reach the Docker socket and the network (`all` / unrestricted as needed). Force-new-deployment is a **prod write** — if Auto-review blocks it, ask the user to approve.
 
 ```bash
 .cursor/skills/update-ecr-images/scripts/push.sh           # both
@@ -66,27 +55,20 @@ socket and the network (`all` / unrestricted as needed). Force-new-deployment is
 .cursor/skills/update-ecr-images/scripts/push.sh frontend
 ```
 
-Expect several minutes on a cold build; warm builds often finish in ~20–60s.
-ECS rollout continues asynchronously after the script returns.
+Expect several minutes on a cold build; warm builds often finish in ~20–60s. ECS rollout continues asynchronously after the script returns.
 
 ### 3. What the script does
 
 1. Verifies Docker daemon is up (`open -a Docker` hint if not).
 2. `source ../teacher-wang-infra/config` (AWS keys — never print them).
-3. In `teacher-wang-infra/environments/prod`, reads terraform outputs for region,
-   ECR URLs, and public Cognito ids → exports `ECR_*` / `COGNITO_*`.
+3. In `teacher-wang-infra/environments/prod`, reads terraform outputs for region, ECR URLs, and public Cognito ids → exports `ECR_*` / `COGNITO_*`.
 4. Logs into ECR (`REGISTRY="${ECR_BACKEND%%/*}"` — no nested quotes).
-5. Runs `./scripts/push-ecr.sh` (tags `:latest` and `:<git-sha>`; frontend gets
-   `VITE_COGNITO_*` build-args; buildx uses `--provenance=false --sbom=false` so
-   `:latest` cannot land on an attestation stub). Backend Cognito still comes from
-   the ECS task def.
+5. Runs `./scripts/push-ecr.sh` (tags `:latest` and `:<git-sha>`; frontend gets `VITE_COGNITO_*` build-args; buildx uses `--provenance=false --sbom=false` so `:latest` cannot land on an attestation stub). Backend Cognito still comes from the ECS task def.
 6. Forces a new ECS deployment for the matching service(s).
 
 ### 4. Report back
 
-Tell the user which target was pushed, the git SHA tag, and that ECS
-force-new-deployment was requested (rollout may still be in progress). Do **not**
-paste AWS access keys, secret keys, or `docker login` passwords into the chat.
+Tell the user which target was pushed, the git SHA tag, and that ECS force-new-deployment was requested (rollout may still be in progress). Do **not** paste AWS access keys, secret keys, or `docker login` passwords into the chat.
 
 ## Pitfalls (learned from real runs)
 

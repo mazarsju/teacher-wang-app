@@ -1,7 +1,6 @@
 # teacher-wang-app
 
-Skills for common workflows (create a challenge, generate an avatar, update
-screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
+Skills for common workflows (create a challenge, generate an avatar, update screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 
 ## Documentation hygiene
 
@@ -9,6 +8,7 @@ screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 - After changes that affect architecture (auth, tenancy, Anki, chat agents, Postgres, plan/tokens, deploy, frontend CSS organization), update the matching ADR under `docs/adr/`.
 - Doc map and ADR archive process: `docs/README.md`.
 - Do not duplicate ADR rationale into this file or README — link instead.
+- No artificial line breaks in any `.md` file: write each paragraph, list item, and blockquote line as one line, and let the editor/viewer soft-wrap. Applies repo-wide, not just to docs touched by a given change.
 
 ## Testing
 

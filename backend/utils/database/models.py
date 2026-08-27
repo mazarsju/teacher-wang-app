@@ -220,13 +220,15 @@ class ChallengeProgress(db.Model):
 
 
 class WritingProgress(db.Model):
-    """A user's score on a writing topic."""
+    """A user's status (WIP/DONE) on a writing topic."""
 
     __tablename__ = "writing_progress"
 
     user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
-    writing_topic = db.Column(String, primary_key=True)
-    score = db.Column(Numeric, nullable=True)
+    writing_topic = db.Column(
+        String(128), ForeignKey("writing_practice.id"), primary_key=True
+    )
+    status = db.Column(String, nullable=False, default="WIP")
 
 
 class GrammarPoint(db.Model):

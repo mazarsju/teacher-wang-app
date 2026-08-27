@@ -4,8 +4,7 @@ HTTP API: `https://api.dicebear.com/10.x/notionists/svg?<params>`
 
 PNG previews (for visual selection): same path with `/png` and `size=256`.
 
-Array/enum values can be comma-separated when allowing several options for the
-PRNG. Prefer a **single** forced variant when the user is specific.
+Array/enum values can be comma-separated when allowing several options for the PRNG. Prefer a **single** forced variant when the user is specific.
 
 ## Core params
 
@@ -37,8 +36,7 @@ Each component has `*Probability` (0–100) and usually `*Variant`.
 
 ### Gestures
 
-`hand`, `handPhone`, `ok`, `okLongArm`, `point`, `pointLongArm`,
-`waveLongArm`, `waveLongArms`, `waveOkLongArms`, `wavePointLongArms`
+`hand`, `handPhone`, `ok`, `okLongArm`, `point`, `pointLongArm`, `waveLongArm`, `waveLongArms`, `waveOkLongArms`, `wavePointLongArms`
 
 ## Natural-language → variant cheatsheet
 
@@ -58,8 +56,7 @@ Curated from Notionists previews. When wrong, re-check with PNG previews.
 
 ### Beard (`beardVariant`)
 
-Notionists beards are **black fills** — ignore “white / grey beard” as color;
-match **shape** only.
+Notionists beards are **black fills** — ignore “white / grey beard” as color; match **shape** only.
 
 | User says | Prefer | Notes |
 | --- | --- | --- |
@@ -73,8 +70,7 @@ match **shape** only.
 
 ### Hair (`hairVariant` / probability) — required
 
-**Always** set `hairProbability=100` and a `hairVariant`. Never use
-`hairProbability=0`.
+**Always** set `hairProbability=100` and a `hairVariant`. Never use `hairProbability=0`.
 
 | User says | Prefer |
 | --- | --- |
@@ -89,8 +85,7 @@ match **shape** only.
 
 Allowed: `variant01`–`variant04`, `variant07`–`variant15`, `variant17`–`variant30`.
 
-For a friendly / “sympathique” smile, preview allowed mouths (e.g. `variant01`,
-`variant10`, `variant20`) — do not fall back to banned ones.
+For a friendly / “sympathique” smile, preview allowed mouths (e.g. `variant01`, `variant10`, `variant20`) — do not fall back to banned ones.
 
 ### Eyes (`eyesVariant`) — banned set
 
@@ -109,9 +104,7 @@ No dedicated age param. Approximate with:
 
 ### Clothes / gesture
 
-**Default: no gesture.** Always set `gestureProbability=0` unless the user
-explicitly requests a gesture, pose, or hand prop. Do not add waves / OK /
-phone hands from soft cues like “friendly”.
+**Default: no gesture.** Always set `gestureProbability=0` unless the user explicitly requests a gesture, pose, or hand prop. Do not add waves / OK / phone hands from soft cues like “friendly”.
 
 | User says | Prefer |
 | --- | --- |
@@ -144,8 +137,7 @@ python3 .claude/skills/generate-dicebear-avatar/scripts/apply-circle-background.
 # or: --color '#dbeafe'
 ```
 
-`download-avatar.sh` runs this automatically for SVG outputs unless
-`--skip-circle-bg` is passed.
+`download-avatar.sh` runs this automatically for SVG outputs unless `--skip-circle-bg` is passed.
 
 ## Teacher Wang example
 

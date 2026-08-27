@@ -41,6 +41,13 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
         self.mock_writing_practice_cls.query.all.return_value = []
         self.addCleanup(self.writing_practice_patcher.stop)
 
+        self.writing_progress_patcher = patch(
+            "backend.routes.list_grammar_points.WritingProgress"
+        )
+        self.mock_writing_progress_cls = self.writing_progress_patcher.start()
+        self.mock_writing_progress_cls.query.filter_by.return_value.all.return_value = []
+        self.addCleanup(self.writing_progress_patcher.stop)
+
     def test_list_grammar_points_merges_prerequisites_and_status(self):
         self.mock_point_cls.query.all.return_value = [
             MagicMock(
@@ -72,6 +79,9 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                 title="Present yourself",
                 after_grammar_point="1|Basic Sentence Structure",
             ),
+        ]
+        self.mock_writing_progress_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(writing_topic="writing-present-yourself", status="WIP"),
         ]
 
         response = self.client.get("/grammar-points")
@@ -105,12 +115,34 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                         "id": "writing-present-yourself",
                         "title": "Present yourself",
                         "after_grammar_point": "1|Basic Sentence Structure",
+                        "status": "WIP",
                     },
                 ],
             },
         )
         self.mock_progress_cls.query.filter_by.assert_called_once_with(
             user_id=TEST_USER_ID
+        )
+        self.mock_writing_progress_cls.query.filter_by.assert_called_once_with(
+            user_id=TEST_USER_ID
+        )
+
+    def test_list_grammar_points_defaults_writing_status_to_todo(self):
+        self.mock_point_cls.query.all.return_value = []
+        self.mock_prerequisite_cls.query.all.return_value = []
+        self.mock_progress_cls.query.filter_by.return_value.all.return_value = []
+        self.mock_writing_practice_cls.query.all.return_value = [
+            MagicMock(
+                id="writing-present-yourself",
+                title="Present yourself",
+                after_grammar_point="1|Basic Sentence Structure",
+            ),
+        ]
+
+        response = self.client.get("/grammar-points")
+
+        self.assertEqual(
+            response.get_json()["writing_practices"][0]["status"], "TODO"
         )
 
     def test_list_grammar_points_orders_by_hsk_level_then_folder_index(self):

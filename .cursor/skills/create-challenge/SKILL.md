@@ -1,16 +1,10 @@
 ---
-name: create-challenge
-description: >-
-  Adds a new Mandarin role-play challenge (card, chat agent, tasks, judge) to
-  teacher-wang. Use when the user asks to create a challenge, add a challenge
-  scenario, or register a new challenge character with tasks.
+name: create-challenge description: >- Adds a new Mandarin role-play challenge (card, chat agent, tasks, judge) to teacher-wang. Use when the user asks to create a challenge, add a challenge scenario, or register a new challenge character with tasks.
 ---
 
 # Create a challenge
 
-Add a new challenge by wiring one shared `character_id` through backend + frontend.
-The Challenge section, modal, task checklist, and Challenge Judge already exist —
-only register the new scenario.
+Add a new challenge by wiring one shared `character_id` through backend + frontend. The Challenge section, modal, task checklist, and Challenge Judge already exist — only register the new scenario.
 
 ## Required input from the user
 
@@ -32,10 +26,7 @@ Derive:
 
 ## Mandatory agent behavior (every challenge)
 
-Shared Mandarin / `[[...]]` / progression rules live in
-`backend/challenge_prompts.py` (`build_challenge_system_prompt`). **Do not**
-paste those paragraphs into each new challenge — fill a `ChallengeScenario`
-instead; the builder injects:
+Shared Mandarin / `[[...]]` / progression rules live in `backend/challenge_prompts.py` (`build_challenge_system_prompt`). **Do not** paste those paragraphs into each new challenge — fill a `ChallengeScenario` instead; the builder injects:
 
 - Speak **only Chinese** (except English stage-direction blocks inside `[[...]]`).
 - Answer **only** the learner’s questions / turns (no unsolicited follow-ups).
@@ -45,9 +36,7 @@ instead; the builder injects:
   - Leave form: `[[<agent leaves>]][[<next action>]]<plain Chinese sentence>`
   - Never single brackets `[...]` for situations.
 
-The frontend finds every `[[...]]` anywhere in an assistant message and renders
-each as an italic stage line (plain text outside brackets still shows as a
-normal bubble). Keep that contract.
+The frontend finds every `[[...]]` anywhere in an assistant message and renders each as an italic stage line (plain text outside brackets still shows as a normal bubble). Keep that contract.
 
 ## Checklist
 
@@ -70,9 +59,7 @@ Challenge Progress:
 
 File: `backend/challenge_prompts.py`
 
-Add a `ChallengeScenario` (and `ChallengeGate`) with only the **scenario-specific**
-fields — role, initial situation, gate, ordered steps, optional mid-flow tips,
-leave label/example. Append it to `CHALLENGE_SCENARIOS`.
+Add a `ChallengeScenario` (and `ChallengeGate`) with only the **scenario-specific** fields — role, initial situation, gate, ordered steps, optional mid-flow tips, leave label/example. Append it to `CHALLENGE_SCENARIOS`.
 
 ```python
 "<CONST>": ChallengeScenario(
@@ -100,8 +87,7 @@ leave label/example. Append it to `CHALLENGE_SCENARIOS`.
 ),
 ```
 
-Shared style / Mandarin-only / `[[...]]` / leave-form rules are injected by
-`build_challenge_system_prompt` — do not duplicate them.
+Shared style / Mandarin-only / `[[...]]` / leave-form rules are injected by `build_challenge_system_prompt` — do not duplicate them.
 
 ### 1b. Register the chat character
 
@@ -118,9 +104,7 @@ File: `backend/chat_agents.py`
 },
 ```
 
-Import `CHALLENGE_SCENARIOS` / `build_challenge_system_prompt` if not already
-imported. `VALID_CHARACTER_IDS` is derived from `CHAT_CHARACTERS` — no separate
-allow-list edit.
+Import `CHALLENGE_SCENARIOS` / `build_challenge_system_prompt` if not already imported. `VALID_CHARACTER_IDS` is derived from `CHAT_CHARACTERS` — no separate allow-list edit.
 
 ## Step 2 — Backend challenge tasks (for the judge)
 
@@ -138,10 +122,7 @@ Add the same `character_id` to `CHALLENGES` with **identical** task `id` / `labe
 },
 ```
 
-The Challenge Judge runs automatically after each chat turn for ids in this map.
-Progress persists alongside the chat log at `users/{cognito_sub}/<character_id>.tasks.json` (local `CONVERSATION_LOGS_DIR` or S3).
-A task is marked complete only when the learner attempts it in Chinese **and**
-the challenge agent accepts / cooperates; refusals do not count.
+The Challenge Judge runs automatically after each chat turn for ids in this map. Progress persists alongside the chat log at `users/{cognito_sub}/<character_id>.tasks.json` (local `CONVERSATION_LOGS_DIR` or S3). A task is marked complete only when the learner attempts it in Chinese **and** the challenge agent accepts / cooperates; refusals do not count.
 
 ## Step 3 — Frontend challenge data
 
@@ -211,8 +192,7 @@ Restaurant waiter (`challenge-restaurant`):
 - Person: Waiter / 服务员
 - Progression: call waiter → order → eat → pay (refuse out-of-order)
 - Leave form: `[[The waiter leaves]][[...next action...]]您的菜来了。`
-- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register),
-  `challenges.py`, `frontend/src/data/challenges.ts`, avatar `waiter`
+- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register), `challenges.py`, `frontend/src/data/challenges.ts`, avatar `waiter`
 
 ## Done criteria
 
