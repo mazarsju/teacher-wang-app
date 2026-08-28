@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Word } from "../types/word";
 import { formatAssociatedWord } from "../utils/knowledgeBase/wordsByCharacter";
 import Button from "./Button";
@@ -16,6 +17,8 @@ export default function CharacterWordsModal({
   words,
   onClose,
 }: CharacterWordsModalProps) {
+  const { t } = useTranslation(["knowledge-base", "common"]);
+
   if (!isOpen || character === null) {
     return null;
   }
@@ -33,7 +36,9 @@ export default function CharacterWordsModal({
           {character}
         </h2>
         <div className={styles.characterWordsModalContent}>
-          <p className={styles.characterWordsModalHeading}>Associated words:</p>
+          <p className={styles.characterWordsModalHeading}>
+            {t("characterWordsModal.associatedWordsHeading")}
+          </p>
           <ul className={styles.characterWordsModalList}>
             {words.map((word) => (
               <li key={word.word}>{formatAssociatedWord(word)}</li>
@@ -41,7 +46,7 @@ export default function CharacterWordsModal({
           </ul>
         </div>
         <div className="modal-actions">
-          <Button kind="cancel" text="Close" onClick={onClose} />
+          <Button kind="cancel" text={t("common:actions.close")} onClick={onClose} />
         </div>
       </div>
     </div>

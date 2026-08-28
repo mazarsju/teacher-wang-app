@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PowerIcon, ProfileIcon, SyncIcon } from "./icons";
 import styles from "./ProfileMenu.module.css";
 
@@ -13,6 +14,7 @@ export default function ProfileMenu({
   onSync,
   isSyncing = false,
 }: ProfileMenuProps) {
+  const { t } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -50,7 +52,7 @@ export default function ProfileMenu({
       <button
         type="button"
         className={styles.profileMenuTrigger}
-        aria-label="Profile menu"
+        aria-label={t("profileMenu.triggerLabel")}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={menuId}
@@ -64,7 +66,7 @@ export default function ProfileMenu({
           id={menuId}
           className={styles.profileMenuDropdown}
           role="menu"
-          aria-label="Profile"
+          aria-label={t("profileMenu.menuLabel")}
         >
           <button
             type="button"
@@ -76,7 +78,9 @@ export default function ProfileMenu({
             }}
           >
             <SyncIcon className={styles.profileMenuItemIcon} />
-            <span>{isSyncing ? "Syncing..." : "Synchro"}</span>
+            <span>
+              {isSyncing ? t("profileMenu.syncing") : t("profileMenu.synchro")}
+            </span>
           </button>
           <button
             type="button"
@@ -88,7 +92,7 @@ export default function ProfileMenu({
             }}
           >
             <PowerIcon className={styles.profileMenuItemIcon} />
-            <span>Log out</span>
+            <span>{t("profileMenu.logOut")}</span>
           </button>
         </div>
       ) : null}

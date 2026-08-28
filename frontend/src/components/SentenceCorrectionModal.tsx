@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import styles from "./SentenceCorrectionModal.module.css";
 
@@ -13,6 +14,7 @@ export default function SentenceCorrectionModal({
   onConfirm,
   onCancel,
 }: SentenceCorrectionModalProps) {
+  const { t } = useTranslation("writing");
   const [text, setText] = useState(originalText);
 
   function handleSubmit(event: FormEvent) {
@@ -32,11 +34,11 @@ export default function SentenceCorrectionModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="sentence-correction-modal-title" className="modal-title">
-          Correct this sentence
+          {t("sentenceCorrectionModal.title")}
         </h2>
         <form className="modal-form" onSubmit={handleSubmit}>
           <label className="modal-field">
-            <span className="modal-field-label">Your correction</span>
+            <span className="modal-field-label">{t("sentenceCorrectionModal.fieldLabel")}</span>
             <textarea
               className={styles.sentenceCorrectionModalTextarea}
               value={text}
@@ -45,10 +47,10 @@ export default function SentenceCorrectionModal({
             />
           </label>
           <div className="modal-actions">
-            <Button kind="cancel" text="Cancel" onClick={onCancel} />
+            <Button kind="cancel" text={t("sentenceCorrectionModal.cancel")} onClick={onCancel} />
             <Button
               kind="confirm"
-              text="Save"
+              text={t("sentenceCorrectionModal.save")}
               htmlType="submit"
               disabled={text.trim() === ""}
             />

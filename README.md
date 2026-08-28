@@ -15,7 +15,7 @@ An app to learn Mandarin.
 This project was intentionally developed using Cursor AI and coding agents. My objective was not only to build an AI product, but also to explore modern AI-assisted software engineering workflows.
 
 - **Backend:** Python, Flask, SQLAlchemy, PostgreSQL (Alembic)
-- **Frontend:** React, TypeScript, Vite, Redux Toolkit
+- **Frontend:** React, TypeScript, Vite, Redux Toolkit, react-i18next
 - **AI:** LangChain (`langchain-core`, `langchain-openai`), OpenAI-compatible chat models via `ChatOpenAI`
 
 ## Project structure
@@ -61,6 +61,8 @@ teacher-wang/
 │   │   ├── App.tsx         # App shell, auth gate, login/logout sync triggers
 │   │   ├── App.module.css
 │   │   ├── main.tsx        # React entry + Redux Provider
+│   │   ├── i18n.ts         # react-i18next init (synchronous, bundled resources)
+│   │   ├── locales/en/     # Translation JSON, one file per feature namespace
 │   │   ├── styles/         # tokens.css (design tokens), globals.css (reset/base)
 │   │   ├── store/          # Redux Toolkit store (characters, words, HSK, grammar, Anki)
 │   │   ├── pages/          # Welcome auth, Home, Knowledge base, Grammar, Chat, Preferences (each with a co-located .module.css)
@@ -108,6 +110,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Data isolation](docs/adr/data-isolation.md) — `user_id` in every private primary key, hash partitions, shared HSK catalog
 - [Plan management](docs/adr/plan-management.md) — free vs paid, `available_token` budget, enforcement on LLM invokes
 - [Frontend CSS organization](docs/adr/frontend-styling.md) — CSS Modules per component, `shared.css` design system, the `Button` component
+- [Frontend localization](docs/adr/frontend-localization.md) — react-i18next, synchronous init, one translation namespace per feature area
 - [Grammar content architecture](docs/adr/grammar-content.md) — content in Git/S3 vs. metadata and learner progress in Postgres, prerequisite resolution
 - [Writing practice](docs/adr/writing-practice.md) — topics anchored to grammar lessons, sentence-level checks reusing chat's grammar correction, S3 drafts, deferred grammar-usage recording
 
@@ -456,8 +459,8 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 
 The app UI and explanations are English-only today. Learners should be able to pick another base language (still learning Mandarin) so prompts, corrections, and labels match how they think.
 
-- [ ] Add `react-i18next` and configure a global localization framework in the React application
-- [ ] Extract all frontend UI texts into translation files organized by feature (`home`, `chat`, `knowledge-base`, `preferences`, `common`)
+- [x] Add `react-i18next` and configure a global localization framework in the React application
+- [x] Extract all frontend UI texts into translation files organized by feature (`home`, `chat`, `knowledge-base`, `preferences`, `common`)
 - [ ] Internationalize backend-generated content (LLM prompts, AI explanations, grammar feedback, system messages, emails, exports, etc.)
 - [ ] Internationalize application data stored in PostgreSQL (HSK descriptions, challenge metadata, predefined texts, help content, etc.)
 - [ ] Internationalize static content stored outside the application (S3-hosted guides, onboarding content, documentation assets, etc.)

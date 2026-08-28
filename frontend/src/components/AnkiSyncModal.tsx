@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useAppSelector } from "../store/hooks";
 import { CheckIcon } from "./icons";
 import {
-  ANKI_DECK_LABELS,
   type AnkiDeckKind,
   type AnkiPendingCard,
   type AnkiPendingSync,
@@ -50,10 +51,6 @@ function cardLabel(card: AnkiPendingCard): string {
   return card.verso;
 }
 
-function formatCount(count: number, singular: string, plural: string): string {
-  return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
-}
-
 function uniqueCharactersToCreate(cards: AnkiPendingCard[]): number {
   const seen = new Set<string>();
   for (const card of cards) {
@@ -67,14 +64,16 @@ function uniqueCharactersToCreate(cards: AnkiPendingCard[]): number {
   return seen.size;
 }
 
-function formatPullCharacterClause(characterCount: number): string {
+function formatPullCharacterClause(
+  characterCount: number,
+  t: TFunction<"preferences">,
+): string {
   if (characterCount <= 0) {
     return "";
   }
-  return (
-    `, adding ${formatCount(characterCount, "character", "characters")}` +
-    " to the character table"
-  );
+  return t("ankiSyncModal.confirm.pullCharacterClause", {
+    count: characterCount,
+  });
 }
 
 export default function AnkiSyncModal({
@@ -83,6 +82,7 @@ export default function AnkiSyncModal({
   onCancel,
   onSynced,
 }: AnkiSyncModalProps) {
+  const { t } = useTranslation("preferences");
   const [pending, setPending] = useState<AnkiPendingSync | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,7 +138,7 @@ export default function AnkiSyncModal({
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Failed to load pending Anki cards.",
+            : t("ankiSyncModal.errors.loadPending"),
         );
       })
       .finally(() => {
@@ -150,7 +150,7 @@ export default function AnkiSyncModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, kind]);
+  }, [isOpen, kind, t]);
 
   const pushCards = pending?.cards ?? [];
   const pullCards = pending?.pull_cards ?? [];
@@ -185,69 +185,47 @@ export default function AnkiSyncModal({
     if (confirmAction === null || pending === null) {
       return "";
     }
+    const prefix = t("ankiSyncModal.confirm.irreversiblePrefix");
     if (confirmAction.direction === "push") {
       if (confirmAction.type === "all") {
-        return (
-          `This action cannot be undone. It will push all ${pushCount} card` +
-          `${pushCount === 1 ? "" : "s"} to the Anki deck.`
-        );
+        return `${prefix} ${t("ankiSyncModal.confirm.pushAllMessage", { count: pushCount })}`;
       }
       if (confirmAction.type === "ignore_all") {
         if (pending.kind === "mandarin_writing") {
-          return (
-            `This action cannot be undone. All ${cancelAllPushCount} word` +
-            `${cancelAllPushCount === 1 ? "" : "s"} with “written known” will be ` +
-            "ignored for future pushes to Anki."
-          );
+          return `${prefix} ${t("ankiSyncModal.confirm.pushIgnoreAllWritingMessage", { count: cancelAllPushCount })}`;
         }
-        return (
-          `This action cannot be undone. All ${pushCount} card` +
-          `${pushCount === 1 ? "" : "s"} will be ignored for future pushes to Anki.`
-        );
+        return `${prefix} ${t("ankiSyncModal.confirm.pushIgnoreAllMessage", { count: pushCount })}`;
       }
       return (
-        `This action cannot be undone. ${selectedCount} card` +
-        `${selectedCount === 1 ? "" : "s"} currently selected will be pushed ` +
-        `to the Anki deck, and ${ignoredCount} card` +
-        `${ignoredCount === 1 ? "" : "s"} not selected will be ignored for future pushes.`
+        `${prefix} ${t("ankiSyncModal.confirm.pushPartialSelected", { count: selectedCount })}, ` +
+        `and ${t("ankiSyncModal.confirm.pushPartialIgnored", { count: ignoredCount })}`
       );
     }
 
     if (confirmAction.type === "all") {
       if (pending.kind === "mandarin_writing") {
-        return (
-          `This action cannot be undone. It will pull all ${pullActionableCount} word` +
-          `${pullActionableCount === 1 ? "" : "s"} from Anki and mark them as “written known”.`
-        );
+        return `${prefix} ${t("ankiSyncModal.confirm.pullAllWritingMessage", { count: pullActionableCount })}`;
       }
-      return (
-        `This action cannot be undone. It will pull all ${pullCount} card` +
-        `${pullCount === 1 ? "" : "s"} from Anki into your knowledge base` +
-        `${formatPullCharacterClause(pullCharactersToCreateCount)}.`
-      );
+      return `${prefix} ${t("ankiSyncModal.confirm.pullAllMessage", {
+        count: pullCount,
+        characterClause: formatPullCharacterClause(pullCharactersToCreateCount, t),
+      })}`;
     }
     if (confirmAction.type === "ignore_all") {
       const ignoreTotal = pullActionableCount + pullMissing.length;
-      return (
-        `This action cannot be undone. All ${ignoreTotal} card` +
-        `${ignoreTotal === 1 ? "" : "s"} pending for pull (including unresolved ones) ` +
-        "will be ignored for future pulls from Anki."
-      );
+      return `${prefix} ${t("ankiSyncModal.confirm.pullIgnoreAllMessage", { count: ignoreTotal })}`;
     }
     if (pending.kind === "mandarin_writing") {
       return (
-        `This action cannot be undone. ${selectedCount} word` +
-        `${selectedCount === 1 ? "" : "s"} currently selected will be marked as ` +
-        `“written known”, and ${ignoredCount} word` +
-        `${ignoredCount === 1 ? "" : "s"} not selected will be ignored for future pulls.`
+        `${prefix} ${t("ankiSyncModal.confirm.pullPartialWritingSelected", { count: selectedCount })}, ` +
+        `and ${t("ankiSyncModal.confirm.pullPartialWritingIgnored", { count: ignoredCount })}`
       );
     }
     return (
-      `This action cannot be undone. ${selectedCount} card` +
-      `${selectedCount === 1 ? "" : "s"} currently selected will be pulled ` +
-      `from Anki${formatPullCharacterClause(selectedPullCharactersToCreateCount)}, and ` +
-      `${ignoredCount} card` +
-      `${ignoredCount === 1 ? "" : "s"} not selected will be ignored for future pulls.`
+      `${prefix} ${t("ankiSyncModal.confirm.pullPartialSelected", {
+        count: selectedCount,
+        characterClause: formatPullCharacterClause(selectedPullCharactersToCreateCount, t),
+      })}, ` + `and ${t("ankiSyncModal.confirm.pullPartialIgnored", { count: ignoredCount })}`
     );
   }, [
     cancelAllPushCount,
@@ -261,13 +239,14 @@ export default function AnkiSyncModal({
     pushCount,
     selectedCount,
     selectedPullCharactersToCreateCount,
+    t,
   ]);
 
   if (!isOpen || kind === null) {
     return null;
   }
 
-  const label = ANKI_DECK_LABELS[kind];
+  const label = t(`ankiDeckKind.labels.${kind}`);
   const isWriting = kind === "mandarin_writing";
 
   const toggleCard = (cardId: string) => {
@@ -342,7 +321,7 @@ export default function AnkiSyncModal({
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Failed to synchronize with Anki.",
+          : t("ankiSyncModal.errors.sync"),
       );
     } finally {
       setIsSubmitting(false);
@@ -353,9 +332,9 @@ export default function AnkiSyncModal({
     <>
       <div className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowHeader}`}>
         <span className={styles.ankiSyncCardCheck} aria-hidden="true" />
-        <span>Writing</span>
-        <span>Pinyin</span>
-        <span>Definition</span>
+        <span>{t("ankiSyncModal.partial.columnWriting")}</span>
+        <span>{t("ankiSyncModal.partial.columnPinyin")}</span>
+        <span>{t("ankiSyncModal.partial.columnDefinition")}</span>
       </div>
       {cards.filter(isVocabularyCard).map((card) => {
         const checked = selectedIds.has(card.id);
@@ -367,7 +346,7 @@ export default function AnkiSyncModal({
                 checked={checked}
                 disabled={isSubmitting}
                 onChange={() => toggleCard(card.id)}
-                aria-label={`Select ${card.writing}`}
+                aria-label={t("ankiSyncModal.partial.selectCardAriaLabel", { name: card.writing })}
               />
             </span>
             <span className={styles.ankiSyncCardWriting}>{card.writing}</span>
@@ -392,10 +371,10 @@ export default function AnkiSyncModal({
           onClick={(event) => event.stopPropagation()}
         >
           <h2 id="anki-sync-modal-title" className="modal-title">
-            Sync — {label}
+            {t("ankiSyncModal.title", { label })}
           </h2>
 
-          {isLoading && <p className="modal-message">Loading sync status…</p>}
+          {isLoading && <p className="modal-message">{t("ankiSyncModal.loadingSyncStatus")}</p>}
 
           {!isLoading && error !== null && (
             <p className="table-error" role="alert">
@@ -406,34 +385,34 @@ export default function AnkiSyncModal({
           {!isLoading && pending !== null && view === "overview" && (
             <>
               <p className={styles.ankiSyncLead}>
-                Choose a direction. Push sends local knowledge-base content to
-                Anki. Pull imports Anki cards into the app.
+                {t("ankiSyncModal.overview.lead")}
               </p>
 
               <section className={`${styles.ankiSyncPanel}`}>
                 <div className={styles.ankiSyncPanelHeader}>
-                  <h3 className={styles.ankiSyncPanelTitle}>Push to Anki</h3>
+                  <h3 className={styles.ankiSyncPanelTitle}>
+                    {t("ankiSyncModal.overview.push.title")}
+                  </h3>
                   <p className={styles.ankiSyncPanelCount}>
-                    {formatCount(pushCount, "card to push", "cards to push")}
+                    {t("ankiSyncModal.overview.push.countLabel", { count: pushCount })}
                   </p>
                 </div>
                 <p className={styles.ankiSyncPanelCopy}>
-                  One-way only: add new local cards to this Anki deck, or ignore
-                  them so they are not offered again.
+                  {t("ankiSyncModal.overview.push.copy")}
                 </p>
 
                 {nothingToPush ? (
                   <div className={styles.ankiSyncAllSet} role="status">
                     <CheckIcon className={styles.ankiSyncAllSetIcon} />
                     <p className={styles.ankiSyncAllSetText}>
-                      You’re all set, nothing to push.
+                      {t("ankiSyncModal.overview.push.allSet")}
                     </p>
                   </div>
                 ) : (
                   <div className={styles.ankiSyncActions}>
                     <Button
                       kind="confirm"
-                      text="Push all to Anki"
+                      text={t("ankiSyncModal.overview.push.pushAllButton")}
                       disabled={pushCount === 0 || isSubmitting}
                       onClick={() =>
                         setConfirmAction({ direction: "push", type: "all" })
@@ -441,7 +420,7 @@ export default function AnkiSyncModal({
                     />
                     <Button
                       kind="danger"
-                      text="Ignore all for push"
+                      text={t("ankiSyncModal.overview.push.ignoreAllButton")}
                       disabled={!canIgnoreAllPush || isSubmitting}
                       onClick={() =>
                         setConfirmAction({
@@ -452,7 +431,7 @@ export default function AnkiSyncModal({
                     />
                     <Button
                       kind="confirm"
-                      text="Choose what to push"
+                      text={t("ankiSyncModal.overview.push.chooseButton")}
                       disabled={pushCount === 0 || isSubmitting}
                       onClick={openPartialPush}
                     />
@@ -462,15 +441,17 @@ export default function AnkiSyncModal({
                 {isWriting && unsyncable.length > 0 && (
                   <div className={styles.ankiSyncUnsyncable} role="note">
                     <p className={styles.ankiSyncUnsyncableTitle}>
-                      Words that cannot be pushed
+                      {t("ankiSyncModal.overview.push.unsyncableTitle")}
                     </p>
                     <p className={styles.ankiSyncUnsyncableText}>
-                      These words are missing a definition or pinyin, so a
-                      card cannot be built for them:{" "}
-                      <span className={styles.ankiSyncUnsyncableChars}>
-                        {unsyncable.join("、")}
-                      </span>
-                      . You can skip them with “Ignore all for push”.
+                      <Trans
+                        i18nKey="ankiSyncModal.overview.push.unsyncableText"
+                        t={t}
+                        values={{ words: unsyncable.join("、") }}
+                        components={{
+                          1: <span className={styles.ankiSyncUnsyncableChars} />,
+                        }}
+                      />
                     </p>
                   </div>
                 )}
@@ -478,45 +459,45 @@ export default function AnkiSyncModal({
 
               <section className={`${styles.ankiSyncPanel}`}>
                 <div className={styles.ankiSyncPanelHeader}>
-                  <h3 className={styles.ankiSyncPanelTitle}>Pull from Anki</h3>
+                  <h3 className={styles.ankiSyncPanelTitle}>
+                    {t("ankiSyncModal.overview.pull.title")}
+                  </h3>
                   <p className={styles.ankiSyncPanelCount}>
-                    {formatCount(
-                      pullCount,
-                      isWriting ? "word to pull" : "card to pull",
-                      isWriting ? "words to pull" : "cards to pull",
-                    )}
+                    {isWriting
+                      ? t("ankiSyncModal.overview.pull.wordCountLabel", { count: pullCount })
+                      : t("ankiSyncModal.overview.pull.cardCountLabel", { count: pullCount })}
                   </p>
                 </div>
                 <p className={styles.ankiSyncPanelCopy}>
                   {isWriting
-                    ? "Words found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”."
-                    : "Cards found in this Anki deck that are not yet in your knowledge base."}
+                    ? t("ankiSyncModal.overview.pull.copyWriting")
+                    : t("ankiSyncModal.overview.pull.copyNonWriting")}
                 </p>
 
                 {nothingToPull ? (
                   <div className={styles.ankiSyncAllSet} role="status">
                     <CheckIcon className={styles.ankiSyncAllSetIcon} />
                     <p className={styles.ankiSyncAllSetText}>
-                      You’re all set, nothing to pull.
+                      {t("ankiSyncModal.overview.pull.allSet")}
                     </p>
                   </div>
                 ) : (
                   <div className={styles.ankiSyncActions}>
                     <Button
                       kind="confirm"
-                      text="Pull all from Anki"
+                      text={t("ankiSyncModal.overview.pull.pullAllButton")}
                       disabled={pullActionableCount === 0 || isSubmitting}
                       onClick={() => handlePullAction("all")}
                     />
                     <Button
                       kind="danger"
-                      text="Ignore all for pull"
+                      text={t("ankiSyncModal.overview.pull.ignoreAllButton")}
                       disabled={!canIgnoreAllPull || isSubmitting}
                       onClick={() => handlePullAction("ignore_all")}
                     />
                     <Button
                       kind="confirm"
-                      text="Choose what to pull"
+                      text={t("ankiSyncModal.overview.pull.chooseButton")}
                       disabled={pullActionableCount === 0 || isSubmitting}
                       onClick={() => handlePullAction("partial")}
                     />
@@ -526,17 +507,17 @@ export default function AnkiSyncModal({
                 {isWriting && pullMissing.length > 0 && (
                   <div className={styles.ankiSyncUnsyncable} role="note">
                     <p className={styles.ankiSyncUnsyncableTitle}>
-                      Words not yet in the knowledge base
+                      {t("ankiSyncModal.overview.pull.missingWritingTitle")}
                     </p>
                     <p className={styles.ankiSyncUnsyncableText}>
-                      These words from Anki don’t exist in your knowledge
-                      base yet. Add them manually in the app, synchronize
-                      the Mandarin vocabulary deck with them first, or
-                      ignore them for future pulls:{" "}
-                      <span className={styles.ankiSyncUnsyncableChars}>
-                        {pullMissing.join("、")}
-                      </span>
-                      .
+                      <Trans
+                        i18nKey="ankiSyncModal.overview.pull.missingWritingText"
+                        t={t}
+                        values={{ words: pullMissing.join("、") }}
+                        components={{
+                          1: <span className={styles.ankiSyncUnsyncableChars} />,
+                        }}
+                      />
                     </p>
                   </div>
                 )}
@@ -544,15 +525,17 @@ export default function AnkiSyncModal({
                 {!isWriting && pullMissing.length > 0 && (
                   <div className={styles.ankiSyncUnsyncable} role="note">
                     <p className={styles.ankiSyncUnsyncableTitle}>
-                      Cards that cannot be pulled
+                      {t("ankiSyncModal.overview.pull.missingNonWritingTitle")}
                     </p>
                     <p className={styles.ankiSyncUnsyncableText}>
-                      These Anki cards contain Chinese characters whose pinyin
-                      could not be resolved from the deck:{" "}
-                      <span className={styles.ankiSyncUnsyncableChars}>
-                        {pullMissing.join("、")}
-                      </span>
-                      .
+                      <Trans
+                        i18nKey="ankiSyncModal.overview.pull.missingNonWritingText"
+                        t={t}
+                        values={{ words: pullMissing.join("、") }}
+                        components={{
+                          1: <span className={styles.ankiSyncUnsyncableChars} />,
+                        }}
+                      />
                     </p>
                   </div>
                 )}
@@ -561,7 +544,7 @@ export default function AnkiSyncModal({
               <div className={`modal-actions ${styles.ankiSyncFooter}`}>
                 <Button
                   kind="cancel"
-                  text="Close"
+                  text={t("ankiSyncModal.close")}
                   disabled={isSubmitting}
                   onClick={onCancel}
                 />
@@ -572,25 +555,27 @@ export default function AnkiSyncModal({
           {!isLoading && pending !== null && view === "partial-push" && (
             <>
               <p className="modal-message">
-                Choose which cards to push to Anki. Unselected cards will be
-                ignored for future pushes.
+                {t("ankiSyncModal.partial.pushMessage")}
               </p>
 
               <div className={styles.ankiSyncPartialToolbar}>
                 <Button
                   kind="confirm"
-                  text="Select all"
+                  text={t("ankiSyncModal.partial.selectAll")}
                   onClick={() => selectAll(pushCards)}
                   disabled={isSubmitting}
                 />
                 <Button
                   kind="confirm"
-                  text="Unselect all"
+                  text={t("ankiSyncModal.partial.unselectAll")}
                   onClick={unselectAll}
                   disabled={isSubmitting}
                 />
                 <span className={styles.ankiSyncPartialCount}>
-                  {selectedCount} of {pushCount} selected
+                  {t("ankiSyncModal.partial.selectedOfTotal", {
+                    selected: selectedCount,
+                    total: pushCount,
+                  })}
                 </span>
               </div>
 
@@ -599,8 +584,8 @@ export default function AnkiSyncModal({
                   <>
                     <div className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowHeader} ${styles.ankiSyncCardRowWriting}`}>
                       <span className={styles.ankiSyncCardCheck} aria-hidden="true" />
-                      <span>Recto</span>
-                      <span>Verso</span>
+                      <span>{t("ankiSyncModal.partial.columnRecto")}</span>
+                      <span>{t("ankiSyncModal.partial.columnVerso")}</span>
                     </div>
                     {pushCards.filter(isWritingCard).map((card) => {
                       const checked = selectedIds.has(card.id);
@@ -616,7 +601,7 @@ export default function AnkiSyncModal({
                               checked={checked}
                               disabled={isSubmitting}
                               onChange={() => toggleCard(card.id)}
-                              aria-label={`Select ${cardLabel(card)}`}
+                              aria-label={t("ankiSyncModal.partial.selectCardAriaLabel", { name: cardLabel(card) })}
                             />
                           </span>
                           <span>{card.recto}</span>
@@ -635,13 +620,13 @@ export default function AnkiSyncModal({
               <div className="modal-actions">
                 <Button
                   kind="cancel"
-                  text="Back"
+                  text={t("ankiSyncModal.partial.backButton")}
                   disabled={isSubmitting}
                   onClick={() => setView("overview")}
                 />
                 <Button
                   kind="confirm"
-                  text="Confirm push"
+                  text={t("ankiSyncModal.partial.confirmPushButton")}
                   disabled={isSubmitting}
                   onClick={() =>
                     setConfirmAction({
@@ -659,25 +644,28 @@ export default function AnkiSyncModal({
             <>
               <p className="modal-message">
                 {isWriting
-                  ? "Choose which words to mark as “written known”. Unselected words will be ignored for future pulls."
-                  : "Choose which cards to pull from Anki. Unselected cards will be ignored for future pulls."}
+                  ? t("ankiSyncModal.partial.pullMessageWriting")
+                  : t("ankiSyncModal.partial.pullMessageNonWriting")}
               </p>
 
               <div className={styles.ankiSyncPartialToolbar}>
                 <Button
                   kind="confirm"
-                  text="Select all"
+                  text={t("ankiSyncModal.partial.selectAll")}
                   onClick={() => selectAll(pullCards)}
                   disabled={isSubmitting}
                 />
                 <Button
                   kind="confirm"
-                  text="Unselect all"
+                  text={t("ankiSyncModal.partial.unselectAll")}
                   onClick={unselectAll}
                   disabled={isSubmitting}
                 />
                 <span className={styles.ankiSyncPartialCount}>
-                  {selectedCount} of {pullActionableCount} selected
+                  {t("ankiSyncModal.partial.selectedOfTotal", {
+                    selected: selectedCount,
+                    total: pullActionableCount,
+                  })}
                 </span>
               </div>
 
@@ -686,8 +674,8 @@ export default function AnkiSyncModal({
                   <>
                     <div className={`${styles.ankiSyncCardRow} ${styles.ankiSyncCardRowHeader} ${styles.ankiSyncCardRowWriting}`}>
                       <span className={styles.ankiSyncCardCheck} aria-hidden="true" />
-                      <span>Recto</span>
-                      <span>Verso</span>
+                      <span>{t("ankiSyncModal.partial.columnRecto")}</span>
+                      <span>{t("ankiSyncModal.partial.columnVerso")}</span>
                     </div>
                     {pullCards.filter(isWritingCard).map((card) => {
                       const checked = selectedIds.has(card.id);
@@ -703,7 +691,7 @@ export default function AnkiSyncModal({
                               checked={checked}
                               disabled={isSubmitting}
                               onChange={() => toggleCard(card.id)}
-                              aria-label={`Select ${cardLabel(card)}`}
+                              aria-label={t("ankiSyncModal.partial.selectCardAriaLabel", { name: cardLabel(card) })}
                             />
                           </span>
                           <span>{card.recto}</span>
@@ -722,13 +710,13 @@ export default function AnkiSyncModal({
               <div className="modal-actions">
                 <Button
                   kind="cancel"
-                  text="Back"
+                  text={t("ankiSyncModal.partial.backButton")}
                   disabled={isSubmitting}
                   onClick={() => setView("overview")}
                 />
                 <Button
                   kind="confirm"
-                  text="Confirm pull"
+                  text={t("ankiSyncModal.partial.confirmPullButton")}
                   disabled={isSubmitting}
                   onClick={() =>
                     setConfirmAction({
@@ -744,7 +732,7 @@ export default function AnkiSyncModal({
 
           {!isLoading && error !== null && pending === null && (
             <div className="modal-actions">
-              <Button kind="cancel" text="Close" onClick={onCancel} />
+              <Button kind="cancel" text={t("ankiSyncModal.close")} onClick={onCancel} />
             </div>
           )}
         </div>

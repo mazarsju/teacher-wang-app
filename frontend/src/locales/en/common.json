@@ -1,0 +1,132 @@
+{
+  "app": {
+    "leaveQuizConfirm": "You've started this questionnaire. Leaving now means you'll need to start it over from the first question. Leave anyway?",
+    "syncError": "Failed to synchronize data."
+  },
+  "navbar": {
+    "mainNavigation": "Main navigation",
+    "brand": "Teacher Wang",
+    "nav": {
+      "home": "Home",
+      "knowledgeBase": "Knowledge base",
+      "grammar": "Grammar",
+      "chat": "Chat",
+      "preferences": "Preferences",
+      "admin": "Admin"
+    }
+  },
+  "profileMenu": {
+    "triggerLabel": "Profile menu",
+    "menuLabel": "Profile",
+    "syncing": "Syncing...",
+    "synchro": "Synchro",
+    "logOut": "Log out"
+  },
+  "helpButton": {
+    "triggerLabel": "Help",
+    "bubble": "A question? A bug spotted? An idea of improvement? Don't hesitate to share your issue on <1>Github</1>."
+  },
+  "confirmModal": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "irreversibleWarning": "This action is irreversible."
+  },
+  "warningModal": {
+    "title": "Warning",
+    "ok": "OK"
+  },
+  "actions": {
+    "close": "Close"
+  },
+  "table": {
+    "emptyMessage": "No data to display."
+  },
+  "addWordModal": {
+    "titleAdd": "Add word",
+    "titleEdit": "Edit word",
+    "wordLabel": "words",
+    "duplicateWarning": "This word already exists in the database.",
+    "pinyinLabel": "pinyin",
+    "pinyinWarning": "Enter one valid pinyin syllable per Chinese character (e.g. hao3), with a tone number. Any non-Chinese characters in the word don’t need matching pinyin — spacing and content around them are not checked.",
+    "definitionLabel": "definition",
+    "definitionTooLong": "Definition must be no more than 100 characters long.",
+    "writingKnownLabel": "writing known"
+  },
+  "chatModal": {
+    "severity": {
+      "correct": "Correct",
+      "minorMistake": "Minor mistake",
+      "awkwardWording": "Awkward wording",
+      "incorrect": "Incorrect"
+    },
+    "clearing": "Clearing...",
+    "clearHistory": "Clear chat history",
+    "closeChat": "Close chat",
+    "tasksTitle": "Tasks",
+    "tasksTitleWithChallenge": "{{challengeTitle}} — tasks",
+    "loadingConversation": "Loading conversation...",
+    "emptyState": "Start a conversation with {{name}}.",
+    "typingIndicator": "{{name}} is typing...",
+    "challengeCompleted": "Challenge completed!",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Type your message...",
+    "sending": "Sending...",
+    "send": "Send",
+    "clearHistoryConfirm": "Clear all chat history with {{name}}? This cannot be undone.",
+    "openGrammarNoteAriaLabel": "Open grammar note ({{severity}}) with Teacher Wang",
+    "askTeacherWangTitle": "{{severity}} — ask Teacher Wang",
+    "errors": {
+      "loadHistory": "Failed to load chat history.",
+      "sendMessage": "Failed to send chat message.",
+      "clearHistory": "Failed to clear chat history.",
+      "correctionThreadUnavailable": "This grammar note can’t continue as a saved thread. Send a new message to create one."
+    }
+  },
+  "grammarMasteryModal": {
+    "title": "Grammar mastered!",
+    "masteredMessage_one": "You just proved you've mastered this lesson by using it in a real conversation:",
+    "masteredMessage_other": "You just proved you've mastered these lessons by using them in a real conversation:",
+    "niceButton": "Nice!"
+  },
+  "knowledgeBaseInitWizardModal": {
+    "title": "Build your knowledge base",
+    "wordColumnHeader": "Word",
+    "back": "Back",
+    "errors": {
+      "import": "Failed to import your knowledge base.",
+      "pickWord": "Failed to pick a word.",
+      "save": "Failed to save your knowledge base."
+    },
+    "choose": {
+      "manualOption": "Add characters and words one by one, manually",
+      "csvOption": "Upload an existing knowledge base (CSV)",
+      "ankiOption": "Import data from an Anki deck",
+      "smartOption": "Smart creation based on what you already know"
+    },
+    "manualInfo": {
+      "text": "You should go to the Knowledge base section for that and manually create what you want.",
+      "goToKnowledgeBase": "Go to Knowledge base"
+    },
+    "ankiInfo": {
+      "text": "You can setup your Anki synchronization in the Preference section.",
+      "goToPreferences": "Go to Preferences"
+    },
+    "csv": {
+      "instructions": "Upload a CSV file with the same columns as your words table: word, definition, pinyin, whether you already know how to write it (true or false), whether it has been synchronized to Anki (true or false), and the last updated date. For example:",
+      "headerNote": "The first line can either be this header row or your first word.",
+      "import": "Import"
+    },
+    "smart": {
+      "intro": "Tell us whether you know each word below and whether you can write all of its characters. You can review the full list of words you are about to add at any moment before confirming.",
+      "setupDone": "Your quick setup is done! Please review the list below.",
+      "pickingWord": "Picking a word…",
+      "dontKnow": "Don't know it",
+      "canRecognize": "Can recognize it",
+      "canWrite": "Can write it",
+      "knowToWrite": "Know to write it",
+      "remove": "Remove",
+      "emptyTable": "No words picked yet.",
+      "syncProgress": "Syncing your knowledge base… {{completed}}/{{total}}"
+    }
+  }
+}

@@ -1,4 +1,6 @@
+import type { TFunction } from "i18next";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { scoreBand } from "../components/GrammarExercises";
 import { CheckIcon, LockIcon, PenIcon, StarIcon } from "../components/icons";
 import Page from "../components/Page";
@@ -19,28 +21,31 @@ const COMPLETED_STATUSES = new Set(["DONE", "SKIP", "MASTERED"]);
 // Free-plan users only get the first 10 lessons of each HSK level unlocked.
 const FREE_PLAN_LESSON_LIMIT = 10;
 
-const STATUS_LABELS: Record<string, string> = {
-  TODO: "Not started",
-  WIP: "In progress",
-  DONE: "Completed",
-  SKIP: "Skipped",
-  MASTERED: "Mastered",
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  TODO: "todo",
+  WIP: "wip",
+  DONE: "done",
+  SKIP: "skip",
+  MASTERED: "mastered",
 };
 
 // How many distinct pastel backgrounds the level sections cycle through.
 const LEVEL_PALETTE_SIZE = 6;
 
-const HSK_LEVEL_LABELS = [
-  "Beginner",
-  "Elementary",
-  "Intermediate",
-  "Upper Intermediate",
-  "Advanced",
-  "Mastery",
+const HSK_LEVEL_LABEL_KEYS = [
+  "beginner",
+  "elementary",
+  "intermediate",
+  "upperIntermediate",
+  "advanced",
+  "mastery",
 ];
 
-function hskLevelLabel(level: number): string {
-  return HSK_LEVEL_LABELS[level - 1] ?? `Level ${level}`;
+function hskLevelLabel(t: TFunction, level: number): string {
+  const key = HSK_LEVEL_LABEL_KEYS[level - 1];
+  return key
+    ? t(`grammarPage.levelLabels.${key}`)
+    : t("grammarPage.levelLabels.fallback", { level });
 }
 
 const GAUGE_RADIUS = 18;
@@ -76,12 +81,13 @@ function levelStatsUpToLevel(
 }
 
 function LevelGauge({ level, percent }: LevelStat) {
+  const { t } = useTranslation("grammar");
   const offset = GAUGE_CIRCUMFERENCE - (percent / 100) * GAUGE_CIRCUMFERENCE;
 
   return (
     <div
       className={styles.grammarLevelGauge}
-      title={`HSK ${level}: ${percent}% complete`}
+      title={t("grammarPage.levelGauge.title", { level, percent })}
     >
       <svg viewBox="0 0 44 44" className={styles.grammarLevelGaugeRing}>
         <circle cx="22" cy="22" r={GAUGE_RADIUS} className={styles.grammarLevelGaugeTrack} />
@@ -97,13 +103,17 @@ function LevelGauge({ level, percent }: LevelStat) {
           {percent}%
         </text>
       </svg>
-      <span className={styles.grammarLevelGaugeLabel}>HSK {level}</span>
+      <span className={styles.grammarLevelGaugeLabel}>
+        {t("grammarPage.levelGauge.label", { level })}
+      </span>
     </div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const label = STATUS_LABELS[status] ?? status;
+  const { t } = useTranslation("grammar");
+  const statusKey = STATUS_LABEL_KEYS[status];
+  const label = statusKey ? t(`grammarPage.status.${statusKey}`) : status;
   const modifier = styles[`grammar-status-${status.toLowerCase()}`] ?? "";
 
   return (
@@ -142,6 +152,7 @@ function isGrammarPointAvailable(
 }
 
 export default function GrammarPage() {
+  const { t } = useTranslation("grammar");
   const dispatch = useAppDispatch();
   const grammarPoints = useAppSelector((state) => state.grammar.items);
   const writingPractices = useAppSelector((state) => state.grammar.writingPractices);
@@ -240,7 +251,7 @@ export default function GrammarPage() {
           setError(
             fetchError instanceof Error
               ? fetchError.message
-              : "Failed to load grammar points.",
+              : t("grammarPage.loadError"),
           );
         }
       })
@@ -257,7 +268,7 @@ export default function GrammarPage() {
     // which flips grammarLoaded itself, and re-running on that flip would
     // cancel this same in-flight fetch before its `finally` clears isLoading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+  }, [dispatch, t]);
 
   function handleSelect(grammarPoint: GrammarPoint) {
     setSelectedGrammarId(grammarPoint.id);
@@ -283,7 +294,7 @@ export default function GrammarPage() {
 
   return (
     <Page
-      title="Grammar"
+      title={t("grammarPage.title")}
       headerAction={
         levelStats.length > 0 && (
           <div className={styles.grammarLevelGauges}>
@@ -294,7 +305,7 @@ export default function GrammarPage() {
         )
       }
     >
-      {isLoading && <p>Loading grammar points...</p>}
+      {isLoading && <p>{t("grammarPage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
       {!isLoading &&
         !error &&
@@ -309,15 +320,20 @@ export default function GrammarPage() {
               }`}
             >
               <summary className={styles.grammarLevelSummary}>
-                HSK {level} ({hskLevelLabel(level)})
+                {t("grammarPage.levelSummary", {
+                  level,
+                  levelLabel: hskLevelLabel(t, level),
+                })}
               </summary>
               <table className={styles.grammarTable}>
                 <thead>
                   <tr>
-                    <th className={styles.grammarTableColNumber}>#</th>
-                    <th>Lesson</th>
-                    <th>Status</th>
-                    <th>Score</th>
+                    <th className={styles.grammarTableColNumber}>
+                      {t("grammarPage.table.number")}
+                    </th>
+                    <th>{t("grammarPage.table.lesson")}</th>
+                    <th>{t("grammarPage.table.status")}</th>
+                    <th>{t("grammarPage.table.score")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -343,7 +359,7 @@ export default function GrammarPage() {
                         <td className={styles.grammarRowTitle}>
                           <PenIcon className={styles.grammarRowWritingIcon} />
                           <span className={styles.grammarRowTitleText}>
-                            Practice: {row.topic.title}
+                            {t("grammarPage.practiceLabel", { title: row.topic.title })}
                           </span>
                         </td>
                         <td>

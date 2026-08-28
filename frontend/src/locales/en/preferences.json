@@ -1,0 +1,304 @@
+{
+  "ankiDeckKind": {
+    "labels": {
+      "mandarin_vocabulary": "Mandarin vocabulary",
+      "mandarin_writing": "Mandarin writing"
+    },
+    "descriptions": {
+      "mandarin_vocabulary": "This deck is the main deck for practicing vocabulary. It either asks you to guess the character from the pinyin and definition, or the pinyin from the character and definition, or the definition from the character and pinyin.",
+      "mandarin_writing": "This deck is for practicing writing only. It asks you to guess the characters from the definition and pinyin. Only characters with “written known” ticked will be part of this deck."
+    }
+  },
+  "preferencesPage": {
+    "title": "Preferences",
+    "loading": "Loading preferences...",
+    "currentPlan": {
+      "title": "Current plan",
+      "descriptionFree": "You're on the <1>Free</1> plan.",
+      "descriptionPro": "You're on the <1>Pro</1> plan.",
+      "comparePlans": "Compare plans"
+    },
+    "anki": {
+      "title": "Anki synchronization",
+      "mobileWarning": "Anki synchronization isn't available on a mobile phone. Use a computer to set up and manage your Anki decks.",
+      "description": "Map your knowledge-base characters and words to Anki decks through AnkiConnect.",
+      "notConnectedBanner": {
+        "message": "Start the Anki app with the AnkiConnect add-on activated before configuring decks.",
+        "buttonMessage": "How to set up AnkiConnect"
+      },
+      "syncHelpBanner": {
+        "message": "Struggling with your Anki setup? Click here for more info",
+        "buttonMessage": "Anki synchronization help"
+      },
+      "deckStatus": {
+        "notConfigured": "Not configured",
+        "synchronized": "Synchronized",
+        "notSynchronized": "Not synchronized",
+        "notConnected": "Not connected"
+      },
+      "syncButton": "Sync",
+      "setupButton": "Setup"
+    },
+    "usage": {
+      "title": "AI usage",
+      "description": "How much of your monthly AI allowance chat and grammar-check calls have used.",
+      "smartAi": {
+        "title": "Smart AI",
+        "description": "Smarter answers, at the cost of a bit more time and usage.",
+        "ariaLabel": "Smart AI"
+      },
+      "usedThisMonth": "Used this month",
+      "progressBarAriaLabel": "Percentage of monthly AI usage allowance used",
+      "resetNote": "Resets to 0% on the 1st of next month.",
+      "exhaustedBanner": {
+        "message": "You're running out of AI usage for the month. Need more? Don't hesitate to change your plan!",
+        "buttonMessage": "Update plan"
+      },
+      "chartAriaLabel": "Cumulative AI usage this month, currently at {{percent}} of the monthly allowance",
+      "chartDotTitle": "{{day}}: {{percent}} used"
+    },
+    "danger": {
+      "title": "Dangerous actions",
+      "description": "These actions are irreversible. Export your knowledge base first if you may need it later.",
+      "deleteButton": "Delete knowledge base",
+      "deleteConfirmMessage": "Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it. (note: this won't delete your Anki decks)"
+    },
+    "errors": {
+      "loadPreferences": "Failed to load preferences.",
+      "loadSmartAi": "Failed to load the Smart AI preference.",
+      "updateSmartAi": "Failed to update the Smart AI preference.",
+      "refreshAnkiStatus": "Failed to refresh Anki status.",
+      "deleteKnowledgeBase": "Failed to delete knowledge base.",
+      "syncFailedMessage": "These cards couldn't be synchronized: {{cards}}",
+      "syncFailedRemaining_one": ", and {{count}} other card.",
+      "syncFailedRemaining_other": ", and {{count}} other cards.",
+      "syncFailedEnd": "."
+    }
+  },
+  "changePlanModal": {
+    "title": "Compare plans",
+    "plans": {
+      "free": { "name": "Free", "price": "Free" },
+      "pro": { "name": "Pro", "price": "$4.99 / month" }
+    },
+    "features": {
+      "knowledgeBase": { "label": "Knowledge base management", "free": "Included", "pro": "Included" },
+      "anki": { "label": "Anki synchronization", "free": "Included", "pro": "Included" },
+      "aiChat": { "label": "AI chat", "free": "Limited", "pro": "Generous fair use" },
+      "grammar": { "label": "Grammar exercises", "free": "Limited", "pro": "Full access" }
+    },
+    "currentPlanLabel": "Current plan",
+    "switchTo": "Switch to {{plan}}"
+  },
+  "updatePlanModal": {
+    "title": "Upgrade your plan",
+    "message": "You're an early bird! The app is still under construction, so there's no paid plan just yet. Want to unlock the Pro plan for free for 3 months (100× your monthly AI usage)? Help build the product by posting your first issue on <1>GitHub</1> and I'll set you up!"
+  },
+  "ankiConnectGuideModal": {
+    "title": "Set up AnkiConnect",
+    "description": "Teacher Wang talks to Anki through the AnkiConnect add-on. Follow these steps, then close this guide to re-check the connection.",
+    "closeButton": "Close and check connection",
+    "steps": {
+      "createAccount": {
+        "title": "Create an Anki account",
+        "description": "Go to ankiweb.net and create a free account so you can sync decks across devices later.",
+        "imageAlt": "AnkiWeb sign-up page"
+      },
+      "installDesktop": {
+        "title": "Install Anki desktop",
+        "description": "Download and install the Anki desktop app for your operating system from apps.ankiweb.net, then open it and sign in if prompted.",
+        "imageAlt": "Anki desktop download page"
+      },
+      "openAddons": {
+        "title": "Open Anki add-ons",
+        "description": "In Anki, open Tools → Add-ons → Get Add-ons… to install new plugins.",
+        "imageAlt": "Anki Tools menu highlighting Add-ons"
+      },
+      "installAddon": {
+        "title": "Install AnkiConnect",
+        "description": "Enter the add-on code 2055492159 and confirm. Restart Anki when prompted.",
+        "imageAlt": "Anki Get Add-ons dialog with code 2055492159"
+      },
+      "allowCors": {
+        "title": "Allow browser access (CORS)",
+        "description": "In Anki, open Tools → Add-ons → AnkiConnect → Config and set webCorsOriginList to [\"*\"] (or include http://localhost:5173). Restart Anki so Teacher Wang can call AnkiConnect from the app."
+      },
+      "verify": {
+        "title": "Verify the connection",
+        "description": "Keep Anki open in the background, then open http://localhost:8765 in a browser. You should see the text “AnkiConnect”. Close this guide to refresh the connection status.",
+        "imageAlt": "Browser showing AnkiConnect at localhost:8765"
+      }
+    }
+  },
+  "ankiCustomFieldModal": {
+    "title": "Add custom field",
+    "titleFieldLabel": "Title",
+    "titleFieldPlaceholder": "e.g. example sentence",
+    "descriptionFieldLabel": "Description",
+    "descriptionFieldPlaceholder": "What this field is for",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "ankiDeckSetupModal": {
+    "title": "Set up {{deckLabel}}",
+    "loading": "Loading decks and deck types from Anki…",
+    "createNewDeck": "Create a new deck",
+    "newDeckNameLabel": "New deck name",
+    "newDeckNamePlaceholder": "Mandarin vocabulary",
+    "existingDeckLabel": "Existing deck",
+    "noDecksFound": "No decks found",
+    "deckTypeLabel": "Deck type",
+    "aboutVocabularyDeckTypes": "About vocabulary deck types",
+    "aboutWritingDeckTypes": "About writing deck types",
+    "noDeckTypesFound": "No deck types found",
+    "fieldMapping": {
+      "legend": "Field mapping",
+      "hint": "Map each Teacher Wang field to a field on the selected Anki deck type."
+    },
+    "loadingNoteFields": "Loading note fields…",
+    "selectAnkiFieldPlaceholder": "Select Anki field…",
+    "customFields": {
+      "legend": "Custom fields",
+      "hint": "Optional fields you define yourself, mapped to an extra field on the selected Anki deck type.",
+      "remove": "Remove",
+      "addCustom": "Add custom"
+    },
+    "cancel": "Cancel",
+    "save": "Save mapping",
+    "saving": "Saving…",
+    "errors": {
+      "loadCatalog": "Failed to load Anki decks and deck types.",
+      "loadFields": "Failed to load Anki note fields.",
+      "save": "Failed to set up Anki deck.",
+      "refresh": "Failed to refresh Anki decks and deck types."
+    }
+  },
+  "ankiSyncHelpModal": {
+    "title": "Anki synchronization gotchas",
+    "bullet1": "Make sure your Anki cards have a \"definition\" (they cannot be imported if this field is empty).",
+    "bullet2": "Make sure your Anki cards have the correct syntax for pinyin: should have either the \"pinyin\" or the \"numerical\" format. If a card is composed of several pinyins, they should be split by a space.",
+    "bullet3": "Make sure, if you haven't set the pinyin for this card, that the pinyin of the character can be detected automatically from another card.",
+    "close": "Close"
+  },
+  "ankiSyncModal": {
+    "title": "Sync — {{label}}",
+    "loadingSyncStatus": "Loading sync status…",
+    "errors": {
+      "loadPending": "Failed to load pending Anki cards.",
+      "sync": "Failed to synchronize with Anki."
+    },
+    "close": "Close",
+    "confirm": {
+      "irreversiblePrefix": "This action cannot be undone.",
+      "pushAllMessage_one": "It will push all {{count}} card to the Anki deck.",
+      "pushAllMessage_other": "It will push all {{count}} cards to the Anki deck.",
+      "pushIgnoreAllWritingMessage_one": "All {{count}} word with “written known” will be ignored for future pushes to Anki.",
+      "pushIgnoreAllWritingMessage_other": "All {{count}} words with “written known” will be ignored for future pushes to Anki.",
+      "pushIgnoreAllMessage_one": "All {{count}} card will be ignored for future pushes to Anki.",
+      "pushIgnoreAllMessage_other": "All {{count}} cards will be ignored for future pushes to Anki.",
+      "pushPartialSelected_one": "{{count}} card currently selected will be pushed to the Anki deck",
+      "pushPartialSelected_other": "{{count}} cards currently selected will be pushed to the Anki deck",
+      "pushPartialIgnored_one": "{{count}} card not selected will be ignored for future pushes.",
+      "pushPartialIgnored_other": "{{count}} cards not selected will be ignored for future pushes.",
+      "pullAllWritingMessage_one": "It will pull all {{count}} word from Anki and mark them as “written known”.",
+      "pullAllWritingMessage_other": "It will pull all {{count}} words from Anki and mark them as “written known”.",
+      "pullAllMessage_one": "It will pull all {{count}} card from Anki into your knowledge base{{characterClause}}.",
+      "pullAllMessage_other": "It will pull all {{count}} cards from Anki into your knowledge base{{characterClause}}.",
+      "pullCharacterClause_one": ", adding {{count}} character to the character table",
+      "pullCharacterClause_other": ", adding {{count}} characters to the character table",
+      "pullIgnoreAllMessage_one": "All {{count}} card pending for pull (including unresolved ones) will be ignored for future pulls from Anki.",
+      "pullIgnoreAllMessage_other": "All {{count}} cards pending for pull (including unresolved ones) will be ignored for future pulls from Anki.",
+      "pullPartialWritingSelected_one": "{{count}} word currently selected will be marked as “written known”",
+      "pullPartialWritingSelected_other": "{{count}} words currently selected will be marked as “written known”",
+      "pullPartialWritingIgnored_one": "{{count}} word not selected will be ignored for future pulls.",
+      "pullPartialWritingIgnored_other": "{{count}} words not selected will be ignored for future pulls.",
+      "pullPartialSelected_one": "{{count}} card currently selected will be pulled from Anki{{characterClause}}",
+      "pullPartialSelected_other": "{{count}} cards currently selected will be pulled from Anki{{characterClause}}",
+      "pullPartialIgnored_one": "{{count}} card not selected will be ignored for future pulls.",
+      "pullPartialIgnored_other": "{{count}} cards not selected will be ignored for future pulls."
+    },
+    "overview": {
+      "lead": "Choose a direction. Push sends local knowledge-base content to Anki. Pull imports Anki cards into the app.",
+      "push": {
+        "title": "Push to Anki",
+        "countLabel_one": "{{count}} card to push",
+        "countLabel_other": "{{count}} cards to push",
+        "copy": "One-way only: add new local cards to this Anki deck, or ignore them so they are not offered again.",
+        "allSet": "You’re all set, nothing to push.",
+        "pushAllButton": "Push all to Anki",
+        "ignoreAllButton": "Ignore all for push",
+        "chooseButton": "Choose what to push",
+        "unsyncableTitle": "Words that cannot be pushed",
+        "unsyncableText": "These words are missing a definition or pinyin, so a card cannot be built for them: <1>{{words}}</1>. You can skip them with “Ignore all for push”."
+      },
+      "pull": {
+        "title": "Pull from Anki",
+        "wordCountLabel_one": "{{count}} word to pull",
+        "wordCountLabel_other": "{{count}} words to pull",
+        "cardCountLabel_one": "{{count}} card to pull",
+        "cardCountLabel_other": "{{count}} cards to pull",
+        "copyWriting": "Words found in this Anki deck that exist in your knowledge base but are not yet marked as “written known”.",
+        "copyNonWriting": "Cards found in this Anki deck that are not yet in your knowledge base.",
+        "allSet": "You’re all set, nothing to pull.",
+        "pullAllButton": "Pull all from Anki",
+        "ignoreAllButton": "Ignore all for pull",
+        "chooseButton": "Choose what to pull",
+        "missingWritingTitle": "Words not yet in the knowledge base",
+        "missingWritingText": "These words from Anki don’t exist in your knowledge base yet. Add them manually in the app, synchronize the Mandarin vocabulary deck with them first, or ignore them for future pulls: <1>{{words}}</1>.",
+        "missingNonWritingTitle": "Cards that cannot be pulled",
+        "missingNonWritingText": "These Anki cards contain Chinese characters whose pinyin could not be resolved from the deck: <1>{{words}}</1>."
+      }
+    },
+    "partial": {
+      "pushMessage": "Choose which cards to push to Anki. Unselected cards will be ignored for future pushes.",
+      "pullMessageWriting": "Choose which words to mark as “written known”. Unselected words will be ignored for future pulls.",
+      "pullMessageNonWriting": "Choose which cards to pull from Anki. Unselected cards will be ignored for future pulls.",
+      "selectAll": "Select all",
+      "unselectAll": "Unselect all",
+      "selectedOfTotal": "{{selected}} of {{total}} selected",
+      "columnRecto": "Recto",
+      "columnVerso": "Verso",
+      "columnWriting": "Writing",
+      "columnPinyin": "Pinyin",
+      "columnDefinition": "Definition",
+      "selectCardAriaLabel": "Select {{name}}",
+      "backButton": "Back",
+      "confirmPushButton": "Confirm push",
+      "confirmPullButton": "Confirm pull"
+    }
+  },
+  "vocabularyNoteTypeInfoModal": {
+    "title": "Vocabulary deck type",
+    "intro": "This deck type should have 3 directions:",
+    "direction1": "asking writing → guessing pinyin + definition",
+    "direction2": "asking pinyin → guessing writing + definition",
+    "direction3": "asking definition → guessing writing + pinyin",
+    "createHint": "If you do not already have such a deck type in Anki, you can create one automatically with the mandatory fields and optional extras.",
+    "close": "Close",
+    "createAutomatically": "Automatically create a 3-directions deck type"
+  },
+  "vocabularyThreeDirectionSetupModal": {
+    "title": "Create a 3-directions deck type",
+    "message": "Anki will get a new deck type with three card directions and a new deck using the same name. You can then review the field mapping and save it.",
+    "deckTypeNameLabel": "Deck type name",
+    "mandatoryFieldsLegend": "Mandatory fields",
+    "mandatoryFieldsHint": "Directions: writing → pinyin + definition (+ optionals); pinyin → writing + definition (+ optionals); definition → writing + pinyin (+ optionals).",
+    "optionalFieldsLegend": "Optional fields",
+    "optionalFieldsHint": "Optional fields appear on the back of every direction.",
+    "optionalFieldPlaceholder": "e.g. example_sentence",
+    "optionalFieldAriaLabel": "Optional field {{index}}",
+    "removeButton": "Remove",
+    "addOptionalFieldButton": "Add optional field",
+    "cancel": "Cancel",
+    "create": "Create and map",
+    "creating": "Creating…",
+    "errors": {
+      "create": "Failed to create the 3-directions deck type."
+    }
+  },
+  "writingDeckTypeInfoModal": {
+    "title": "Writing deck type",
+    "text": "Choose a 1-direction deck type. Typically, the Basic type should work fine.",
+    "close": "Close"
+  }
+}

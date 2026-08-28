@@ -1,0 +1,47 @@
+{
+  "adminPage": {
+    "title": "Admin",
+    "loadingUsers": "Loading users...",
+    "table": {
+      "emailHeader": "Email",
+      "planHeader": "Plan",
+      "lastConnectionHeader": "Last connection",
+      "emptyMessage": "No users found.",
+      "planAriaLabel": "Plan for {{email}}",
+      "deleteButton": "Delete",
+      "deleteAriaLabel": "Delete {{email}}"
+    },
+    "errors": {
+      "loadUsers": "Failed to load users.",
+      "updateUser": "Failed to update user.",
+      "deleteUser": "Failed to delete user.",
+      "reloadHsk": "Failed to reload the HSK database.",
+      "refreshArticles": "Failed to refresh articles.",
+      "reloadGrammar": "Failed to reload grammar rules."
+    },
+    "hskSection": {
+      "title": "HSK database",
+      "description": "Fully reload the shared HSK words and characters tables from the upstream complete-hsk data. This is shared across every user.",
+      "reloadButton": "Reload HSK database",
+      "reloadingButton": "Reloading..."
+    },
+    "articlesSection": {
+      "title": "Weekly articles",
+      "description": "Fetch the latest China-related news and have the AI pick the 3 most important articles for this week.",
+      "refreshButton": "Refresh articles",
+      "refreshingButton": "Refreshing..."
+    },
+    "grammarSection": {
+      "title": "Grammar rules",
+      "description": "Reload the shared grammar points and prerequisites from the grammar-content S3 bucket.",
+      "reloadButton": "Reload grammar rules",
+      "reloadingButton": "Reloading..."
+    },
+    "deleteConfirm": {
+      "message": "Are you sure you want to delete {{email}}? This will remove all their data and their account."
+    },
+    "reloadHskConfirm": {
+      "message": "Are you sure you want to reload the HSK database? This clears and re-downloads the shared HSK words and characters tables."
+    }
+  }
+}

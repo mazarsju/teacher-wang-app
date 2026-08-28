@@ -1,4 +1,5 @@
 import { useEffect, useState, type ComponentType } from "react";
+import { useTranslation } from "react-i18next";
 import "./styles/tokens.css";
 import "./styles/globals.css";
 import "./components/shared.css";
@@ -34,6 +35,7 @@ const PAGES: Record<PageId, ComponentType<PageProps>> = {
 };
 
 export default function App() {
+  const { t } = useTranslation("common");
   const dispatch = useAppDispatch();
   const syncStatus = useAppSelector((state) => state.sync.status);
   const [isAuthenticated, setIsAuthenticated] = useState(() =>
@@ -106,7 +108,7 @@ export default function App() {
       <HelpButton />
       <ConfirmModal
         isOpen={pendingPage !== null}
-        message="You've started this questionnaire. Leaving now means you'll need to start it over from the first question. Leave anyway?"
+        message={t("app.leaveQuizConfirm")}
         onConfirm={() => {
           if (pendingPage) {
             setActivePage(pendingPage);

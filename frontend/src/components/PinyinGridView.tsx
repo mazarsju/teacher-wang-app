@@ -1,4 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import type { Character } from "../types/character";
 import {
   FINAL,
@@ -21,8 +23,8 @@ type HoveredCell = {
   colIndex: number;
 };
 
-function formatStartLabel(start: string): string {
-  return start === "" ? "—" : start;
+function formatStartLabel(start: string, t: TFunction): string {
+  return start === "" ? t("pinyinGridView.emptyStartLabel") : start;
 }
 
 export function getColumnMinWidthCh(finalValue: string): number {
@@ -65,6 +67,7 @@ function chunkGridCharacters(
 
 function renderCellCharacters(
   characters: GridCharacter[],
+  t: TFunction,
   characterHasWords?: (char: string, pinyin: string) => boolean,
   onCharacterClick?: (char: string, pinyin: string) => void,
 ): ReactNode {
@@ -90,7 +93,11 @@ function renderCellCharacters(
                 role={hasWords ? "button" : undefined}
                 tabIndex={hasWords ? 0 : undefined}
                 aria-label={
-                  hasWords ? `${item.char} associated words` : undefined
+                  hasWords
+                    ? t("pinyinGridView.associatedWordsAriaLabel", {
+                        char: item.char,
+                      })
+                    : undefined
                 }
                 onClick={
                   hasWords
@@ -161,6 +168,7 @@ export default function PinyinGridView({
   characterHasWords,
   onCharacterClick,
 }: PinyinGridViewProps) {
+  const { t } = useTranslation("knowledge-base");
   const [hoveredCell, setHoveredCell] = useState<HoveredCell | null>(null);
   const grid = useMemo(
     () => groupCharactersByPinyin(characters),
@@ -189,7 +197,7 @@ export default function PinyinGridView({
         <thead>
           <tr>
             <th className={styles.pinyinGridCorner} scope="col">
-              start \ final
+              {t("pinyinGridView.cornerHeader")}
             </th>
             {FINAL.map((finalValue) => (
               <th key={finalValue} scope="col">
@@ -202,7 +210,7 @@ export default function PinyinGridView({
           {START.map((startValue, rowIndex) => (
             <tr key={startValue || "empty-start"}>
               <th className={styles.pinyinGridRowHeader} scope="row">
-                {formatStartLabel(startValue)}
+                {formatStartLabel(startValue, t)}
               </th>
               {FINAL.map((finalValue, colIndex) => {
                 const cellCharacters =
@@ -234,6 +242,7 @@ export default function PinyinGridView({
                     {cellCharacters.length > 0
                       ? renderCellCharacters(
                           cellCharacters,
+                          t,
                           characterHasWords,
                           onCharacterClick,
                         )

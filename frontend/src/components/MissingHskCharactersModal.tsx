@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { API_BASE } from "../utils/apiBase";
 import { apiFetch } from "../utils/auth/apiFetch";
 import Button from "./Button";
@@ -24,6 +25,7 @@ type MissingHskCharactersModalProps = {
 async function fetchHskCharacterWords(
   character: string,
   level: number,
+  loadWordsError: string,
 ): Promise<HskWordEntry[]> {
   const response = await apiFetch(
     `${API_BASE}/hsk-characters/${encodeURIComponent(character)}/words?level=${level}`,
@@ -31,7 +33,7 @@ async function fetchHskCharacterWords(
   );
 
   if (!response.ok) {
-    throw new Error("Failed to load HSK words for this character.");
+    throw new Error(loadWordsError);
   }
 
   return (await response.json()) as HskWordEntry[];
@@ -43,6 +45,7 @@ export default function MissingHskCharactersModal({
   characters,
   onClose,
 }: MissingHskCharactersModalProps) {
+  const { t } = useTranslation(["home", "common"]);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
   const [words, setWords] = useState<HskWordEntry[]>([]);
   const [isLoadingWords, setIsLoadingWords] = useState(false);
@@ -67,7 +70,8 @@ export default function MissingHskCharactersModal({
     setWordsError(null);
     setWords([]);
 
-    void fetchHskCharacterWords(selectedCharacter, level)
+    const loadWordsError = t("missingHskCharactersModal.loadWordsError");
+    void fetchHskCharacterWords(selectedCharacter, level, loadWordsError)
       .then((loadedWords) => {
         if (isMounted) {
           setWords(loadedWords);
@@ -75,11 +79,7 @@ export default function MissingHskCharactersModal({
       })
       .catch((error: unknown) => {
         if (isMounted) {
-          setWordsError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load HSK words for this character.",
-          );
+          setWordsError(error instanceof Error ? error.message : loadWordsError);
         }
       })
       .finally(() => {
@@ -91,7 +91,7 @@ export default function MissingHskCharactersModal({
     return () => {
       isMounted = false;
     };
-  }, [selectedCharacter, level]);
+  }, [selectedCharacter, level, t]);
 
   if (!isOpen || level === null) {
     return null;
@@ -115,18 +115,17 @@ export default function MissingHskCharactersModal({
           onClick={(event) => event.stopPropagation()}
         >
           <h2 id="missing-hsk-characters-title" className="modal-title">
-            Missing characters for HSK {level}
+            {t("missingHskCharactersModal.title", { level })}
           </h2>
           <div className={characterWordsStyles.characterWordsModalContent}>
             {characters.length === 0 ? (
               <p className={characterWordsStyles.characterWordsModalHeading}>
-                No missing characters — this level is complete.
+                {t("missingHskCharactersModal.empty")}
               </p>
             ) : (
               <>
                 <p className={styles.homeMissingCharactersHint}>
-                  (those characters are ordered by frequency. If you want to learn
-                  them, we are suggesting you to learn them in that order)
+                  {t("missingHskCharactersModal.orderHint")}
                 </p>
                 <div className={styles.homeMissingCharactersScroll}>
                   <p className={styles.homeMissingCharactersList}>
@@ -148,7 +147,7 @@ export default function MissingHskCharactersModal({
             )}
           </div>
           <div className="modal-actions">
-            <Button kind="cancel" text="Close" onClick={onClose} />
+            <Button kind="cancel" text={t("common:actions.close")} onClick={onClose} />
           </div>
         </div>
       </div>
@@ -167,12 +166,12 @@ export default function MissingHskCharactersModal({
             </h2>
             <div className={characterWordsStyles.characterWordsModalContent}>
               <p className={characterWordsStyles.characterWordsModalHeading}>
-                Related HSK words (up to level {level}):
+                {t("missingHskCharactersModal.relatedWordsHeading", { level })}
               </p>
-              {isLoadingWords && <p>Loading words...</p>}
+              {isLoadingWords && <p>{t("missingHskCharactersModal.loadingWords")}</p>}
               {wordsError && <p className="table-error">{wordsError}</p>}
               {!isLoadingWords && !wordsError && words.length === 0 && (
-                <p>No related HSK words found for this level.</p>
+                <p>{t("missingHskCharactersModal.noRelatedWords")}</p>
               )}
               {!isLoadingWords && !wordsError && words.length > 0 && (
                 <ul className={characterWordsStyles.characterWordsModalList}>
@@ -186,7 +185,7 @@ export default function MissingHskCharactersModal({
               )}
             </div>
             <div className="modal-actions">
-              <Button kind="cancel" text="Close" onClick={closeWordsModal} />
+              <Button kind="cancel" text={t("common:actions.close")} onClick={closeWordsModal} />
             </div>
           </div>
         </div>

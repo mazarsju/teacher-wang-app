@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -124,6 +125,7 @@ export default function WritingPracticeDetailPage({
   topicId,
   onBack,
 }: WritingPracticeDetailPageProps) {
+  const { t } = useTranslation("writing");
   const [topicTitle, setTopicTitle] = useState<string | null>(null);
   const [context, setContext] = useState<string | null>(null);
   const [isLoadingTopic, setIsLoadingTopic] = useState(true);
@@ -165,7 +167,9 @@ export default function WritingPracticeDetailPage({
       .catch((error) => {
         if (cancelled) return;
         setLoadTopicError(
-          error instanceof Error ? error.message : "Failed to load this writing topic.",
+          error instanceof Error
+            ? error.message
+            : t("writingPracticeDetailPage.loadTopicError"),
         );
       })
       .finally(() => {
@@ -175,7 +179,7 @@ export default function WritingPracticeDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [topicId]);
+  }, [topicId, t]);
 
   // Best-effort, like creditGrammarUsage above: archiving is a bonus record
   // of a completed text, not something that should surface as a user-facing
@@ -207,7 +211,9 @@ export default function WritingPracticeDetailPage({
       await saveWritingDraft(topicId, draft);
     } catch (error) {
       setDraftSaveError(
-        error instanceof Error ? error.message : "Failed to save your draft.",
+        error instanceof Error
+          ? error.message
+          : t("writingPracticeDetailPage.saveDraftError"),
       );
     } finally {
       setIsSavingDraft(false);
@@ -225,7 +231,7 @@ export default function WritingPracticeDetailPage({
     } catch {
       // saveWritingDraft's own error message is written for the "Save draft"
       // button; show a delete-specific one here instead.
-      setDraftSaveError("Failed to delete your draft.");
+      setDraftSaveError(t("writingPracticeDetailPage.deleteDraftError"));
     } finally {
       setIsDeletingDraft(false);
     }
@@ -250,11 +256,7 @@ export default function WritingPracticeDetailPage({
       try {
         const onTopic = await checkWritingTopicRelevance(draft, topicDescription);
         if (!onTopic) {
-          setOffTopicWarning(
-            "Your text doesn't seem to answer this exercise yet. Take another " +
-              "look at the prompt in the Context tab, then rewrite your text to " +
-              "address it before submitting.",
-          );
+          setOffTopicWarning(t("writingPracticeDetailPage.offTopicWarning"));
           return;
         }
       } catch {
@@ -325,9 +327,14 @@ export default function WritingPracticeDetailPage({
 
   return (
     <Page
-      title={topicTitle ?? "Writing"}
+      title={topicTitle ?? t("writingPracticeDetailPage.title")}
       headerAction={
-        <Button kind="cancel" variant="page" text="Back" onClick={onBack} />
+        <Button
+          kind="cancel"
+          variant="page"
+          text={t("writingPracticeDetailPage.backButton")}
+          onClick={onBack}
+        />
       }
     >
       <div className={styles.writingDetailTabs} role="tablist">
@@ -342,7 +349,7 @@ export default function WritingPracticeDetailPage({
           }
           onClick={() => setActiveTab("context")}
         >
-          Context
+          {t("writingPracticeDetailPage.tabs.context")}
         </button>
         <button
           type="button"
@@ -355,7 +362,7 @@ export default function WritingPracticeDetailPage({
           }
           onClick={() => setActiveTab("writing")}
         >
-          Writing
+          {t("writingPracticeDetailPage.tabs.writing")}
         </button>
         {archive.length > 0 && (
           <button
@@ -369,7 +376,7 @@ export default function WritingPracticeDetailPage({
             }
             onClick={() => setActiveTab("completed")}
           >
-            Completed versions
+            {t("writingPracticeDetailPage.tabs.completed")}
           </button>
         )}
       </div>
@@ -379,13 +386,13 @@ export default function WritingPracticeDetailPage({
         }
       >
         {isLoadingTopic ? (
-          "Loading..."
+          t("writingPracticeDetailPage.loading")
         ) : loadTopicError ? (
           <p className="table-error">{loadTopicError}</p>
         ) : context ? (
           renderFormattedText(context)
         ) : (
-          "No context available yet."
+          t("writingPracticeDetailPage.noContext")
         )}
       </div>
       <div
@@ -399,29 +406,41 @@ export default function WritingPracticeDetailPage({
               className={styles.writingDetailTextarea}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Write in Chinese..."
-              aria-label="Your writing"
+              placeholder={t("writingPracticeDetailPage.textareaPlaceholder")}
+              aria-label={t("writingPracticeDetailPage.textareaAriaLabel")}
             />
             {draftSaveError && <p className="table-error">{draftSaveError}</p>}
             <div className={styles.writingDetailSubmitRow}>
               <Button
                 kind="cancel"
                 variant="page"
-                text={isSavingDraft ? "Saving..." : "Save draft"}
+                text={
+                  isSavingDraft
+                    ? t("writingPracticeDetailPage.saving")
+                    : t("writingPracticeDetailPage.saveDraft")
+                }
                 disabled={isSavingDraft}
                 onClick={handleSaveDraft}
               />
               <Button
                 kind="danger"
                 variant="page"
-                text={isDeletingDraft ? "Deleting..." : "Delete draft"}
+                text={
+                  isDeletingDraft
+                    ? t("writingPracticeDetailPage.deleting")
+                    : t("writingPracticeDetailPage.deleteDraft")
+                }
                 disabled={isDeletingDraft || draft.trim() === ""}
                 onClick={() => setIsDeleteDraftConfirmOpen(true)}
               />
               <Button
                 kind="confirm"
                 variant="page"
-                text={isCheckingTopic ? "Checking..." : "Submit"}
+                text={
+                  isCheckingTopic
+                    ? t("writingPracticeDetailPage.checkingTopic")
+                    : t("writingPracticeDetailPage.submit")
+                }
                 disabled={draft.trim() === "" || isCheckingTopic}
                 onClick={handleSubmit}
               />
@@ -431,10 +450,13 @@ export default function WritingPracticeDetailPage({
           <>
             {isReviewing && (
               <p className={styles.writingDetailReviewingMessage}>
-                Your text is currently under review...
+                {t("writingPracticeDetailPage.reviewingMessage")}
               </p>
             )}
-            <div className={styles.writingDetailReviewed} aria-label="Your writing">
+            <div
+              className={styles.writingDetailReviewed}
+              aria-label={t("writingPracticeDetailPage.reviewedAriaLabel")}
+            >
               {groupByParagraph(sentenceChecks).map((paragraph, paragraphIndex) => (
                 <p key={paragraphIndex} className={styles.writingDetailParagraph}>
                   {paragraph.map((sentence) => {
@@ -475,7 +497,9 @@ export default function WritingPracticeDetailPage({
                           <button
                             type="button"
                             className={styles.writingSentenceEditButton}
-                            aria-label={`Correct: ${sentence.text}`}
+                            aria-label={t("writingPracticeDetailPage.correctButtonAriaLabel", {
+                              text: sentence.text,
+                            })}
                             onClick={() => setCorrectingSentence(sentence)}
                           >
                             <PenIcon className={styles.writingSentenceEditIcon} />
@@ -508,7 +532,7 @@ export default function WritingPracticeDetailPage({
       )}
       <ConfirmModal
         isOpen={isDeleteDraftConfirmOpen}
-        message="Are you sure you want to delete your draft for this topic?"
+        message={t("writingPracticeDetailPage.deleteDraftConfirmMessage")}
         danger
         onCancel={() => setIsDeleteDraftConfirmOpen(false)}
         onConfirm={handleDeleteDraft}

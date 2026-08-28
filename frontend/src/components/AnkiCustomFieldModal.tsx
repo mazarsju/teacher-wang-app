@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 
 type AnkiCustomFieldModalProps = {
@@ -12,6 +13,7 @@ export default function AnkiCustomFieldModal({
   onConfirm,
   onCancel,
 }: AnkiCustomFieldModalProps) {
+  const { t } = useTranslation("preferences");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -48,33 +50,37 @@ export default function AnkiCustomFieldModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="anki-custom-field-title" className="modal-title">
-          Add custom field
+          {t("ankiCustomFieldModal.title")}
         </h2>
         <form className="modal-form" onSubmit={handleSubmit}>
           <label className="modal-field">
-            <span className="modal-field-label">Title</span>
+            <span className="modal-field-label">
+              {t("ankiCustomFieldModal.titleFieldLabel")}
+            </span>
             <input
               type="text"
               value={title}
-              placeholder="e.g. example sentence"
+              placeholder={t("ankiCustomFieldModal.titleFieldPlaceholder")}
               onChange={(event) => setTitle(event.target.value)}
             />
           </label>
           <label className="modal-field">
-            <span className="modal-field-label">Description</span>
+            <span className="modal-field-label">
+              {t("ankiCustomFieldModal.descriptionFieldLabel")}
+            </span>
             <input
               type="text"
               value={description}
-              placeholder="What this field is for"
+              placeholder={t("ankiCustomFieldModal.descriptionFieldPlaceholder")}
               onChange={(event) => setDescription(event.target.value)}
             />
           </label>
           <div className="modal-actions">
-            <Button kind="cancel" text="Cancel" onClick={onCancel} />
+            <Button kind="cancel" text={t("ankiCustomFieldModal.cancel")} onClick={onCancel} />
             <Button
               kind="confirm"
               htmlType="submit"
-              text="Confirm"
+              text={t("ankiCustomFieldModal.confirm")}
               disabled={isConfirmDisabled}
             />
           </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import styles from "./GrammarMasteryModal.module.css";
 
@@ -10,7 +11,7 @@ export default function GrammarMasteryModal({
   grammarPointTitles,
   onClose,
 }: GrammarMasteryModalProps) {
-  const plural = grammarPointTitles.length > 1;
+  const { t } = useTranslation("common");
 
   return (
     <div className="modal-overlay modal-overlay--stacked" onClick={onClose}>
@@ -22,11 +23,12 @@ export default function GrammarMasteryModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="grammar-mastery-modal-title" className="modal-title">
-          Grammar mastered!
+          {t("grammarMasteryModal.title")}
         </h2>
         <p className="modal-message">
-          You just proved you&apos;ve mastered {plural ? "these lessons" : "this lesson"}{" "}
-          by using {plural ? "them" : "it"} in a real conversation:
+          {t("grammarMasteryModal.masteredMessage", {
+            count: grammarPointTitles.length,
+          })}
         </p>
         <ul className={styles.grammarMasteryModalList}>
           {grammarPointTitles.map((title) => (
@@ -34,7 +36,7 @@ export default function GrammarMasteryModal({
           ))}
         </ul>
         <div className="modal-actions">
-          <Button kind="confirm" text="Nice!" onClick={onClose} />
+          <Button kind="confirm" text={t("grammarMasteryModal.niceButton")} onClick={onClose} />
         </div>
       </div>
     </div>

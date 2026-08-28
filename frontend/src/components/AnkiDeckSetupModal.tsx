@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  ANKI_DECK_DESCRIPTIONS,
-  ANKI_DECK_LABELS,
   ANKI_REQUIRED_FIELDS,
   type AnkiCustomFieldDef,
   type AnkiDeckKind,
@@ -79,6 +78,7 @@ export default function AnkiDeckSetupModal({
   onCancel,
   onConfigured,
 }: AnkiDeckSetupModalProps) {
+  const { t } = useTranslation("preferences");
   const [decks, setDecks] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [modelFields, setModelFields] = useState<string[]>([]);
@@ -136,7 +136,7 @@ export default function AnkiDeckSetupModal({
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Failed to load Anki decks and deck types.",
+            : t("ankiDeckSetupModal.errors.loadCatalog"),
         );
         setDecks(preferredDeck !== "" ? [preferredDeck] : []);
         setModels(preferredModel !== "" ? [preferredModel] : []);
@@ -148,7 +148,7 @@ export default function AnkiDeckSetupModal({
         setIsLoading(false);
       }
     },
-    [],
+    [t],
   );
 
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function AnkiDeckSetupModal({
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Failed to load Anki note fields.",
+            : t("ankiDeckSetupModal.errors.loadFields"),
         );
       } finally {
         if (!cancelled) {
@@ -218,7 +218,7 @@ export default function AnkiDeckSetupModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, selectedModel]);
+  }, [isOpen, selectedModel, t]);
 
   if (!isOpen || kind === null) {
     return null;
@@ -289,7 +289,7 @@ export default function AnkiDeckSetupModal({
       setError(
         saveError instanceof Error
           ? saveError.message
-          : "Failed to set up Anki deck.",
+          : t("ankiDeckSetupModal.errors.save"),
       );
     } finally {
       setIsSaving(false);
@@ -320,7 +320,7 @@ export default function AnkiDeckSetupModal({
       setError(
         loadError instanceof Error
           ? loadError.message
-          : "Failed to refresh Anki decks and deck types.",
+          : t("ankiDeckSetupModal.errors.refresh"),
       );
     } finally {
       setIsLoading(false);
@@ -338,13 +338,15 @@ export default function AnkiDeckSetupModal({
           onClick={(event) => event.stopPropagation()}
         >
           <h2 id="anki-deck-setup-title" className="modal-title">
-            Set up {ANKI_DECK_LABELS[deckKind]}
+            {t("ankiDeckSetupModal.title", {
+              deckLabel: t(`ankiDeckKind.labels.${deckKind}`),
+            })}
           </h2>
           <p className={`modal-message ${styles.ankiSetupDescription}`}>
-            {ANKI_DECK_DESCRIPTIONS[deckKind]}
+            {t(`ankiDeckKind.descriptions.${deckKind}`)}
           </p>
 
-          {isLoading && <p>Loading decks and deck types from Anki…</p>}
+          {isLoading && <p>{t("ankiDeckSetupModal.loading")}</p>}
           {error && <p className="table-error">{error}</p>}
 
           {!isLoading && (
@@ -358,22 +360,28 @@ export default function AnkiDeckSetupModal({
                   checked={createMode}
                   onChange={(event) => setCreateMode(event.target.checked)}
                 />
-                <span className="modal-field-label">Create a new deck</span>
+                <span className="modal-field-label">
+                  {t("ankiDeckSetupModal.createNewDeck")}
+                </span>
               </label>
 
               {createMode ? (
                 <label className="modal-field">
-                  <span className="modal-field-label">New deck name</span>
+                  <span className="modal-field-label">
+                    {t("ankiDeckSetupModal.newDeckNameLabel")}
+                  </span>
                   <input
                     type="text"
                     value={newDeckName}
-                    placeholder="Mandarin vocabulary"
+                    placeholder={t("ankiDeckSetupModal.newDeckNamePlaceholder")}
                     onChange={(event) => setNewDeckName(event.target.value)}
                   />
                 </label>
               ) : (
                 <label className="modal-field">
-                  <span className="modal-field-label">Existing deck</span>
+                  <span className="modal-field-label">
+                    {t("ankiDeckSetupModal.existingDeckLabel")}
+                  </span>
                   <select
                     className={styles.ankiDeckSelect}
                     value={selectedDeck}
@@ -381,7 +389,7 @@ export default function AnkiDeckSetupModal({
                     disabled={decks.length === 0}
                   >
                     {decks.length === 0 ? (
-                      <option value="">No decks found</option>
+                      <option value="">{t("ankiDeckSetupModal.noDecksFound")}</option>
                     ) : (
                       decks.map((deck) => (
                         <option key={deck} value={deck}>
@@ -396,7 +404,7 @@ export default function AnkiDeckSetupModal({
               <div className="modal-field">
                 <div className={styles.ankiNoteTypeLabelRow}>
                   <span className="modal-field-label" id="anki-deck-type-label">
-                    Deck type
+                    {t("ankiDeckSetupModal.deckTypeLabel")}
                   </span>
                   {(showVocabularyDeckTypeHelp || showWritingDeckTypeHelp) && (
                     <button
@@ -404,13 +412,13 @@ export default function AnkiDeckSetupModal({
                       className="home-hsk-info-button"
                       aria-label={
                         showVocabularyDeckTypeHelp
-                          ? "About vocabulary deck types"
-                          : "About writing deck types"
+                          ? t("ankiDeckSetupModal.aboutVocabularyDeckTypes")
+                          : t("ankiDeckSetupModal.aboutWritingDeckTypes")
                       }
                       title={
                         showVocabularyDeckTypeHelp
-                          ? "About vocabulary deck types"
-                          : "About writing deck types"
+                          ? t("ankiDeckSetupModal.aboutVocabularyDeckTypes")
+                          : t("ankiDeckSetupModal.aboutWritingDeckTypes")
                       }
                       onClick={() => setIsDeckTypeInfoOpen(true)}
                     >
@@ -426,7 +434,7 @@ export default function AnkiDeckSetupModal({
                   disabled={models.length === 0}
                 >
                   {models.length === 0 ? (
-                    <option value="">No deck types found</option>
+                    <option value="">{t("ankiDeckSetupModal.noDeckTypesFound")}</option>
                   ) : (
                     models.map((model) => (
                       <option key={model} value={model}>
@@ -439,13 +447,12 @@ export default function AnkiDeckSetupModal({
 
               <fieldset className={styles.ankiFieldMapping}>
                 <legend className={styles.ankiFieldMappingLegend}>
-                  Field mapping
+                  {t("ankiDeckSetupModal.fieldMapping.legend")}
                 </legend>
                 <p className={styles.ankiFieldMappingHint}>
-                  Map each Teacher Wang field to a field on the selected Anki
-                  deck type.
+                  {t("ankiDeckSetupModal.fieldMapping.hint")}
                 </p>
-                {isLoadingFields && <p>Loading note fields…</p>}
+                {isLoadingFields && <p>{t("ankiDeckSetupModal.loadingNoteFields")}</p>}
                 {requiredFields.map((field) => (
                   <label key={field.key} className="modal-field">
                     <span className="modal-field-label">
@@ -465,7 +472,9 @@ export default function AnkiDeckSetupModal({
                       }
                       disabled={modelFields.length === 0 || isLoadingFields}
                     >
-                      <option value="">Select Anki field…</option>
+                      <option value="">
+                        {t("ankiDeckSetupModal.selectAnkiFieldPlaceholder")}
+                      </option>
                       {modelFields.map((ankiField) => (
                         <option key={ankiField} value={ankiField}>
                           {ankiField}
@@ -479,11 +488,10 @@ export default function AnkiDeckSetupModal({
               {deckKind === "mandarin_vocabulary" && (
                 <fieldset className={styles.ankiFieldMapping}>
                   <legend className={styles.ankiFieldMappingLegend}>
-                    Custom fields
+                    {t("ankiDeckSetupModal.customFields.legend")}
                   </legend>
                   <p className={styles.ankiFieldMappingHint}>
-                    Optional fields you define yourself, mapped to an extra
-                    field on the selected Anki deck type.
+                    {t("ankiDeckSetupModal.customFields.hint")}
                   </p>
                   {customFields.map((field) => (
                     <div key={field.id} className="modal-field">
@@ -510,7 +518,9 @@ export default function AnkiDeckSetupModal({
                           }
                           disabled={modelFields.length === 0 || isLoadingFields}
                         >
-                          <option value="">Select Anki field…</option>
+                          <option value="">
+                            {t("ankiDeckSetupModal.selectAnkiFieldPlaceholder")}
+                          </option>
                           {modelFields.map((ankiField) => (
                             <option key={ankiField} value={ankiField}>
                               {ankiField}
@@ -520,7 +530,7 @@ export default function AnkiDeckSetupModal({
                         <Button
                           kind="danger"
                           variant="modal"
-                          text="Remove"
+                          text={t("ankiDeckSetupModal.customFields.remove")}
                           onClick={() => removeCustomField(field.id)}
                         />
                       </div>
@@ -529,18 +539,22 @@ export default function AnkiDeckSetupModal({
                   <Button
                     kind="confirm"
                     variant="modal"
-                    text="Add custom"
+                    text={t("ankiDeckSetupModal.customFields.addCustom")}
                     onClick={() => setIsAddCustomFieldOpen(true)}
                   />
                 </fieldset>
               )}
 
               <div className="modal-actions">
-                <Button kind="cancel" text="Cancel" onClick={onCancel} />
+                <Button kind="cancel" text={t("ankiDeckSetupModal.cancel")} onClick={onCancel} />
                 <Button
                   kind="confirm"
                   htmlType="submit"
-                  text={isSaving ? "Saving…" : "Save mapping"}
+                  text={
+                    isSaving
+                      ? t("ankiDeckSetupModal.saving")
+                      : t("ankiDeckSetupModal.save")
+                  }
                   disabled={isConfirmDisabled}
                 />
               </div>

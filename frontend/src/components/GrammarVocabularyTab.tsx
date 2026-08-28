@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import AddWordModal, { type WordFormValues } from "./AddWordModal";
 import Button from "./Button";
 import { CheckIcon } from "./icons";
@@ -19,6 +20,7 @@ type GrammarVocabularyTabProps = {
 };
 
 export default function GrammarVocabularyTab({ words }: GrammarVocabularyTabProps) {
+  const { t } = useTranslation("grammar");
   const dispatch = useAppDispatch();
   const knownWords = useAppSelector((state) => state.words.items);
   const knownCharacters = useAppSelector((state) => state.characters.items);
@@ -68,7 +70,9 @@ export default function GrammarVocabularyTab({ words }: GrammarVocabularyTabProp
       );
       createdWord.deleted_char_ids.forEach((char) => dispatch(removeCharacter(char)));
     } catch (addError) {
-      setError(addError instanceof Error ? addError.message : "Failed to add word.");
+      setError(
+        addError instanceof Error ? addError.message : t("grammarVocabularyTab.addError"),
+      );
     }
   }
 
@@ -83,7 +87,7 @@ export default function GrammarVocabularyTab({ words }: GrammarVocabularyTabProp
     },
     {
       key: "word",
-      header: "Word",
+      header: t("grammarVocabularyTab.table.word"),
       render: (row) => (
         <>
           <p className={kbInitWizardStyles.wizardWordCellPrimary}>
@@ -117,13 +121,13 @@ export default function GrammarVocabularyTab({ words }: GrammarVocabularyTabProp
         rows={words}
         compact
         getRowKey={(row) => row.id}
-        emptyMessage="No new words for this lesson."
+        emptyMessage={t("grammarVocabularyTab.empty")}
         renderRowActions={(row) =>
           existingWordSet.has(row.word) ? null : (
             <Button
               kind="confirm"
               variant="table"
-              text="Add"
+              text={t("grammarVocabularyTab.addButton")}
               onClick={() => setWordToAdd(row)}
             />
           )

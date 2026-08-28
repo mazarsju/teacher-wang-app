@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 
 type WritingDeckTypeInfoModalProps = {
@@ -9,6 +10,8 @@ export default function WritingDeckTypeInfoModal({
   isOpen,
   onClose,
 }: WritingDeckTypeInfoModalProps) {
+  const { t } = useTranslation("preferences");
+
   if (!isOpen) {
     return null;
   }
@@ -23,14 +26,11 @@ export default function WritingDeckTypeInfoModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="writing-deck-type-info-title" className="modal-title">
-          Writing deck type
+          {t("writingDeckTypeInfoModal.title")}
         </h2>
-        <p className="home-hsk-info-text">
-          Choose a 1-direction deck type. Typically, the Basic type should work
-          fine.
-        </p>
+        <p className="home-hsk-info-text">{t("writingDeckTypeInfoModal.text")}</p>
         <div className="modal-actions">
-          <Button kind="confirm" text="Close" onClick={onClose} />
+          <Button kind="confirm" text={t("writingDeckTypeInfoModal.close")} onClick={onClose} />
         </div>
       </div>
     </div>

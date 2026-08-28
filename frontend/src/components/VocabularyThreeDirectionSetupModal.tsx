@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { AnkiDeckSetupResult } from "../types/anki";
 import { autoSetupVocabularyDeck } from "../utils/anki/ankiApi";
 import ankiDeckSetupStyles from "./AnkiDeckSetupModal.module.css";
@@ -19,6 +20,7 @@ export default function VocabularyThreeDirectionSetupModal({
   onCancel,
   onCreated,
 }: VocabularyThreeDirectionSetupModalProps) {
+  const { t } = useTranslation("preferences");
   const [modelName, setModelName] = useState(DEFAULT_DECK_TYPE_NAME);
   const [optionalFields, setOptionalFields] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -77,7 +79,7 @@ export default function VocabularyThreeDirectionSetupModal({
       setError(
         saveError instanceof Error
           ? saveError.message
-          : "Failed to create the 3-directions deck type.",
+          : t("vocabularyThreeDirectionSetupModal.errors.create"),
       );
     } finally {
       setIsSaving(false);
@@ -97,12 +99,10 @@ export default function VocabularyThreeDirectionSetupModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="vocabulary-three-direction-title" className="modal-title">
-          Create a 3-directions deck type
+          {t("vocabularyThreeDirectionSetupModal.title")}
         </h2>
         <p className="modal-message">
-          Anki will get a new deck type with three card directions and a new
-          deck using the same name. You can then review the field mapping and
-          save it.
+          {t("vocabularyThreeDirectionSetupModal.message")}
         </p>
 
         {error && <p className="table-error">{error}</p>}
@@ -112,7 +112,9 @@ export default function VocabularyThreeDirectionSetupModal({
           onSubmit={(event) => void handleSubmit(event)}
         >
           <label className="modal-field">
-            <span className="modal-field-label">Deck type name</span>
+            <span className="modal-field-label">
+              {t("vocabularyThreeDirectionSetupModal.deckTypeNameLabel")}
+            </span>
             <input
               type="text"
               value={modelName}
@@ -122,7 +124,7 @@ export default function VocabularyThreeDirectionSetupModal({
 
           <fieldset className={ankiDeckSetupStyles.ankiFieldMapping}>
             <legend className={ankiDeckSetupStyles.ankiFieldMappingLegend}>
-              Mandatory fields
+              {t("vocabularyThreeDirectionSetupModal.mandatoryFieldsLegend")}
             </legend>
             <ul className={styles.ankiMandatoryFieldList}>
               {MANDATORY_FIELDS.map((field) => (
@@ -132,50 +134,54 @@ export default function VocabularyThreeDirectionSetupModal({
               ))}
             </ul>
             <p className={ankiDeckSetupStyles.ankiFieldMappingHint}>
-              Directions: writing → pinyin + definition (+ optionals); pinyin →
-              writing + definition (+ optionals); definition → writing +
-              pinyin (+ optionals).
+              {t("vocabularyThreeDirectionSetupModal.mandatoryFieldsHint")}
             </p>
           </fieldset>
 
           <fieldset className={ankiDeckSetupStyles.ankiFieldMapping}>
             <legend className={ankiDeckSetupStyles.ankiFieldMappingLegend}>
-              Optional fields
+              {t("vocabularyThreeDirectionSetupModal.optionalFieldsLegend")}
             </legend>
             <p className={ankiDeckSetupStyles.ankiFieldMappingHint}>
-              Optional fields appear on the back of every direction.
+              {t("vocabularyThreeDirectionSetupModal.optionalFieldsHint")}
             </p>
             {optionalFields.map((field, index) => (
               <div key={index} className={styles.ankiOptionalFieldRow}>
                 <input
                   type="text"
                   value={field}
-                  placeholder="e.g. example_sentence"
-                  aria-label={`Optional field ${index + 1}`}
+                  placeholder={t("vocabularyThreeDirectionSetupModal.optionalFieldPlaceholder")}
+                  aria-label={t("vocabularyThreeDirectionSetupModal.optionalFieldAriaLabel", {
+                    index: index + 1,
+                  })}
                   onChange={(event) =>
                     updateOptionalField(index, event.target.value)
                   }
                 />
                 <Button
                   kind="cancel"
-                  text="Remove"
+                  text={t("vocabularyThreeDirectionSetupModal.removeButton")}
                   onClick={() => removeOptionalField(index)}
                 />
               </div>
             ))}
             <Button
               kind="confirm"
-              text="Add optional field"
+              text={t("vocabularyThreeDirectionSetupModal.addOptionalFieldButton")}
               onClick={() => setOptionalFields((current) => [...current, ""])}
             />
           </fieldset>
 
           <div className="modal-actions">
-            <Button kind="cancel" text="Cancel" onClick={onCancel} />
+            <Button kind="cancel" text={t("vocabularyThreeDirectionSetupModal.cancel")} onClick={onCancel} />
             <Button
               kind="confirm"
               htmlType="submit"
-              text={isSaving ? "Creating…" : "Create and map"}
+              text={
+                isSaving
+                  ? t("vocabularyThreeDirectionSetupModal.creating")
+                  : t("vocabularyThreeDirectionSetupModal.create")
+              }
               disabled={isConfirmDisabled}
             />
           </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import { InfoIcon } from "./icons";
 import styles from "./VocabularyNoteTypeInfoModal.module.css";
@@ -13,6 +14,8 @@ export default function VocabularyNoteTypeInfoModal({
   onClose,
   onCreateAutomatically,
 }: VocabularyNoteTypeInfoModalProps) {
+  const { t } = useTranslation("preferences");
+
   if (!isOpen) {
     return null;
   }
@@ -28,27 +31,26 @@ export default function VocabularyNoteTypeInfoModal({
       >
         <div className={styles.ankiNoteTypeInfoHeader}>
           <h2 id="vocabulary-note-type-info-title" className="modal-title">
-            Vocabulary deck type
+            {t("vocabularyNoteTypeInfoModal.title")}
           </h2>
           <InfoIcon className="home-hsk-info-icon" />
         </div>
         <p className="home-hsk-info-text">
-          This deck type should have 3 directions:
+          {t("vocabularyNoteTypeInfoModal.intro")}
         </p>
         <ol className={styles.ankiNoteTypeDirections}>
-          <li>asking writing → guessing pinyin + definition</li>
-          <li>asking pinyin → guessing writing + definition</li>
-          <li>asking definition → guessing writing + pinyin</li>
+          <li>{t("vocabularyNoteTypeInfoModal.direction1")}</li>
+          <li>{t("vocabularyNoteTypeInfoModal.direction2")}</li>
+          <li>{t("vocabularyNoteTypeInfoModal.direction3")}</li>
         </ol>
         <p className="home-hsk-info-text">
-          If you do not already have such a deck type in Anki, you can create one
-          automatically with the mandatory fields and optional extras.
+          {t("vocabularyNoteTypeInfoModal.createHint")}
         </p>
         <div className={`modal-actions ${styles.ankiNoteTypeInfoActions}`}>
-          <Button kind="cancel" text="Close" onClick={onClose} />
+          <Button kind="cancel" text={t("vocabularyNoteTypeInfoModal.close")} onClick={onClose} />
           <Button
             kind="confirm"
-            text="Automatically create a 3-directions deck type"
+            text={t("vocabularyNoteTypeInfoModal.createAutomatically")}
             onClick={onCreateAutomatically}
           />
         </div>

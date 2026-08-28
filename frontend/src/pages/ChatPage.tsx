@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ChallengeCard from "../components/ChallengeCard";
 import ChatCharacterCard, {
   type ChatCharacter,
@@ -21,6 +22,7 @@ const KB_CHARACTER_THRESHOLD = 50;
 type ChatPageProps = { onNavigate?: (page: PageId) => void };
 
 export default function ChatPage({ onNavigate }: ChatPageProps) {
+  const { t } = useTranslation("chat");
   const dispatch = useAppDispatch();
   const [selectedCharacter, setSelectedCharacter] =
     useState<ChatCharacter | null>(null);
@@ -71,7 +73,7 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
   }, [loadChallengeProgress]);
 
   return (
-    <Page title="Chat">
+    <Page title={t("chatPage.title")}>
       <ChatModal
         character={selectedCharacter}
         onClose={() => setSelectedCharacter(null)}
@@ -89,13 +91,13 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
       {!hasEnoughCharacters && onNavigate && (
         <Banner
           type="info"
-          message="Build your knowledge base to unlock more people to talk to!"
-          buttonMessage="Go to knowledge base"
+          message={t("chatPage.banner.message")}
+          buttonMessage={t("chatPage.banner.buttonMessage")}
           actionOnButtonClick={() => onNavigate("knowledge-base")}
         />
       )}
 
-      <p className={styles.chatIntro}>Who do you want to speak with today?</p>
+      <p className={styles.chatIntro}>{t("chatPage.intro")}</p>
       <div className={styles.chatCharacterGrid}>
         {visibleCharacters.map((character) => (
           <ChatCharacterCard
@@ -108,10 +110,10 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
 
       <section className={styles.chatChallengesSection} aria-labelledby="challenges-heading">
         <h2 id="challenges-heading" className={styles.chatSectionTitle}>
-          Challenges
+          {t("chatPage.challengesHeading")}
         </h2>
         <p className={styles.chatSectionDescription}>
-          Practice real-life conversations with guided tasks.
+          {t("chatPage.challengesDescription")}
         </p>
         <div className={challengeCardStyles.challengeCardGrid}>
           {visibleChallenges.map((challenge) => (

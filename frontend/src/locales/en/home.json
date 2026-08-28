@@ -1,0 +1,50 @@
+{
+  "homePage": {
+    "title": "Home",
+    "banner": {
+      "message": "Struggling with setting up your knowledge base? Click here for a faster and easier onboarding!",
+      "buttonMessage": "Start building your knowledge base"
+    },
+    "loading": "Loading your progress...",
+    "hskCard": {
+      "ariaLabel": "HSK level",
+      "badgeLabel": "HSK",
+      "levelPlaceholder": "—",
+      "titleStart": "Your HSK journey starts here",
+      "titleMax": "You've reached the top — HSK {{level}}!",
+      "titleCurrent": "You're at HSK {{level}}!",
+      "infoButtonAriaLabel": "How HSK level is estimated",
+      "progressBarAriaLabel": "Progress to next HSK level",
+      "progressLabelMax": "Maximum HSK level reached. Outstanding work!",
+      "progressLabel_one": "{{count}} character to reach HSK {{level}}",
+      "progressLabel_other": "{{count}} characters to reach HSK {{level}}",
+      "missingCharactersButton": "Missing characters"
+    },
+    "metrics": {
+      "recognizedLabel": "Characters you are able to recognize",
+      "writingLabel": "Characters you can write"
+    },
+    "article": {
+      "ariaLabel": "Your weekly articles",
+      "title": "Your weekly articles",
+      "loading": "Loading this week's articles...",
+      "categoriesAriaLabel": "Article categories",
+      "newWordsLabel": "New words",
+      "empty": "No articles for this week yet — check back soon.",
+      "loadError": "Failed to load your weekly articles."
+    },
+    "hskInfoModal": {
+      "title": "How HSK level is estimated",
+      "text": "This HSK level is an estimate based on the characters you know. A level counts as reached when you know at least {{percent}}% of all characters expected up to that level — for example, HSK 3 needs {{percent}}% of HSK 1, 2, and 3 combined. The missing-characters list includes gaps from earlier levels too, so you can fill those first. Less useful characters can wait while you learn more frequent ones."
+    }
+  },
+  "missingHskCharactersModal": {
+    "title": "Missing characters for HSK {{level}}",
+    "empty": "No missing characters — this level is complete.",
+    "orderHint": "(those characters are ordered by frequency. If you want to learn them, we are suggesting you to learn them in that order)",
+    "relatedWordsHeading": "Related HSK words (up to level {{level}}):",
+    "loadingWords": "Loading words...",
+    "loadWordsError": "Failed to load HSK words for this character.",
+    "noRelatedWords": "No related HSK words found for this level."
+  }
+}

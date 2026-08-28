@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   CheckIcon,
   HourglassIcon,
@@ -15,11 +16,6 @@ type ChangePlanModalProps = {
   onSwitchPlan: () => void;
 };
 
-const PLANS: Array<{ id: UserPlan; name: string; price: string }> = [
-  { id: "free", name: "Free", price: "Free" },
-  { id: "pro", name: "Pro", price: "$4.99 / month" },
-];
-
 type FeatureIconKind = "check" | "warning" | "cross" | "hourglass";
 
 const FEATURE_ICONS: Record<FeatureIconKind, typeof CheckIcon> = {
@@ -31,42 +27,57 @@ const FEATURE_ICONS: Record<FeatureIconKind, typeof CheckIcon> = {
 
 type FeatureCell = { text: string; icon: FeatureIconKind };
 
-const PLAN_FEATURES: Array<{
-  label: string;
-  free: FeatureCell;
-  pro: FeatureCell;
-}> = [
-  {
-    label: "Knowledge base management",
-    free: { text: "Included", icon: "check" },
-    pro: { text: "Included", icon: "check" },
-  },
-  {
-    label: "Anki synchronization",
-    free: { text: "Included", icon: "check" },
-    pro: { text: "Included", icon: "check" },
-  },
-  {
-    label: "AI chat",
-    free: { text: "Limited", icon: "warning" },
-    pro: { text: "Generous fair use", icon: "check" },
-  },
-  {
-    label: "Grammar exercises",
-    free: { text: "Limited", icon: "warning" },
-    pro: { text: "Full access", icon: "check" },
-  },
-];
-
 export default function ChangePlanModal({
   isOpen,
   currentPlan,
   onClose,
   onSwitchPlan,
 }: ChangePlanModalProps) {
+  const { t } = useTranslation(["preferences", "common"]);
+
   if (!isOpen) {
     return null;
   }
+
+  const PLANS: Array<{ id: UserPlan; name: string; price: string }> = [
+    {
+      id: "free",
+      name: t("changePlanModal.plans.free.name"),
+      price: t("changePlanModal.plans.free.price"),
+    },
+    {
+      id: "pro",
+      name: t("changePlanModal.plans.pro.name"),
+      price: t("changePlanModal.plans.pro.price"),
+    },
+  ];
+
+  const PLAN_FEATURES: Array<{
+    label: string;
+    free: FeatureCell;
+    pro: FeatureCell;
+  }> = [
+    {
+      label: t("changePlanModal.features.knowledgeBase.label"),
+      free: { text: t("changePlanModal.features.knowledgeBase.free"), icon: "check" },
+      pro: { text: t("changePlanModal.features.knowledgeBase.pro"), icon: "check" },
+    },
+    {
+      label: t("changePlanModal.features.anki.label"),
+      free: { text: t("changePlanModal.features.anki.free"), icon: "check" },
+      pro: { text: t("changePlanModal.features.anki.pro"), icon: "check" },
+    },
+    {
+      label: t("changePlanModal.features.aiChat.label"),
+      free: { text: t("changePlanModal.features.aiChat.free"), icon: "warning" },
+      pro: { text: t("changePlanModal.features.aiChat.pro"), icon: "check" },
+    },
+    {
+      label: t("changePlanModal.features.grammar.label"),
+      free: { text: t("changePlanModal.features.grammar.free"), icon: "warning" },
+      pro: { text: t("changePlanModal.features.grammar.pro"), icon: "check" },
+    },
+  ];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -78,7 +89,7 @@ export default function ChangePlanModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="change-plan-modal-title" className="modal-title">
-          Compare plans
+          {t("changePlanModal.title")}
         </h2>
 
         <div className={styles.planComparison}>
@@ -95,12 +106,12 @@ export default function ChangePlanModal({
                   <div className={styles.planCardCta}>
                     {isCurrent ? (
                       <span className={styles.planCardCurrentLabel}>
-                        Current plan
+                        {t("changePlanModal.currentPlanLabel")}
                       </span>
                     ) : (
                       <Button
                         kind="confirm"
-                        text={`Switch to ${plan.name}`}
+                        text={t("changePlanModal.switchTo", { plan: plan.name })}
                         onClick={onSwitchPlan}
                       />
                     )}
@@ -131,7 +142,7 @@ export default function ChangePlanModal({
         </div>
 
         <div className="modal-actions">
-          <Button kind="cancel" text="Close" onClick={onClose} />
+          <Button kind="cancel" text={t("common:actions.close")} onClick={onClose} />
         </div>
       </div>
     </div>

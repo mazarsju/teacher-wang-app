@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { AnkiCustomFieldDef } from "../types/anki";
 import type { Word } from "../types/word";
 import {
@@ -39,6 +40,7 @@ export default function AddWordModal({
   onConfirm,
   onCancel,
 }: AddWordModalProps) {
+  const { t } = useTranslation("common");
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [pinyin, setPinyin] = useState("");
@@ -117,11 +119,11 @@ export default function AddWordModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="word-form-title" className="modal-title">
-          {mode === "add" ? "Add word" : "Edit word"}
+          {mode === "add" ? t("addWordModal.titleAdd") : t("addWordModal.titleEdit")}
         </h2>
         <form className="modal-form" onSubmit={handleSubmit}>
           <label className="modal-field">
-            <span className="modal-field-label">words</span>
+            <span className="modal-field-label">{t("addWordModal.wordLabel")}</span>
             <input
               type="text"
               value={word}
@@ -142,11 +144,11 @@ export default function AddWordModal({
           </label>
           {isDuplicateWord && (
             <p className={styles.formWarning}>
-              This word already exists in the database.
+              {t("addWordModal.duplicateWarning")}
             </p>
           )}
           <label className="modal-field">
-            <span className="modal-field-label">pinyin</span>
+            <span className="modal-field-label">{t("addWordModal.pinyinLabel")}</span>
             <input
               type="text"
               value={pinyin}
@@ -158,14 +160,11 @@ export default function AddWordModal({
           </label>
           {showPinyinWarning && (
             <p id="word-pinyin-warning" className={styles.formWarning}>
-              Enter one valid pinyin syllable per Chinese character (e.g.
-              hao3), with a tone number. Any non-Chinese characters in the
-              word don&rsquo;t need matching pinyin — spacing and content
-              around them are not checked.
+              {t("addWordModal.pinyinWarning")}
             </p>
           )}
           <label className="modal-field">
-            <span className="modal-field-label">definition</span>
+            <span className="modal-field-label">{t("addWordModal.definitionLabel")}</span>
             <input
               type="text"
               value={definition}
@@ -178,7 +177,7 @@ export default function AddWordModal({
           </label>
           {isDefinitionTooLong && (
             <p id="word-definition-warning" className={styles.formWarning}>
-              Definition must be no more than 100 characters long.
+              {t("addWordModal.definitionTooLong")}
             </p>
           )}
           {customFields.map((field) => (
@@ -204,7 +203,7 @@ export default function AddWordModal({
             </label>
           ))}
           <label className="modal-field-toggle">
-            <span className="modal-field-label">writing known</span>
+            <span className="modal-field-label">{t("addWordModal.writingKnownLabel")}</span>
             <span className="toggle">
               <input
                 type="checkbox"
@@ -216,10 +215,10 @@ export default function AddWordModal({
             </span>
           </label>
           <div className="modal-actions">
-            <Button kind="cancel" text="Cancel" onClick={onCancel} />
+            <Button kind="cancel" text={t("confirmModal.cancel")} onClick={onCancel} />
             <Button
               kind="confirm"
-              text="Confirm"
+              text={t("confirmModal.confirm")}
               htmlType="submit"
               disabled={isConfirmDisabled}
             />

@@ -1,4 +1,6 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   CognitoAuthError,
   confirmSignUpAndSignIn,
@@ -88,103 +90,88 @@ function FeaturePanelImages({ images }: { images: string[] }) {
   );
 }
 
-const FEATURES: Feature[] = [
-  {
-    tone: "sage",
-    images: [chatScreenshot, chatChallengeScreenshot],
-    icon: (
-      <FeatureGlyph>
-        <svg viewBox="0 0 24 24">
-          <path d="M13 4.5h6.2A1.8 1.8 0 0 1 21 6.3v4.2a1.8 1.8 0 0 1-1.8 1.8H17.8L16 14.2v-1.9" />
-          <path d="M3.8 8.2h11.2A2.2 2.2 0 0 1 17.2 10.4v5.3a2.2 2.2 0 0 1-2.2 2.2H9.2L4.8 21v-3.1H3.8A2.2 2.2 0 0 1 1.6 15.7v-5.3A2.2 2.2 0 0 1 3.8 8.2Z" />
-          <path d="M6.4 12.2h5.6M6.4 14.8h3.4" />
-        </svg>
-      </FeatureGlyph>
-    ),
-    title: "AI Conversations",
-    description:
-      "Practice Mandarin in realistic situations with AI characters that adapt to your level and learning goals.",
-    capabilities: [
-      "Scenario-based roleplays with objectives and task checklists",
-      "Conversations tailored to the vocabulary and characters you already know",
-      "Stay in character while Teacher Wang provides grammar help in a side thread",
-      "Instant feedback on mistakes, phrasing, and natural expressions",
-    ],
-  },
-  {
-    tone: "lilac",
-    images: [knowledgeBaseEditScreenshot, knowledgeBaseViewScreenshot],
-    icon: (
-      <FeatureGlyph>
-        <svg viewBox="0 0 24 24">
-          <path d="M5 4.5h9.5A2.5 2.5 0 0 1 17 7v13.5H7.5A2.5 2.5 0 0 1 5 18V4.5Z" />
-          <path d="M17 7h1.5A2.5 2.5 0 0 1 21 9.5V20a1.5 1.5 0 0 1-1.5 1.5H17" />
-          <path d="M8.5 9h6M8.5 12.5h6" />
-        </svg>
-      </FeatureGlyph>
-    ),
-    title: "Build Your Knowledge Base",
-    description:
-      "Create a personal dictionary of words and characters that becomes the foundation for everything you learn.",
-    capabilities: [
-      "Add words once — characters, pinyin, and relationships are organized automatically",
-      "Explore vocabulary by HSK level, pinyin, frequency, and mastery",
-      "Track recognition and writing ability separately",
-      "Use your knowledge base to personalize AI conversations and study recommendations",
-    ],
-  },
-  {
-    tone: "teal",
-    images: [grammarListScreenshot, grammarExerciseScreenshot],
-    icon: (
-      <FeatureGlyph>
-        <svg viewBox="0 0 24 24">
-          <path d="M5 7h14M5 12h9M5 17h11" />
-          <path d="M16.5 10.5 19 13l3-4" />
-        </svg>
-      </FeatureGlyph>
-    ),
-    title: "Master Chinese Grammar",
-    description:
-      "Learn grammar the way it is actually used: understand the pattern, see examples, and practice until it becomes natural.",
-    capabilities: [
-      "Clear explanations with examples and common learner mistakes",
-      "Interactive exercises with instant correction and mastery tracking",
-      "Move from 'learned' to 'mastered' by using grammar correctly in real situations",
-      "Ask Teacher Wang questions directly from any grammar lesson",
-      "Track your progress and see where you need to focus your study",
-    ],
-  },
-  {
-    tone: "sand",
-    images: [homeScreenshot, ankiSyncImage, ankiSyncImage2],
-    icon: (
-      <FeatureGlyph>
-        <svg viewBox="0 0 24 24">
-          <path d="M4 19V9.5M10 19V5M16 19v-7.5M20 19H3" />
-        </svg>
-      </FeatureGlyph>
-    ),
-    title: "Personalized Learning",
-    description:
-      "See exactly where you stand, what to study next, and how close you are to your next milestone.",
-    capabilities: [
-      "Automatic HSK level estimation based on what you know",
-      "Vocabulary, character, and grammar progress tracking",
-      "Study recommendations tailored to your knowledge gaps",
-      "Two-way Anki sync to keep your flashcards and progress aligned",
-    ],
-  }
-];
+function buildFeatures(t: TFunction): Feature[] {
+  return [
+    {
+      tone: "sage",
+      images: [chatScreenshot, chatChallengeScreenshot],
+      icon: (
+        <FeatureGlyph>
+          <svg viewBox="0 0 24 24">
+            <path d="M13 4.5h6.2A1.8 1.8 0 0 1 21 6.3v4.2a1.8 1.8 0 0 1-1.8 1.8H17.8L16 14.2v-1.9" />
+            <path d="M3.8 8.2h11.2A2.2 2.2 0 0 1 17.2 10.4v5.3a2.2 2.2 0 0 1-2.2 2.2H9.2L4.8 21v-3.1H3.8A2.2 2.2 0 0 1 1.6 15.7v-5.3A2.2 2.2 0 0 1 3.8 8.2Z" />
+            <path d="M6.4 12.2h5.6M6.4 14.8h3.4" />
+          </svg>
+        </FeatureGlyph>
+      ),
+      title: t("welcomeAuthPage.features.aiConversations.title"),
+      description: t("welcomeAuthPage.features.aiConversations.description"),
+      capabilities: t("welcomeAuthPage.features.aiConversations.capabilities", {
+        returnObjects: true,
+      }) as string[],
+    },
+    {
+      tone: "lilac",
+      images: [knowledgeBaseEditScreenshot, knowledgeBaseViewScreenshot],
+      icon: (
+        <FeatureGlyph>
+          <svg viewBox="0 0 24 24">
+            <path d="M5 4.5h9.5A2.5 2.5 0 0 1 17 7v13.5H7.5A2.5 2.5 0 0 1 5 18V4.5Z" />
+            <path d="M17 7h1.5A2.5 2.5 0 0 1 21 9.5V20a1.5 1.5 0 0 1-1.5 1.5H17" />
+            <path d="M8.5 9h6M8.5 12.5h6" />
+          </svg>
+        </FeatureGlyph>
+      ),
+      title: t("welcomeAuthPage.features.knowledgeBase.title"),
+      description: t("welcomeAuthPage.features.knowledgeBase.description"),
+      capabilities: t("welcomeAuthPage.features.knowledgeBase.capabilities", {
+        returnObjects: true,
+      }) as string[],
+    },
+    {
+      tone: "teal",
+      images: [grammarListScreenshot, grammarExerciseScreenshot],
+      icon: (
+        <FeatureGlyph>
+          <svg viewBox="0 0 24 24">
+            <path d="M5 7h14M5 12h9M5 17h11" />
+            <path d="M16.5 10.5 19 13l3-4" />
+          </svg>
+        </FeatureGlyph>
+      ),
+      title: t("welcomeAuthPage.features.grammar.title"),
+      description: t("welcomeAuthPage.features.grammar.description"),
+      capabilities: t("welcomeAuthPage.features.grammar.capabilities", {
+        returnObjects: true,
+      }) as string[],
+    },
+    {
+      tone: "sand",
+      images: [homeScreenshot, ankiSyncImage, ankiSyncImage2],
+      icon: (
+        <FeatureGlyph>
+          <svg viewBox="0 0 24 24">
+            <path d="M4 19V9.5M10 19V5M16 19v-7.5M20 19H3" />
+          </svg>
+        </FeatureGlyph>
+      ),
+      title: t("welcomeAuthPage.features.personalizedLearning.title"),
+      description: t("welcomeAuthPage.features.personalizedLearning.description"),
+      capabilities: t("welcomeAuthPage.features.personalizedLearning.capabilities", {
+        returnObjects: true,
+      }) as string[],
+    },
+  ];
+}
 
-function authErrorMessage(error: unknown): string {
+function authErrorMessage(error: unknown, t: TFunction): string {
   if (error instanceof CognitoAuthError) {
     return error.message;
   }
   if (error instanceof Error) {
     return error.message;
   }
-  return "Something went wrong. Please try again.";
+  return t("welcomeAuthPage.errors.generic");
 }
 
 function GoogleMark() {
@@ -217,6 +204,8 @@ function GoogleMark() {
 export default function WelcomeAuthPage({
   onAuthenticated,
 }: WelcomeAuthPageProps) {
+  const { t } = useTranslation("auth");
+  const features = useMemo(() => buildFeatures(t), [t]);
   const [mode, setMode] = useState<WelcomeAuthMode>("login");
   const [showFeatures, setShowFeatures] = useState(false);
   const [username, setUsername] = useState("");
@@ -246,7 +235,7 @@ export default function WelcomeAuthPage({
         }
       } catch (oauthError: unknown) {
         if (!cancelled) {
-          setError(authErrorMessage(oauthError));
+          setError(authErrorMessage(oauthError, t));
         }
       } finally {
         if (!cancelled) {
@@ -258,7 +247,7 @@ export default function WelcomeAuthPage({
     return () => {
       cancelled = true;
     };
-  }, [onAuthenticated]);
+  }, [onAuthenticated, t]);
 
   const isLogin = mode === "login";
   const isSignup = mode === "signup";
@@ -310,8 +299,10 @@ export default function WelcomeAuthPage({
         }
         setCodeHint(
           result.codeDeliveryDestination
-            ? `We sent a code to ${result.codeDeliveryDestination}.`
-            : "Check your email for a confirmation code.",
+            ? t("welcomeAuthPage.hints.signupCodeSent", {
+                destination: result.codeDeliveryDestination,
+              })
+            : t("welcomeAuthPage.hints.checkEmailForCode"),
         );
         setMode("confirm");
         return;
@@ -331,9 +322,7 @@ export default function WelcomeAuthPage({
         await requestPasswordReset(trimmedEmail);
         setConfirmationCode("");
         setPassword("");
-        setCodeHint(
-          "If an account with that email exists, a reset code has been sent.",
-        );
+        setCodeHint(t("welcomeAuthPage.hints.resetCodeSent"));
         setMode("reset");
         return;
       }
@@ -342,10 +331,10 @@ export default function WelcomeAuthPage({
       setPassword("");
       setConfirmationCode("");
       setEmail("");
-      setCodeHint("Password updated. Log in with your new password.");
+      setCodeHint(t("welcomeAuthPage.hints.passwordUpdated"));
       setMode("login");
     } catch (submitError: unknown) {
-      setError(authErrorMessage(submitError));
+      setError(authErrorMessage(submitError, t));
     } finally {
       setIsSubmitting(false);
     }
@@ -357,7 +346,7 @@ export default function WelcomeAuthPage({
     try {
       await startGoogleSignIn();
     } catch (googleError: unknown) {
-      setError(authErrorMessage(googleError));
+      setError(authErrorMessage(googleError, t));
       setIsSubmitting(false);
     }
   }
@@ -386,24 +375,24 @@ export default function WelcomeAuthPage({
   }
 
   const formTitle = isReset
-    ? "Set a new password"
+    ? t("welcomeAuthPage.form.titles.reset")
     : isForgot
-      ? "Reset your password"
+      ? t("welcomeAuthPage.form.titles.forgot")
       : isConfirm
-        ? "Confirm your email"
+        ? t("welcomeAuthPage.form.titles.confirm")
         : isSignup
-          ? "Create your account"
-          : "Welcome back";
+          ? t("welcomeAuthPage.form.titles.signup")
+          : t("welcomeAuthPage.form.titles.login");
 
   const submitLabel = isReset
-    ? "Update password"
+    ? t("welcomeAuthPage.form.submitLabels.reset")
     : isForgot
-      ? "Send reset code"
+      ? t("welcomeAuthPage.form.submitLabels.forgot")
       : isConfirm
-        ? "Confirm and log in"
+        ? t("welcomeAuthPage.form.submitLabels.confirm")
         : isSignup
-          ? "Create account"
-          : "Log in";
+          ? t("welcomeAuthPage.form.submitLabels.signup")
+          : t("welcomeAuthPage.form.submitLabels.login");
 
   if (isHandlingOAuth) {
     return (
@@ -413,7 +402,7 @@ export default function WelcomeAuthPage({
         </div>
         <div className={styles.welcomeAuthContent}>
           <p className={styles.welcomeAuthOauthStatus} role="status">
-            Finishing Google sign-in…
+            {t("welcomeAuthPage.oauth.finishing")}
           </p>
         </div>
       </div>
@@ -429,18 +418,22 @@ export default function WelcomeAuthPage({
       <div className={styles.welcomeAuthContent}>
         <header className={styles.welcomeAuthBrand}>
           <div className={styles.welcomeAuthBrandRow}>
-            <img className={styles.welcomeAuthLogo} src={logo} alt="Teacher Wang logo" />
-            <p className={styles.welcomeAuthBrandMark}>Teacher Wang</p>
+            <img
+              className={styles.welcomeAuthLogo}
+              src={logo}
+              alt={t("welcomeAuthPage.brand.logoAlt")}
+            />
+            <p className={styles.welcomeAuthBrandMark}>{t("welcomeAuthPage.brand.name")}</p>
           </div>
           <h1 className={styles.welcomeAuthTagline}>
-            Learn Mandarin with an AI tutor — chat, track knowledge, and climb HSK.
+            {t("welcomeAuthPage.brand.tagline")}
           </h1>
           <button
             type="button"
             className={styles.welcomeAuthDiscoverButton}
             onClick={() => setShowFeatures(true)}
           >
-            Discover the features →
+            {t("welcomeAuthPage.brand.discoverButton")}
           </button>
         </header>
 
@@ -451,7 +444,9 @@ export default function WelcomeAuthPage({
 
           {isLogin || isSignup ? (
             <label className={styles.welcomeAuthField}>
-              <span className={styles.welcomeAuthLabel}>Username</span>
+              <span className={styles.welcomeAuthLabel}>
+                {t("welcomeAuthPage.form.usernameLabel")}
+              </span>
               <input
                 type="text"
                 name="username"
@@ -464,13 +459,16 @@ export default function WelcomeAuthPage({
             </label>
           ) : isConfirm ? (
             <p className={styles.welcomeAuthHint}>
-              Username: <strong>{username.trim()}</strong>
+              {t("welcomeAuthPage.form.usernameConfirmLabel")}{" "}
+              <strong>{username.trim()}</strong>
             </p>
           ) : null}
 
           {isSignup || isForgot ? (
             <label className={styles.welcomeAuthField}>
-              <span className={styles.welcomeAuthLabel}>Email</span>
+              <span className={styles.welcomeAuthLabel}>
+                {t("welcomeAuthPage.form.emailLabel")}
+              </span>
               <input
                 type="email"
                 name="email"
@@ -483,13 +481,16 @@ export default function WelcomeAuthPage({
             </label>
           ) : isReset ? (
             <p className={styles.welcomeAuthHint}>
-              Resetting password for <strong>{email.trim()}</strong>.
+              {t("welcomeAuthPage.form.resettingPasswordForLabel")}{" "}
+              <strong>{email.trim()}</strong>.
             </p>
           ) : null}
 
           {isConfirm || isReset ? (
             <label className={styles.welcomeAuthField}>
-              <span className={styles.welcomeAuthLabel}>Confirmation code</span>
+              <span className={styles.welcomeAuthLabel}>
+                {t("welcomeAuthPage.form.confirmationCodeLabel")}
+              </span>
               <input
                 type="text"
                 name="confirmationCode"
@@ -506,7 +507,9 @@ export default function WelcomeAuthPage({
           {isLogin || isSignup || isReset ? (
             <label className={styles.welcomeAuthField}>
               <span className={styles.welcomeAuthLabel}>
-                {isReset ? "New password" : "Password"}
+                {isReset
+                  ? t("welcomeAuthPage.form.newPasswordLabel")
+                  : t("welcomeAuthPage.form.passwordLabel")}
               </span>
               <input
                 type="password"
@@ -528,7 +531,7 @@ export default function WelcomeAuthPage({
                 onClick={switchToForgot}
                 disabled={isSubmitting}
               >
-                Forgot your password?
+                {t("welcomeAuthPage.form.forgotPasswordButton")}
               </button>
             </p>
           ) : null}
@@ -544,13 +547,13 @@ export default function WelcomeAuthPage({
             className={styles.welcomeAuthSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Please wait…" : submitLabel}
+            {isSubmitting ? t("welcomeAuthPage.form.submitPending") : submitLabel}
           </button>
 
           {showGoogle ? (
             <>
               <div className={styles.welcomeAuthDivider} aria-hidden="true">
-                <span>or</span>
+                <span>{t("welcomeAuthPage.form.orDivider")}</span>
               </div>
               <button
                 type="button"
@@ -561,21 +564,21 @@ export default function WelcomeAuthPage({
                 disabled={isSubmitting}
               >
                 <GoogleMark />
-                <span>Continue with Google</span>
+                <span>{t("welcomeAuthPage.form.continueWithGoogleButton")}</span>
               </button>
             </>
           ) : null}
 
           {isConfirm ? (
             <p className={styles.welcomeAuthSwitch}>
-              Wrong account?{" "}
+              {t("welcomeAuthPage.form.wrongAccountPrompt")}{" "}
               <button
                 type="button"
                 className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               >
-                Back to log in
+                {t("welcomeAuthPage.form.backToLoginButton")}
               </button>
             </p>
           ) : isForgot || isReset ? (
@@ -586,31 +589,31 @@ export default function WelcomeAuthPage({
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               >
-                Back to log in
+                {t("welcomeAuthPage.form.backToLoginButton")}
               </button>
             </p>
           ) : isSignup ? (
             <p className={styles.welcomeAuthSwitch}>
-              Already have an account?{" "}
+              {t("welcomeAuthPage.form.alreadyHaveAccountPrompt")}{" "}
               <button
                 type="button"
                 className={styles.welcomeAuthSwitchButton}
                 onClick={switchToLogin}
                 disabled={isSubmitting}
               >
-                Log in
+                {t("welcomeAuthPage.form.logInButton")}
               </button>
             </p>
           ) : (
             <p className={styles.welcomeAuthSwitch}>
-              New here?{" "}
+              {t("welcomeAuthPage.form.newHerePrompt")}{" "}
               <button
                 type="button"
                 className={styles.welcomeAuthSwitchButton}
                 onClick={switchToSignup}
                 disabled={isSubmitting}
               >
-                Sign up — it&apos;s free
+                {t("welcomeAuthPage.form.signUpButton")}
               </button>
             </p>
           )}
@@ -628,14 +631,16 @@ export default function WelcomeAuthPage({
             onClick={() => setShowFeatures(false)}
             tabIndex={showFeatures ? 0 : -1}
           >
-            ← Back
+            {t("welcomeAuthPage.featureShowcase.backButton")}
           </button>
-          <h2 className={styles.featureShowcaseTitle}>Feature overview</h2>
+          <h2 className={styles.featureShowcaseTitle}>
+            {t("welcomeAuthPage.featureShowcase.title")}
+          </h2>
           <p className={styles.featureShowcaseLead}>
-            Everything you need to learn Mandarin more efficiently, all in one place.
+            {t("welcomeAuthPage.featureShowcase.lead")}
           </p>
           <div className={styles.featureShowcaseList}>
-            {FEATURES.map((feature) => (
+            {features.map((feature) => (
               <article
                 className={`${styles.featurePanel} ${styles[`feature-panel--${feature.tone}`]}`}
                 key={feature.title}
@@ -662,19 +667,21 @@ export default function WelcomeAuthPage({
             ))}
             <section className={styles.featureCompanion} aria-labelledby="feature-companion-title">
               <div className={styles.featureCompanionBody}>
-                <p className={styles.featureCompanionEyebrow}>Your companion</p>
-                <h3 id="feature-companion-title">Meet Teacher Wang</h3>
+                <p className={styles.featureCompanionEyebrow}>
+                  {t("welcomeAuthPage.featureShowcase.companion.eyebrow")}
+                </p>
+                <h3 id="feature-companion-title">
+                  {t("welcomeAuthPage.featureShowcase.companion.title")}
+                </h3>
                 <p className={styles.featurePanelDescription}>
-                  An AI-powered Mandarin learning companion who leads your progress —
-                  adapting to your HSK level, explaining grammar, and guiding you from
-                  first characters to fluent practice.
+                  {t("welcomeAuthPage.featureShowcase.companion.description")}
                 </p>
                 <ul className={styles.featurePanelChecklist}>
-                  {[
-                    "Teaches in a mix of English and Chinese that matches your HSK level",
-                    "Explains grammar, corrects mistakes, and answers your questions",
-                    "Stays with you across chats, grammar lessons, and challenges",
-                  ].map((capability) => (
+                  {(
+                    t("welcomeAuthPage.featureShowcase.companion.capabilities", {
+                      returnObjects: true,
+                    }) as string[]
+                  ).map((capability) => (
                     <li key={capability}>
                       <span className={styles.featurePanelTick}>
                         <ChecklistTick />
@@ -687,7 +694,7 @@ export default function WelcomeAuthPage({
               <img
                 className={styles.featureCompanionAvatar}
                 src={teacherAvatar}
-                alt="Teacher Wang, the AI Mandarin tutor"
+                alt={t("welcomeAuthPage.featureShowcase.companion.avatarAlt")}
               />
             </section>
           </div>

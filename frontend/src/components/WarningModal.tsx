@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import { WarningIcon } from "./icons";
 import styles from "./WarningModal.module.css";
@@ -13,6 +14,8 @@ export default function WarningModal({
   message,
   onClose,
 }: WarningModalProps) {
+  const { t } = useTranslation("common");
+
   if (!isOpen) {
     return null;
   }
@@ -29,14 +32,14 @@ export default function WarningModal({
         <div className={styles.warningModalHeader}>
           <WarningIcon className={styles.warningModalIcon} />
           <h2 id="warning-modal-title" className={`modal-title ${styles.warningModalTitle}`}>
-            Warning
+            {t("warningModal.title")}
           </h2>
         </div>
         <p id="warning-modal-message" className="modal-message" role="alert">
           {message}
         </p>
         <div className="modal-actions">
-          <Button kind="confirm" text="OK" onClick={onClose} />
+          <Button kind="confirm" text={t("warningModal.ok")} onClick={onClose} />
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { PageId } from "./Navbar";
 import Table, { type TableColumn } from "./Table";
 import { ImportIcon } from "./icons";
@@ -50,6 +51,7 @@ export default function KnowledgeBaseInitWizardModal({
   onClose,
   onNavigate,
 }: KnowledgeBaseInitWizardModalProps) {
+  const { t } = useTranslation("common");
   const dispatch = useAppDispatch();
   const [step, setStep] = useState<WizardStep>("choose");
   const [isImporting, setIsImporting] = useState(false);
@@ -120,7 +122,7 @@ export default function KnowledgeBaseInitWizardModal({
       setImportError(
         error instanceof Error
           ? error.message
-          : "Failed to import your knowledge base.",
+          : t("knowledgeBaseInitWizardModal.errors.import"),
       );
       setIsImporting(false);
     }
@@ -149,7 +151,9 @@ export default function KnowledgeBaseInitWizardModal({
       applyPickResult(result, null);
     } catch (error) {
       setPickError(
-        error instanceof Error ? error.message : "Failed to pick a word.",
+        error instanceof Error
+          ? error.message
+          : t("knowledgeBaseInitWizardModal.errors.pickWord"),
       );
     } finally {
       setIsPickingWord(false);
@@ -224,7 +228,9 @@ export default function KnowledgeBaseInitWizardModal({
       applyPickResult(result, decidedWord.word);
     } catch (error) {
       setPickError(
-        error instanceof Error ? error.message : "Failed to pick a word.",
+        error instanceof Error
+          ? error.message
+          : t("knowledgeBaseInitWizardModal.errors.pickWord"),
       );
     } finally {
       setIsPickingWord(false);
@@ -244,7 +250,9 @@ export default function KnowledgeBaseInitWizardModal({
       applyPickResult(result, previousWord);
     } catch (error) {
       setPickError(
-        error instanceof Error ? error.message : "Failed to pick a word.",
+        error instanceof Error
+          ? error.message
+          : t("knowledgeBaseInitWizardModal.errors.pickWord"),
       );
     } finally {
       setIsPickingWord(false);
@@ -320,7 +328,7 @@ export default function KnowledgeBaseInitWizardModal({
       setSmartError(
         error instanceof Error
           ? error.message
-          : "Failed to save your knowledge base.",
+          : t("knowledgeBaseInitWizardModal.errors.save"),
       );
       setIsSmartSubmitting(false);
     } finally {
@@ -331,7 +339,7 @@ export default function KnowledgeBaseInitWizardModal({
   const smartWordColumns: TableColumn<SmartWordRow>[] = [
     {
       key: "word",
-      header: "Word",
+      header: t("knowledgeBaseInitWizardModal.wordColumnHeader"),
       render: (row) => (
         <>
           <p className={styles.wizardWordCellPrimary}>
@@ -355,7 +363,7 @@ export default function KnowledgeBaseInitWizardModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="kb-init-wizard-title" className="modal-title">
-          Build your knowledge base
+          {t("knowledgeBaseInitWizardModal.title")}
         </h2>
 
         {step === "choose" && (
@@ -363,31 +371,31 @@ export default function KnowledgeBaseInitWizardModal({
             <div className={styles.wizardOptionList}>
               <Button
                 kind="cancel"
-                text="Add characters and words one by one, manually"
+                text={t("knowledgeBaseInitWizardModal.choose.manualOption")}
                 onClick={() => setStep("manual-info")}
                 className={styles.wizardOptionButton}
               />
               <Button
                 kind="cancel"
-                text="Upload an existing knowledge base (CSV)"
+                text={t("knowledgeBaseInitWizardModal.choose.csvOption")}
                 onClick={() => setStep("csv")}
                 className={styles.wizardOptionButton}
               />
               <Button
                 kind="cancel"
-                text="Import data from an Anki deck"
+                text={t("knowledgeBaseInitWizardModal.choose.ankiOption")}
                 onClick={() => setStep("anki-info")}
                 className={styles.wizardOptionButton}
               />
               <Button
                 kind="cancel"
-                text="Smart creation based on what you already know"
+                text={t("knowledgeBaseInitWizardModal.choose.smartOption")}
                 onClick={startSmartCreation}
                 className={styles.wizardOptionButton}
               />
             </div>
             <div className="modal-actions">
-              <Button kind="cancel" text="Close" onClick={resetAndClose} />
+              <Button kind="cancel" text={t("actions.close")} onClick={resetAndClose} />
             </div>
           </>
         )}
@@ -395,14 +403,17 @@ export default function KnowledgeBaseInitWizardModal({
         {step === "manual-info" && (
           <>
             <p className="modal-message">
-              You should go to the Knowledge base section for that and
-              manually create what you want.
+              {t("knowledgeBaseInitWizardModal.manualInfo.text")}
             </p>
             <div className="modal-actions">
-              <Button kind="cancel" text="Back" onClick={() => setStep("choose")} />
+              <Button
+                kind="cancel"
+                text={t("knowledgeBaseInitWizardModal.back")}
+                onClick={() => setStep("choose")}
+              />
               <Button
                 kind="confirm"
-                text="Go to Knowledge base"
+                text={t("knowledgeBaseInitWizardModal.manualInfo.goToKnowledgeBase")}
                 onClick={goToKnowledgeBase}
               />
             </div>
@@ -412,14 +423,17 @@ export default function KnowledgeBaseInitWizardModal({
         {step === "anki-info" && (
           <>
             <p className="modal-message">
-              You can setup your Anki synchronization in the Preference
-              section.
+              {t("knowledgeBaseInitWizardModal.ankiInfo.text")}
             </p>
             <div className="modal-actions">
-              <Button kind="cancel" text="Back" onClick={() => setStep("choose")} />
+              <Button
+                kind="cancel"
+                text={t("knowledgeBaseInitWizardModal.back")}
+                onClick={() => setStep("choose")}
+              />
               <Button
                 kind="confirm"
-                text="Go to Preferences"
+                text={t("knowledgeBaseInitWizardModal.ankiInfo.goToPreferences")}
                 onClick={goToPreferences}
               />
             </div>
@@ -429,10 +443,7 @@ export default function KnowledgeBaseInitWizardModal({
         {step === "csv" && (
           <>
             <p className="modal-message">
-              Upload a CSV file with the same columns as your words table:
-              word, definition, pinyin, whether you already know how to
-              write it (true or false), whether it has been synchronized to
-              Anki (true or false), and the last updated date. For example:
+              {t("knowledgeBaseInitWizardModal.csv.instructions")}
             </p>
             <div className={tableStyles.tableWrapper}>
               <table className={`${tableStyles.table} ${tableStyles.tableCompact}`}>
@@ -459,8 +470,7 @@ export default function KnowledgeBaseInitWizardModal({
               </table>
             </div>
             <p className="modal-message">
-              The first line can either be this header row or your first
-              word.
+              {t("knowledgeBaseInitWizardModal.csv.headerNote")}
             </p>
             {importError && <p className="table-error">{importError}</p>}
             <input
@@ -471,10 +481,14 @@ export default function KnowledgeBaseInitWizardModal({
               onChange={(event) => void handleImport(event)}
             />
             <div className="modal-actions">
-              <Button kind="cancel" text="Back" onClick={() => setStep("choose")} />
+              <Button
+                kind="cancel"
+                text={t("knowledgeBaseInitWizardModal.back")}
+                onClick={() => setStep("choose")}
+              />
               <Button
                 kind="confirm"
-                text="Import"
+                text={t("knowledgeBaseInitWizardModal.csv.import")}
                 icon={<ImportIcon />}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isImporting}
@@ -486,14 +500,12 @@ export default function KnowledgeBaseInitWizardModal({
         {step === "smart" && (
           <>
             <p className="modal-message">
-              Tell us whether you know each word below and whether you can
-              write all of its characters. You can review the full list of
-              words you are about to add at any moment before confirming.
+              {t("knowledgeBaseInitWizardModal.smart.intro")}
             </p>
 
             {isSmartSetupDone ? (
               <p className="modal-message">
-                Your quick setup is done! Please review the list below.
+                {t("knowledgeBaseInitWizardModal.smart.setupDone")}
               </p>
             ) : (
               <div className={styles.wizardWordPicker}>
@@ -507,25 +519,27 @@ export default function KnowledgeBaseInitWizardModal({
                   </div>
                 )}
                 {isPickingWord && !candidateWord && (
-                  <p className="modal-message">Picking a word…</p>
+                  <p className="modal-message">
+                    {t("knowledgeBaseInitWizardModal.smart.pickingWord")}
+                  </p>
                 )}
                 {pickError && <p className="table-error">{pickError}</p>}
                 <div className={styles.wizardWordPickerActions}>
                   <Button
                     kind="cancel"
-                    text="Don't know it"
+                    text={t("knowledgeBaseInitWizardModal.smart.dontKnow")}
                     onClick={handleDontKnowWord}
                     disabled={!candidateWord || isPickingWord}
                   />
                   <Button
                     kind="cancel"
-                    text="Can recognize it"
+                    text={t("knowledgeBaseInitWizardModal.smart.canRecognize")}
                     onClick={handleCanRecognizeWord}
                     disabled={!candidateWord || isPickingWord}
                   />
                   <Button
                     kind="cancel"
-                    text="Can write it"
+                    text={t("knowledgeBaseInitWizardModal.smart.canWrite")}
                     onClick={handleCanWriteWord}
                     disabled={!candidateWord || isPickingWord || hasRecognizedOnly}
                   />
@@ -539,14 +553,17 @@ export default function KnowledgeBaseInitWizardModal({
               compact
               maxHeight="500px"
               getRowKey={(row) => row.word}
-              emptyMessage="No words picked yet."
+              emptyMessage={t("knowledgeBaseInitWizardModal.smart.emptyTable")}
               renderRowActions={(row) => (
                 <div className={styles.wizardWordRowActions}>
-                  <label className="toggle" title="Know to write it">
+                  <label
+                    className="toggle"
+                    title={t("knowledgeBaseInitWizardModal.smart.knowToWrite")}
+                  >
                     <input
                       type="checkbox"
                       role="switch"
-                      aria-label="Know to write it"
+                      aria-label={t("knowledgeBaseInitWizardModal.smart.knowToWrite")}
                       checked={row.knownToWrite}
                       onChange={() => toggleSmartWordKnownToWrite(row.word)}
                     />
@@ -555,7 +572,7 @@ export default function KnowledgeBaseInitWizardModal({
                   <Button
                     kind="danger"
                     variant="table"
-                    text="Remove"
+                    text={t("knowledgeBaseInitWizardModal.smart.remove")}
                     onClick={() => removeSmartWord(row.word)}
                   />
                 </div>
@@ -568,8 +585,10 @@ export default function KnowledgeBaseInitWizardModal({
               <div className={styles.wizardSyncProgress}>
                 <progress value={syncProgress.completed} max={syncProgress.total} />
                 <span>
-                  Syncing your knowledge base… {syncProgress.completed}/
-                  {syncProgress.total}
+                  {t("knowledgeBaseInitWizardModal.smart.syncProgress", {
+                    completed: syncProgress.completed,
+                    total: syncProgress.total,
+                  })}
                 </span>
               </div>
             )}
@@ -577,13 +596,13 @@ export default function KnowledgeBaseInitWizardModal({
             <div className="modal-actions">
               <Button
                 kind="cancel"
-                text="Cancel"
+                text={t("confirmModal.cancel")}
                 onClick={() => setStep("choose")}
                 disabled={isSmartSubmitting}
               />
               <Button
                 kind="confirm"
-                text="Confirm"
+                text={t("confirmModal.confirm")}
                 onClick={() => void confirmSmartCreation()}
                 disabled={smartWords.length === 0 || isSmartSubmitting}
               />

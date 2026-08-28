@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
 import styles from "./WritingReviewModal.module.css";
@@ -14,6 +15,7 @@ export default function WritingReviewModal({
   grammarPointTitles,
   onClose,
 }: WritingReviewModalProps) {
+  const { t } = useTranslation("writing");
   const [confettiActive, setConfettiActive] = useState(allCorrect);
 
   useEffect(() => {
@@ -34,16 +36,18 @@ export default function WritingReviewModal({
           onClick={(event) => event.stopPropagation()}
         >
           <h2 id="writing-review-modal-title" className="modal-title">
-            {allCorrect ? "Everything is correct!" : "Almost there"}
+            {allCorrect
+              ? t("writingReviewModal.allCorrectTitle")
+              : t("writingReviewModal.almostThereTitle")}
           </h2>
           <p className="modal-message">
             {allCorrect
-              ? "Well done — your text has no grammar mistakes."
-              : "Some sentences still have grammar mistakes. Click them to see why, then fix them to validate the text."}
+              ? t("writingReviewModal.allCorrectMessage")
+              : t("writingReviewModal.notAllCorrectMessage")}
           </p>
           {grammarPointTitles.length > 0 && (
             <>
-              <p className="modal-message">Grammar points you used correctly:</p>
+              <p className="modal-message">{t("writingReviewModal.grammarPointsLabel")}</p>
               <ul className={styles.writingReviewModalList}>
                 {grammarPointTitles.map((title) => (
                   <li key={title}>{title}</li>
@@ -52,7 +56,7 @@ export default function WritingReviewModal({
             </>
           )}
           <div className="modal-actions">
-            <Button kind="confirm" text="OK" onClick={onClose} />
+            <Button kind="confirm" text={t("writingReviewModal.ok")} onClick={onClose} />
           </div>
         </div>
       </div>

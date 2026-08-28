@@ -124,22 +124,10 @@ export type AnkiLogicalField = {
   description: string;
 };
 
-export const ANKI_DECK_LABELS: Record<AnkiDeckKind, string> = {
-  mandarin_vocabulary: "Mandarin vocabulary",
-  mandarin_writing: "Mandarin writing",
-};
-
 export const ANKI_DECK_ORDER: AnkiDeckKind[] = [
   "mandarin_vocabulary",
   "mandarin_writing",
 ];
-
-export const ANKI_DECK_DESCRIPTIONS: Record<AnkiDeckKind, string> = {
-  mandarin_writing:
-    "This deck is for practicing writing only. It asks you to guess the characters from the definition and pinyin. Only characters with “written known” ticked will be part of this deck.",
-  mandarin_vocabulary:
-    "This deck is the main deck for practicing vocabulary. It either asks you to guess the character from the pinyin and definition, or the pinyin from the character and definition, or the definition from the character and pinyin.",
-};
 
 export const ANKI_REQUIRED_FIELDS: Record<AnkiDeckKind, AnkiLogicalField[]> = {
   mandarin_writing: [

@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { HelpMarkIcon } from "./icons";
 import styles from "./HelpButton.module.css";
 
 const ISSUES_URL = "https://github.com/mazarsju/teacher-wang-app/issues";
 
 export default function HelpButton() {
+  const { t } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
   const bubbleId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -42,19 +44,20 @@ export default function HelpButton() {
       {isOpen ? (
         <div id={bubbleId} className={styles.helpButtonBubble} role="dialog">
           <p>
-            A question? A bug spotted? An idea of improvement? Don&apos;t
-            hesitate to share your issue on{" "}
-            <a href={ISSUES_URL} target="_blank" rel="noreferrer">
-              Github
-            </a>
-            .
+            <Trans
+              i18nKey="helpButton.bubble"
+              t={t}
+              components={{
+                1: <a href={ISSUES_URL} target="_blank" rel="noreferrer" />,
+              }}
+            />
           </p>
         </div>
       ) : null}
       <button
         type="button"
         className={styles.helpButtonTrigger}
-        aria-label="Help"
+        aria-label={t("helpButton.triggerLabel")}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={bubbleId}

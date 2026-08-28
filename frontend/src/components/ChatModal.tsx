@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { ChatCharacter } from "./ChatCharacterCard";
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import Button from "./Button";
@@ -60,13 +61,6 @@ type ChatModalProps = {
   topicContext?: string;
 };
 
-const GRAMMAR_SEVERITY_LABELS: Record<GrammarSeverity, string> = {
-  none: "Correct",
-  minor: "Minor mistake",
-  awkward: "Awkward wording",
-  incorrect: "Incorrect",
-};
-
 function resolveCorrectionSeverity(
   message: ChatMessage,
 ): GrammarSeverity | null {
@@ -117,6 +111,13 @@ export default function ChatModal({
   autoSendInitialMessage = false,
   topicContext,
 }: ChatModalProps) {
+  const { t } = useTranslation("common");
+  const grammarSeverityLabels: Record<GrammarSeverity, string> = {
+    none: t("chatModal.severity.correct"),
+    minor: t("chatModal.severity.minorMistake"),
+    awkward: t("chatModal.severity.awkwardWording"),
+    incorrect: t("chatModal.severity.incorrect"),
+  };
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -213,7 +214,7 @@ export default function ChatModal({
           setError(
             historyError instanceof Error
               ? historyError.message
-              : "Failed to load chat history.",
+              : t("chatModal.errors.loadHistory"),
           );
         }
       })
@@ -347,7 +348,7 @@ export default function ChatModal({
       setError(
         sendError instanceof Error
           ? sendError.message
-          : "Failed to send chat message.",
+          : t("chatModal.errors.sendMessage"),
       );
       return false;
     } finally {
@@ -399,7 +400,7 @@ export default function ChatModal({
       setError(
         clearError instanceof Error
           ? clearError.message
-          : "Failed to clear chat history.",
+          : t("chatModal.errors.clearHistory"),
       );
     } finally {
       setIsClearing(false);
@@ -418,9 +419,7 @@ export default function ChatModal({
     }
 
     if (!chatMessage.correctionThreadId) {
-      setError(
-        "This grammar note can’t continue as a saved thread. Send a new message to create one.",
-      );
+      setError(t("chatModal.errors.correctionThreadUnavailable"));
       return;
     }
 
@@ -442,7 +441,7 @@ export default function ChatModal({
     }
 
     const iconClassName = styles.chatMessageSeverityIcon;
-    const label = GRAMMAR_SEVERITY_LABELS[severity];
+    const label = grammarSeverityLabels[severity];
 
     if (severity === "none") {
       return (
@@ -467,8 +466,8 @@ export default function ChatModal({
       <button
         type="button"
         className={`${styles.chatMessageSeverityBadge} ${styles[`chat-message-severity-badge--${severity}`]}`}
-        aria-label={`Open grammar note (${label}) with Teacher Wang`}
-        title={`${label} — ask Teacher Wang`}
+        aria-label={t("chatModal.openGrammarNoteAriaLabel", { severity: label })}
+        title={t("chatModal.askTeacherWangTitle", { severity: label })}
         onClick={() => openCorrectionThread(messageIndex, chatMessage)}
       >
         <Icon className={iconClassName} />
@@ -478,7 +477,7 @@ export default function ChatModal({
 
   const titleSeverityLabel =
     grammarSeverity && grammarSeverity !== "none"
-      ? GRAMMAR_SEVERITY_LABELS[grammarSeverity]
+      ? grammarSeverityLabels[grammarSeverity]
       : null;
 
   return (
@@ -523,7 +522,9 @@ export default function ChatModal({
                 <button
                   type="button"
                   className={styles.chatModalClearButton}
-                  aria-label={isClearing ? "Clearing..." : "Clear chat history"}
+                  aria-label={
+                    isClearing ? t("chatModal.clearing") : t("chatModal.clearHistory")
+                  }
                   disabled={
                     isLoadingHistory ||
                     isSending ||
@@ -534,14 +535,14 @@ export default function ChatModal({
                 >
                   <TrashIcon className={styles.chatModalClearIcon} />
                   <span>
-                    {isClearing ? "Clearing..." : "Clear chat history"}
+                    {isClearing ? t("chatModal.clearing") : t("chatModal.clearHistory")}
                   </span>
                 </button>
               )}
               <button
                 type="button"
                 className={styles.chatModalCloseButton}
-                aria-label="Close chat"
+                aria-label={t("chatModal.closeChat")}
                 onClick={onClose}
               >
                 <CloseIcon className={styles.chatModalCloseIcon} />
@@ -555,7 +556,9 @@ export default function ChatModal({
               aria-labelledby="chat-modal-tasks-title"
             >
               <h3 id="chat-modal-tasks-title" className={styles.chatModalTasksTitle}>
-                {challengeTitle ? `${challengeTitle} — tasks` : "Tasks"}
+                {challengeTitle
+                  ? t("chatModal.tasksTitleWithChallenge", { challengeTitle })
+                  : t("chatModal.tasksTitle")}
               </h3>
               <ul className={styles.chatModalTaskList}>
                 {tasks.map((task) => {
@@ -589,10 +592,12 @@ export default function ChatModal({
 
           <div className={styles.chatModalMessages} aria-live="polite">
             {isLoadingHistory ? (
-              <p className={styles.chatModalEmptyState}>Loading conversation...</p>
+              <p className={styles.chatModalEmptyState}>
+                {t("chatModal.loadingConversation")}
+              </p>
             ) : messages.length === 0 ? (
               <p className={styles.chatModalEmptyState}>
-                Start a conversation with {character.name}.
+                {t("chatModal.emptyState", { name: character.name })}
               </p>
             ) : (
               <ul className={styles.chatMessageList}>
@@ -691,7 +696,7 @@ export default function ChatModal({
             )}
             {isSending && (
               <p className={styles.chatModalTypingIndicator}>
-                {character.name} is typing...
+                {t("chatModal.typingIndicator", { name: character.name })}
               </p>
             )}
           </div>
@@ -707,7 +712,7 @@ export default function ChatModal({
               aria-live="polite"
             >
               <TrophyIcon className={styles.chatModalChallengeCompleteIcon} />
-              <span>Challenge completed!</span>
+              <span>{t("chatModal.challengeCompleted")}</span>
             </div>
           ) : (
             <form
@@ -718,7 +723,7 @@ export default function ChatModal({
                 className={styles.chatModalComposerLabel}
                 htmlFor={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
               >
-                Message
+                {t("chatModal.messageLabel")}
               </label>
               <div className={styles.chatModalComposerRow}>
                 <input
@@ -726,14 +731,14 @@ export default function ChatModal({
                   id={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
                   type="text"
                   value={message}
-                  placeholder="Type your message..."
+                  placeholder={t("chatModal.messagePlaceholder")}
                   disabled={isClearing}
                   onChange={(event) => setMessage(event.target.value)}
                 />
                 <Button
                   kind="confirm"
                   htmlType="submit"
-                  text={isSending ? "Sending..." : "Send"}
+                  text={isSending ? t("chatModal.sending") : t("chatModal.send")}
                   disabled={isSending || isClearing || message.trim() === ""}
                 />
               </div>
@@ -745,7 +750,7 @@ export default function ChatModal({
       {allowClearHistory && (
         <ConfirmModal
           isOpen={isClearConfirmOpen}
-          message={`Clear all chat history with ${character.name}? This cannot be undone.`}
+          message={t("chatModal.clearHistoryConfirm", { name: character.name })}
           onConfirm={() => void handleClearHistory()}
           onCancel={() => setIsClearConfirmOpen(false)}
         />

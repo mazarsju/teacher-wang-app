@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Table, { type TableColumn } from "./Table";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { syncAppData } from "../store/thunks/syncAppData";
@@ -20,6 +21,7 @@ export default function AddSuggestedWordsModal({
   isOpen,
   onClose,
 }: AddSuggestedWordsModalProps) {
+  const { t } = useTranslation("knowledge-base");
   const dispatch = useAppDispatch();
   const knownCharacters = useAppSelector((state) => state.characters.items);
 
@@ -44,11 +46,11 @@ export default function AddSuggestedWordsModal({
         setError(
           fetchError instanceof Error
             ? fetchError.message
-            : "Failed to load suggested words.",
+            : t("addSuggestedWordsModal.loadError"),
         );
       })
       .finally(() => setIsLoading(false));
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   if (!isOpen) {
     return null;
@@ -84,7 +86,9 @@ export default function AddSuggestedWordsModal({
       });
     } catch (ignoreError) {
       setError(
-        ignoreError instanceof Error ? ignoreError.message : "Failed to ignore the word(s).",
+        ignoreError instanceof Error
+          ? ignoreError.message
+          : t("addSuggestedWordsModal.ignoreError"),
       );
     }
   }
@@ -125,7 +129,7 @@ export default function AddSuggestedWordsModal({
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Failed to add the selected words.",
+          : t("addSuggestedWordsModal.submitError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -139,7 +143,9 @@ export default function AddSuggestedWordsModal({
       render: (row) => (
         <input
           type="checkbox"
-          aria-label={`Select ${row.word}`}
+          aria-label={t("addSuggestedWordsModal.selectAriaLabel", {
+            word: row.word,
+          })}
           checked={selectedWords.has(row.word)}
           onChange={() => toggleSelected(row.word)}
         />
@@ -147,7 +153,7 @@ export default function AddSuggestedWordsModal({
     },
     {
       key: "word",
-      header: "Word",
+      header: t("addSuggestedWordsModal.tableHeaders.word"),
       render: (row) => (
         <>
           <p className={kbInitWizardStyles.wizardWordCellPrimary}>
@@ -171,13 +177,13 @@ export default function AddSuggestedWordsModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="add-suggested-words-title" className="modal-title">
-          Words to learn next
+          {t("addSuggestedWordsModal.title")}
         </h2>
-        <p className="modal-message">
-          The following words are the most strategic for you to learn.
-        </p>
+        <p className="modal-message">{t("addSuggestedWordsModal.message")}</p>
 
-        {isLoading && <p className="modal-message">Loading suggestions…</p>}
+        {isLoading && (
+          <p className="modal-message">{t("addSuggestedWordsModal.loading")}</p>
+        )}
         {error && <p className="table-error">{error}</p>}
 
         {!isLoading && (
@@ -186,12 +192,12 @@ export default function AddSuggestedWordsModal({
             rows={suggestions}
             compact
             getRowKey={(row) => row.word}
-            emptyMessage="No more words to suggest right now."
+            emptyMessage={t("addSuggestedWordsModal.emptyMessage")}
             renderRowActions={(row) => (
               <Button
                 kind="confirm"
                 variant="table"
-                text="Ignore"
+                text={t("addSuggestedWordsModal.ignoreButton")}
                 onClick={() => void handleIgnore([row.word])}
               />
             )}
@@ -200,11 +206,10 @@ export default function AddSuggestedWordsModal({
 
         {!isLoading && suggestions.length > 0 && (
           <p className={`modal-message ${styles.suggestedWordsIgnoreAll}`}>
-            None of those words interest you? You can ignore them all so that
-            other words are proposed to you:{" "}
+            {t("addSuggestedWordsModal.ignoreAllHint")}{" "}
             <Button
               kind="cancel"
-              text="Ignore all words"
+              text={t("addSuggestedWordsModal.ignoreAllButton")}
               onClick={() => void handleIgnore(suggestions.map((word) => word.word))}
             />
           </p>
@@ -213,13 +218,13 @@ export default function AddSuggestedWordsModal({
         <div className="modal-actions">
           <Button
             kind="cancel"
-            text="Cancel"
+            text={t("addSuggestedWordsModal.cancelButton")}
             onClick={onClose}
             disabled={isSubmitting}
           />
           <Button
             kind="confirm"
-            text="Confirm"
+            text={t("addSuggestedWordsModal.confirmButton")}
             onClick={() => void handleConfirm()}
             disabled={selectedWords.size === 0 || isSubmitting}
           />

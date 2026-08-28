@@ -1,4 +1,6 @@
+import type { TFunction } from "i18next";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { TEACHER_WANG } from "../data/chatCharacters";
 import type { ChatMessage } from "../types/chat";
 import type {
@@ -58,22 +60,25 @@ export function scoreBand(percentage: number): "good" | "medium" | "low" {
   return "low";
 }
 
-function scoreMessage(percentage: number): { text: string; className: string } {
+function scoreMessage(
+  t: TFunction,
+  percentage: number,
+): { text: string; className: string } {
   const band = scoreBand(percentage);
   if (band === "good") {
     return {
-      text: `You scored ${percentage}%. Great job, you passed this test!`,
+      text: t("grammarExercises.score.good", { percentage }),
       className: styles.scoreGood,
     };
   }
   if (band === "medium") {
     return {
-      text: `You scored ${percentage}%. You're on the right track — train on this topic again to raise your score.`,
+      text: t("grammarExercises.score.medium", { percentage }),
       className: styles.scoreMedium,
     };
   }
   return {
-    text: `You scored ${percentage}%. This grammar point isn't quite settled yet — go back over the explanation, you'll get it!`,
+    text: t("grammarExercises.score.low", { percentage }),
     className: styles.scoreLow,
   };
 }
@@ -172,6 +177,7 @@ export default function GrammarExercises({
   onFinish,
   onProgressChange,
 }: GrammarExercisesProps) {
+  const { t } = useTranslation("grammar");
   const [index, setIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
@@ -227,7 +233,7 @@ export default function GrammarExercises({
   }, [finished, correctCount, exercises.length]);
 
   if (exercises.length === 0) {
-    return <p className={styles.exercisesEmpty}>No exercises available yet.</p>;
+    return <p className={styles.exercisesEmpty}>{t("grammarExercises.empty")}</p>;
   }
 
   const exercise = exercises[index];
@@ -377,7 +383,7 @@ export default function GrammarExercises({
 
   if (finished) {
     const percentage = Math.round((correctCount / exercises.length) * 100);
-    const message = scoreMessage(percentage);
+    const message = scoreMessage(t, percentage);
     const gaugeOffset =
       GAUGE_CIRCUMFERENCE - (animatedPercentage / 100) * GAUGE_CIRCUMFERENCE;
 
@@ -400,7 +406,12 @@ export default function GrammarExercises({
         </div>
         <div className={scoreRevealed ? styles.scoreReveal : styles.scoreRevealHidden}>
           <p className={message.className}>{message.text}</p>
-          <Button kind="cancel" variant="page" text="Try again" onClick={restart} />
+          <Button
+            kind="cancel"
+            variant="page"
+            text={t("grammarExercises.tryAgainButton")}
+            onClick={restart}
+          />
         </div>
       </div>
     );
@@ -416,7 +427,10 @@ export default function GrammarExercises({
   return (
     <div className={styles.exercises}>
       <p className={styles.exercisesProgress}>
-        Question {index + 1} of {exercises.length}
+        {t("grammarExercises.questionProgress", {
+          current: index + 1,
+          total: exercises.length,
+        })}
       </p>
 
       {exercise.type === "multiple_choice" && (
@@ -453,10 +467,12 @@ export default function GrammarExercises({
 
       {exercise.type === "sentence_reordering" && (
         <div className={styles.exercisesQuestion}>
-          <p>Put the words in the right order.</p>
+          <p>{t("grammarExercises.reorderInstruction")}</p>
           <div className={styles.exercisesAnswerArea}>
             {orderedIndices.length === 0 && (
-              <span className={styles.exercisesPlaceholder}>Tap the words below</span>
+              <span className={styles.exercisesPlaceholder}>
+                {t("grammarExercises.tapWordsBelow")}
+              </span>
             )}
             {orderedIndices.map((tokenIndex, position) => (
               <button
@@ -487,7 +503,7 @@ export default function GrammarExercises({
           </div>
           {validated && !isCorrect && (
             <p className={styles.exercisesCorrectAnswer}>
-              Correct order: {exercise.answer.join(" ")}
+              {t("grammarExercises.correctOrder", { answer: exercise.answer.join(" ") })}
             </p>
           )}
         </div>
@@ -497,8 +513,8 @@ export default function GrammarExercises({
         <div className={styles.exercisesQuestion}>
           <p className={styles.exercisesInstruction}>
             {exercise.type === "translation"
-              ? "Translate the following sentence into Chinese:"
-              : (exercise.instruction ?? "Transform the following sentence:")}
+              ? t("grammarExercises.translateInstruction")
+              : (exercise.instruction ?? t("grammarExercises.transformInstruction"))}
           </p>
           <p className={styles.exercisesSource}>
             {exercise.type === "translation" ? exercise.prompt : exercise.source}
@@ -509,11 +525,13 @@ export default function GrammarExercises({
             value={textAnswer}
             disabled={validated || isCheckingWithAi}
             onChange={(event) => setTextAnswer(event.target.value)}
-            placeholder="Type your answer"
+            placeholder={t("grammarExercises.answerPlaceholder")}
           />
           {validated && !isCorrect && (
             <p className={styles.exercisesCorrectAnswer}>
-              Accepted: {exercise.accepted_answers.join(" / ")}
+              {t("grammarExercises.accepted", {
+                answers: exercise.accepted_answers.join(" / "),
+              })}
             </p>
           )}
         </div>
@@ -531,23 +549,23 @@ export default function GrammarExercises({
             }
           >
             {isCheckingWithAi
-              ? "This solution is not the expected one. Checking with Teacher Wang if it is a possible solution. Please wait..."
+              ? t("grammarExercises.checkingWithAi")
               : validated
                 ? isCorrect
-                  ? "Correct!"
-                  : "Not quite."
+                  ? t("grammarExercises.correct")
+                  : t("grammarExercises.notQuite")
                 : ""}
           </p>
           {reorderApprovedByAi && (
             <p className={styles.feedbackCorrect}>
-              Teacher Wang detected this answer as correct
+              {t("grammarExercises.aiApproved")}
             </p>
           )}
           {validated && !isCorrect && (
             <Button
               kind="cancel"
               variant="page"
-              text="More explanation"
+              text={t("grammarExercises.moreExplanationButton")}
               onClick={requestExplanation}
             />
           )}
@@ -556,7 +574,11 @@ export default function GrammarExercises({
           <Button
             kind="confirm"
             variant="page"
-            text={isCheckingWithAi ? "Checking..." : "Validate"}
+            text={
+              isCheckingWithAi
+                ? t("grammarExercises.checkingButton")
+                : t("grammarExercises.validateButton")
+            }
             disabled={!canValidate || isCheckingWithAi}
             onClick={() => void validate()}
           />
@@ -565,7 +587,11 @@ export default function GrammarExercises({
           <Button
             kind="confirm"
             variant="page"
-            text={index + 1 >= exercises.length ? "See score" : "Next"}
+            text={
+              index + 1 >= exercises.length
+                ? t("grammarExercises.seeScoreButton")
+                : t("grammarExercises.nextButton")
+            }
             onClick={next}
           />
         )}

@@ -28,6 +28,7 @@ Use this index to find the right document. Prefer **one source of truth** and li
 | Data isolation / tenancy | [adr/data-isolation.md](adr/data-isolation.md) |
 | Plan / token budget | [adr/plan-management.md](adr/plan-management.md) |
 | Frontend CSS organization | [adr/frontend-styling.md](adr/frontend-styling.md) |
+| Frontend localization (react-i18next) | [adr/frontend-localization.md](adr/frontend-localization.md) |
 | Grammar content (lessons, exercises, mastery) | [adr/grammar-content.md](adr/grammar-content.md) |
 | Writing practice | [adr/writing-practice.md](adr/writing-practice.md) |
 

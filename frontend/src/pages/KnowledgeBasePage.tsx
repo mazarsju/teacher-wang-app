@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import AddSuggestedWordsModal from "../components/AddSuggestedWordsModal";
 import AddWordModal, { type WordFormValues } from "../components/AddWordModal";
 import Banner from "../components/Banner";
@@ -34,44 +36,48 @@ import pageStyles from "../components/Page.module.css";
 import tableStyles from "../components/Table.module.css";
 import styles from "./KnowledgeBasePage.module.css";
 
-const CHARACTER_COLUMNS: TableColumn<Character>[] = [
-  { key: "char", header: "char" },
-  { key: "pinyin", header: "pinyin" },
-  {
-    key: "writing_known",
-    header: "writing_known",
-    render: (row) => String(row.writing_known),
-  },
-  {
-    key: "updated_at",
-    header: "updated_at",
-    render: (row) => formatDateTime(row.updated_at),
-  },
-];
+function getCharacterColumns(t: TFunction): TableColumn<Character>[] {
+  return [
+    { key: "char", header: t("knowledgeBasePage.tableHeaders.char") },
+    { key: "pinyin", header: t("knowledgeBasePage.tableHeaders.pinyin") },
+    {
+      key: "writing_known",
+      header: t("knowledgeBasePage.tableHeaders.writingKnown"),
+      render: (row) => String(row.writing_known),
+    },
+    {
+      key: "updated_at",
+      header: t("knowledgeBasePage.tableHeaders.updatedAt"),
+      render: (row) => formatDateTime(row.updated_at),
+    },
+  ];
+}
 
-const WORD_COLUMNS: TableColumn<Word>[] = [
-  { key: "word", header: "words" },
-  {
-    key: "definition",
-    header: "definition",
-    render: (row) => row.definition ?? "",
-  },
-  {
-    key: "pinyin",
-    header: "pinyin",
-    render: (row) => row.pinyin ?? "",
-  },
-  {
-    key: "writing_known",
-    header: "writing_known",
-    render: (row) => String(row.writing_known),
-  },
-  {
-    key: "updated_at",
-    header: "updated_at",
-    render: (row) => formatDateTime(row.updated_at),
-  },
-];
+function getWordColumns(t: TFunction): TableColumn<Word>[] {
+  return [
+    { key: "word", header: t("knowledgeBasePage.tableHeaders.word") },
+    {
+      key: "definition",
+      header: t("knowledgeBasePage.tableHeaders.definition"),
+      render: (row) => row.definition ?? "",
+    },
+    {
+      key: "pinyin",
+      header: t("knowledgeBasePage.tableHeaders.pinyin"),
+      render: (row) => row.pinyin ?? "",
+    },
+    {
+      key: "writing_known",
+      header: t("knowledgeBasePage.tableHeaders.writingKnown"),
+      render: (row) => String(row.writing_known),
+    },
+    {
+      key: "updated_at",
+      header: t("knowledgeBasePage.tableHeaders.updatedAt"),
+      render: (row) => formatDateTime(row.updated_at),
+    },
+  ];
+}
 
 function filterCharacters(characters: Character[], searchQuery: string) {
   const query = searchQuery.trim().toLowerCase();
@@ -116,6 +122,7 @@ const ONBOARDING_WORD_THRESHOLD = 10;
 type KnowledgeBasePageProps = { onNavigate?: (page: PageId) => void };
 
 export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps) {
+  const { t } = useTranslation("knowledge-base");
   const dispatch = useAppDispatch();
   const characters = useAppSelector((state) => state.characters.items);
   const words = useAppSelector((state) => state.words.items);
@@ -147,6 +154,9 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
   const [isSuggestedWordsModalOpen, setIsSuggestedWordsModalOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  const characterColumns = useMemo(() => getCharacterColumns(t), [t]);
+  const wordColumns = useMemo(() => getWordColumns(t), [t]);
 
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
@@ -223,12 +233,12 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
 
     try {
       await exportDatabase();
-      setStatusMessage('The database has been downloaded as a zip file.');
+      setStatusMessage(t("knowledgeBasePage.export.success"));
     } catch (exportError) {
       setMutationError(
         exportError instanceof Error
           ? exportError.message
-          : "Failed to export database.",
+          : t("knowledgeBasePage.export.error"),
       );
     } finally {
       setIsExporting(false);
@@ -249,12 +259,12 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     try {
       await importDatabase(file);
       await dispatch(syncAppData()).unwrap();
-      setStatusMessage("The database has been imported successfully.");
+      setStatusMessage(t("knowledgeBasePage.import.success"));
     } catch (importError) {
       setMutationError(
         importError instanceof Error
           ? importError.message
-          : "Failed to import database.",
+          : t("knowledgeBasePage.import.error"),
       );
     } finally {
       setIsImporting(false);
@@ -284,7 +294,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       setMutationError(
         deleteError instanceof Error
           ? deleteError.message
-          : "Failed to delete word.",
+          : t("knowledgeBasePage.deleteWord.error"),
       );
     }
   }
@@ -329,7 +339,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       setMutationError(
         updateError instanceof Error
           ? updateError.message
-          : "Failed to update word.",
+          : t("knowledgeBasePage.editWord.error"),
       );
     }
   }
@@ -352,7 +362,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       setMutationError(
         addWordError instanceof Error
           ? addWordError.message
-          : "Failed to add word.",
+          : t("knowledgeBasePage.addWord.error"),
       );
     }
   }
@@ -378,7 +388,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       setQuickSyncError(
         syncErrorValue instanceof Error
           ? syncErrorValue.message
-          : "Failed to quick-synchronize with Anki.",
+          : t("knowledgeBasePage.quickSync.error"),
       );
     } finally {
       setIsQuickSyncing(false);
@@ -387,18 +397,20 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
 
   return (
     <Page
-      title="Knowledge base"
+      title={t("knowledgeBasePage.title")}
       fullWidth={pageMode === "view"}
       headerCenter={
         pageMode === "view" ? (
           <div className={styles.pageHeaderToggles}>
             <label className={styles.pageHeaderToggle}>
-              <span className={styles.pageHeaderToggleLabel}>Writing known</span>
+              <span className={styles.pageHeaderToggleLabel}>
+                {t("knowledgeBasePage.toggles.writingKnown")}
+              </span>
               <span className="toggle">
                 <input
                   type="checkbox"
                   role="switch"
-                  aria-label="Writing known"
+                  aria-label={t("knowledgeBasePage.toggles.writingKnown")}
                   checked={showWritingKnown}
                   onChange={(event) =>
                     setShowWritingKnown(event.target.checked)
@@ -409,13 +421,13 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             </label>
             <label className={styles.pageHeaderToggle}>
               <span className={styles.pageHeaderToggleLabel}>
-                Writing not known
+                {t("knowledgeBasePage.toggles.writingNotKnown")}
               </span>
               <span className="toggle">
                 <input
                   type="checkbox"
                   role="switch"
-                  aria-label="Writing not known"
+                  aria-label={t("knowledgeBasePage.toggles.writingNotKnown")}
                   checked={showWritingUnknown}
                   onChange={(event) =>
                     setShowWritingUnknown(event.target.checked)
@@ -432,7 +444,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
           <Button
             kind="cancel"
             variant="page"
-            text="Modify"
+            text={t("knowledgeBasePage.actions.modify")}
             icon={<PenIcon />}
             onClick={() => setPageMode("edit")}
           />
@@ -441,7 +453,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             <Button
               kind="cancel"
               variant="page"
-              text="Export"
+              text={t("knowledgeBasePage.actions.export")}
               icon={<ExportIcon />}
               onClick={() => void handleExportDatabase()}
               disabled={isExporting}
@@ -449,7 +461,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             <Button
               kind="cancel"
               variant="page"
-              text="Import"
+              text={t("knowledgeBasePage.actions.import")}
               icon={<ImportIcon />}
               onClick={() => importInputRef.current?.click()}
               disabled={isImporting}
@@ -464,7 +476,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             <Button
               kind="cancel"
               variant="page"
-              text="View"
+              text={t("knowledgeBasePage.actions.view")}
               icon={<EyeIcon />}
               onClick={switchToViewMode}
             />
@@ -475,8 +487,14 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
       {showAnkiSyncBanner && (
         <Banner
           type="warning"
-          message={`${pendingAnkiPushEstimate} card${pendingAnkiPushEstimate === 1 ? "" : "s"} need to be added in Anki for synchronization.`}
-          buttonMessage={isQuickSyncing ? "Syncing..." : "Quick synchro"}
+          message={t("knowledgeBasePage.ankiSyncBanner.message", {
+            count: pendingAnkiPushEstimate,
+          })}
+          buttonMessage={
+            isQuickSyncing
+              ? t("knowledgeBasePage.ankiSyncBanner.syncing")
+              : t("knowledgeBasePage.ankiSyncBanner.button")
+          }
           actionOnButtonClick={() => void handleQuickSynchro()}
           disabled={isQuickSyncing}
         />
@@ -485,15 +503,15 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         (words.length < ONBOARDING_WORD_THRESHOLD ? (
           <Banner
             type="info"
-            message="Struggling with setting up your knowledge base? Click here for a faster and easier onboarding!"
-            buttonMessage="Start building your knowledge base"
+            message={t("knowledgeBasePage.onboardingBanner.message")}
+            buttonMessage={t("knowledgeBasePage.onboardingBanner.buttonMessage")}
             actionOnButtonClick={() => setIsInitWizardOpen(true)}
           />
         ) : (
           <Banner
             type="info"
-            message="Need some inspiration for your next word to learn?"
-            buttonMessage="Add next word"
+            message={t("knowledgeBasePage.suggestionBanner.message")}
+            buttonMessage={t("knowledgeBasePage.suggestionBanner.buttonMessage")}
             actionOnButtonClick={() => setIsSuggestedWordsModalOpen(true)}
           />
         ))}
@@ -518,7 +536,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             words={selectedCharacterWords}
             onClose={() => setSelectedCharacter(null)}
           />
-          {isLoading && <p>Loading knowledge base...</p>}
+          {isLoading && <p>{t("knowledgeBasePage.loading")}</p>}
           {error && <p className="table-error">{error}</p>}
           {!isLoading && !error && (
             <PinyinGridView
@@ -562,58 +580,64 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
         isOpen={wordToDelete !== null}
         message={
           wordToDelete
-            ? `Are you sure you want to delete "${wordToDelete.word}"?`
+            ? t("knowledgeBasePage.deleteWordConfirm.message", {
+                word: wordToDelete.word,
+              })
             : ""
         }
         onCancel={() => setWordToDelete(null)}
         onConfirm={() => void confirmDeleteWord()}
       />
-      {isLoading && <p>Loading knowledge base...</p>}
+      {isLoading && <p>{t("knowledgeBasePage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
       {!isLoading && !error && (
         <>
           <section className={styles.knowledgeBaseSection}>
             <div className={styles.knowledgeBaseSectionHeader}>
-              <h2 className={styles.knowledgeBaseSectionTitle}>Words</h2>
+              <h2 className={styles.knowledgeBaseSectionTitle}>
+                {t("knowledgeBasePage.wordsSection.title")}
+              </h2>
               <Button
                 kind="confirm"
                 variant="page"
-                text="Add word"
+                text={t("knowledgeBasePage.wordsSection.addWordButton")}
                 onClick={() => setIsAddWordModalOpen(true)}
               />
             </div>
             <label className={styles.searchBar}>
-              <span className={styles.searchBarLabel}>Search</span>
+              <span className={styles.searchBarLabel}>
+                {t("knowledgeBasePage.search.label")}
+              </span>
               <input
                 type="search"
                 value={wordSearchQuery}
-                placeholder="Search words..."
+                placeholder={t("knowledgeBasePage.wordsSection.searchPlaceholder")}
                 onChange={(event) => setWordSearchQuery(event.target.value)}
               />
             </label>
             <Table
-              columns={WORD_COLUMNS}
+              columns={wordColumns}
               rows={filteredWords}
               compact
               maxVisibleRows={5}
               getRowKey={(row) => row.word}
               emptyMessage={
                 words.length === 0
-                  ? "No words in the database yet."
-                  : "No words match your search."
+                  ? t("knowledgeBasePage.wordsSection.emptyDatabase")
+                  : t("knowledgeBasePage.wordsSection.emptySearch")
               }
               renderRowActions={(row) => (
                 <div className={tableStyles.tableRowActions}>
                   <Button
                     kind="confirm"
                     variant="table"
-                    text="Edit"
+                    text={t("knowledgeBasePage.wordsSection.editButton")}
                     onClick={() => setWordToEdit(row)}
                   />
                   <Button
                     kind="danger"
                     variant="table"
-                    text="Delete"
+                    text={t("knowledgeBasePage.wordsSection.deleteButton")}
                     onClick={() => setWordToDelete(row)}
                   />
                 </div>
@@ -622,27 +646,33 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
           </section>
           <section className={styles.knowledgeBaseSection}>
             <div className={styles.knowledgeBaseSectionHeader}>
-              <h2 className={styles.knowledgeBaseSectionTitle}>Characters</h2>
+              <h2 className={styles.knowledgeBaseSectionTitle}>
+                {t("knowledgeBasePage.charactersSection.title")}
+              </h2>
             </div>
             <label className={styles.searchBar}>
-              <span className={styles.searchBarLabel}>Search</span>
+              <span className={styles.searchBarLabel}>
+                {t("knowledgeBasePage.search.label")}
+              </span>
               <input
                 type="search"
                 value={characterSearchQuery}
-                placeholder="Search characters..."
+                placeholder={t(
+                  "knowledgeBasePage.charactersSection.searchPlaceholder",
+                )}
                 onChange={(event) => setCharacterSearchQuery(event.target.value)}
               />
             </label>
             <Table
-              columns={CHARACTER_COLUMNS}
+              columns={characterColumns}
               rows={filteredCharacters}
               compact
               maxVisibleRows={5}
               getRowKey={(row) => row.char}
               emptyMessage={
                 characters.length === 0
-                  ? "No characters in the database yet."
-                  : "No characters match your search."
+                  ? t("knowledgeBasePage.charactersSection.emptyDatabase")
+                  : t("knowledgeBasePage.charactersSection.emptySearch")
               }
             />
           </section>

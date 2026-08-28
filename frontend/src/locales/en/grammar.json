@@ -1,0 +1,87 @@
+{
+  "grammarPage": {
+    "title": "Grammar",
+    "loading": "Loading grammar points...",
+    "loadError": "Failed to load grammar points.",
+    "levelSummary": "HSK {{level}} ({{levelLabel}})",
+    "practiceLabel": "Practice: {{title}}",
+    "status": {
+      "todo": "Not started",
+      "wip": "In progress",
+      "done": "Completed",
+      "skip": "Skipped",
+      "mastered": "Mastered"
+    },
+    "levelLabels": {
+      "beginner": "Beginner",
+      "elementary": "Elementary",
+      "intermediate": "Intermediate",
+      "upperIntermediate": "Upper Intermediate",
+      "advanced": "Advanced",
+      "mastery": "Mastery",
+      "fallback": "Level {{level}}"
+    },
+    "levelGauge": {
+      "title": "HSK {{level}}: {{percent}}% complete",
+      "label": "HSK {{level}}"
+    },
+    "table": {
+      "number": "#",
+      "lesson": "Lesson",
+      "status": "Status",
+      "score": "Score"
+    }
+  },
+  "grammarPointDetailPage": {
+    "titleFallback": "Grammar topic",
+    "back": "Back",
+    "loading": "Loading grammar topic...",
+    "loadError": "Failed to load grammar topic.",
+    "skipError": "Failed to mark this lesson as known.",
+    "saveQuizError": "Failed to save the quiz result.",
+    "chatGreeting": "Ask me what you did not understand on this lesson, will be happy to help!",
+    "tabs": {
+      "explanation": "Explanation",
+      "exercises": "Exercises",
+      "vocabulary": "Vocabulary"
+    },
+    "noExplanation": "No explanation available yet.",
+    "skipHint": "Already know this lesson? You can skip it and its exercises.",
+    "skipButton": "Skip this lesson",
+    "askTeacherWangButton": "Ask more information to Teacher Wang"
+  },
+  "grammarExercises": {
+    "empty": "No exercises available yet.",
+    "questionProgress": "Question {{current}} of {{total}}",
+    "reorderInstruction": "Put the words in the right order.",
+    "tapWordsBelow": "Tap the words below",
+    "correctOrder": "Correct order: {{answer}}",
+    "translateInstruction": "Translate the following sentence into Chinese:",
+    "transformInstruction": "Transform the following sentence:",
+    "answerPlaceholder": "Type your answer",
+    "accepted": "Accepted: {{answers}}",
+    "checkingWithAi": "This solution is not the expected one. Checking with Teacher Wang if it is a possible solution. Please wait...",
+    "correct": "Correct!",
+    "notQuite": "Not quite.",
+    "aiApproved": "Teacher Wang detected this answer as correct",
+    "moreExplanationButton": "More explanation",
+    "tryAgainButton": "Try again",
+    "validateButton": "Validate",
+    "checkingButton": "Checking...",
+    "seeScoreButton": "See score",
+    "nextButton": "Next",
+    "score": {
+      "good": "You scored {{percentage}}%. Great job, you passed this test!",
+      "medium": "You scored {{percentage}}%. You're on the right track — train on this topic again to raise your score.",
+      "low": "You scored {{percentage}}%. This grammar point isn't quite settled yet — go back over the explanation, you'll get it!"
+    }
+  },
+  "grammarVocabularyTab": {
+    "addError": "Failed to add word.",
+    "empty": "No new words for this lesson.",
+    "addButton": "Add",
+    "table": {
+      "word": "Word"
+    }
+  }
+}

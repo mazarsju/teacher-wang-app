@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import i18n from "../../i18n";
 import { resetAppData, syncAppData } from "../thunks/syncAppData";
 
 export type SyncStatus = "idle" | "loading" | "succeeded" | "failed";
@@ -32,7 +33,7 @@ const syncSlice = createSlice({
       })
       .addCase(syncAppData.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.error.message ?? "Failed to synchronize data.";
+        state.error = action.error.message ?? i18n.t("common:app.syncError");
       })
       .addCase(resetAppData, () => initialState);
   },

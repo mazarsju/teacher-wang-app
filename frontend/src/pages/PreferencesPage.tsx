@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import AnkiConnectGuideModal from "../components/AnkiConnectGuideModal";
 import AnkiDeckSetupModal from "../components/AnkiDeckSetupModal";
 import AnkiSyncHelpModal from "../components/AnkiSyncHelpModal";
@@ -15,7 +17,6 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAnkiStatus } from "../store/slices/ankiSlice";
 import { resetKnowledgeBaseData, syncAppData } from "../store/thunks/syncAppData";
 import {
-  ANKI_DECK_LABELS,
   ANKI_DECK_ORDER,
   type AnkiDeckKind,
   type AnkiDeckStatus,
@@ -55,18 +56,22 @@ const USAGE_CHART_WIDTH = 600;
 const USAGE_CHART_HEIGHT = 160;
 const MAX_SHOWN_FAILED_CARDS = 10;
 
-function formatDeckStatus(status: AnkiDeckStatus): string {
+function formatDeckStatus(
+  status: AnkiDeckStatus,
+  t: TFunction<"preferences">,
+): string {
   switch (status) {
     case "not_configured":
-      return "Not configured";
+      return t("preferencesPage.anki.deckStatus.notConfigured");
     case "synchronized":
-      return "Synchronized";
+      return t("preferencesPage.anki.deckStatus.synchronized");
     case "not_synchronized":
-      return "Not synchronized";
+      return t("preferencesPage.anki.deckStatus.notSynchronized");
   }
 }
 
 export default function PreferencesPage() {
+  const { t } = useTranslation("preferences");
   const dispatch = useAppDispatch();
   const ankiStatus = useAppSelector((state) => state.anki.status);
   const syncStatus = useAppSelector((state) => state.sync.status);
@@ -102,12 +107,12 @@ export default function PreferencesPage() {
       setExtrasError(
         loadError instanceof Error
           ? loadError.message
-          : "Failed to load preferences.",
+          : t("preferencesPage.errors.loadPreferences"),
       );
     } finally {
       setIsTokenUsageLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadSmartAiPreference = useCallback(async () => {
     try {
@@ -117,12 +122,12 @@ export default function PreferencesPage() {
       setExtrasError(
         loadError instanceof Error
           ? loadError.message
-          : "Failed to load the Smart AI preference.",
+          : t("preferencesPage.errors.loadSmartAi"),
       );
     } finally {
       setIsSmartAiLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadTokenUsage();
@@ -143,7 +148,7 @@ export default function PreferencesPage() {
       setExtrasError(
         toggleError instanceof Error
           ? toggleError.message
-          : "Failed to update the Smart AI preference.",
+          : t("preferencesPage.errors.updateSmartAi"),
       );
     } finally {
       setIsSmartAiSaving(false);
@@ -169,7 +174,7 @@ export default function PreferencesPage() {
       setExtrasError(
         refreshError instanceof Error
           ? refreshError.message
-          : "Failed to refresh Anki status.",
+          : t("preferencesPage.errors.refreshAnkiStatus"),
       );
     }
   }
@@ -189,8 +194,14 @@ export default function PreferencesPage() {
       const shown = failedCards.slice(0, MAX_SHOWN_FAILED_CARDS);
       const remaining = failedCards.length - shown.length;
       setSyncWarningMessage(
-        `These cards couldn't be synchronized: ${shown.join("、")}` +
-          (remaining > 0 ? `, and ${remaining} other cards.` : "."),
+        t("preferencesPage.errors.syncFailedMessage", {
+          cards: shown.join("、"),
+        }) +
+          (remaining > 0
+            ? t("preferencesPage.errors.syncFailedRemaining", {
+                count: remaining,
+              })
+            : t("preferencesPage.errors.syncFailedEnd")),
       );
     }
     if (direction === "pull") {
@@ -211,7 +222,7 @@ export default function PreferencesPage() {
       setExtrasError(
         deleteError instanceof Error
           ? deleteError.message
-          : "Failed to delete knowledge base.",
+          : t("preferencesPage.errors.deleteKnowledgeBase"),
       );
     } finally {
       setIsDeletingKnowledgeBase(false);
@@ -252,29 +263,38 @@ export default function PreferencesPage() {
 
   const deckRows = ANKI_DECK_ORDER.map((kind) => ({
     kind,
-    label: ANKI_DECK_LABELS[kind],
+    label: t(`ankiDeckKind.labels.${kind}`),
   }));
   const hasUnsynchronizedDeck = deckRows.some(
     ({ kind }) => ankiStatus.decks[kind].status === "not_synchronized",
   );
 
   return (
-    <Page title="Preferences">
-      {isLoading && <p>Loading preferences...</p>}
+    <Page title={t("preferencesPage.title")}>
+      {isLoading && <p>{t("preferencesPage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
 
       {!isLoading && tokenUsage && (
         <section className={`preferences-section ${styles.preferencesSectionPlan}`}>
-          <h2 className={styles.preferencesSectionTitle}>Current plan</h2>
+          <h2 className={styles.preferencesSectionTitle}>
+            {t("preferencesPage.currentPlan.title")}
+          </h2>
           <p className={styles.preferencesSectionDescription}>
             <span>
-              You&apos;re on the{" "}
-              <b>{currentPlan === "pro" ? "Pro" : "Free"}</b> plan.
+              <Trans
+                i18nKey={
+                  currentPlan === "pro"
+                    ? "preferencesPage.currentPlan.descriptionPro"
+                    : "preferencesPage.currentPlan.descriptionFree"
+                }
+                t={t}
+                components={{ 1: <b /> }}
+              />
             </span>
             <Button
               kind="confirm"
               variant="page"
-              text="Compare plans"
+              text={t("preferencesPage.currentPlan.comparePlans")}
               onClick={() => setIsChangePlanModalOpen(true)}
             />
           </p>
@@ -283,23 +303,25 @@ export default function PreferencesPage() {
 
       {!isLoading && (
         <section className={`preferences-section ${styles.preferencesSectionAnki}`}>
-          <h2 className={styles.preferencesSectionTitle}>Anki synchronization</h2>
+          <h2 className={styles.preferencesSectionTitle}>
+            {t("preferencesPage.anki.title")}
+          </h2>
 
           <p className={styles.ankiMobileWarning}>
-            Anki synchronization isn&apos;t available on a mobile phone. Use a
-            computer to set up and manage your Anki decks.
+            {t("preferencesPage.anki.mobileWarning")}
           </p>
 
           <div className={styles.ankiDesktopContent}>
             <p className={styles.preferencesSectionDescription}>
-              Map your knowledge-base characters and words to Anki decks through
-              AnkiConnect.
+              {t("preferencesPage.anki.description")}
             </p>
             {!ankiStatus.connected && (
               <Banner
                 type="warning"
-                message="Start the Anki app with the AnkiConnect add-on activated before configuring decks."
-                buttonMessage="How to set up AnkiConnect"
+                message={t("preferencesPage.anki.notConnectedBanner.message")}
+                buttonMessage={t(
+                  "preferencesPage.anki.notConnectedBanner.buttonMessage",
+                )}
                 actionOnButtonClick={() => setIsGuideOpen(true)}
               />
             )}
@@ -307,8 +329,10 @@ export default function PreferencesPage() {
             {hasUnsynchronizedDeck && (
               <Banner
                 type="warning"
-                message="Struggling with your Anki setup? Click here for more info"
-                buttonMessage="Anki synchronization help"
+                message={t("preferencesPage.anki.syncHelpBanner.message")}
+                buttonMessage={t(
+                  "preferencesPage.anki.syncHelpBanner.buttonMessage",
+                )}
                 actionOnButtonClick={() => setIsSyncHelpOpen(true)}
               />
             )}
@@ -327,8 +351,8 @@ export default function PreferencesPage() {
                         className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
                       >
                         {ankiStatus.connected
-                          ? formatDeckStatus(mapping.status)
-                          : "Not connected"}
+                          ? formatDeckStatus(mapping.status, t)
+                          : t("preferencesPage.anki.deckStatus.notConnected")}
                       </span>
                       {mapping.deck_name !== "" && (
                         <span className={styles.ankiDeckMappedName}>
@@ -341,7 +365,7 @@ export default function PreferencesPage() {
                         <Button
                           kind="confirm"
                           variant="page"
-                          text="Sync"
+                          text={t("preferencesPage.anki.syncButton")}
                           icon={<SyncIcon />}
                           disabled={!ankiStatus.connected}
                           onClick={() => setSyncKind(kind)}
@@ -350,7 +374,7 @@ export default function PreferencesPage() {
                       <Button
                         kind="confirm"
                         variant="page"
-                        text="Setup"
+                        text={t("preferencesPage.anki.setupButton")}
                         icon={<SettingsIcon />}
                         disabled={!ankiStatus.connected}
                         onClick={() => setSetupKind(kind)}
@@ -366,21 +390,27 @@ export default function PreferencesPage() {
 
 {!isLoading && tokenUsage && (
         <section className={`preferences-section ${styles.preferencesSectionUsage}`}>
-          <h2 className={styles.preferencesSectionTitle}>AI usage</h2>
+          <h2 className={styles.preferencesSectionTitle}>
+            {t("preferencesPage.usage.title")}
+          </h2>
           <p className={styles.preferencesSectionDescription}>
-            How much of your monthly AI allowance chat and grammar-check calls
-            have used.
+            {t("preferencesPage.usage.description")}
           </p>
 
           {!isSmartAiLoading && (
             <div className={styles.preferencesToggleRow}>
               <span className={styles.preferencesToggleRowLabel}>
-                <span className={styles.preferencesToggleRowTitle}>Smart AI</span>
+                <span className={styles.preferencesToggleRowTitle}>
+                  {t("preferencesPage.usage.smartAi.title")}
+                </span>
                 <p className={styles.preferencesToggleRowDescription}>
-                  Smarter answers, at the cost of a bit more time and usage.
+                  {t("preferencesPage.usage.smartAi.description")}
                 </p>
               </span>
-              <label className={styles.preferencesToggle} aria-label="Smart AI">
+              <label
+                className={styles.preferencesToggle}
+                aria-label={t("preferencesPage.usage.smartAi.ariaLabel")}
+              >
                 <input
                   type="checkbox"
                   checked={isSmartAiEnabled}
@@ -398,7 +428,7 @@ export default function PreferencesPage() {
           <div className={styles.preferencesUsageProgress}>
             <div className={styles.preferencesUsageProgressHeader}>
               <span className={styles.preferencesUsageProgressLabel}>
-                Used this month
+                {t("preferencesPage.usage.usedThisMonth")}
               </span>
               <span className={styles.preferencesUsageProgressValue}>
                 {formatPercent(usedPercent)}
@@ -410,7 +440,7 @@ export default function PreferencesPage() {
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(usedPercent)}
-              aria-label="Percentage of monthly AI usage allowance used"
+              aria-label={t("preferencesPage.usage.progressBarAriaLabel")}
             >
               <div
                 className={styles.preferencesUsageProgressFill}
@@ -418,15 +448,15 @@ export default function PreferencesPage() {
               />
             </div>
             <p className={styles.preferencesUsageResetNote}>
-              Resets to 0% on the 1st of next month.
+              {t("preferencesPage.usage.resetNote")}
             </p>
           </div>
 
           {isUsageExhausted && (
             <Banner
               type="warning"
-              message="You're running out of AI usage for the month. Need more? Don't hesitate to change your plan!"
-              buttonMessage="Update plan"
+              message={t("preferencesPage.usage.exhaustedBanner.message")}
+              buttonMessage={t("preferencesPage.usage.exhaustedBanner.buttonMessage")}
               actionOnButtonClick={() => setIsUpdatePlanModalOpen(true)}
             />
           )}
@@ -434,7 +464,9 @@ export default function PreferencesPage() {
           <div
             className={styles.preferencesUsageChart}
             role="img"
-            aria-label={`Cumulative AI usage this month, currently at ${formatPercent(usedPercent)} of the monthly allowance`}
+            aria-label={t("preferencesPage.usage.chartAriaLabel", {
+              percent: formatPercent(usedPercent),
+            })}
           >
             <svg
               viewBox={`0 0 ${USAGE_CHART_WIDTH} ${USAGE_CHART_HEIGHT}`}
@@ -479,7 +511,12 @@ export default function PreferencesPage() {
                   r={2.5}
                   className={styles.preferencesUsageChartDot}
                 >
-                  <title>{`${formatDayLabel(point.date)}: ${formatPercent(point.percent)} used`}</title>
+                  <title>
+                    {t("preferencesPage.usage.chartDotTitle", {
+                      day: formatDayLabel(point.date),
+                      percent: formatPercent(point.percent),
+                    })}
+                  </title>
                 </circle>
               ))}
               {currentUsagePoint && (
@@ -511,15 +548,16 @@ export default function PreferencesPage() {
 
       {!isLoading && (
         <section className={`preferences-section ${styles.preferencesSectionDanger}`}>
-          <h2 className={styles.preferencesSectionTitle}>Dangerous actions</h2>
+          <h2 className={styles.preferencesSectionTitle}>
+            {t("preferencesPage.danger.title")}
+          </h2>
           <p className={styles.preferencesSectionDescription}>
-            These actions are irreversible. Export your knowledge base first if
-            you may need it later.
+            {t("preferencesPage.danger.description")}
           </p>
           <Button
             kind="danger"
             variant="page"
-            text="Delete knowledge base"
+            text={t("preferencesPage.danger.deleteButton")}
             icon={<TrashIcon />}
             onClick={() => setIsDeleteKnowledgeBaseConfirmOpen(true)}
             disabled={isDeletingKnowledgeBase}
@@ -534,7 +572,7 @@ export default function PreferencesPage() {
       />
       <ConfirmModal
         isOpen={isDeleteKnowledgeBaseConfirmOpen}
-        message="Are you sure you want to delete the knowledge base? Please make sure you have exported the database before deleting it. (note: this won't delete your Anki decks)"
+        message={t("preferencesPage.danger.deleteConfirmMessage")}
         danger={true}
         onCancel={() => setIsDeleteKnowledgeBaseConfirmOpen(false)}
         onConfirm={() => void handleConfirmDeleteKnowledgeBase()}

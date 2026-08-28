@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import vocabularyNoteTypeStyles from "./VocabularyNoteTypeInfoModal.module.css";
 
@@ -10,6 +11,8 @@ export default function AnkiSyncHelpModal({
   isOpen,
   onClose,
 }: AnkiSyncHelpModalProps) {
+  const { t } = useTranslation("preferences");
+
   if (!isOpen) {
     return null;
   }
@@ -24,27 +27,15 @@ export default function AnkiSyncHelpModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="anki-sync-help-title" className="modal-title">
-          Anki synchronization gotchas
+          {t("ankiSyncHelpModal.title")}
         </h2>
         <ul className={vocabularyNoteTypeStyles.ankiNoteTypeDirections}>
-          <li>
-            Make sure your Anki cards have a &quot;definition&quot; (they
-            cannot be imported if this field is empty).
-          </li>
-          <li>
-            Make sure your Anki cards have the correct syntax for pinyin:
-            should have either the &quot;pinyin&quot; or the
-            &quot;numerical&quot; format. If a card is composed of several
-            pinyins, they should be split by a space.
-          </li>
-          <li>
-            Make sure, if you haven&apos;t set the pinyin for this card, that
-            the pinyin of the character can be detected automatically from
-            another card.
-          </li>
+          <li>{t("ankiSyncHelpModal.bullet1")}</li>
+          <li>{t("ankiSyncHelpModal.bullet2")}</li>
+          <li>{t("ankiSyncHelpModal.bullet3")}</li>
         </ul>
         <div className="modal-actions">
-          <Button kind="confirm" text="Close" onClick={onClose} />
+          <Button kind="confirm" text={t("ankiSyncHelpModal.close")} onClick={onClose} />
         </div>
       </div>
     </div>

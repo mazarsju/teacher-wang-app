@@ -1,0 +1,43 @@
+{
+  "writingPracticeDetailPage": {
+    "title": "Writing",
+    "backButton": "Back",
+    "tabs": {
+      "context": "Context",
+      "writing": "Writing",
+      "completed": "Completed versions"
+    },
+    "loading": "Loading...",
+    "noContext": "No context available yet.",
+    "loadTopicError": "Failed to load this writing topic.",
+    "saveDraftError": "Failed to save your draft.",
+    "textareaPlaceholder": "Write in Chinese...",
+    "textareaAriaLabel": "Your writing",
+    "saveDraft": "Save draft",
+    "saving": "Saving...",
+    "deleteDraft": "Delete draft",
+    "deleting": "Deleting...",
+    "deleteDraftError": "Failed to delete your draft.",
+    "submit": "Submit",
+    "checkingTopic": "Checking...",
+    "offTopicWarning": "Your text doesn't seem to answer this exercise yet. Take another look at the prompt in the Context tab, then rewrite your text to address it before submitting.",
+    "reviewingMessage": "Your text is currently under review...",
+    "reviewedAriaLabel": "Your writing",
+    "correctButtonAriaLabel": "Correct: {{text}}",
+    "deleteDraftConfirmMessage": "Are you sure you want to delete your draft for this topic?"
+  },
+  "sentenceCorrectionModal": {
+    "title": "Correct this sentence",
+    "fieldLabel": "Your correction",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "writingReviewModal": {
+    "allCorrectTitle": "Everything is correct!",
+    "almostThereTitle": "Almost there",
+    "allCorrectMessage": "Well done — your text has no grammar mistakes.",
+    "notAllCorrectMessage": "Some sentences still have grammar mistakes. Click them to see why, then fix them to validate the text.",
+    "grammarPointsLabel": "Grammar points you used correctly:",
+    "ok": "OK"
+  }
+}

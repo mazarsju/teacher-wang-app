@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 
 type ConfirmModalProps = {
@@ -15,6 +16,8 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const { t } = useTranslation("common");
+
   if (!isOpen) {
     return null;
   }
@@ -33,15 +36,15 @@ export default function ConfirmModal({
         </p>
         {danger && (
           <p id="confirm-modal-message" className="modal-message--danger">
-            This action is irreversible.
+            {t("confirmModal.irreversibleWarning")}
           </p>
         )}
         <div className="modal-actions">
-          <Button kind="cancel" text="Cancel" onClick={onCancel} />
+          <Button kind="cancel" text={t("confirmModal.cancel")} onClick={onCancel} />
           <Button
             kind={danger ? "danger" : "confirm"}
             variant="confirmation"
-            text="Confirm"
+            text={t("confirmModal.confirm")}
             onClick={onConfirm}
           />
         </div>

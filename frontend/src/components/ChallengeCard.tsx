@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import { TrophyIcon } from "./icons";
 import type { Challenge } from "../types/challenge";
@@ -15,6 +16,7 @@ export default function ChallengeCard({
   completed = false,
   onSelect,
 }: ChallengeCardProps) {
+  const { t } = useTranslation("chat");
   const { character } = challenge;
 
   return (
@@ -28,7 +30,10 @@ export default function ChallengeCard({
       onClick={() => onSelect(challenge)}
       aria-label={
         completed
-          ? `${character.name} (${character.chineseName}), completed`
+          ? t("challengeCard.completedAriaLabel", {
+              name: character.name,
+              chineseName: character.chineseName,
+            })
           : undefined
       }
     >
@@ -51,7 +56,9 @@ export default function ChallengeCard({
           {challenge.description}
         </p>
         {completed && (
-          <span className={styles.challengeCardCompletedLabel}>Completed</span>
+          <span className={styles.challengeCardCompletedLabel}>
+            {t("challengeCard.completedLabel")}
+          </span>
         )}
       </div>
     </button>

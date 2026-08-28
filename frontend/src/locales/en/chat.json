@@ -1,0 +1,16 @@
+{
+  "chatPage": {
+    "title": "Chat",
+    "banner": {
+      "message": "Build your knowledge base to unlock more people to talk to!",
+      "buttonMessage": "Go to knowledge base"
+    },
+    "intro": "Who do you want to speak with today?",
+    "challengesHeading": "Challenges",
+    "challengesDescription": "Practice real-life conversations with guided tasks."
+  },
+  "challengeCard": {
+    "completedAriaLabel": "{{name}} ({{chineseName}}), completed",
+    "completedLabel": "Completed"
+  }
+}

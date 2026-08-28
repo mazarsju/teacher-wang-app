@@ -1,0 +1,105 @@
+{
+  "knowledgeBasePage": {
+    "title": "Knowledge base",
+    "tableHeaders": {
+      "char": "char",
+      "pinyin": "pinyin",
+      "writingKnown": "writing_known",
+      "updatedAt": "updated_at",
+      "word": "words",
+      "definition": "definition"
+    },
+    "toggles": {
+      "writingKnown": "Writing known",
+      "writingNotKnown": "Writing not known"
+    },
+    "actions": {
+      "modify": "Modify",
+      "export": "Export",
+      "import": "Import",
+      "view": "View"
+    },
+    "ankiSyncBanner": {
+      "message_one": "{{count}} card need to be added in Anki for synchronization.",
+      "message_other": "{{count}} cards need to be added in Anki for synchronization.",
+      "syncing": "Syncing...",
+      "button": "Quick synchro"
+    },
+    "onboardingBanner": {
+      "message": "Struggling with setting up your knowledge base? Click here for a faster and easier onboarding!",
+      "buttonMessage": "Start building your knowledge base"
+    },
+    "suggestionBanner": {
+      "message": "Need some inspiration for your next word to learn?",
+      "buttonMessage": "Add next word"
+    },
+    "loading": "Loading knowledge base...",
+    "search": {
+      "label": "Search"
+    },
+    "wordsSection": {
+      "title": "Words",
+      "addWordButton": "Add word",
+      "searchPlaceholder": "Search words...",
+      "emptyDatabase": "No words in the database yet.",
+      "emptySearch": "No words match your search.",
+      "editButton": "Edit",
+      "deleteButton": "Delete"
+    },
+    "charactersSection": {
+      "title": "Characters",
+      "searchPlaceholder": "Search characters...",
+      "emptyDatabase": "No characters in the database yet.",
+      "emptySearch": "No characters match your search."
+    },
+    "deleteWordConfirm": {
+      "message": "Are you sure you want to delete \"{{word}}\"?"
+    },
+    "export": {
+      "success": "The database has been downloaded as a zip file.",
+      "error": "Failed to export database."
+    },
+    "import": {
+      "success": "The database has been imported successfully.",
+      "error": "Failed to import database."
+    },
+    "deleteWord": {
+      "error": "Failed to delete word."
+    },
+    "editWord": {
+      "error": "Failed to update word."
+    },
+    "addWord": {
+      "error": "Failed to add word."
+    },
+    "quickSync": {
+      "error": "Failed to quick-synchronize with Anki."
+    }
+  },
+  "addSuggestedWordsModal": {
+    "title": "Words to learn next",
+    "message": "The following words are the most strategic for you to learn.",
+    "loading": "Loading suggestions…",
+    "selectAriaLabel": "Select {{word}}",
+    "tableHeaders": {
+      "word": "Word"
+    },
+    "emptyMessage": "No more words to suggest right now.",
+    "ignoreButton": "Ignore",
+    "ignoreAllHint": "None of those words interest you? You can ignore them all so that other words are proposed to you:",
+    "ignoreAllButton": "Ignore all words",
+    "cancelButton": "Cancel",
+    "confirmButton": "Confirm",
+    "loadError": "Failed to load suggested words.",
+    "ignoreError": "Failed to ignore the word(s).",
+    "submitError": "Failed to add the selected words."
+  },
+  "characterWordsModal": {
+    "associatedWordsHeading": "Associated words:"
+  },
+  "pinyinGridView": {
+    "emptyStartLabel": "—",
+    "cornerHeader": "start \\ final",
+    "associatedWordsAriaLabel": "{{char}} associated words"
+  }
+}

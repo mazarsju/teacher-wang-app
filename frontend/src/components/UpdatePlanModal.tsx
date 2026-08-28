@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from "react-i18next";
 import Button from "./Button";
 
 const ISSUES_URL = "https://github.com/mazarsju/teacher-wang-app/issues";
@@ -8,6 +9,8 @@ type UpdatePlanModalProps = {
 };
 
 export default function UpdatePlanModal({ isOpen, onClose }: UpdatePlanModalProps) {
+  const { t } = useTranslation(["preferences", "common"]);
+
   if (!isOpen) {
     return null;
   }
@@ -22,20 +25,19 @@ export default function UpdatePlanModal({ isOpen, onClose }: UpdatePlanModalProp
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id="update-plan-modal-title" className="modal-title">
-          Upgrade your plan
+          {t("updatePlanModal.title")}
         </h2>
         <p className="modal-message">
-          You&apos;re an early bird! The app is still under construction, so
-          there&apos;s no paid plan just yet. Want to unlock the Pro plan for
-          free for 3 months (100&times; your monthly AI usage)? Help build the
-          product by posting your first issue on{" "}
-          <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">
-            GitHub
-          </a>{" "}
-          and I&apos;ll set you up!
+          <Trans
+            i18nKey="updatePlanModal.message"
+            t={t}
+            components={{
+              1: <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer" />,
+            }}
+          />
         </p>
         <div className="modal-actions">
-          <Button kind="confirm" text="Close" onClick={onClose} />
+          <Button kind="confirm" text={t("common:actions.close")} onClick={onClose} />
         </div>
       </div>
     </div>

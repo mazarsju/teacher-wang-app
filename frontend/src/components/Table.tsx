@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./Table.module.css";
 
 export type TableColumn<T> = {
@@ -22,14 +23,16 @@ export default function Table<T>({
   columns,
   rows,
   getRowKey,
-  emptyMessage = "No data to display.",
+  emptyMessage,
   renderRowActions,
   compact = false,
   maxVisibleRows,
   maxHeight,
 }: TableProps<T>) {
+  const { t } = useTranslation("common");
+
   if (rows.length === 0) {
-    return <p className={styles.tableEmpty}>{emptyMessage}</p>;
+    return <p className={styles.tableEmpty}>{emptyMessage ?? t("table.emptyMessage")}</p>;
   }
 
   const wrapperClassName = [

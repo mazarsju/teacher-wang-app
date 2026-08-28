@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -23,9 +24,6 @@ import styles from "./GrammarPointDetailPage.module.css";
 
 type GrammarDetailTab = "explanation" | "exercises" | "vocabulary";
 
-const LESSON_CHAT_GREETING =
-  "Ask me what you did not understand on this lesson, will be happy to help!";
-
 function buildLessonTopicContext(detail: GrammarPointDetail): string {
   return detail.explanation
     ? `# ${detail.title}\n\n${detail.explanation}`
@@ -41,6 +39,7 @@ export default function GrammarPointDetailPage({
   grammarId,
   onBack,
 }: GrammarPointDetailPageProps) {
+  const { t } = useTranslation(["grammar", "common"]);
   const dispatch = useAppDispatch();
   const quizInProgress = useAppSelector((state) => state.grammar.quizInProgress);
   const currentHskLevel = useAppSelector(
@@ -70,7 +69,7 @@ export default function GrammarPointDetailPage({
           setError(
             fetchError instanceof Error
               ? fetchError.message
-              : "Failed to load grammar topic.",
+              : t("grammarPointDetailPage.loadError"),
           );
         }
       })
@@ -83,7 +82,7 @@ export default function GrammarPointDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [grammarId]);
+  }, [grammarId, t]);
 
   function handleBackClick() {
     if (quizInProgress) {
@@ -97,7 +96,7 @@ export default function GrammarPointDetailPage({
     const status = scoreBand(percentage) === "good" ? "DONE" : "WIP";
     dispatch(setGrammarPointScore({ id: grammarId, status, score: percentage }));
     completeGrammarPoint(grammarId, percentage).catch(() => {
-      setSaveError("Failed to save the quiz result.");
+      setSaveError(t("grammarPointDetailPage.saveQuizError"));
     });
   }
 
@@ -110,7 +109,7 @@ export default function GrammarPointDetailPage({
       setSaveError(
         skipError instanceof Error
           ? skipError.message
-          : "Failed to mark this lesson as known.",
+          : t("grammarPointDetailPage.skipError"),
       );
     }
   }
@@ -119,21 +118,26 @@ export default function GrammarPointDetailPage({
 
   return (
     <Page
-      title={detail?.title ?? "Grammar topic"}
+      title={detail?.title ?? t("grammarPointDetailPage.titleFallback")}
       headerAction={
-        <Button kind="cancel" variant="page" text="Back" onClick={handleBackClick} />
+        <Button
+          kind="cancel"
+          variant="page"
+          text={t("grammarPointDetailPage.back")}
+          onClick={handleBackClick}
+        />
       }
     >
       <ConfirmModal
         isOpen={showLeaveConfirm}
-        message="You've started this questionnaire. Leaving now means you'll need to start it over from the first question. Leave anyway?"
+        message={t("common:app.leaveQuizConfirm")}
         onConfirm={() => {
           setShowLeaveConfirm(false);
           onBack();
         }}
         onCancel={() => setShowLeaveConfirm(false)}
       />
-      {isLoading && <p>Loading grammar topic...</p>}
+      {isLoading && <p>{t("grammarPointDetailPage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
       {saveError && <p className="table-error">{saveError}</p>}
       {!isLoading && !error && detail && (
@@ -150,7 +154,7 @@ export default function GrammarPointDetailPage({
               }
               onClick={() => setActiveTab("explanation")}
             >
-              Explanation
+              {t("grammarPointDetailPage.tabs.explanation")}
             </button>
             <button
               type="button"
@@ -163,7 +167,7 @@ export default function GrammarPointDetailPage({
               }
               onClick={() => setActiveTab("exercises")}
             >
-              Exercises
+              {t("grammarPointDetailPage.tabs.exercises")}
             </button>
             <button
               type="button"
@@ -176,7 +180,7 @@ export default function GrammarPointDetailPage({
               }
               onClick={() => setActiveTab("vocabulary")}
             >
-              Vocabulary
+              {t("grammarPointDetailPage.tabs.vocabulary")}
             </button>
           </div>
           <div
@@ -188,16 +192,16 @@ export default function GrammarPointDetailPage({
           >
             {detail.explanation
               ? renderFormattedText(detail.explanation.replace(/\n{2,}/g, "\n"))
-              : "No explanation available yet."}
+              : t("grammarPointDetailPage.noExplanation")}
             {canSkip && (
               <div className={styles.grammarDetailSkip}>
                 <p className={styles.grammarDetailSkipHint}>
-                  Already know this lesson? You can skip it and its exercises.
+                  {t("grammarPointDetailPage.skipHint")}
                 </p>
                 <Button
                   kind="confirm"
                   variant="page"
-                  text="Skip this lesson"
+                  text={t("grammarPointDetailPage.skipButton")}
                   onClick={handleSkip}
                 />
               </div>
@@ -205,7 +209,7 @@ export default function GrammarPointDetailPage({
             <Button
               kind="cancel"
               variant="page"
-              text="Ask more information to Teacher Wang"
+              text={t("grammarPointDetailPage.askTeacherWangButton")}
               onClick={() => setIsLessonChatOpen(true)}
             />
           </div>
@@ -229,7 +233,7 @@ export default function GrammarPointDetailPage({
               initialMessages={[
                 {
                   role: "assistant",
-                  content: LESSON_CHAT_GREETING,
+                  content: t("grammarPointDetailPage.chatGreeting"),
                   isDisplayOnly: true,
                 },
               ]}
