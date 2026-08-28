@@ -1,0 +1,71 @@
+{
+  "restaurant": {
+    "title": "Waiter",
+    "description": "Talk with the waiter and order a meal",
+    "character": {
+      "name": "Waiter",
+      "description": "Talk with the waiter and order a meal"
+    },
+    "tasks": {
+      "callWaiter": "Call the waiter",
+      "askNoMeat": "Ask if they have a dish without meat",
+      "askBill": "Ask for the bill",
+      "payBill": "Pay the bill"
+    }
+  },
+  "taxi": {
+    "title": "Taxi Driver",
+    "description": "Take a taxi and tell the driver where to go",
+    "character": {
+      "name": "Taxi Driver",
+      "description": "Take a taxi and tell the driver where to go"
+    },
+    "tasks": {
+      "hailTaxi": "Hail the taxi",
+      "giveDestination": "Tell the driver your destination",
+      "askFare": "Ask how much the ride costs",
+      "payFare": "Pay for the ride"
+    }
+  },
+  "hotel": {
+    "title": "Hotel Receptionist",
+    "description": "Check in at a hotel and ask about breakfast",
+    "character": {
+      "name": "Hotel Receptionist",
+      "description": "Check in at a hotel and ask about breakfast"
+    },
+    "tasks": {
+      "greetReceptionist": "Greet the receptionist",
+      "checkIn": "Check in to your room",
+      "askBreakfast": "Ask what time breakfast starts",
+      "checkOut": "Check out of the hotel"
+    }
+  },
+  "shop": {
+    "title": "Shop Assistant",
+    "description": "Buy a shirt and practice shopping vocabulary",
+    "character": {
+      "name": "Shop Assistant",
+      "description": "Buy a shirt and practice shopping vocabulary"
+    },
+    "tasks": {
+      "greetAssistant": "Greet the shop assistant",
+      "askPrice": "Ask the price of a shirt",
+      "askDifferentSize": "Ask for a different size",
+      "payItem": "Pay for the item"
+    }
+  },
+  "newFriend": {
+    "title": "New Friend",
+    "description": "Meet Xiao Ming for the first time and introduce yourself in Chinese",
+    "character": {
+      "name": "Xiao Ming",
+      "description": "Meet Xiao Ming for the first time and introduce yourself in Chinese"
+    },
+    "tasks": {
+      "greetFriend": "Say hi to your new friend",
+      "introduceName": "Introduce yourself by name",
+      "sayAge": "Tell them your age"
+    }
+  }
+}

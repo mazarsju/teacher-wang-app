@@ -1,108 +1,133 @@
+import type { TFunction } from "i18next";
+import type { ChatCharacter } from "../components/ChatCharacterCard";
 import type { Challenge } from "../types/challenge";
 
-export const RESTAURANT_CHALLENGE: Challenge = {
-  id: "challenge-restaurant",
-  title: "Waiter",
-  description: "Talk with the waiter and order a meal",
+export const NEW_FRIEND_CHALLENGE_ID = "challenge-new-friend";
+
+type ChallengeTaskTemplate = { id: string; key: string };
+
+type ChallengeTemplate = {
+  id: string;
+  translationKey: string;
   character: {
+    id: string;
+    chineseName: string;
+    avatarVariant: ChatCharacter["avatarVariant"];
+  };
+  tasks: ChallengeTaskTemplate[];
+  hskLevel: number;
+};
+
+// The `id`/`chineseName`/`avatarVariant`/task `id`s and this order are stable
+// data (used as React keys, completion-progress ids, and avatar lookups) —
+// only translationKey/key resolve into locales/en/challenge.json via
+// `getChallenges()`. Keep this array's order in sync with challenge.json.
+const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
+  {
+    id: NEW_FRIEND_CHALLENGE_ID,
+    translationKey: "newFriend",
+    character: {
+      id: NEW_FRIEND_CHALLENGE_ID,
+      chineseName: "小明",
+      avatarVariant: "friend",
+    },
+    tasks: [
+      { id: "greet-friend", key: "greetFriend" },
+      { id: "introduce-name", key: "introduceName" },
+      { id: "say-age", key: "sayAge" },
+    ],
+    hskLevel: 0,
+  },
+  {
     id: "challenge-restaurant",
-    name: "Waiter",
-    chineseName: "服务员",
-    description: "Talk with the waiter and order a meal",
-    avatarVariant: "waiter",
+    translationKey: "restaurant",
+    character: {
+      id: "challenge-restaurant",
+      chineseName: "服务员",
+      avatarVariant: "waiter",
+    },
+    tasks: [
+      { id: "call-waiter", key: "callWaiter" },
+      { id: "ask-no-meat", key: "askNoMeat" },
+      { id: "ask-bill", key: "askBill" },
+      { id: "pay-bill", key: "payBill" },
+    ],
+    hskLevel: 2,
   },
-  tasks: [
-    { id: "call-waiter", label: "Call the waiter" },
-    { id: "ask-no-meat", label: "Ask if they have a dish without meat" },
-    { id: "ask-bill", label: "Ask for the bill" },
-    { id: "pay-bill", label: "Pay the bill" },
-  ],
-  hskLevel: 2,
-};
-
-export const TAXI_CHALLENGE: Challenge = {
-  id: "challenge-taxi",
-  title: "Taxi Driver",
-  description: "Take a taxi and tell the driver where to go",
-  character: {
+  {
     id: "challenge-taxi",
-    name: "Taxi Driver",
-    chineseName: "出租车司机",
-    description: "Take a taxi and tell the driver where to go",
-    avatarVariant: "taxi-driver",
+    translationKey: "taxi",
+    character: {
+      id: "challenge-taxi",
+      chineseName: "出租车司机",
+      avatarVariant: "taxi-driver",
+    },
+    tasks: [
+      { id: "hail-taxi", key: "hailTaxi" },
+      { id: "give-destination", key: "giveDestination" },
+      { id: "ask-fare", key: "askFare" },
+      { id: "pay-fare", key: "payFare" },
+    ],
+    hskLevel: 2,
   },
-  tasks: [
-    { id: "hail-taxi", label: "Hail the taxi" },
-    { id: "give-destination", label: "Tell the driver your destination" },
-    { id: "ask-fare", label: "Ask how much the ride costs" },
-    { id: "pay-fare", label: "Pay for the ride" },
-  ],
-  hskLevel: 2,
-};
-
-export const HOTEL_CHALLENGE: Challenge = {
-  id: "challenge-hotel",
-  title: "Hotel Receptionist",
-  description: "Check in at a hotel and ask about breakfast",
-  character: {
+  {
     id: "challenge-hotel",
-    name: "Hotel Receptionist",
-    chineseName: "前台",
-    description: "Check in at a hotel and ask about breakfast",
-    avatarVariant: "hotel-receptionist",
+    translationKey: "hotel",
+    character: {
+      id: "challenge-hotel",
+      chineseName: "前台",
+      avatarVariant: "hotel-receptionist",
+    },
+    tasks: [
+      { id: "greet-receptionist", key: "greetReceptionist" },
+      { id: "check-in", key: "checkIn" },
+      { id: "ask-breakfast", key: "askBreakfast" },
+      { id: "check-out", key: "checkOut" },
+    ],
+    hskLevel: 2,
   },
-  tasks: [
-    { id: "greet-receptionist", label: "Greet the receptionist" },
-    { id: "check-in", label: "Check in to your room" },
-    { id: "ask-breakfast", label: "Ask what time breakfast starts" },
-    { id: "check-out", label: "Check out of the hotel" },
-  ],
-  hskLevel: 2,
-};
-
-export const SHOP_CHALLENGE: Challenge = {
-  id: "challenge-shop",
-  title: "Shop Assistant",
-  description: "Buy a shirt and practice shopping vocabulary",
-  character: {
+  {
     id: "challenge-shop",
-    name: "Shop Assistant",
-    chineseName: "售货员",
-    description: "Buy a shirt and practice shopping vocabulary",
-    avatarVariant: "shop-assistant",
+    translationKey: "shop",
+    character: {
+      id: "challenge-shop",
+      chineseName: "售货员",
+      avatarVariant: "shop-assistant",
+    },
+    tasks: [
+      { id: "greet-assistant", key: "greetAssistant" },
+      { id: "ask-price", key: "askPrice" },
+      { id: "ask-different-size", key: "askDifferentSize" },
+      { id: "pay-item", key: "payItem" },
+    ],
+    hskLevel: 2,
   },
-  tasks: [
-    { id: "greet-assistant", label: "Greet the shop assistant" },
-    { id: "ask-price", label: "Ask the price of a shirt" },
-    { id: "ask-different-size", label: "Ask for a different size" },
-    { id: "pay-item", label: "Pay for the item" },
-  ],
-  hskLevel: 2,
-};
-
-export const NEW_FRIEND_CHALLENGE: Challenge = {
-  id: "challenge-new-friend",
-  title: "New Friend",
-  description: "Meet Xiao Ming for the first time and introduce yourself in Chinese",
-  character: {
-    id: "challenge-new-friend",
-    name: "Xiao Ming",
-    chineseName: "小明",
-    description: "Meet Xiao Ming for the first time and introduce yourself in Chinese",
-    avatarVariant: "friend",
-  },
-  tasks: [
-    { id: "greet-friend", label: "Say hi to your new friend" },
-    { id: "introduce-name", label: "Introduce yourself by name" },
-    { id: "say-age", label: "Tell them your age" },
-  ],
-  hskLevel: 0,
-};
-
-export const CHALLENGES: Challenge[] = [
-  NEW_FRIEND_CHALLENGE,
-  RESTAURANT_CHALLENGE,
-  TAXI_CHALLENGE,
-  HOTEL_CHALLENGE,
-  SHOP_CHALLENGE,
 ];
+
+function renderChallenge(
+  template: ChallengeTemplate,
+  t: TFunction<"challenge">,
+): Challenge {
+  return {
+    id: template.id,
+    title: t(`${template.translationKey}.title`),
+    description: t(`${template.translationKey}.description`),
+    character: {
+      id: template.character.id,
+      name: t(`${template.translationKey}.character.name`),
+      chineseName: template.character.chineseName,
+      description: t(`${template.translationKey}.character.description`),
+      avatarVariant: template.character.avatarVariant,
+    },
+    tasks: template.tasks.map((task) => ({
+      id: task.id,
+      label: t(`${template.translationKey}.tasks.${task.key}`),
+    })),
+    hskLevel: template.hskLevel,
+  };
+}
+
+/** All challenges, rendered in the caller's language via `useTranslation("challenge")`. */
+export function getChallenges(t: TFunction<"challenge">): Challenge[] {
+  return CHALLENGE_TEMPLATES.map((template) => renderChallenge(template, t));
+}

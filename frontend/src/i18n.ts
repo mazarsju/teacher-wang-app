@@ -3,6 +3,7 @@ import { initReactI18next } from "react-i18next";
 import admin from "./locales/en/admin.json";
 import auth from "./locales/en/auth.json";
 import chat from "./locales/en/chat.json";
+import challenge from "./locales/en/challenge.json";
 import common from "./locales/en/common.json";
 import grammar from "./locales/en/grammar.json";
 import home from "./locales/en/home.json";
@@ -20,6 +21,7 @@ export const resources = {
     common,
     home,
     chat,
+    challenge,
     "knowledge-base": knowledgeBase,
     grammar,
     writing,

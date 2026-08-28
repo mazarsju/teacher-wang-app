@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ChallengeCard from "../components/ChallengeCard";
 import ChatCharacterCard, {
@@ -10,7 +10,7 @@ import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setChallengeProgress } from "../store/slices/challengeProgressSlice";
-import { CHALLENGES, NEW_FRIEND_CHALLENGE } from "../data/challenges";
+import { NEW_FRIEND_CHALLENGE_ID, getChallenges } from "../data/challenges";
 import { CHAT_CHARACTERS, TEACHER_WANG, XIAO_MING } from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
 import { fetchChallengesProgress } from "../utils/aiChat/challengesApi";
@@ -23,6 +23,7 @@ type ChatPageProps = { onNavigate?: (page: PageId) => void };
 
 export default function ChatPage({ onNavigate }: ChatPageProps) {
   const { t } = useTranslation("chat");
+  const { t: tChallenge } = useTranslation("challenge");
   const dispatch = useAppDispatch();
   const [selectedCharacter, setSelectedCharacter] =
     useState<ChatCharacter | null>(null);
@@ -38,18 +39,19 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
   );
   const hasEnoughCharacters = characterCount >= KB_CHARACTER_THRESHOLD;
   const isNewFriendChallengeDone = completedChallengeIds.has(
-    NEW_FRIEND_CHALLENGE.id,
+    NEW_FRIEND_CHALLENGE_ID,
   );
+  const challenges = useMemo(() => getChallenges(tChallenge), [tChallenge]);
   const visibleCharacters = hasEnoughCharacters
     ? CHAT_CHARACTERS.filter(
         (character) => character.id !== XIAO_MING.id || isNewFriendChallengeDone,
       )
     : [TEACHER_WANG];
   const visibleChallenges = hasEnoughCharacters
-    ? CHALLENGES.filter(
+    ? challenges.filter(
         (challenge) =>
           challenge.hskLevel <= currentHskLevel &&
-          (challenge.id !== NEW_FRIEND_CHALLENGE.id || !isNewFriendChallengeDone),
+          (challenge.id !== NEW_FRIEND_CHALLENGE_ID || !isNewFriendChallengeDone),
       )
     : [];
 
