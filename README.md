@@ -443,8 +443,8 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 - [x] Add translation exercises with AI-assisted validation
 - [x] Add AI-powered explanation if the user makes some mistakes in exercises
 - [x] Add AI tutor mode for grammar-specific questions and explanations
-- [ ] Add AI-powered grammar practice scenarios
-- [x] Integrate learned grammar points into AI conversations and challenges
+- [x] New way of training grammar rules: writing practice
+- [x] Integrate learned grammar points into AI conversations, challenges and writing practice
   - Detects grammar rules used correctly in chat and counts them toward mastery
   - After 3 real-life uses, a grammar point's status flips to `MASTERED` (blue badge, star icon)
 - [x] Create complete HSK1 grammar content
@@ -456,9 +456,14 @@ Dedicated grammar path by HSK level, with exercises and a loop back into chat so
 
 The app UI and explanations are English-only today. Learners should be able to pick another base language (still learning Mandarin) so prompts, corrections, and labels match how they think.
 
-- [ ] Preferences: choose UI / explanation language (start with a small set beyond English)
-- [ ] Localize static UI strings for the selected language
-- [ ] Adapt AI system prompts and grammar explanations to the learner’s base language
+- [ ] Add `react-i18next` and configure a global localization framework in the React application
+- [ ] Extract all frontend UI texts into translation files organized by feature (`home`, `chat`, `knowledge-base`, `preferences`, `common`)
+- [ ] Internationalize backend-generated content (LLM prompts, AI explanations, grammar feedback, system messages, emails, exports, etc.)
+- [ ] Internationalize application data stored in PostgreSQL (HSK descriptions, challenge metadata, predefined texts, help content, etc.)
+- [ ] Internationalize static content stored outside the application (S3-hosted guides, onboarding content, documentation assets, etc.)
+- [ ] Define a language-aware architecture across frontend, backend, APIs, database, and AI services
+- [ ] Add French as the first additional language and validate the full localization workflow end-to-end
+- [ ] Add a language switcher in the UI and persist the user's preferred interface language
 
 ### 12. Gamification
 
