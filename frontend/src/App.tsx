@@ -35,7 +35,7 @@ const PAGES: Record<PageId, ComponentType<PageProps>> = {
 };
 
 export default function App() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const dispatch = useAppDispatch();
   const syncStatus = useAppSelector((state) => state.sync.status);
   const [isAuthenticated, setIsAuthenticated] = useState(() =>
@@ -62,9 +62,12 @@ export default function App() {
 
     void dispatch(syncAppData());
     fetchCurrentUser()
-      .then((user) => setIsAdmin(user.is_admin))
+      .then((user) => {
+        setIsAdmin(user.is_admin);
+        void i18n.changeLanguage(user.language);
+      })
       .catch(() => setIsAdmin(false));
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, i18n, isAuthenticated]);
 
   useEffect(() => {
     return onUnauthorizedSession(() => {

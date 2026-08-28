@@ -97,6 +97,6 @@ Namespace is passed explicitly to `useTranslation()` at every call site rather t
 
 ## Future evolution
 
-* Adding French: create `frontend/src/locales/fr/<namespace>.json` mirroring the `en` key structure, add it to `resources` in `frontend/src/i18n.ts`, and (roadmap item) add a language switcher that calls `i18n.changeLanguage()` and persists the choice.
+* Adding French: create `frontend/src/locales/fr/<namespace>.json` mirroring the `en` key structure, add it to `resources` in `frontend/src/i18n.ts`, and (roadmap item) add a language switcher that writes the choice back to `users.language` (see [schema-tenancy](../architecture/schema-tenancy.md)) and calls `i18n.changeLanguage()`. The read half of this is already in place: `users.language` (default `'en'`) is loaded on every login via `GET /auth/me` and applied with `i18n.changeLanguage(user.language)` in `App.tsx` — there is just no UI yet to change it, and no `PATCH` route to persist a new value.
 * If missing-key drift across languages becomes a real problem, add a CI check (e.g. a script diffing key sets between `locales/en/*.json` and every other language directory) rather than relying on manual review.
 * When challenge/character content moves into Postgres, its translated copy should live wherever that roadmap item lands it (likely DB rows keyed by language), not back in a frontend JSON namespace.

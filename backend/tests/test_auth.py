@@ -172,6 +172,7 @@ class TestAuthMeRoute(unittest.TestCase):
             username="alice",
             email="alice@example.com",
             plan="free",
+            language="en",
         )
 
     def test_auth_me_returns_user_row_and_token_claims(self):
@@ -185,6 +186,7 @@ class TestAuthMeRoute(unittest.TestCase):
                 "username": "alice",
                 "email": "alice@example.com",
                 "plan": "free",
+                "language": "en",
                 "is_admin": False,
                 "token_use": TEST_CLAIMS["token_use"],
                 "client_id": TEST_CLAIMS["client_id"],
@@ -197,6 +199,7 @@ class TestAuthMeRoute(unittest.TestCase):
             username="admin",
             email="mazarsju@gmail.com",
             plan="free",
+            language="en",
         )
 
         response = self.client.get("/auth/me")

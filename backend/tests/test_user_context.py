@@ -42,6 +42,7 @@ class TestEnsureCurrentUser(PostgresTestCase):
             self.assertEqual(user.username, "wang")
             self.assertEqual(user.email, f"{COGNITO_SUB}@users.local")
             self.assertEqual(user.plan, "free")
+            self.assertEqual(user.language, "en")
             self.assertEqual(current_user_id(), user.shortid)
             self.assertEqual(current_user().id, COGNITO_SUB)
 

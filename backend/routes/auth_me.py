@@ -19,6 +19,7 @@ def auth_me():
             "username": user.username,
             "email": user.email,
             "plan": user.plan,
+            "language": user.language,
             "is_admin": user.email == ADMIN_EMAIL,
             "token_use": claims.get("token_use"),
             "client_id": claims.get("client_id"),

@@ -16,6 +16,7 @@ describe("meApi", () => {
             username: "learner",
             email: "learner@example.com",
             plan: "free",
+            language: "en",
             is_admin: false,
           }),
         }),
@@ -27,6 +28,7 @@ describe("meApi", () => {
       username: "learner",
       email: "learner@example.com",
       plan: "free",
+      language: "en",
       is_admin: false,
     });
   });

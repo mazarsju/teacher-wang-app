@@ -6,6 +6,7 @@ export type CurrentUser = {
   username: string;
   email: string;
   plan: string;
+  language: string;
   is_admin: boolean;
 };
 

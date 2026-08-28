@@ -21,7 +21,12 @@ from backend.utils.auth.auth import (
     verify_id_token,
 )
 from backend.utils.database.extensions import db
-from backend.utils.database.models import DEFAULT_USER_PLAN, User, utcnow
+from backend.utils.database.models import (
+    DEFAULT_USER_LANGUAGE,
+    DEFAULT_USER_PLAN,
+    User,
+    utcnow,
+)
 
 ID_TOKEN_HEADER = "X-Id-Token"
 PUBLIC_PATHS = frozenset(
@@ -102,6 +107,7 @@ def ensure_current_user() -> User:
                 username=username,
                 email=email or _placeholder_email(sub),
                 plan=DEFAULT_USER_PLAN,
+                language=DEFAULT_USER_LANGUAGE,
                 last_connection=utcnow(),
             )
             db.session.add(user)

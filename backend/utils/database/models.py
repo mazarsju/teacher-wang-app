@@ -7,6 +7,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from backend.utils.database.extensions import db
 
 DEFAULT_USER_PLAN = "free"
+DEFAULT_USER_LANGUAGE = "en"
 
 # Private (per-user) tables are hash-partitioned on user_id in Postgres.
 # Partitions live in the Alembic revisions, not in these model definitions.
@@ -32,6 +33,7 @@ class User(db.Model):
     username = db.Column(String, nullable=False, unique=True)
     email = db.Column(String, nullable=False, unique=True)
     plan = db.Column(String, nullable=False, default=DEFAULT_USER_PLAN)
+    language = db.Column(String, nullable=False, default=DEFAULT_USER_LANGUAGE)
     last_connection = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

@@ -48,6 +48,7 @@ function stubAuthenticatedApis(options: { isAdmin?: boolean } = {}) {
             username: "learner",
             email: "learner@example.com",
             plan: "free",
+            language: "en",
             is_admin: isAdmin,
           }),
         });

@@ -11,6 +11,7 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 | `username` | `TEXT NOT NULL UNIQUE` | From the access token `username` / `cognito:username` claim |
 | `email` | `TEXT NOT NULL UNIQUE` | From a verified ID token when the client sends one; otherwise the unique placeholder `{sub}@users.local` |
 | `plan` | `TEXT NOT NULL DEFAULT 'free'` | Billing tier hook |
+| `language` | `TEXT NOT NULL DEFAULT 'en'` | Preferred interface language; loaded into `i18next` on login via `GET /auth/me` (see [frontend localization ADR](../adr/frontend-localization.md)) |
 | `last_connexion` | `TIMESTAMPTZ NOT NULL` | Refreshed on every authenticated request |
 
 ## Private tables (`user_id` FK → `users.shortid`, hash-partitioned, modulus 8)
