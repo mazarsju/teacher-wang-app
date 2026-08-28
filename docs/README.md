@@ -73,6 +73,7 @@ Example header:
 | Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
 | Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |
 | Component CSS / `Button` design system | [adr/frontend-styling.md](adr/frontend-styling.md) |
+| Translations / `react-i18next` / UI text / `users.language` | [adr/frontend-localization.md](adr/frontend-localization.md), [architecture/schema-tenancy.md](architecture/schema-tenancy.md) |
 | Grammar lessons / exercises / mastery | [adr/grammar-content.md](adr/grammar-content.md) |
 | Writing topics / drafts / sentence correction / `writing_progress` | [adr/writing-practice.md](adr/writing-practice.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |

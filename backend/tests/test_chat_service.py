@@ -43,7 +43,7 @@ class _FreePlanTokenMixin:
         super().setUp()
         self.current_user_patcher = patch(
             "backend.utils.auth.user_context.current_user",
-            return_value=MagicMock(id="test-user", plan="free"),
+            return_value=MagicMock(id="test-user", plan="free", language="en"),
         )
         self.assert_tokens_patcher = patch(
             "backend.utils.database.settings.assert_free_plan_has_tokens"

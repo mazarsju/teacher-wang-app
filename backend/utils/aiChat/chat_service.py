@@ -7,9 +7,9 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from backend.utils.aiChat.behavior_spec import (
     ALWAYS_ON_BEHAVIOR_IDS,
-    BEHAVIORS,
     BEHAVIOR_IDS,
     get_behavior,
+    get_behaviors,
 )
 from backend.utils.aiChat.chat_agents import get_character, get_system_prompt
 from backend.utils.knowledgeBase.chinese_validation import extract_han_characters
@@ -208,6 +208,17 @@ def _tokens_from_response(response) -> LlmTokenUsage:
                 return LlmTokenUsage(input_tokens=total, output_tokens=0)
 
     return LlmTokenUsage()
+
+
+def _current_language_code() -> str | None:
+    """The authenticated learner's `users.language`, or ``None`` outside a request."""
+    from backend.utils.auth.user_context import current_user
+
+    # Batch jobs (weekly articles) have an app context but no Cognito user.
+    try:
+        return current_user().language
+    except RuntimeError:
+        return None
 
 
 def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
@@ -644,10 +655,15 @@ def _dedup_known_ids(raw_ids, known_ids: frozenset[str]) -> list[str]:
 
 
 def select_behaviors(
-    user_message: str, conversation_context: str = "", strategy_context: str = ""
+    user_message: str,
+    conversation_context: str = "",
+    strategy_context: str = "",
+    language_code: str | None = None,
 ) -> tuple[list[str], LlmTokenUsage]:
     """Plan which behavior specification IDs apply to this learner turn."""
-    system = BEHAVIOR_PLANNER_SYSTEM_PROMPT + _format_behavior_catalog(BEHAVIORS)
+    system = BEHAVIOR_PLANNER_SYSTEM_PROMPT + _format_behavior_catalog(
+        get_behaviors(language_code)
+    )
     prompt = f'Learner\'s latest message: "{user_message}"'
     if conversation_context:
         prompt = f"Conversation so far:\n{conversation_context}\n\n{prompt}"
@@ -661,8 +677,14 @@ def select_behaviors(
     return _dedup_known_ids(parsed.get("behavior_ids"), BEHAVIOR_IDS), token_usage
 
 
-def _behavior_requirements_block(behavior_ids: list[str]) -> str:
-    selected = [behavior for behavior in BEHAVIORS if behavior["id"] in behavior_ids]
+def _behavior_requirements_block(
+    behavior_ids: list[str], language_code: str | None = None
+) -> str:
+    selected = [
+        behavior
+        for behavior in get_behaviors(language_code)
+        if behavior["id"] in behavior_ids
+    ]
     if not selected:
         return ""
     lines = "\n".join(f"- {behavior['title']}: {behavior['requirements']}" for behavior in selected)
@@ -688,13 +710,19 @@ def _parse_behavior_failures(raw_failures) -> tuple[list[str], dict[str, str]]:
 
 
 def validate_behaviors(
-    reply_content: str, behavior_ids: list[str]
+    reply_content: str,
+    behavior_ids: list[str],
+    language_code: str | None = None,
 ) -> tuple[list[str], dict[str, str], LlmTokenUsage]:
     """Check a generated reply against the selected behaviors' success criteria.
 
     Returns the failed behavior IDs, a reason per failed ID, and token usage.
     """
-    selected = [behavior for behavior in BEHAVIORS if behavior["id"] in behavior_ids]
+    selected = [
+        behavior
+        for behavior in get_behaviors(language_code)
+        if behavior["id"] in behavior_ids
+    ]
     if not selected:
         return [], {}, LlmTokenUsage()
 
@@ -714,11 +742,13 @@ def validate_behaviors(
 
 
 def _behavior_revision_instruction(
-    failed_ids: list[str], failure_reasons: dict[str, str]
+    failed_ids: list[str],
+    failure_reasons: dict[str, str],
+    language_code: str | None = None,
 ) -> str:
     lines = []
     for behavior_id in failed_ids:
-        behavior = get_behavior(behavior_id)
+        behavior = get_behavior(behavior_id, language_code)
         reason = failure_reasons.get(behavior_id, "")
         detail = f" {reason}" if reason else ""
         lines.append(f"- {behavior['title']}: {behavior['requirements']}{detail}")
@@ -761,6 +791,7 @@ def generate_chat_reply(
     token_usage = LlmTokenUsage()
     behavior_ids: list[str] = []
     character = get_character(character_id)
+    language_code = _current_language_code()
 
     if character_id == TEACHER_CHARACTER_ID and revision_instruction is None:
         from backend.utils.knowledgeBase.hsk_level import get_chat_speaking_hsk_level
@@ -775,12 +806,13 @@ def generate_chat_reply(
                 messages[-1]["content"],
                 _format_conversation_context(messages),
                 strategy_block,
+                language_code,
             )
             token_usage = token_usage + plan_usage
             # Behaviors that apply to every turn are guaranteed here rather
             # than left to the planner's judgment call.
             behavior_ids = list(dict.fromkeys([*ALWAYS_ON_BEHAVIOR_IDS, *planned_ids]))
-            behavior_block = _behavior_requirements_block(behavior_ids)
+            behavior_block = _behavior_requirements_block(behavior_ids, language_code)
             if behavior_block:
                 system_prompt = f"{system_prompt}\n\n{behavior_block}"
     else:
@@ -834,7 +866,7 @@ def generate_chat_reply(
     behavior_failures: list[str] = []
     if behavior_ids and BEHAVIOR_CHECK_ENABLED:
         behavior_failures, failure_reasons, validate_usage = validate_behaviors(
-            reply, behavior_ids
+            reply, behavior_ids, language_code
         )
         token_usage = token_usage + validate_usage
 
@@ -845,7 +877,7 @@ def generate_chat_reply(
                 user_id,
             )
             revision_prompt = _behavior_revision_instruction(
-                behavior_failures, failure_reasons
+                behavior_failures, failure_reasons, language_code
             )
             langchain_messages.append(AIMessage(content=reply))
             langchain_messages.append(HumanMessage(content=revision_prompt))
@@ -854,7 +886,7 @@ def generate_chat_reply(
             token_usage = token_usage + revise_usage
 
             revised_failures, _revised_reasons, revalidate_usage = validate_behaviors(
-                revised_reply, behavior_ids
+                revised_reply, behavior_ids, language_code
             )
             token_usage = token_usage + revalidate_usage
 

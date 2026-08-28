@@ -1,0 +1,16 @@
+---
+description: react-i18next conventions — namespaces, key structure, no hardcoded UI strings
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend localization
+
+Rationale: `docs/adr/frontend-localization.md`.
+
+- No component hardcodes user-facing English text. Every string (JSX text, `aria-label`/`alt`/`title`/`placeholder`, a thrown/caught error message shown to the user, a `Table` column header) goes through `useTranslation(namespace)`'s `t()`, or `<Trans>` for text with embedded markup (a link, bold text).
+- One JSON resource file per feature namespace under `frontend/src/locales/en/<namespace>.json` (`common`, `home`, `chat`, `knowledge-base`, `grammar`, `writing`, `preferences`, `admin`, `auth`). A component used from a single feature page keeps its strings in that feature's namespace; a component reachable from more than one feature (grep its import sites to check) goes in `common` instead of duplicating its copy across namespaces.
+- Within a namespace file, keys nest under the owning component's name (camelCase) — e.g. `{"homePage": {"loading": "..."}}` — so multiple components can share one namespace file without key collisions.
+- Pass the namespace explicitly to `useTranslation()` at every call site (`useTranslation("home")`, or `useTranslation(["home", "common"])` when also reusing a `common` string like `t("common:actions.close")`) — never rely on a default namespace.
+- `frontend/src/i18n.ts` inits synchronously from bundled JSON (no loading state); `frontend/src/test/setup.ts` imports it too, so tests assert on the real English strings via `t()` unchanged.
+- Data catalogs, not UI chrome (e.g. `frontend/src/data/challenges.ts`, `data/chatCharacters.ts`), are deliberately left untranslated for now — see the ADR's "Out of scope" section before changing that judgment call.

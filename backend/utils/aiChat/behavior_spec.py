@@ -7,9 +7,34 @@ document when either changes.
 Proficiency-level adaptation is handled by backend/teaching_strategy.py
 instead of a behavior here: it is deterministic per HSK level, not something
 that benefits from the planner's per-turn judgment call.
+
+Behaviors that mention the learner's meta-language (explanations, word
+meanings, translations — everything that isn't the Chinese practice content
+itself) are templated with a ``{language}`` placeholder instead of a
+hardcoded "English", so the catalog can be rendered in the learner's
+`users.language` instead. Use `get_behaviors()`/`get_behavior()` to read the
+catalog, not `_BEHAVIOR_TEMPLATES` directly.
 """
 
-BEHAVIORS = [
+DEFAULT_LANGUAGE_CODE = "en"
+
+# Maps a `users.language` code to the display name used in behavior prompt
+# text (e.g. "Give the Chinese form, meaning in French, and a usage note").
+# Unrecognized/missing codes fall back to English.
+LANGUAGE_NAMES = {
+    "en": "English",
+    "fr": "French",
+}
+
+
+def language_name(language_code: str | None) -> str:
+    """Resolve a `users.language` code to the name used in prompt text."""
+    return LANGUAGE_NAMES.get(
+        language_code or DEFAULT_LANGUAGE_CODE, LANGUAGE_NAMES[DEFAULT_LANGUAGE_CODE]
+    )
+
+
+_BEHAVIOR_TEMPLATES = [
     {
         "id": "BHV-01",
         "title": "Direct Question Answering",
@@ -27,18 +52,18 @@ BEHAVIORS = [
     {
         "id": "BHV-02",
         "title": "Bilingual Response Balance",
-        "objective": "Keep explanations accessible in English while keeping practice material in Chinese.",
+        "objective": "Keep explanations accessible in {language} while keeping practice material in Chinese.",
         "applies_when": "Always",
         "always": True,
         "requirements": (
-            "Give meta-explanation in English; give practice content "
+            "Give meta-explanation in {language}; give practice content "
             "(example sentences, vocabulary) in Chinese; never drop one "
             "language entirely."
         ),
         "success_criteria": (
-            "Every Chinese example is paired with an English explanation; "
-            "no explanatory sentence is left untranslated unless the "
-            "learner asked for Chinese-only output."
+            "Every Chinese example is paired with an explanation in "
+            "{language}; no explanatory sentence is left untranslated "
+            "unless the learner asked for Chinese-only output."
         ),
     },
     {
@@ -77,8 +102,8 @@ BEHAVIORS = [
         "objective": "Teach a new word or phrase with enough information to use it correctly.",
         "applies_when": "The learner asks what a word means or needs vocabulary they don't have.",
         "requirements": (
-            "Give the Chinese form, English meaning, and a usage note; "
-            "distinguish near-synonyms when confusion is likely."
+            "Give the Chinese form, meaning in {language}, and a usage "
+            "note; distinguish near-synonyms when confusion is likely."
         ),
         "success_criteria": (
             "The learner has enough to use the word in a new sentence, not "
@@ -92,7 +117,7 @@ BEHAVIORS = [
         "applies_when": "A grammar point, vocabulary item, or usage question is being explained.",
         "requirements": (
             "Give at least one complete example sentence directly relevant "
-            "to the point just explained, with its English meaning."
+            "to the point just explained, with its meaning in {language}."
         ),
         "success_criteria": (
             "The example sentence demonstrates the exact rule or meaning "
@@ -152,8 +177,8 @@ BEHAVIORS = [
         "applies_when": "Always",
         "always": True,
         "requirements": (
-            "Visually distinguish Chinese text from its English "
-            "translation; separate multiple distinct examples/items; keep "
+            "Visually distinguish Chinese text from its translation in "
+            "{language}; separate multiple distinct examples/items; keep "
             "length proportional to the question."
         ),
         "success_criteria": (
@@ -177,12 +202,30 @@ BEHAVIORS = [
     },
 ]
 
-BEHAVIOR_IDS = frozenset(behavior["id"] for behavior in BEHAVIORS)
+BEHAVIOR_IDS = frozenset(behavior["id"] for behavior in _BEHAVIOR_TEMPLATES)
 ALWAYS_ON_BEHAVIOR_IDS = tuple(
-    behavior["id"] for behavior in BEHAVIORS if behavior.get("always", False)
+    behavior["id"] for behavior in _BEHAVIOR_TEMPLATES if behavior.get("always", False)
 )
-_BEHAVIORS_BY_ID = {behavior["id"]: behavior for behavior in BEHAVIORS}
+_BEHAVIORS_BY_ID = {behavior["id"]: behavior for behavior in _BEHAVIOR_TEMPLATES}
 
 
-def get_behavior(behavior_id: str) -> dict:
-    return _BEHAVIORS_BY_ID[behavior_id]
+def _render(behavior: dict, language_code: str | None) -> dict:
+    language = language_name(language_code)
+    return {
+        key: value.format(language=language) if isinstance(value, str) else value
+        for key, value in behavior.items()
+    }
+
+
+def get_behaviors(language_code: str | None = None) -> list[dict]:
+    """Return the full behavior catalog rendered for ``language_code``.
+
+    ``language_code`` is a `users.language` value (e.g. "en", "fr");
+    defaults to English when ``None`` (batch/system contexts with no
+    authenticated learner).
+    """
+    return [_render(behavior, language_code) for behavior in _BEHAVIOR_TEMPLATES]
+
+
+def get_behavior(behavior_id: str, language_code: str | None = None) -> dict:
+    return _render(_BEHAVIORS_BY_ID[behavior_id], language_code)
