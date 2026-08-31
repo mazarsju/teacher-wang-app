@@ -10,6 +10,7 @@ vi.mock("../utils/admin/adminApi", () => ({
   reloadHskContent: vi.fn(),
   generateArticles: vi.fn(),
   reloadGrammarRules: vi.fn(),
+  uploadHskTranslation: vi.fn(),
 }));
 
 const fetchUsers = vi.mocked(adminApi.fetchUsers);
@@ -18,6 +19,7 @@ const deleteUser = vi.mocked(adminApi.deleteUser);
 const reloadHskContent = vi.mocked(adminApi.reloadHskContent);
 const generateArticles = vi.mocked(adminApi.generateArticles);
 const reloadGrammarRules = vi.mocked(adminApi.reloadGrammarRules);
+const uploadHskTranslation = vi.mocked(adminApi.uploadHskTranslation);
 
 describe("AdminPage", () => {
   beforeEach(() => {
@@ -250,6 +252,63 @@ describe("AdminPage", () => {
 
     expect(
       await screen.findByText("Failed to reload grammar rules."),
+    ).toBeInTheDocument();
+  });
+
+  it("loads an HSK translation file after confirming", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    uploadHskTranslation.mockResolvedValue(undefined);
+
+    render(<AdminPage />);
+
+    await screen.findByText("HSK database");
+    await user.click(screen.getByRole("button", { name: "Load translation" }));
+
+    const file = new File(["zip-content"], "translations.zip", {
+      type: "application/zip",
+    });
+    await user.upload(screen.getByLabelText("File (zip)"), file);
+    await user.selectOptions(screen.getByLabelText("Language"), "fr");
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(uploadHskTranslation).toHaveBeenCalledWith(file, "fr");
+    });
+  });
+
+  it("cancelling the load translation modal does not call the API", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+
+    render(<AdminPage />);
+
+    await screen.findByText("HSK database");
+    await user.click(screen.getByRole("button", { name: "Load translation" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(uploadHskTranslation).not.toHaveBeenCalled();
+  });
+
+  it("shows an error when loading HSK translations fails", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    uploadHskTranslation.mockRejectedValue(
+      new Error("Failed to load HSK translations."),
+    );
+
+    render(<AdminPage />);
+
+    await screen.findByText("HSK database");
+    await user.click(screen.getByRole("button", { name: "Load translation" }));
+    await user.upload(
+      screen.getByLabelText("File (zip)"),
+      new File(["zip-content"], "translations.zip", { type: "application/zip" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(
+      await screen.findByText("Failed to load HSK translations."),
     ).toBeInTheDocument();
   });
 });

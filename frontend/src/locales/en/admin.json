@@ -17,13 +17,25 @@
       "deleteUser": "Failed to delete user.",
       "reloadHsk": "Failed to reload the HSK database.",
       "refreshArticles": "Failed to refresh articles.",
-      "reloadGrammar": "Failed to reload grammar rules."
+      "reloadGrammar": "Failed to reload grammar rules.",
+      "loadTranslation": "Failed to load HSK translations."
     },
     "hskSection": {
       "title": "HSK database",
       "description": "Fully reload the shared HSK words and characters tables from the upstream complete-hsk data. This is shared across every user.",
       "reloadButton": "Reload HSK database",
-      "reloadingButton": "Reloading..."
+      "reloadingButton": "Reloading...",
+      "loadTranslationButton": "Load translation",
+      "loadingTranslationButton": "Loading..."
+    },
+    "loadTranslationModal": {
+      "title": "Load HSK translation",
+      "fileLabel": "File (zip)",
+      "languageLabel": "Language",
+      "languageOptions": {
+        "en": "English",
+        "fr": "French"
+      }
     },
     "articlesSection": {
       "title": "Weekly articles",

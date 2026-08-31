@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
 import { SyncIcon } from "../components/icons";
+import LoadHskTranslationModal, {
+  type HskTranslationFormValues,
+} from "../components/LoadHskTranslationModal";
 import Page from "../components/Page";
 import Table, { type TableColumn } from "../components/Table";
 import type { AdminUser, UserPlan } from "../types/adminUser";
@@ -13,6 +16,7 @@ import {
   reloadGrammarRules,
   reloadHskContent,
   updateUserPlan,
+  uploadHskTranslation,
 } from "../utils/admin/adminApi";
 import styles from "./AdminPage.module.css";
 
@@ -42,6 +46,9 @@ export default function AdminPage() {
   const [isReloadHskConfirmOpen, setIsReloadHskConfirmOpen] = useState(false);
   const [isGeneratingArticles, setIsGeneratingArticles] = useState(false);
   const [isReloadingGrammar, setIsReloadingGrammar] = useState(false);
+  const [isLoadTranslationModalOpen, setIsLoadTranslationModalOpen] =
+    useState(false);
+  const [isLoadingTranslation, setIsLoadingTranslation] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setError(null);
@@ -123,6 +130,23 @@ export default function AdminPage() {
     }
   }
 
+  async function handleConfirmLoadTranslation(values: HskTranslationFormValues) {
+    setIsLoadTranslationModalOpen(false);
+    setIsLoadingTranslation(true);
+    setError(null);
+    try {
+      await uploadHskTranslation(values.file, values.language);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : t("adminPage.errors.loadTranslation"),
+      );
+    } finally {
+      setIsLoadingTranslation(false);
+    }
+  }
+
   async function handleGenerateArticles() {
     setIsGeneratingArticles(true);
     setError(null);
@@ -196,18 +220,31 @@ export default function AdminPage() {
           <p className={styles.adminSectionDescription}>
             {t("adminPage.hskSection.description")}
           </p>
-          <Button
-            kind="danger"
-            variant="page"
-            text={
-              isReloadingHsk
-                ? t("adminPage.hskSection.reloadingButton")
-                : t("adminPage.hskSection.reloadButton")
-            }
-            icon={<SyncIcon />}
-            disabled={isReloadingHsk}
-            onClick={() => setIsReloadHskConfirmOpen(true)}
-          />
+          <div className={styles.adminSectionActions}>
+            <Button
+              kind="danger"
+              variant="page"
+              text={
+                isReloadingHsk
+                  ? t("adminPage.hskSection.reloadingButton")
+                  : t("adminPage.hskSection.reloadButton")
+              }
+              icon={<SyncIcon />}
+              disabled={isReloadingHsk}
+              onClick={() => setIsReloadHskConfirmOpen(true)}
+            />
+            <Button
+              kind="cancel"
+              variant="page"
+              text={
+                isLoadingTranslation
+                  ? t("adminPage.hskSection.loadingTranslationButton")
+                  : t("adminPage.hskSection.loadTranslationButton")
+              }
+              disabled={isLoadingTranslation}
+              onClick={() => setIsLoadTranslationModalOpen(true)}
+            />
+          </div>
         </section>
       )}
       {!isLoading && (
@@ -265,6 +302,11 @@ export default function AdminPage() {
         danger={true}
         onCancel={() => setIsReloadHskConfirmOpen(false)}
         onConfirm={() => void handleConfirmReloadHsk()}
+      />
+      <LoadHskTranslationModal
+        isOpen={isLoadTranslationModalOpen}
+        onCancel={() => setIsLoadTranslationModalOpen(false)}
+        onConfirm={(values) => void handleConfirmLoadTranslation(values)}
       />
     </Page>
   );

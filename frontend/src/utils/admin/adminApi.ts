@@ -69,3 +69,21 @@ export async function reloadGrammarRules(): Promise<void> {
     throw new Error("Failed to reload grammar rules.");
   }
 }
+
+export async function uploadHskTranslation(
+  file: File,
+  language: string,
+): Promise<void> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("language", language);
+
+  const response = await apiFetch(`${API_BASE}/admin/hsk/translation`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load HSK translations.");
+  }
+}
