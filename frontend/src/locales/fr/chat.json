@@ -1,0 +1,24 @@
+{
+  "chatPage": {
+    "title": "Discussion",
+    "banner": {
+      "message": "Construisez votre base de connaissances pour débloquer plus de personnes avec qui parler !",
+      "buttonMessage": "Aller à la base de connaissances"
+    },
+    "intro": "Avec qui voulez-vous parler aujourd'hui ?",
+    "challengesHeading": "Défis",
+    "challengesDescription": "Pratiquez des conversations de la vie réelle avec des tâches guidées."
+  },
+  "challengeCard": {
+    "completedAriaLabel": "{{name}} ({{chineseName}}), terminé",
+    "completedLabel": "Terminé"
+  },
+  "chatCharacters": {
+    "teacherWang": {
+      "description": "Le professeur de chinois natif qui parle aussi anglais"
+    },
+    "xiaoMing": {
+      "description": "Votre ami chinois natif"
+    }
+  }
+}

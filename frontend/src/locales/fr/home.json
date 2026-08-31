@@ -1,0 +1,50 @@
+{
+  "homePage": {
+    "title": "Accueil",
+    "banner": {
+      "message": "Des difficultés pour configurer votre base de connaissances ? Cliquez ici pour une intégration plus rapide et plus simple !",
+      "buttonMessage": "Commencer à construire votre base de connaissances"
+    },
+    "loading": "Chargement de votre progression...",
+    "hskCard": {
+      "ariaLabel": "Niveau HSK",
+      "badgeLabel": "HSK",
+      "levelPlaceholder": "—",
+      "titleStart": "Votre parcours HSK commence ici",
+      "titleMax": "Vous avez atteint le sommet — HSK {{level}} !",
+      "titleCurrent": "Vous êtes au HSK {{level}} !",
+      "infoButtonAriaLabel": "Comment le niveau HSK est estimé",
+      "progressBarAriaLabel": "Progression vers le niveau HSK suivant",
+      "progressLabelMax": "Niveau HSK maximum atteint. Travail remarquable !",
+      "progressLabel_one": "{{count}} caractère pour atteindre le HSK {{level}}",
+      "progressLabel_other": "{{count}} caractères pour atteindre le HSK {{level}}",
+      "missingCharactersButton": "Caractères manquants"
+    },
+    "metrics": {
+      "recognizedLabel": "Caractères que vous êtes capable de reconnaître",
+      "writingLabel": "Caractères que vous savez écrire"
+    },
+    "article": {
+      "ariaLabel": "Vos articles hebdomadaires",
+      "title": "Vos articles hebdomadaires",
+      "loading": "Chargement des articles de cette semaine...",
+      "categoriesAriaLabel": "Catégories d'articles",
+      "newWordsLabel": "Nouveaux mots",
+      "empty": "Aucun article pour cette semaine pour le moment — revenez bientôt.",
+      "loadError": "Échec du chargement de vos articles hebdomadaires."
+    },
+    "hskInfoModal": {
+      "title": "Comment le niveau HSK est estimé",
+      "text": "Ce niveau HSK est une estimation basée sur les caractères que vous connaissez. Un niveau est considéré comme atteint lorsque vous connaissez au moins {{percent}}% de tous les caractères attendus jusqu'à ce niveau — par exemple, le HSK 3 nécessite {{percent}}% des HSK 1, 2 et 3 combinés. La liste des caractères manquants inclut aussi les lacunes des niveaux précédents, afin que vous puissiez d'abord les combler. Les caractères moins utiles peuvent attendre pendant que vous apprenez les plus fréquents."
+    }
+  },
+  "missingHskCharactersModal": {
+    "title": "Caractères manquants pour le HSK {{level}}",
+    "empty": "Aucun caractère manquant — ce niveau est complet.",
+    "orderHint": "(ces caractères sont classés par fréquence. Si vous souhaitez les apprendre, nous vous suggérons de les apprendre dans cet ordre)",
+    "relatedWordsHeading": "Mots HSK associés (jusqu'au niveau {{level}}) :",
+    "loadingWords": "Chargement des mots...",
+    "loadWordsError": "Échec du chargement des mots HSK pour ce caractère.",
+    "noRelatedWords": "Aucun mot HSK associé trouvé pour ce niveau."
+  }
+}

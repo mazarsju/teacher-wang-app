@@ -11,7 +11,11 @@ import Page from "../components/Page";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setChallengeProgress } from "../store/slices/challengeProgressSlice";
 import { NEW_FRIEND_CHALLENGE_ID, getChallenges } from "../data/challenges";
-import { CHAT_CHARACTERS, TEACHER_WANG, XIAO_MING } from "../data/chatCharacters";
+import {
+  XIAO_MING_ID,
+  getChatCharacters,
+  getTeacherWang,
+} from "../data/chatCharacters";
 import type { Challenge } from "../types/challenge";
 import { fetchChallengesProgress } from "../utils/aiChat/challengesApi";
 import challengeCardStyles from "../components/ChallengeCard.module.css";
@@ -42,11 +46,13 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
     NEW_FRIEND_CHALLENGE_ID,
   );
   const challenges = useMemo(() => getChallenges(tChallenge), [tChallenge]);
+  const teacherWang = useMemo(() => getTeacherWang(t), [t]);
+  const chatCharacters = useMemo(() => getChatCharacters(t), [t]);
   const visibleCharacters = hasEnoughCharacters
-    ? CHAT_CHARACTERS.filter(
-        (character) => character.id !== XIAO_MING.id || isNewFriendChallengeDone,
+    ? chatCharacters.filter(
+        (character) => character.id !== XIAO_MING_ID || isNewFriendChallengeDone,
       )
-    : [TEACHER_WANG];
+    : [teacherWang];
   const visibleChallenges = hasEnoughCharacters
     ? challenges.filter(
         (challenge) =>

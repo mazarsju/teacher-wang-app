@@ -4,6 +4,7 @@ import unittest
 
 from backend.utils.aiChat.challenge_prompts import (
     CHALLENGE_SCENARIOS,
+    RESTAURANT,
     build_challenge_system_prompt,
 )
 from backend.utils.aiChat.chat_agents import CHAT_CHARACTERS, get_character
@@ -68,6 +69,46 @@ class ChallengePromptsTest(unittest.TestCase):
         self.assertIn("Teacher Wang", CHAT_CHARACTERS["teacher-wang"]["system_prompt"])
         self.assertIn("Xiao Ming", CHAT_CHARACTERS["xiao-ming"]["system_prompt"])
         self.assertNotIn("## Stage directions", CHAT_CHARACTERS["teacher-wang"]["system_prompt"])
+
+    def test_leave_example_languages_match_across_scenarios(self):
+        # Every scenario must offer the same set of languages, so a new
+        # language added to one scenario and forgotten in another is caught
+        # here instead of silently falling back to English at runtime.
+        language_sets = {
+            character_id: frozenset(scenario.leave_example)
+            for character_id, scenario in CHALLENGE_SCENARIOS.items()
+        }
+        expected = frozenset(RESTAURANT.leave_example)
+        self.assertIn("en", expected)
+        for character_id, languages in language_sets.items():
+            with self.subTest(character_id=character_id):
+                self.assertEqual(languages, expected)
+
+    def test_leave_example_translates_by_language(self):
+        # Loops over every language actually present, so a newly added
+        # language is exercised automatically without editing this test.
+        for character_id, scenario in CHALLENGE_SCENARIOS.items():
+            prompts_by_language = {
+                language: build_challenge_system_prompt(scenario, language)
+                for language in scenario.leave_example
+            }
+            for language, prompt in prompts_by_language.items():
+                with self.subTest(character_id=character_id, language=language):
+                    self.assertIn(scenario.leave_example[language], prompt)
+            # Distinct languages must produce distinct example lines.
+            with self.subTest(character_id=character_id):
+                self.assertEqual(
+                    len(set(prompts_by_language.values())),
+                    len(prompts_by_language),
+                )
+
+    def test_leave_example_defaults_to_english(self):
+        for character_id, scenario in CHALLENGE_SCENARIOS.items():
+            with self.subTest(character_id=character_id):
+                default_prompt = build_challenge_system_prompt(scenario)
+                unknown_language_prompt = build_challenge_system_prompt(scenario, "zz")
+                self.assertIn(scenario.leave_example["en"], default_prompt)
+                self.assertIn(scenario.leave_example["en"], unknown_language_prompt)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,71 @@
+{
+  "restaurant": {
+    "title": "Serveur",
+    "description": "Parlez avec le serveur et commandez un repas",
+    "character": {
+      "name": "Serveur",
+      "description": "Parlez avec le serveur et commandez un repas"
+    },
+    "tasks": {
+      "callWaiter": "Appelez le serveur",
+      "askNoMeat": "Demandez s'ils ont un plat sans viande",
+      "askBill": "Demandez l'addition",
+      "payBill": "Payez l'addition"
+    }
+  },
+  "taxi": {
+    "title": "Chauffeur de taxi",
+    "description": "Prenez un taxi et indiquez au chauffeur où aller",
+    "character": {
+      "name": "Chauffeur de taxi",
+      "description": "Prenez un taxi et indiquez au chauffeur où aller"
+    },
+    "tasks": {
+      "hailTaxi": "Hélez le taxi",
+      "giveDestination": "Indiquez votre destination au chauffeur",
+      "askFare": "Demandez le prix de la course",
+      "payFare": "Payez la course"
+    }
+  },
+  "hotel": {
+    "title": "Réceptionniste d'hôtel",
+    "description": "Enregistrez-vous à l'hôtel et renseignez-vous sur le petit-déjeuner",
+    "character": {
+      "name": "Réceptionniste d'hôtel",
+      "description": "Enregistrez-vous à l'hôtel et renseignez-vous sur le petit-déjeuner"
+    },
+    "tasks": {
+      "greetReceptionist": "Saluez le réceptionniste",
+      "checkIn": "Enregistrez-vous dans votre chambre",
+      "askBreakfast": "Demandez à quelle heure commence le petit-déjeuner",
+      "checkOut": "Quittez l'hôtel"
+    }
+  },
+  "shop": {
+    "title": "Vendeur en boutique",
+    "description": "Achetez une chemise et pratiquez le vocabulaire du shopping",
+    "character": {
+      "name": "Vendeur en boutique",
+      "description": "Achetez une chemise et pratiquez le vocabulaire du shopping"
+    },
+    "tasks": {
+      "greetAssistant": "Saluez le vendeur",
+      "askPrice": "Demandez le prix d'une chemise",
+      "askDifferentSize": "Demandez une autre taille",
+      "payItem": "Payez l'article"
+    }
+  },
+  "newFriend": {
+    "title": "Nouvel ami",
+    "description": "Rencontrez Xiao Ming pour la première fois et présentez-vous en chinois",
+    "character": {
+      "name": "Xiao Ming",
+      "description": "Rencontrez Xiao Ming pour la première fois et présentez-vous en chinois"
+    },
+    "tasks": {
+      "greetFriend": "Dites bonjour à votre nouvel ami",
+      "introduceName": "Présentez-vous par votre nom",
+      "sayAge": "Dites-lui votre âge"
+    }
+  }
+}

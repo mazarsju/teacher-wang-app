@@ -1,0 +1,43 @@
+{
+  "writingPracticeDetailPage": {
+    "title": "Écriture",
+    "backButton": "Retour",
+    "tabs": {
+      "context": "Contexte",
+      "writing": "Écriture",
+      "completed": "Versions terminées"
+    },
+    "loading": "Chargement...",
+    "noContext": "Aucun contexte disponible pour le moment.",
+    "loadTopicError": "Échec du chargement de ce sujet d'écriture.",
+    "saveDraftError": "Échec de l'enregistrement de votre brouillon.",
+    "textareaPlaceholder": "Écrivez en chinois...",
+    "textareaAriaLabel": "Votre texte",
+    "saveDraft": "Enregistrer le brouillon",
+    "saving": "Enregistrement...",
+    "deleteDraft": "Supprimer le brouillon",
+    "deleting": "Suppression...",
+    "deleteDraftError": "Échec de la suppression de votre brouillon.",
+    "submit": "Soumettre",
+    "checkingTopic": "Vérification...",
+    "offTopicWarning": "Votre texte ne semble pas encore répondre à cet exercice. Relisez la consigne dans l'onglet Contexte, puis réécrivez votre texte pour y répondre avant de le soumettre.",
+    "reviewingMessage": "Votre texte est actuellement en cours de correction...",
+    "reviewedAriaLabel": "Votre texte",
+    "correctButtonAriaLabel": "Corriger : {{text}}",
+    "deleteDraftConfirmMessage": "Êtes-vous sûr de vouloir supprimer votre brouillon pour ce sujet ?"
+  },
+  "sentenceCorrectionModal": {
+    "title": "Corriger cette phrase",
+    "fieldLabel": "Votre correction",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "writingReviewModal": {
+    "allCorrectTitle": "Tout est correct !",
+    "almostThereTitle": "Presque là",
+    "allCorrectMessage": "Bravo — votre texte ne contient aucune erreur de grammaire.",
+    "notAllCorrectMessage": "Certaines phrases contiennent encore des erreurs de grammaire. Cliquez dessus pour voir pourquoi, puis corrigez-les pour valider le texte.",
+    "grammarPointsLabel": "Points de grammaire que vous avez correctement utilisés :",
+    "ok": "OK"
+  }
+}

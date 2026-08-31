@@ -466,7 +466,7 @@ The app UI and explanations are English-only today. Learners should be able to p
 - [x] Internationalize application data stored in PostgreSQL (HSK descriptions)
 - [x] Internationalize static content stored outside the application (S3-hosted content)
 - [x] Define a language-aware architecture across frontend, backend, APIs, database, and AI services
-- [ ] Add French as the first additional language and validate the full localization workflow end-to-end
+- [x] Add French as the first additional language and validate the full localization workflow end-to-end
 - [x] Add a language switcher in the UI and persist the user's preferred interface language
 
 ### 12. Gamification

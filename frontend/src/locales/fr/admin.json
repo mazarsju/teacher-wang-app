@@ -1,0 +1,59 @@
+{
+  "adminPage": {
+    "title": "Admin",
+    "loadingUsers": "Chargement des utilisateurs...",
+    "table": {
+      "emailHeader": "E-mail",
+      "planHeader": "Offre",
+      "lastConnectionHeader": "Dernière connexion",
+      "emptyMessage": "Aucun utilisateur trouvé.",
+      "planAriaLabel": "Offre pour {{email}}",
+      "deleteButton": "Supprimer",
+      "deleteAriaLabel": "Supprimer {{email}}"
+    },
+    "errors": {
+      "loadUsers": "Échec du chargement des utilisateurs.",
+      "updateUser": "Échec de la mise à jour de l'utilisateur.",
+      "deleteUser": "Échec de la suppression de l'utilisateur.",
+      "reloadHsk": "Échec du rechargement de la base de données HSK.",
+      "refreshArticles": "Échec de l'actualisation des articles.",
+      "reloadGrammar": "Échec du rechargement des règles de grammaire.",
+      "loadTranslation": "Échec du chargement des traductions HSK."
+    },
+    "hskSection": {
+      "title": "Base de données HSK",
+      "description": "Recharger entièrement les tables partagées des mots et caractères HSK à partir des données complete-hsk. Ceci est partagé entre tous les utilisateurs.",
+      "reloadButton": "Recharger la base de données HSK",
+      "reloadingButton": "Rechargement...",
+      "loadTranslationButton": "Charger la traduction",
+      "loadingTranslationButton": "Chargement..."
+    },
+    "loadTranslationModal": {
+      "title": "Charger une traduction HSK",
+      "fileLabel": "Fichier (zip)",
+      "languageLabel": "Langue",
+      "languageOptions": {
+        "en": "Anglais",
+        "fr": "Français"
+      }
+    },
+    "articlesSection": {
+      "title": "Articles hebdomadaires",
+      "description": "Récupérer les dernières actualités liées à la Chine et faire choisir par l'IA les 3 articles les plus importants de la semaine.",
+      "refreshButton": "Actualiser les articles",
+      "refreshingButton": "Actualisation..."
+    },
+    "grammarSection": {
+      "title": "Règles de grammaire",
+      "description": "Recharger les points de grammaire et prérequis partagés depuis le bucket S3 grammar-content.",
+      "reloadButton": "Recharger les règles de grammaire",
+      "reloadingButton": "Rechargement..."
+    },
+    "deleteConfirm": {
+      "message": "Êtes-vous sûr de vouloir supprimer {{email}} ? Cela supprimera toutes ses données et son compte."
+    },
+    "reloadHskConfirm": {
+      "message": "Êtes-vous sûr de vouloir recharger la base de données HSK ? Cela efface et retélécharge les tables partagées des mots et caractères HSK."
+    }
+  }
+}

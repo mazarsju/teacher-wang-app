@@ -10,6 +10,16 @@ import home from "./locales/en/home.json";
 import knowledgeBase from "./locales/en/knowledge-base.json";
 import preferences from "./locales/en/preferences.json";
 import writing from "./locales/en/writing.json";
+import adminFr from "./locales/fr/admin.json";
+import authFr from "./locales/fr/auth.json";
+import chatFr from "./locales/fr/chat.json";
+import challengeFr from "./locales/fr/challenge.json";
+import commonFr from "./locales/fr/common.json";
+import grammarFr from "./locales/fr/grammar.json";
+import homeFr from "./locales/fr/home.json";
+import knowledgeBaseFr from "./locales/fr/knowledge-base.json";
+import preferencesFr from "./locales/fr/preferences.json";
+import writingFr from "./locales/fr/writing.json";
 
 export const defaultNS = "common";
 
@@ -28,6 +38,18 @@ export const resources = {
     preferences,
     admin,
     auth,
+  },
+  fr: {
+    common: commonFr,
+    home: homeFr,
+    chat: chatFr,
+    challenge: challengeFr,
+    "knowledge-base": knowledgeBaseFr,
+    grammar: grammarFr,
+    writing: writingFr,
+    preferences: preferencesFr,
+    admin: adminFr,
+    auth: authFr,
   },
 } as const;
 

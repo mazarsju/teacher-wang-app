@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TEACHER_WANG } from "../data/chatCharacters";
+import { TEACHER_WANG_ID, getTeacherWang } from "../data/chatCharacters";
 import type { ChatMessage } from "../types/chat";
 import type {
   GrammarExercise,
@@ -178,6 +178,7 @@ export default function GrammarExercises({
   onProgressChange,
 }: GrammarExercisesProps) {
   const { t } = useTranslation("grammar");
+  const { t: tChat } = useTranslation("chat");
   const [index, setIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
@@ -286,7 +287,7 @@ export default function GrammarExercises({
     setIsCheckingWithAi(true);
     try {
       const response = await sendChatMessage(
-        TEACHER_WANG.id,
+        TEACHER_WANG_ID,
         [
           {
             role: "user",
@@ -598,7 +599,7 @@ export default function GrammarExercises({
       </div>
       {explanationMessages && (
         <ChatModal
-          character={TEACHER_WANG}
+          character={getTeacherWang(tChat)}
           onClose={() => setExplanationMessages(null)}
           initialMessages={explanationMessages}
           loadHistory={false}

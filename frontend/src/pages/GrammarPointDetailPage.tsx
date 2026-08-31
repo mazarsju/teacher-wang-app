@@ -6,7 +6,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import GrammarExercises, { scoreBand } from "../components/GrammarExercises";
 import GrammarVocabularyTab from "../components/GrammarVocabularyTab";
 import Page from "../components/Page";
-import { TEACHER_WANG } from "../data/chatCharacters";
+import { getTeacherWang } from "../data/chatCharacters";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   setGrammarPointScore,
@@ -40,6 +40,7 @@ export default function GrammarPointDetailPage({
   onBack,
 }: GrammarPointDetailPageProps) {
   const { t } = useTranslation(["grammar", "common"]);
+  const { t: tChat } = useTranslation("chat");
   const dispatch = useAppDispatch();
   const quizInProgress = useAppSelector((state) => state.grammar.quizInProgress);
   const currentHskLevel = useAppSelector(
@@ -228,7 +229,7 @@ export default function GrammarPointDetailPage({
           </div>
           {isLessonChatOpen && (
             <ChatModal
-              character={TEACHER_WANG}
+              character={getTeacherWang(tChat)}
               onClose={() => setIsLessonChatOpen(false)}
               initialMessages={[
                 {

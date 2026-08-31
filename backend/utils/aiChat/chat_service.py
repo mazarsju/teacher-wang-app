@@ -816,7 +816,7 @@ def generate_chat_reply(
             if behavior_block:
                 system_prompt = f"{system_prompt}\n\n{behavior_block}"
     else:
-        system_prompt = get_system_prompt(user_id, character_id)
+        system_prompt = get_system_prompt(user_id, character_id, language_code)
 
     known_characters: set[str] | None = None
     if character.get("retry_unknown_characters", False):

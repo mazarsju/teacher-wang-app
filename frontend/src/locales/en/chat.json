@@ -12,5 +12,13 @@
   "challengeCard": {
     "completedAriaLabel": "{{name}} ({{chineseName}}), completed",
     "completedLabel": "Completed"
+  },
+  "chatCharacters": {
+    "teacherWang": {
+      "description": "The native Chinese teacher who can also speak English"
+    },
+    "xiaoMing": {
+      "description": "Your native Chinese friend"
+    }
   }
 }

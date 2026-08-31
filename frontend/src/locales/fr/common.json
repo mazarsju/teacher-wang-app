@@ -1,0 +1,132 @@
+{
+  "app": {
+    "leaveQuizConfirm": "Vous avez commencé ce questionnaire. Le quitter maintenant signifie que vous devrez le recommencer depuis la première question. Quitter quand même ?",
+    "syncError": "Échec de la synchronisation des données."
+  },
+  "navbar": {
+    "mainNavigation": "Navigation principale",
+    "brand": "Teacher Wang",
+    "nav": {
+      "home": "Accueil",
+      "knowledgeBase": "Base de connaissances",
+      "grammar": "Grammaire",
+      "chat": "Discussion",
+      "preferences": "Préférences",
+      "admin": "Admin"
+    }
+  },
+  "profileMenu": {
+    "triggerLabel": "Menu du profil",
+    "menuLabel": "Profil",
+    "syncing": "Synchronisation...",
+    "synchro": "Synchro",
+    "logOut": "Se déconnecter"
+  },
+  "helpButton": {
+    "triggerLabel": "Aide",
+    "bubble": "Une question ? Un bug repéré ? Une idée d'amélioration ? N'hésitez pas à partager votre problème sur <1>Github</1>."
+  },
+  "confirmModal": {
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "irreversibleWarning": "Cette action est irréversible."
+  },
+  "warningModal": {
+    "title": "Attention",
+    "ok": "OK"
+  },
+  "actions": {
+    "close": "Fermer"
+  },
+  "table": {
+    "emptyMessage": "Aucune donnée à afficher."
+  },
+  "addWordModal": {
+    "titleAdd": "Ajouter un mot",
+    "titleEdit": "Modifier le mot",
+    "wordLabel": "mots",
+    "duplicateWarning": "Ce mot existe déjà dans la base de données.",
+    "pinyinLabel": "pinyin",
+    "pinyinWarning": "Entrez une syllabe pinyin valide par caractère chinois (ex. hao3), avec un chiffre de ton. Les caractères non chinois du mot n'ont pas besoin de pinyin correspondant — l'espacement et le contenu autour d'eux ne sont pas vérifiés.",
+    "definitionLabel": "définition",
+    "definitionTooLong": "La définition ne doit pas dépasser 100 caractères.",
+    "writingKnownLabel": "écriture connue"
+  },
+  "chatModal": {
+    "severity": {
+      "correct": "Correct",
+      "minorMistake": "Erreur mineure",
+      "awkwardWording": "Formulation maladroite",
+      "incorrect": "Incorrect"
+    },
+    "clearing": "Effacement...",
+    "clearHistory": "Effacer l'historique de discussion",
+    "closeChat": "Fermer la discussion",
+    "tasksTitle": "Tâches",
+    "tasksTitleWithChallenge": "{{challengeTitle}} — tâches",
+    "loadingConversation": "Chargement de la conversation...",
+    "emptyState": "Démarrez une conversation avec {{name}}.",
+    "typingIndicator": "{{name}} est en train d'écrire...",
+    "challengeCompleted": "Défi terminé !",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tapez votre message...",
+    "sending": "Envoi...",
+    "send": "Envoyer",
+    "clearHistoryConfirm": "Effacer tout l'historique de discussion avec {{name}} ? Cette action est irréversible.",
+    "openGrammarNoteAriaLabel": "Ouvrir la note de grammaire ({{severity}}) avec Teacher Wang",
+    "askTeacherWangTitle": "{{severity}} — demander à Teacher Wang",
+    "errors": {
+      "loadHistory": "Échec du chargement de l'historique de discussion.",
+      "sendMessage": "Échec de l'envoi du message.",
+      "clearHistory": "Échec de l'effacement de l'historique de discussion.",
+      "correctionThreadUnavailable": "Cette note de grammaire ne peut pas continuer en tant que fil enregistré. Envoyez un nouveau message pour en créer un."
+    }
+  },
+  "grammarMasteryModal": {
+    "title": "Grammaire maîtrisée !",
+    "masteredMessage_one": "Vous venez de prouver que vous maîtrisez cette leçon en l'utilisant dans une vraie conversation :",
+    "masteredMessage_other": "Vous venez de prouver que vous maîtrisez ces leçons en les utilisant dans une vraie conversation :",
+    "niceButton": "Super !"
+  },
+  "knowledgeBaseInitWizardModal": {
+    "title": "Construisez votre base de connaissances",
+    "wordColumnHeader": "Mot",
+    "back": "Retour",
+    "errors": {
+      "import": "Échec de l'importation de votre base de connaissances.",
+      "pickWord": "Échec de la sélection d'un mot.",
+      "save": "Échec de l'enregistrement de votre base de connaissances."
+    },
+    "choose": {
+      "manualOption": "Ajouter des caractères et des mots un par un, manuellement",
+      "csvOption": "Importer une base de connaissances existante (CSV)",
+      "ankiOption": "Importer des données depuis un paquet Anki",
+      "smartOption": "Création intelligente basée sur ce que vous savez déjà"
+    },
+    "manualInfo": {
+      "text": "Vous devez aller dans la section Base de connaissances pour cela et créer manuellement ce que vous voulez.",
+      "goToKnowledgeBase": "Aller à la base de connaissances"
+    },
+    "ankiInfo": {
+      "text": "Vous pouvez configurer votre synchronisation Anki dans la section Préférences.",
+      "goToPreferences": "Aller aux préférences"
+    },
+    "csv": {
+      "instructions": "Importez un fichier CSV avec les mêmes colonnes que votre table de mots : mot, définition, pinyin, si vous savez déjà l'écrire (true ou false), s'il a été synchronisé avec Anki (true ou false), et la date de dernière mise à jour. Par exemple :",
+      "headerNote": "La première ligne peut être soit cet en-tête, soit votre premier mot.",
+      "import": "Importer"
+    },
+    "smart": {
+      "intro": "Indiquez-nous si vous connaissez chaque mot ci-dessous et si vous savez écrire tous ses caractères. Vous pouvez consulter la liste complète des mots que vous êtes sur le point d'ajouter à tout moment avant de confirmer.",
+      "setupDone": "Votre configuration rapide est terminée ! Veuillez vérifier la liste ci-dessous.",
+      "pickingWord": "Sélection d'un mot…",
+      "dontKnow": "Ne le connaît pas",
+      "canRecognize": "Peut le reconnaître",
+      "canWrite": "Peut l'écrire",
+      "knowToWrite": "Sait l'écrire",
+      "remove": "Retirer",
+      "emptyTable": "Aucun mot sélectionné pour le moment.",
+      "syncProgress": "Synchronisation de votre base de connaissances… {{completed}}/{{total}}"
+    }
+  }
+}

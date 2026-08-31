@@ -28,6 +28,7 @@ Language Progress:
 - [ ] Frontend: language registered in i18n.ts resources
 - [ ] Frontend: language added to LANGUAGE_OPTIONS in PreferencesPage.tsx (language switcher)
 - [ ] Backend: LANGUAGE_NAMES entry in behavior_spec.py (skip if already present)
+- [ ] Backend: leave_example["<lang>"] added to every ChallengeScenario in challenge_prompts.py
 - [ ] Key-parity check: every en key exists in the new language, no extras
 - [ ] Frontend tests pass (npx vitest run --silent)
 - [ ] Backend tests pass (python3 -m unittest discover -s backend/tests -q)
@@ -49,6 +50,7 @@ Copy the key **structure** exactly; translate only the **values**.
 - Keep `{{placeholder}}` interpolation tokens and i18next `_one`/`_other` plural suffixes byte-identical — translate the surrounding text, never the token/suffix names. If the target language's plural rules don't collapse to a plain one/other split (e.g. it needs `_few`/`_many`/`_zero`), use i18next's suffix set for that language rather than forcing English's two-way split.
 - `<Trans>`-templated strings (e.g. `common.json`'s `helpButton.bubble`, `preferences.json`'s `currentPlan.descriptionFree`) keep their numbered placeholders (`<1>...</1>`) — translate the text around them, not the tags.
 - `challenge.json` is a data catalog, not component copy (see the ADR's "Exception — data catalogs" note) — translate `title`/`description`/`character.name`/`character.description`/every `tasks.*` value; the file has nothing else to translate.
+- `chat.json`'s `chatCharacters` key (`teacherWang.description`/`xiaoMing.description`) is also a data-catalog field, sourced from `frontend/src/data/chatCharacters.ts`'s `getTeacherWang`/`getXiaoMing`/`getChatCharacters` — translate both `description` values. `chatCharacters.ts`'s `name`/`chineseName`/`avatarVariant` are not translated (deliberately hardcoded, see the ADR's "Out of scope" note) — nothing to do there.
 
 ## Step 2 — Register the language in `i18n.ts`
 
@@ -102,6 +104,16 @@ LANGUAGE_NAMES = {
 
 Skip this step if the code is already present. This is what lets Teacher Wang's chat behaviors say e.g. "give the meaning in Spanish" instead of defaulting to English — see `docs/architecture/teacher-wang-behaviors.md`'s templating note and `get_behaviors()`/`get_behavior()` in the same file.
 
+## Step 3b — Challenge scenario leave examples
+
+File: `backend/utils/aiChat/challenge_prompts.py`
+
+Each `ChallengeScenario` (`RESTAURANT`, `TAXI`, `HOTEL`, `SHOP`, `NEW_FRIEND`) has a `leave_example` field — a `dict[str, str]` mapping a `users.language` code to the full example "leave" line the AI is shown (the `[[...]][[...]]` stage-direction pair plus the trailing Chinese sentence, e.g. `"[[The waiter leaves]][[The waiter comes back with the ordered meal]]您的菜来了。"`). `build_challenge_system_prompt(scenario, language_code)` resolves the right entry via `_resolve_leave_example`, falling back to the `"en"` entry for a missing/unrecognized code (same fallback shape as `behavior_spec.language_name`, and it reuses that module's `DEFAULT_LANGUAGE_CODE` rather than redefining it).
+
+Add a `"<lang>"` entry to every scenario's `leave_example` dict, translating only the natural-language text — keep the `[[...]]` bracket structure and the trailing Chinese sentence byte-identical. Only `leave_example` is translated this way: `leave_agent_label` and every other English string in this file are meta-instructions to the LLM (not user-facing), and stay English regardless of the learner's language — this is deliberate, not a gap to fix.
+
+This is threaded per-request, not baked in at import time: `get_system_prompt(user_id, character_id, language_code)` in `backend/utils/aiChat/chat_agents.py` looks up `CHALLENGE_SCENARIOS.get(character_id)` and calls `build_challenge_system_prompt(scenario, language_code)` when the character is a challenge scenario; `chat_service.py` passes its already-computed `language_code` (from `_current_language_code()`) into that call. No plumbing changes are needed for a new language — only the new `leave_example["<lang>"]` translations.
+
 ## Step 4 — Key-parity check
 
 No automated CI check exists for this yet (a known gap — see the ADR's Drawbacks). Spot-check by diffing top-level key sets between `en` and the new language for every namespace:
@@ -125,7 +137,7 @@ Top-level keys only — re-read a namespace file end-to-end if a nested mismatch
 ## Step 5 — Tests
 
 - Frontend: `cd frontend && npx vitest run --silent`. Adding a language must not change any existing test's output — tests render with `lng: "en"` (the default), so a new `resources.<lang>` block is inert until `i18n.changeLanguage()` is called. A test failure here means the `en` JSON was accidentally edited while copying structure.
-- Backend: `python3 -m unittest discover -s backend/tests -q`. If you added a new `LANGUAGE_NAMES` entry, add a matching case to `backend/tests/test_behavior_spec.py` — mirror the existing `"fr"` assertions in `TestLanguageName`, `TestGetBehaviors`, and `TestGetBehavior` with your new code/name.
+- Backend: `python3 -m unittest discover -s backend/tests -q`. If you added a new `LANGUAGE_NAMES` entry, add a matching case to `backend/tests/test_behavior_spec.py` — mirror the existing `"fr"` assertions in `TestLanguageName`, `TestGetBehaviors`, and `TestGetBehavior` with your new code/name. `backend/tests/test_challenge_prompts.py`'s `test_leave_example_translates_by_language`/`test_leave_example_defaults_to_english` already loop over every scenario and every language present in `leave_example`, so a new `"<lang>"` entry is covered automatically — no test changes needed for Step 3b unless the fallback behavior itself changes.
 
 ## Step 6 — HSK word translations (optional content step)
 

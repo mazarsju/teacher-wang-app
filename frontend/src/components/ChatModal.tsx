@@ -15,7 +15,7 @@ import {
   TrophyIcon,
   WarningIcon,
 } from "./icons";
-import { TEACHER_WANG } from "../data/chatCharacters";
+import { getTeacherWang } from "../data/chatCharacters";
 import type { ChallengeTask } from "../types/challenge";
 import type {
   ChatMessage,
@@ -112,6 +112,7 @@ export default function ChatModal({
   topicContext,
 }: ChatModalProps) {
   const { t } = useTranslation("common");
+  const { t: tChat } = useTranslation("chat");
   const grammarSeverityLabels: Record<GrammarSeverity, string> = {
     none: t("chatModal.severity.correct"),
     minor: t("chatModal.severity.minorMistake"),
@@ -759,7 +760,7 @@ export default function ChatModal({
       {activeCorrection !== null && (
         <ChatModal
           key={activeCorrection.threadId}
-          character={TEACHER_WANG}
+          character={getTeacherWang(tChat)}
           onClose={() => setActiveCorrection(null)}
           initialMessages={activeCorrection.messages}
           loadHistory={false}

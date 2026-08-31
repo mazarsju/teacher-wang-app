@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from backend.utils.aiChat.behavior_spec import DEFAULT_LANGUAGE_CODE
+
 
 @dataclass(frozen=True)
 class ChallengeGate:
@@ -44,8 +46,10 @@ class ChallengeScenario:
     leave_agent_label: str
     """e.g. 'The waiter leaves' (without brackets)."""
 
-    leave_example: str
-    """Full example leave line including [[...]][[...]] and Chinese."""
+    leave_example: dict[str, str]
+    """Maps a `users.language` code to the full example leave line (including
+    [[...]][[...]] and Chinese). Must have an "en" entry; falls back to it for
+    missing/unrecognized codes (see `_resolve_leave_example`)."""
 
     mid_flow_tips: tuple[str, ...] = ()
     leave_when_examples: str = (
@@ -53,8 +57,22 @@ class ChallengeScenario:
     )
 
 
-def build_challenge_system_prompt(scenario: ChallengeScenario) -> str:
-    """Assemble a readable multi-section challenge system prompt."""
+def _resolve_leave_example(scenario: ChallengeScenario, language_code: str | None) -> str:
+    """Resolve `scenario.leave_example` for `language_code`, falling back to English."""
+    return scenario.leave_example.get(
+        language_code or DEFAULT_LANGUAGE_CODE,
+        scenario.leave_example[DEFAULT_LANGUAGE_CODE],
+    )
+
+
+def build_challenge_system_prompt(
+    scenario: ChallengeScenario, language_code: str | None = None
+) -> str:
+    """Assemble a readable multi-section challenge system prompt.
+
+    `language_code` is a `users.language` value (e.g. "en", "fr") used to pick
+    the learner's language for `scenario.leave_example`; defaults to English.
+    """
     gate = scenario.gate
     steps_block = "\n".join(
         f"{i}) {step}" for i, step in enumerate(scenario.steps)
@@ -120,7 +138,7 @@ def build_challenge_system_prompt(scenario: ChallengeScenario) -> str:
         "Immediately after those two [[...]] blocks, write the short Chinese "
         "sentence you would most likely say after that next action — as plain "
         "text, NOT inside double square brackets. For example:\n"
-        f"{scenario.leave_example}"
+        f"{_resolve_leave_example(scenario, language_code)}"
     )
     return "\n\n".join(sections)
 
@@ -161,10 +179,16 @@ RESTAURANT = ChallengeScenario(
         "asking for the bill or paying before ordering, or paying before eating"
     ),
     leave_agent_label="The waiter leaves",
-    leave_example=(
-        "[[The waiter leaves]][[The waiter comes back with the ordered meal]]"
-        "您的菜来了。"
-    ),
+    leave_example={
+        "en": (
+            "[[The waiter leaves]][[The waiter comes back with the ordered meal]]"
+            "您的菜来了。"
+        ),
+        "fr": (
+            "[[Le serveur s'en va]][[Le serveur revient avec le repas commandé]]"
+            "您的菜来了。"
+        ),
+    },
     leave_when_examples=(
         "for example the learner has finished ordering, or has finished paying"
     ),
@@ -211,10 +235,16 @@ TAXI = ChallengeScenario(
         "(e.g. 大概五十块钱).",
     ),
     leave_agent_label="The taxi driver leaves",
-    leave_example=(
-        "[[The taxi driver leaves]][[The taxi arrives at the destination]]"
-        "到了，一共五十块。"
-    ),
+    leave_example={
+        "en": (
+            "[[The taxi driver leaves]][[The taxi arrives at the destination]]"
+            "到了，一共五十块。"
+        ),
+        "fr": (
+            "[[Le chauffeur de taxi s'en va]][[Le taxi arrive à destination]]"
+            "到了，一共五十块。"
+        ),
+    },
     leave_when_examples=(
         "for example the ride has started after the destination, or payment "
         "is finished"
@@ -264,10 +294,16 @@ HOTEL = ChallengeScenario(
         "(e.g. 早饭从七点到九点).",
     ),
     leave_agent_label="The receptionist leaves",
-    leave_example=(
-        "[[The receptionist leaves]][[The receptionist comes back with the "
-        "room key]]这是您的房卡。"
-    ),
+    leave_example={
+        "en": (
+            "[[The receptionist leaves]][[The receptionist comes back with the "
+            "room key]]这是您的房卡。"
+        ),
+        "fr": (
+            "[[Le réceptionniste s'en va]][[Le réceptionniste revient avec la "
+            "clé de la chambre]]这是您的房卡。"
+        ),
+    },
     leave_when_examples=(
         "for example you hand over the key after check-in, or checkout is "
         "finished"
@@ -316,10 +352,16 @@ SHOP = ChallengeScenario(
         "When they ask for a different size, confirm you will get it.",
     ),
     leave_agent_label="The shop assistant leaves",
-    leave_example=(
-        "[[The shop assistant leaves]][[The shop assistant comes back with "
-        "a smaller size]]这件是小一号的，您试试。"
-    ),
+    leave_example={
+        "en": (
+            "[[The shop assistant leaves]][[The shop assistant comes back with "
+            "a smaller size]]这件是小一号的，您试试。"
+        ),
+        "fr": (
+            "[[Le vendeur s'en va]][[Le vendeur revient avec une taille plus "
+            "petite]]这件是小一号的，您试试。"
+        ),
+    },
     leave_when_examples=(
         "for example you go to fetch another size, or payment is finished"
     ),
@@ -366,10 +408,16 @@ NEW_FRIEND = ChallengeScenario(
         "When they tell you their age, react naturally, e.g. 哦，你...岁啊。",
     ),
     leave_agent_label="Xiao Ming leaves",
-    leave_example=(
-        "[[Xiao Ming leaves]][[Xiao Ming waves goodbye]]"
-        "再见，很高兴认识你！"
-    ),
+    leave_example={
+        "en": (
+            "[[Xiao Ming leaves]][[Xiao Ming waves goodbye]]"
+            "再见，很高兴认识你！"
+        ),
+        "fr": (
+            "[[Xiao Ming s'en va]][[Xiao Ming fait un signe d'au revoir]]"
+            "再见，很高兴认识你！"
+        ),
+    },
     leave_when_examples="for example the introduction is complete",
 )
 

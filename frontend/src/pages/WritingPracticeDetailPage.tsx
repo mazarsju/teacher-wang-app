@@ -8,7 +8,7 @@ import Page from "../components/Page";
 import SentenceCorrectionModal from "../components/SentenceCorrectionModal";
 import WarningModal from "../components/WarningModal";
 import WritingReviewModal from "../components/WritingReviewModal";
-import { TEACHER_WANG } from "../data/chatCharacters";
+import { getTeacherWang } from "../data/chatCharacters";
 import type { CoveredGrammarPoint, WritingSentenceCheck } from "../types/writingSentence";
 import { renderFormattedText } from "../utils/formatMarkdownText";
 import { detectGrammarPoints, recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
@@ -126,6 +126,7 @@ export default function WritingPracticeDetailPage({
   onBack,
 }: WritingPracticeDetailPageProps) {
   const { t } = useTranslation("writing");
+  const { t: tChat } = useTranslation("chat");
   const [topicTitle, setTopicTitle] = useState<string | null>(null);
   const [context, setContext] = useState<string | null>(null);
   const [isLoadingTopic, setIsLoadingTopic] = useState(true);
@@ -544,7 +545,7 @@ export default function WritingPracticeDetailPage({
       />
       {activeSentenceChat && (
         <ChatModal
-          character={TEACHER_WANG}
+          character={getTeacherWang(tChat)}
           onClose={() => setActiveSentenceChat(null)}
           initialMessages={[
             {

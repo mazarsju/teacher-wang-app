@@ -1,0 +1,105 @@
+{
+  "knowledgeBasePage": {
+    "title": "Base de connaissances",
+    "tableHeaders": {
+      "char": "caractère",
+      "pinyin": "pinyin",
+      "writingKnown": "écriture_connue",
+      "updatedAt": "mis_à_jour_le",
+      "word": "mots",
+      "definition": "définition"
+    },
+    "toggles": {
+      "writingKnown": "Écriture connue",
+      "writingNotKnown": "Écriture non connue"
+    },
+    "actions": {
+      "modify": "Modifier",
+      "export": "Exporter",
+      "import": "Importer",
+      "view": "Voir"
+    },
+    "ankiSyncBanner": {
+      "message_one": "{{count}} carte doit être ajoutée dans Anki pour la synchronisation.",
+      "message_other": "{{count}} cartes doivent être ajoutées dans Anki pour la synchronisation.",
+      "syncing": "Synchronisation...",
+      "button": "Synchro rapide"
+    },
+    "onboardingBanner": {
+      "message": "Des difficultés pour configurer votre base de connaissances ? Cliquez ici pour une intégration plus rapide et plus simple !",
+      "buttonMessage": "Commencer à construire votre base de connaissances"
+    },
+    "suggestionBanner": {
+      "message": "Besoin d'inspiration pour votre prochain mot à apprendre ?",
+      "buttonMessage": "Ajouter le mot suivant"
+    },
+    "loading": "Chargement de la base de connaissances...",
+    "search": {
+      "label": "Rechercher"
+    },
+    "wordsSection": {
+      "title": "Mots",
+      "addWordButton": "Ajouter un mot",
+      "searchPlaceholder": "Rechercher des mots...",
+      "emptyDatabase": "Aucun mot dans la base de données pour le moment.",
+      "emptySearch": "Aucun mot ne correspond à votre recherche.",
+      "editButton": "Modifier",
+      "deleteButton": "Supprimer"
+    },
+    "charactersSection": {
+      "title": "Caractères",
+      "searchPlaceholder": "Rechercher des caractères...",
+      "emptyDatabase": "Aucun caractère dans la base de données pour le moment.",
+      "emptySearch": "Aucun caractère ne correspond à votre recherche."
+    },
+    "deleteWordConfirm": {
+      "message": "Êtes-vous sûr de vouloir supprimer « {{word}} » ?"
+    },
+    "export": {
+      "success": "La base de données a été téléchargée sous forme de fichier zip.",
+      "error": "Échec de l'exportation de la base de données."
+    },
+    "import": {
+      "success": "La base de données a été importée avec succès.",
+      "error": "Échec de l'importation de la base de données."
+    },
+    "deleteWord": {
+      "error": "Échec de la suppression du mot."
+    },
+    "editWord": {
+      "error": "Échec de la mise à jour du mot."
+    },
+    "addWord": {
+      "error": "Échec de l'ajout du mot."
+    },
+    "quickSync": {
+      "error": "Échec de la synchronisation rapide avec Anki."
+    }
+  },
+  "addSuggestedWordsModal": {
+    "title": "Mots à apprendre ensuite",
+    "message": "Les mots suivants sont les plus stratégiques pour vous à apprendre.",
+    "loading": "Chargement des suggestions…",
+    "selectAriaLabel": "Sélectionner {{word}}",
+    "tableHeaders": {
+      "word": "Mot"
+    },
+    "emptyMessage": "Aucun autre mot à suggérer pour le moment.",
+    "ignoreButton": "Ignorer",
+    "ignoreAllHint": "Aucun de ces mots ne vous intéresse ? Vous pouvez tous les ignorer pour que d'autres mots vous soient proposés :",
+    "ignoreAllButton": "Ignorer tous les mots",
+    "cancelButton": "Annuler",
+    "confirmButton": "Confirmer",
+    "loadError": "Échec du chargement des mots suggérés.",
+    "ignoreError": "Échec de l'ignorance du ou des mots.",
+    "submitError": "Échec de l'ajout des mots sélectionnés."
+  },
+  "characterWordsModal": {
+    "associatedWordsHeading": "Mots associés :"
+  },
+  "pinyinGridView": {
+    "emptyStartLabel": "—",
+    "cornerHeader": "début \\ finale",
+    "associatedWordsAriaLabel": "Mots associés à {{char}}"
+  }
+}

@@ -1,0 +1,314 @@
+{
+  "ankiDeckKind": {
+    "labels": {
+      "mandarin_vocabulary": "Vocabulaire mandarin",
+      "mandarin_writing": "Écriture mandarine"
+    },
+    "descriptions": {
+      "mandarin_vocabulary": "Ce paquet est le paquet principal pour pratiquer le vocabulaire. Il vous demande de deviner le caractère à partir du pinyin et de la définition, ou le pinyin à partir du caractère et de la définition, ou la définition à partir du caractère et du pinyin.",
+      "mandarin_writing": "Ce paquet sert uniquement à pratiquer l'écriture. Il vous demande de deviner les caractères à partir de la définition et du pinyin. Seuls les caractères avec « écriture connue » coché feront partie de ce paquet."
+    }
+  },
+  "preferencesPage": {
+    "title": "Préférences",
+    "loading": "Chargement des préférences...",
+    "language": {
+      "title": "Langue",
+      "description": "Choisissez la langue utilisée dans l'application.",
+      "ariaLabel": "Langue",
+      "options": {
+        "en": "English",
+        "fr": "Français"
+      }
+    },
+    "currentPlan": {
+      "title": "Offre actuelle",
+      "descriptionFree": "Vous êtes sur l'offre <1>Gratuite</1>.",
+      "descriptionPro": "Vous êtes sur l'offre <1>Pro</1>.",
+      "comparePlans": "Comparer les offres"
+    },
+    "anki": {
+      "title": "Synchronisation Anki",
+      "mobileWarning": "La synchronisation Anki n'est pas disponible sur un téléphone mobile. Utilisez un ordinateur pour configurer et gérer vos paquets Anki.",
+      "description": "Associez les caractères et mots de votre base de connaissances à des paquets Anki via AnkiConnect.",
+      "notConnectedBanner": {
+        "message": "Démarrez l'application Anki avec le module AnkiConnect activé avant de configurer les paquets.",
+        "buttonMessage": "Comment configurer AnkiConnect"
+      },
+      "syncHelpBanner": {
+        "message": "Des difficultés avec votre configuration Anki ? Cliquez ici pour plus d'informations",
+        "buttonMessage": "Aide à la synchronisation Anki"
+      },
+      "deckStatus": {
+        "notConfigured": "Non configuré",
+        "synchronized": "Synchronisé",
+        "notSynchronized": "Non synchronisé",
+        "notConnected": "Non connecté"
+      },
+      "syncButton": "Synchroniser",
+      "setupButton": "Configurer"
+    },
+    "usage": {
+      "title": "Utilisation de l'IA",
+      "description": "La part de votre quota mensuel d'IA utilisée par les appels de discussion et de vérification de grammaire.",
+      "smartAi": {
+        "title": "IA intelligente",
+        "description": "Des réponses plus intelligentes, au prix d'un peu plus de temps et d'utilisation.",
+        "ariaLabel": "IA intelligente"
+      },
+      "usedThisMonth": "Utilisé ce mois-ci",
+      "progressBarAriaLabel": "Pourcentage du quota mensuel d'utilisation de l'IA utilisé",
+      "resetNote": "Se réinitialise à 0% le 1er du mois prochain.",
+      "exhaustedBanner": {
+        "message": "Vous êtes à court d'utilisation de l'IA pour le mois. Besoin de plus ? N'hésitez pas à changer d'offre !",
+        "buttonMessage": "Changer d'offre"
+      },
+      "chartAriaLabel": "Utilisation cumulée de l'IA ce mois-ci, actuellement à {{percent}} du quota mensuel",
+      "chartDotTitle": "{{day}} : {{percent}} utilisé"
+    },
+    "danger": {
+      "title": "Actions dangereuses",
+      "description": "Ces actions sont irréversibles. Exportez d'abord votre base de connaissances si vous pourriez en avoir besoin plus tard.",
+      "deleteButton": "Supprimer la base de connaissances",
+      "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer la base de connaissances ? Assurez-vous d'avoir exporté la base de données avant de la supprimer. (remarque : cela ne supprimera pas vos paquets Anki)"
+    },
+    "errors": {
+      "loadPreferences": "Échec du chargement des préférences.",
+      "loadSmartAi": "Échec du chargement de la préférence IA intelligente.",
+      "updateSmartAi": "Échec de la mise à jour de la préférence IA intelligente.",
+      "updateLanguage": "Échec de la mise à jour de la préférence de langue.",
+      "refreshAnkiStatus": "Échec de l'actualisation du statut Anki.",
+      "deleteKnowledgeBase": "Échec de la suppression de la base de connaissances.",
+      "syncFailedMessage": "Ces cartes n'ont pas pu être synchronisées : {{cards}}",
+      "syncFailedRemaining_one": ", et {{count}} autre carte.",
+      "syncFailedRemaining_other": ", et {{count}} autres cartes.",
+      "syncFailedEnd": "."
+    }
+  },
+  "changePlanModal": {
+    "title": "Comparer les offres",
+    "plans": {
+      "free": { "name": "Gratuit", "price": "Gratuit" },
+      "pro": { "name": "Pro", "price": "4,99 $ / mois" }
+    },
+    "features": {
+      "knowledgeBase": { "label": "Gestion de la base de connaissances", "free": "Inclus", "pro": "Inclus" },
+      "anki": { "label": "Synchronisation Anki", "free": "Inclus", "pro": "Inclus" },
+      "aiChat": { "label": "Discussion IA", "free": "Limité", "pro": "Usage généreux et raisonnable" },
+      "grammar": { "label": "Exercices de grammaire", "free": "Limité", "pro": "Accès complet" }
+    },
+    "currentPlanLabel": "Offre actuelle",
+    "switchTo": "Passer à {{plan}}"
+  },
+  "updatePlanModal": {
+    "title": "Améliorez votre offre",
+    "message": "Vous êtes parmi les premiers ! L'application est encore en construction, il n'y a donc pas encore d'offre payante. Envie de débloquer l'offre Pro gratuitement pendant 3 mois (100× votre utilisation mensuelle de l'IA) ? Aidez à construire le produit en publiant votre premier ticket sur <1>GitHub</1> et je m'occupe de vous !"
+  },
+  "ankiConnectGuideModal": {
+    "title": "Configurer AnkiConnect",
+    "description": "Teacher Wang communique avec Anki via le module AnkiConnect. Suivez ces étapes, puis fermez ce guide pour revérifier la connexion.",
+    "closeButton": "Fermer et vérifier la connexion",
+    "steps": {
+      "createAccount": {
+        "title": "Créez un compte Anki",
+        "description": "Allez sur ankiweb.net et créez un compte gratuit afin de pouvoir synchroniser vos paquets entre appareils plus tard.",
+        "imageAlt": "Page d'inscription AnkiWeb"
+      },
+      "installDesktop": {
+        "title": "Installez Anki sur ordinateur",
+        "description": "Téléchargez et installez l'application Anki pour ordinateur correspondant à votre système d'exploitation depuis apps.ankiweb.net, puis ouvrez-la et connectez-vous si demandé.",
+        "imageAlt": "Page de téléchargement d'Anki pour ordinateur"
+      },
+      "openAddons": {
+        "title": "Ouvrez les modules Anki",
+        "description": "Dans Anki, ouvrez Outils → Modules complémentaires → Obtenir des modules complémentaires… pour installer de nouveaux plugins.",
+        "imageAlt": "Menu Outils d'Anki mettant en évidence Modules complémentaires"
+      },
+      "installAddon": {
+        "title": "Installez AnkiConnect",
+        "description": "Entrez le code du module 2055492159 et confirmez. Redémarrez Anki lorsque demandé.",
+        "imageAlt": "Boîte de dialogue Obtenir des modules complémentaires d'Anki avec le code 2055492159"
+      },
+      "allowCors": {
+        "title": "Autoriser l'accès du navigateur (CORS)",
+        "description": "Dans Anki, ouvrez Outils → Modules complémentaires → AnkiConnect → Config et définissez webCorsOriginList à [\"*\"] (ou incluez http://localhost:5173). Redémarrez Anki pour que Teacher Wang puisse appeler AnkiConnect depuis l'application."
+      },
+      "verify": {
+        "title": "Vérifiez la connexion",
+        "description": "Gardez Anki ouvert en arrière-plan, puis ouvrez http://localhost:8765 dans un navigateur. Vous devriez voir le texte « AnkiConnect ». Fermez ce guide pour actualiser le statut de la connexion.",
+        "imageAlt": "Navigateur affichant AnkiConnect à localhost:8765"
+      }
+    }
+  },
+  "ankiCustomFieldModal": {
+    "title": "Ajouter un champ personnalisé",
+    "titleFieldLabel": "Titre",
+    "titleFieldPlaceholder": "ex. phrase d'exemple",
+    "descriptionFieldLabel": "Description",
+    "descriptionFieldPlaceholder": "À quoi sert ce champ",
+    "cancel": "Annuler",
+    "confirm": "Confirmer"
+  },
+  "ankiDeckSetupModal": {
+    "title": "Configurer {{deckLabel}}",
+    "loading": "Chargement des paquets et types de paquets depuis Anki…",
+    "createNewDeck": "Créer un nouveau paquet",
+    "newDeckNameLabel": "Nom du nouveau paquet",
+    "newDeckNamePlaceholder": "Vocabulaire mandarin",
+    "existingDeckLabel": "Paquet existant",
+    "noDecksFound": "Aucun paquet trouvé",
+    "deckTypeLabel": "Type de paquet",
+    "aboutVocabularyDeckTypes": "À propos des types de paquets de vocabulaire",
+    "aboutWritingDeckTypes": "À propos des types de paquets d'écriture",
+    "noDeckTypesFound": "Aucun type de paquet trouvé",
+    "fieldMapping": {
+      "legend": "Correspondance des champs",
+      "hint": "Associez chaque champ de Teacher Wang à un champ du type de paquet Anki sélectionné."
+    },
+    "loadingNoteFields": "Chargement des champs de note…",
+    "selectAnkiFieldPlaceholder": "Sélectionner un champ Anki…",
+    "customFields": {
+      "legend": "Champs personnalisés",
+      "hint": "Champs optionnels que vous définissez vous-même, associés à un champ supplémentaire du type de paquet Anki sélectionné.",
+      "remove": "Retirer",
+      "addCustom": "Ajouter un champ personnalisé"
+    },
+    "cancel": "Annuler",
+    "save": "Enregistrer la correspondance",
+    "saving": "Enregistrement…",
+    "errors": {
+      "loadCatalog": "Échec du chargement des paquets et types de paquets Anki.",
+      "loadFields": "Échec du chargement des champs de note Anki.",
+      "save": "Échec de la configuration du paquet Anki.",
+      "refresh": "Échec de l'actualisation des paquets et types de paquets Anki."
+    }
+  },
+  "ankiSyncHelpModal": {
+    "title": "Pièges de la synchronisation Anki",
+    "bullet1": "Assurez-vous que vos cartes Anki ont une « définition » (elles ne peuvent pas être importées si ce champ est vide).",
+    "bullet2": "Assurez-vous que vos cartes Anki ont la syntaxe correcte pour le pinyin : elles doivent utiliser le format « pinyin » ou « numérique ». Si une carte est composée de plusieurs pinyins, ils doivent être séparés par un espace.",
+    "bullet3": "Assurez-vous, si vous n'avez pas défini le pinyin pour cette carte, que le pinyin du caractère peut être détecté automatiquement à partir d'une autre carte.",
+    "close": "Fermer"
+  },
+  "ankiSyncModal": {
+    "title": "Synchro — {{label}}",
+    "loadingSyncStatus": "Chargement du statut de synchronisation…",
+    "errors": {
+      "loadPending": "Échec du chargement des cartes Anki en attente.",
+      "sync": "Échec de la synchronisation avec Anki."
+    },
+    "close": "Fermer",
+    "confirm": {
+      "irreversiblePrefix": "Cette action ne peut pas être annulée.",
+      "pushAllMessage_one": "Cela enverra la {{count}} carte au paquet Anki.",
+      "pushAllMessage_other": "Cela enverra les {{count}} cartes au paquet Anki.",
+      "pushIgnoreAllWritingMessage_one": "{{count}} mot avec « écriture connue » sera ignoré pour les prochains envois vers Anki.",
+      "pushIgnoreAllWritingMessage_other": "{{count}} mots avec « écriture connue » seront ignorés pour les prochains envois vers Anki.",
+      "pushIgnoreAllMessage_one": "{{count}} carte sera ignorée pour les prochains envois vers Anki.",
+      "pushIgnoreAllMessage_other": "{{count}} cartes seront ignorées pour les prochains envois vers Anki.",
+      "pushPartialSelected_one": "{{count}} carte actuellement sélectionnée sera envoyée au paquet Anki",
+      "pushPartialSelected_other": "{{count}} cartes actuellement sélectionnées seront envoyées au paquet Anki",
+      "pushPartialIgnored_one": "{{count}} carte non sélectionnée sera ignorée pour les prochains envois.",
+      "pushPartialIgnored_other": "{{count}} cartes non sélectionnées seront ignorées pour les prochains envois.",
+      "pullAllWritingMessage_one": "Cela récupérera {{count}} mot depuis Anki et le marquera comme « écriture connue ».",
+      "pullAllWritingMessage_other": "Cela récupérera les {{count}} mots depuis Anki et les marquera comme « écriture connue ».",
+      "pullAllMessage_one": "Cela récupérera {{count}} carte depuis Anki vers votre base de connaissances{{characterClause}}.",
+      "pullAllMessage_other": "Cela récupérera les {{count}} cartes depuis Anki vers votre base de connaissances{{characterClause}}.",
+      "pullCharacterClause_one": ", ajoutant {{count}} caractère à la table des caractères",
+      "pullCharacterClause_other": ", ajoutant {{count}} caractères à la table des caractères",
+      "pullIgnoreAllMessage_one": "{{count}} carte en attente de récupération (y compris les non résolues) sera ignorée pour les prochaines récupérations depuis Anki.",
+      "pullIgnoreAllMessage_other": "{{count}} cartes en attente de récupération (y compris les non résolues) seront ignorées pour les prochaines récupérations depuis Anki.",
+      "pullPartialWritingSelected_one": "{{count}} mot actuellement sélectionné sera marqué comme « écriture connue »",
+      "pullPartialWritingSelected_other": "{{count}} mots actuellement sélectionnés seront marqués comme « écriture connue »",
+      "pullPartialWritingIgnored_one": "{{count}} mot non sélectionné sera ignoré pour les prochaines récupérations.",
+      "pullPartialWritingIgnored_other": "{{count}} mots non sélectionnés seront ignorés pour les prochaines récupérations.",
+      "pullPartialSelected_one": "{{count}} carte actuellement sélectionnée sera récupérée depuis Anki{{characterClause}}",
+      "pullPartialSelected_other": "{{count}} cartes actuellement sélectionnées seront récupérées depuis Anki{{characterClause}}",
+      "pullPartialIgnored_one": "{{count}} carte non sélectionnée sera ignorée pour les prochaines récupérations.",
+      "pullPartialIgnored_other": "{{count}} cartes non sélectionnées seront ignorées pour les prochaines récupérations."
+    },
+    "overview": {
+      "lead": "Choisissez une direction. Envoyer transmet le contenu local de la base de connaissances vers Anki. Récupérer importe les cartes Anki dans l'application.",
+      "push": {
+        "title": "Envoyer vers Anki",
+        "countLabel_one": "{{count}} carte à envoyer",
+        "countLabel_other": "{{count}} cartes à envoyer",
+        "copy": "Sens unique uniquement : ajoutez les nouvelles cartes locales à ce paquet Anki, ou ignorez-les pour qu'elles ne soient plus proposées.",
+        "allSet": "Tout est en ordre, rien à envoyer.",
+        "pushAllButton": "Tout envoyer vers Anki",
+        "ignoreAllButton": "Tout ignorer pour l'envoi",
+        "chooseButton": "Choisir quoi envoyer",
+        "unsyncableTitle": "Mots qui ne peuvent pas être envoyés",
+        "unsyncableText": "Ces mots n'ont pas de définition ou de pinyin, une carte ne peut donc pas être créée pour eux : <1>{{words}}</1>. Vous pouvez les passer avec « Tout ignorer pour l'envoi »."
+      },
+      "pull": {
+        "title": "Récupérer depuis Anki",
+        "wordCountLabel_one": "{{count}} mot à récupérer",
+        "wordCountLabel_other": "{{count}} mots à récupérer",
+        "cardCountLabel_one": "{{count}} carte à récupérer",
+        "cardCountLabel_other": "{{count}} cartes à récupérer",
+        "copyWriting": "Mots trouvés dans ce paquet Anki qui existent dans votre base de connaissances mais ne sont pas encore marqués comme « écriture connue ».",
+        "copyNonWriting": "Cartes trouvées dans ce paquet Anki qui ne sont pas encore dans votre base de connaissances.",
+        "allSet": "Tout est en ordre, rien à récupérer.",
+        "pullAllButton": "Tout récupérer depuis Anki",
+        "ignoreAllButton": "Tout ignorer pour la récupération",
+        "chooseButton": "Choisir quoi récupérer",
+        "missingWritingTitle": "Mots pas encore dans la base de connaissances",
+        "missingWritingText": "Ces mots d'Anki n'existent pas encore dans votre base de connaissances. Ajoutez-les manuellement dans l'application, synchronisez d'abord le paquet de vocabulaire mandarin avec eux, ou ignorez-les pour les prochaines récupérations : <1>{{words}}</1>.",
+        "missingNonWritingTitle": "Cartes qui ne peuvent pas être récupérées",
+        "missingNonWritingText": "Ces cartes Anki contiennent des caractères chinois dont le pinyin n'a pas pu être résolu à partir du paquet : <1>{{words}}</1>."
+      }
+    },
+    "partial": {
+      "pushMessage": "Choisissez quelles cartes envoyer vers Anki. Les cartes non sélectionnées seront ignorées pour les prochains envois.",
+      "pullMessageWriting": "Choisissez quels mots marquer comme « écriture connue ». Les mots non sélectionnés seront ignorés pour les prochaines récupérations.",
+      "pullMessageNonWriting": "Choisissez quelles cartes récupérer depuis Anki. Les cartes non sélectionnées seront ignorées pour les prochaines récupérations.",
+      "selectAll": "Tout sélectionner",
+      "unselectAll": "Tout désélectionner",
+      "selectedOfTotal": "{{selected}} sur {{total}} sélectionné(s)",
+      "columnRecto": "Recto",
+      "columnVerso": "Verso",
+      "columnWriting": "Écriture",
+      "columnPinyin": "Pinyin",
+      "columnDefinition": "Définition",
+      "selectCardAriaLabel": "Sélectionner {{name}}",
+      "backButton": "Retour",
+      "confirmPushButton": "Confirmer l'envoi",
+      "confirmPullButton": "Confirmer la récupération"
+    }
+  },
+  "vocabularyNoteTypeInfoModal": {
+    "title": "Type de paquet de vocabulaire",
+    "intro": "Ce type de paquet devrait avoir 3 directions :",
+    "direction1": "demander l'écriture → deviner le pinyin + la définition",
+    "direction2": "demander le pinyin → deviner l'écriture + la définition",
+    "direction3": "demander la définition → deviner l'écriture + le pinyin",
+    "createHint": "Si vous n'avez pas déjà un tel type de paquet dans Anki, vous pouvez en créer un automatiquement avec les champs obligatoires et les extras optionnels.",
+    "close": "Fermer",
+    "createAutomatically": "Créer automatiquement un type de paquet à 3 directions"
+  },
+  "vocabularyThreeDirectionSetupModal": {
+    "title": "Créer un type de paquet à 3 directions",
+    "message": "Anki obtiendra un nouveau type de paquet avec trois directions de cartes et un nouveau paquet portant le même nom. Vous pourrez ensuite vérifier la correspondance des champs et l'enregistrer.",
+    "deckTypeNameLabel": "Nom du type de paquet",
+    "mandatoryFieldsLegend": "Champs obligatoires",
+    "mandatoryFieldsHint": "Directions : écriture → pinyin + définition (+ optionnels) ; pinyin → écriture + définition (+ optionnels) ; définition → écriture + pinyin (+ optionnels).",
+    "optionalFieldsLegend": "Champs optionnels",
+    "optionalFieldsHint": "Les champs optionnels apparaissent au dos de chaque direction.",
+    "optionalFieldPlaceholder": "ex. phrase_exemple",
+    "optionalFieldAriaLabel": "Champ optionnel {{index}}",
+    "removeButton": "Retirer",
+    "addOptionalFieldButton": "Ajouter un champ optionnel",
+    "cancel": "Annuler",
+    "create": "Créer et associer",
+    "creating": "Création…",
+    "errors": {
+      "create": "Échec de la création du type de paquet à 3 directions."
+    }
+  },
+  "writingDeckTypeInfoModal": {
+    "title": "Type de paquet d'écriture",
+    "text": "Choisissez un type de paquet à 1 direction. En général, le type Basique devrait convenir.",
+    "close": "Fermer"
+  }
+}

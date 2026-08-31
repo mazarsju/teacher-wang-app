@@ -1,0 +1,87 @@
+{
+  "grammarPage": {
+    "title": "Grammaire",
+    "loading": "Chargement des points de grammaire...",
+    "loadError": "Échec du chargement des points de grammaire.",
+    "levelSummary": "HSK {{level}} ({{levelLabel}})",
+    "practiceLabel": "Pratique : {{title}}",
+    "status": {
+      "todo": "Non commencé",
+      "wip": "En cours",
+      "done": "Terminé",
+      "skip": "Passé",
+      "mastered": "Maîtrisé"
+    },
+    "levelLabels": {
+      "beginner": "Débutant",
+      "elementary": "Élémentaire",
+      "intermediate": "Intermédiaire",
+      "upperIntermediate": "Intermédiaire supérieur",
+      "advanced": "Avancé",
+      "mastery": "Maîtrise",
+      "fallback": "Niveau {{level}}"
+    },
+    "levelGauge": {
+      "title": "HSK {{level}} : {{percent}}% terminé",
+      "label": "HSK {{level}}"
+    },
+    "table": {
+      "number": "#",
+      "lesson": "Leçon",
+      "status": "Statut",
+      "score": "Score"
+    }
+  },
+  "grammarPointDetailPage": {
+    "titleFallback": "Point de grammaire",
+    "back": "Retour",
+    "loading": "Chargement du point de grammaire...",
+    "loadError": "Échec du chargement du point de grammaire.",
+    "skipError": "Échec du marquage de cette leçon comme connue.",
+    "saveQuizError": "Échec de l'enregistrement du résultat du quiz.",
+    "chatGreeting": "Demandez-moi ce que vous n'avez pas compris dans cette leçon, je serai ravi de vous aider !",
+    "tabs": {
+      "explanation": "Explication",
+      "exercises": "Exercices",
+      "vocabulary": "Vocabulaire"
+    },
+    "noExplanation": "Aucune explication disponible pour le moment.",
+    "skipHint": "Vous connaissez déjà cette leçon ? Vous pouvez la passer ainsi que ses exercices.",
+    "skipButton": "Passer cette leçon",
+    "askTeacherWangButton": "Demander plus d'informations à Teacher Wang"
+  },
+  "grammarExercises": {
+    "empty": "Aucun exercice disponible pour le moment.",
+    "questionProgress": "Question {{current}} sur {{total}}",
+    "reorderInstruction": "Mettez les mots dans le bon ordre.",
+    "tapWordsBelow": "Appuyez sur les mots ci-dessous",
+    "correctOrder": "Ordre correct : {{answer}}",
+    "translateInstruction": "Traduisez la phrase suivante en chinois :",
+    "transformInstruction": "Transformez la phrase suivante :",
+    "answerPlaceholder": "Tapez votre réponse",
+    "accepted": "Accepté : {{answers}}",
+    "checkingWithAi": "Cette solution n'est pas celle attendue. Vérification auprès de Teacher Wang pour savoir si c'est une solution possible. Veuillez patienter...",
+    "correct": "Correct !",
+    "notQuite": "Pas tout à fait.",
+    "aiApproved": "Teacher Wang a détecté cette réponse comme correcte",
+    "moreExplanationButton": "Plus d'explications",
+    "tryAgainButton": "Réessayer",
+    "validateButton": "Valider",
+    "checkingButton": "Vérification...",
+    "seeScoreButton": "Voir le score",
+    "nextButton": "Suivant",
+    "score": {
+      "good": "Vous avez obtenu {{percentage}}%. Excellent travail, vous avez réussi ce test !",
+      "medium": "Vous avez obtenu {{percentage}}%. Vous êtes sur la bonne voie — entraînez-vous à nouveau sur ce sujet pour améliorer votre score.",
+      "low": "Vous avez obtenu {{percentage}}%. Ce point de grammaire n'est pas encore bien maîtrisé — revoyez l'explication, vous allez y arriver !"
+    }
+  },
+  "grammarVocabularyTab": {
+    "addError": "Échec de l'ajout du mot.",
+    "empty": "Aucun nouveau mot pour cette leçon.",
+    "addButton": "Ajouter",
+    "table": {
+      "word": "Mot"
+    }
+  }
+}
