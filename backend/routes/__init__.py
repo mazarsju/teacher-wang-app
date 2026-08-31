@@ -45,6 +45,7 @@ def register_routes(app: Flask) -> None:
         update_character,
         update_user,
         update_word,
+        upload_hsk_translation,
         weekly_articles,
         writing_practice,
     )
@@ -92,6 +93,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(update_user.bp)
     app.register_blueprint(delete_user.bp)
     app.register_blueprint(reload_hsk_content.bp)
+    app.register_blueprint(upload_hsk_translation.bp)
     app.register_blueprint(reload_grammar_rules.bp)
     app.register_blueprint(smart_ai_preference.bp)
     app.register_blueprint(generate_article.bp)
