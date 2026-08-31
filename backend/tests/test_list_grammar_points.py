@@ -145,6 +145,56 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
             response.get_json()["writing_practices"][0]["status"], "TODO"
         )
 
+    def test_list_grammar_points_uses_translated_titles_with_english_fallback(self):
+        self.mock_point_cls.query.all.return_value = [
+            MagicMock(
+                id="1|Basic Sentence Structure",
+                hsk_level=1,
+                title="Basic Sentence Structure",
+                s3_key="hsk1/01-basic-sentence-structure",
+            ),
+            MagicMock(
+                id="1|Questions with Ma",
+                hsk_level=1,
+                title="Questions with Ma",
+                s3_key="hsk1/02-questions-with-ma",
+            ),
+        ]
+        self.mock_prerequisite_cls.query.all.return_value = []
+        self.mock_progress_cls.query.filter_by.return_value.all.return_value = []
+        self.mock_writing_practice_cls.query.all.return_value = [
+            MagicMock(
+                id="writing-present-yourself",
+                title="Present yourself",
+                after_grammar_point="1|Basic Sentence Structure",
+            ),
+        ]
+
+        with patch(
+            "backend.routes.list_grammar_points.current_user",
+            return_value=MagicMock(language="fr"),
+        ), patch(
+            "backend.routes.list_grammar_points.fetch_grammar_titles",
+            return_value={
+                "hsk1/01-basic-sentence-structure": "Structure de phrase de base"
+            },
+        ) as mock_fetch_grammar_titles, patch(
+            "backend.routes.list_grammar_points.fetch_writing_practice_titles",
+            return_value={},
+        ) as mock_fetch_writing_practice_titles:
+            response = self.client.get("/grammar-points")
+
+        mock_fetch_grammar_titles.assert_called_once_with("fr")
+        mock_fetch_writing_practice_titles.assert_called_once_with("fr")
+        titles = [item["title"] for item in response.get_json()["grammar_points"]]
+        self.assertEqual(
+            titles, ["Structure de phrase de base", "Questions with Ma"]
+        )
+        self.assertEqual(
+            response.get_json()["writing_practices"][0]["title"],
+            "Present yourself",
+        )
+
     def test_list_grammar_points_orders_by_hsk_level_then_folder_index(self):
         self.mock_point_cls.query.all.return_value = [
             MagicMock(

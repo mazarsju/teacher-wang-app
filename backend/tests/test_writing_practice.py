@@ -18,7 +18,7 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
 
         self.current_user_patcher = patch(
             "backend.routes.writing_practice.current_user",
-            return_value=MagicMock(id=TEST_USER_ID),
+            return_value=MagicMock(id=TEST_USER_ID, language="en"),
         )
         self.current_user_patcher.start()
         self.addCleanup(self.current_user_patcher.stop)
@@ -79,8 +79,25 @@ class TestWritingPracticeEndpoint(unittest.TestCase):
         self.mock_practice_cls.query.get.assert_called_once_with(
             "writing-present-yourself"
         )
-        self.mock_fetch_content.assert_called_once_with("writing-present-yourself")
+        self.mock_fetch_content.assert_called_once_with(
+            "writing-present-yourself", "en"
+        )
         self.mock_load.assert_called_once_with(TEST_USER_ID, "writing-present-yourself")
+
+    def test_get_passes_user_language_to_fetch_content(self):
+        with patch(
+            "backend.routes.writing_practice.current_user",
+            return_value=MagicMock(id=TEST_USER_ID, language="fr"),
+        ):
+            self._stub_practice()
+            self.mock_fetch_content.return_value = {"context": "Écris à propos de toi."}
+            self.mock_load.return_value = {"draft": "", "archive": []}
+
+            self.client.get("/writing-practice/writing-present-yourself")
+
+            self.mock_fetch_content.assert_called_once_with(
+                "writing-present-yourself", "fr"
+            )
 
     def test_get_returns_null_context_when_missing(self):
         self._stub_practice()

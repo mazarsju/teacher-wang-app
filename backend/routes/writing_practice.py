@@ -27,7 +27,7 @@ def get_writing_practice(topic_id: str):
     if practice is None:
         return {"error": "Writing practice topic not found"}, 404
 
-    content = fetch_writing_practice_content(practice.id)
+    content = fetch_writing_practice_content(practice.id, current_user().language)
     try:
         draft = load_draft(current_user().id, topic_id)
     except ValueError as error:

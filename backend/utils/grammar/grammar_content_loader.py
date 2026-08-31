@@ -14,6 +14,12 @@ sibling ``context.md``, not read here), each with ``id``, ``title``, and
 ``afterGrammarId`` — a ``grammar_points.id`` this writing topic follows in
 the curriculum. These populate ``writing_practice``.
 
+Non-English content lives in per-language siblings: ``explanation_<language>.md``,
+``exercises_<language>.json``, ``grammar_<language>.yaml`` (translated
+``title``), ``overview_<language>.yaml`` (translated ``title``), and
+``context_<language>.md`` (translated writing-practice context) — e.g.
+``explanation_fr.md``. A missing translation falls back to the English file.
+
 Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout of that layout (e.g. a
 `teacher-wang-grammar` clone's ``grammar/`` folder) to reload from disk
 instead of S3, for local debugging.
@@ -311,23 +317,82 @@ def fetch_grammar_content(s3_key: str, language: str = "en", client=None) -> dic
     }
 
 
-def fetch_writing_practice_content(practice_id: str, client=None) -> dict:
-    """Fetches a writing-practice topic's context.md.
+def fetch_grammar_titles(language: str, client=None) -> dict[str, str]:
+    """Maps ``s3_key`` -> translated title from ``grammar_<language>.yaml`` siblings.
 
-    Reads from GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout)
-    when set, otherwise from the GRAMMAR_CONTENT_S3_BUCKET bucket. Assumes
-    the topic's S3 folder name is its own id (``writing_practice/<id>/``),
-    true of every topic authored so far — unlike grammar points, writing
-    practice has no separate ``s3_key`` column to look up instead. A missing
-    file returns None rather than raising.
+    English titles already live in ``grammar_points.title``, so this returns
+    ``{}`` for ``language == "en"``. Folders without a translated manifest
+    (or without a ``title`` field in it) are simply absent from the result —
+    callers should fall back to the English title.
     """
-    key = f"writing_practice/{practice_id}/context.md"
+    if language == "en":
+        return {}
+    filename = f"grammar_{language}.yaml"
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
-        context = _read_local_file(Path(local_path), key)
+        manifests = _load_manifests_from_local(Path(local_path), filename)
     else:
         bucket = _bucket()
         client = client or _s3_client()
-        context = _read_s3_object(client, bucket, key)
+        manifests = _load_manifests(client, bucket, f"/{filename}")
+    return {
+        folder_key: manifest["title"]
+        for folder_key, manifest in manifests.items()
+        if manifest.get("title")
+    }
+
+
+def fetch_writing_practice_titles(language: str, client=None) -> dict[str, str]:
+    """Maps ``writing_practice.id`` -> translated title from ``overview_<language>.yaml``.
+
+    Same fallback contract as ``fetch_grammar_titles``: ``{}`` for English,
+    and topics without a translated title are absent from the result.
+    """
+    if language == "en":
+        return {}
+    filename = f"overview_{language}.yaml"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        manifests = _load_manifests_from_local(Path(local_path), filename)
+    else:
+        bucket = _bucket()
+        client = client or _s3_client()
+        manifests = _load_manifests(client, bucket, f"/{filename}")
+    return {
+        folder_key.rsplit("/", 1)[-1]: manifest["title"]
+        for folder_key, manifest in manifests.items()
+        if manifest.get("title")
+    }
+
+
+def fetch_writing_practice_content(
+    practice_id: str, language: str = "en", client=None
+) -> dict:
+    """Fetches a writing-practice topic's context, translated for ``language``.
+
+    Reads ``context_<language>.md`` first (e.g. ``context_fr.md``), falling
+    back to the English ``context.md`` when ``language`` is ``"en"`` or that
+    translation hasn't been authored yet. Reads from GRAMMAR_CONTENT_S3_PATH
+    (a local grammar-content checkout) when set, otherwise from the
+    GRAMMAR_CONTENT_S3_BUCKET bucket. Assumes the topic's S3 folder name is
+    its own id (``writing_practice/<id>/``), true of every topic authored so
+    far — unlike grammar points, writing practice has no separate ``s3_key``
+    column to look up instead. A missing file returns None rather than
+    raising.
+    """
+    folder = f"writing_practice/{practice_id}"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if not local_path:
+        bucket = _bucket()
+        client = client or _s3_client()
+
+    def _read(filename: str) -> str | None:
+        if local_path:
+            return _read_local_file(Path(local_path), f"{folder}/{filename}")
+        return _read_s3_object(client, bucket, f"{folder}/{filename}")
+
+    context = _read(f"context_{language}.md") if language != "en" else None
+    if context is None:
+        context = _read("context.md")
 
     return {"context": context}

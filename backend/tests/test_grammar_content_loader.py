@@ -20,7 +20,9 @@ from backend.utils.database.models import (
 from backend.utils.grammar.grammar_content_loader import (
     curriculum_index,
     fetch_grammar_content,
+    fetch_grammar_titles,
     fetch_writing_practice_content,
+    fetch_writing_practice_titles,
     reload_grammar_content,
 )
 from postgres_test_case import PostgresTestCase
@@ -792,6 +794,194 @@ class TestFetchWritingPracticeContent(unittest.TestCase):
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
         self.assertIsNone(content["context"])
+
+    def test_reads_translated_context_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "writing_practice" / "writing-present-yourself"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "context.md").write_text("Write about yourself.")
+            (topic_dir / "context_fr.md").write_text("Écris à propos de toi.")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                content = fetch_writing_practice_content(
+                    "writing-present-yourself", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(content["context"], "Écris à propos de toi.")
+
+    def test_falls_back_to_english_when_translation_missing_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "writing_practice" / "writing-present-yourself"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "context.md").write_text("Write about yourself.")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                content = fetch_writing_practice_content(
+                    "writing-present-yourself", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(content["context"], "Write about yourself.")
+
+    def test_reads_translated_context_from_s3(self):
+        client = _make_client(
+            {
+                "writing_practice/writing-present-yourself/context.md": "Write about yourself.",
+                "writing_practice/writing-present-yourself/context_fr.md": "Écris à propos de toi.",
+            }
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_writing_practice_content(
+                "writing-present-yourself", "fr", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(content["context"], "Écris à propos de toi.")
+
+    def test_falls_back_to_english_when_translation_missing_s3(self):
+        objects = {
+            "writing_practice/writing-present-yourself/context.md": "Write about yourself.",
+        }
+
+        def get_object(*, Bucket, Key):
+            if Key not in objects:
+                raise ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
+            return {"Body": _FakeBody(objects[Key])}
+
+        client = MagicMock()
+        client.get_object.side_effect = get_object
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_writing_practice_content(
+                "writing-present-yourself", "fr", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(content["context"], "Write about yourself.")
+
+
+class TestFetchGrammarTitles(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_returns_empty_for_english(self):
+        self.assertEqual(fetch_grammar_titles("en"), {})
+
+    def test_reads_translated_titles_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            rule_dir = root / "hsk1" / "01-basic-sentence-structure"
+            rule_dir.mkdir(parents=True)
+            (rule_dir / "grammar_fr.yaml").write_text(
+                "title: Structure de phrase de base\n"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                titles = fetch_grammar_titles("fr")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(
+            titles,
+            {
+                "hsk1/01-basic-sentence-structure": "Structure de phrase de base",
+            },
+        )
+
+    def test_reads_translated_titles_from_s3(self):
+        client = _make_client(
+            {
+                "hsk1/01-basic-sentence-structure/grammar_fr.yaml": (
+                    "title: Structure de phrase de base\n"
+                ),
+            }
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            titles = fetch_grammar_titles("fr", client=client)
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(
+            titles,
+            {
+                "hsk1/01-basic-sentence-structure": "Structure de phrase de base",
+            },
+        )
+
+    def test_missing_translation_is_absent_from_result(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                titles = fetch_grammar_titles("fr")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(titles, {})
+
+
+class TestFetchWritingPracticeTitles(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_returns_empty_for_english(self):
+        self.assertEqual(fetch_writing_practice_titles("en"), {})
+
+    def test_reads_translated_titles_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "writing_practice" / "writing-present-yourself"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "overview_fr.yaml").write_text("title: Se présenter\n")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                titles = fetch_writing_practice_titles("fr")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(titles, {"writing-present-yourself": "Se présenter"})
+
+    def test_reads_translated_titles_from_s3(self):
+        client = _make_client(
+            {
+                "writing_practice/writing-present-yourself/overview_fr.yaml": (
+                    "title: Se présenter\n"
+                ),
+            }
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            titles = fetch_writing_practice_titles("fr", client=client)
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(titles, {"writing-present-yourself": "Se présenter"})
 
 
 if __name__ == "__main__":

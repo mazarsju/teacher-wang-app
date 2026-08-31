@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from backend.utils.auth.user_context import current_user_id
+from backend.utils.auth.user_context import current_user, current_user_id
 from backend.utils.database.models import (
     GrammarPoint,
     GrammarPrerequisite,
@@ -8,13 +8,21 @@ from backend.utils.database.models import (
     WritingPractice,
     WritingProgress,
 )
-from backend.utils.grammar.grammar_content_loader import curriculum_index
+from backend.utils.grammar.grammar_content_loader import (
+    curriculum_index,
+    fetch_grammar_titles,
+    fetch_writing_practice_titles,
+)
 
 bp = Blueprint("list_grammar_points", __name__)
 
 
 @bp.get("/grammar-points")
 def list_grammar_points():
+    language = current_user().language
+    grammar_titles = fetch_grammar_titles(language)
+    writing_practice_titles = fetch_writing_practice_titles(language)
+
     points = sorted(
         GrammarPoint.query.all(),
         key=lambda point: (
@@ -49,7 +57,7 @@ def list_grammar_points():
                 "id": point.id,
                 "hsk_level": point.hsk_level,
                 "index": curriculum_index(point.s3_key),
-                "title": point.title,
+                "title": grammar_titles.get(point.s3_key, point.title),
                 "prerequisites": prerequisites_by_grammar_id.get(point.id, []),
                 "status": status_by_grammar_id.get(point.id, "TODO"),
                 "score": (
@@ -63,7 +71,7 @@ def list_grammar_points():
         "writing_practices": [
             {
                 "id": practice.id,
-                "title": practice.title,
+                "title": writing_practice_titles.get(practice.id, practice.title),
                 "after_grammar_point": practice.after_grammar_point,
                 "status": status_by_writing_topic.get(practice.id, "TODO"),
             }
