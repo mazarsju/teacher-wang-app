@@ -1,6 +1,6 @@
 # teacher-wang-app
 
-Skills for common workflows (create a challenge, generate an avatar, update screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
+Skills for common workflows (create a challenge, add a language, generate an avatar, update screenshots, push ECR images, refresh token prices) live in `.claude/skills/`.
 
 ## Documentation hygiene
 
