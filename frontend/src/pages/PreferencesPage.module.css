@@ -15,6 +15,14 @@
   line-height: 1.5;
 }
 
+.preferences-language-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.5rem;
+  background: var(--app-surface);
+  font-size: 0.95rem;
+}
+
 .preferences-toggle-row {
   display: flex;
   align-items: center;

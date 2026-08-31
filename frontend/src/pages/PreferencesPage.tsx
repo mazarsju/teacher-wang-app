@@ -31,7 +31,11 @@ import {
   fetchSmartAiPreference,
   updateSmartAiPreference,
 } from "../utils/aiChat/smartAiApi";
+import { updateUserLanguage } from "../utils/auth/meApi";
 import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
+
+// Adding a language: also add its <option> here (.claude/skills/add-language/SKILL.md).
+const LANGUAGE_OPTIONS = ["en", "fr"] as const;
 import styles from "./PreferencesPage.module.css";
 
 function formatDayLabel(isoDate: string): string {
@@ -71,7 +75,7 @@ function formatDeckStatus(
 }
 
 export default function PreferencesPage() {
-  const { t } = useTranslation("preferences");
+  const { t, i18n } = useTranslation("preferences");
   const dispatch = useAppDispatch();
   const ankiStatus = useAppSelector((state) => state.anki.status);
   const syncStatus = useAppSelector((state) => state.sync.status);
@@ -83,6 +87,7 @@ export default function PreferencesPage() {
   const [isSmartAiEnabled, setIsSmartAiEnabled] = useState(true);
   const [isSmartAiLoading, setIsSmartAiLoading] = useState(true);
   const [isSmartAiSaving, setIsSmartAiSaving] = useState(false);
+  const [isLanguageSaving, setIsLanguageSaving] = useState(false);
   const [extrasError, setExtrasError] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isSyncHelpOpen, setIsSyncHelpOpen] = useState(false);
@@ -158,6 +163,24 @@ export default function PreferencesPage() {
   useEffect(() => {
     void refreshAnkiStatus();
   }, []);
+
+  async function handleLanguageChange(nextLanguage: string) {
+    const previousLanguage = i18n.language;
+    setIsLanguageSaving(true);
+    void i18n.changeLanguage(nextLanguage);
+    try {
+      await updateUserLanguage(nextLanguage);
+    } catch (updateError) {
+      void i18n.changeLanguage(previousLanguage);
+      setExtrasError(
+        updateError instanceof Error
+          ? updateError.message
+          : t("preferencesPage.errors.updateLanguage"),
+      );
+    } finally {
+      setIsLanguageSaving(false);
+    }
+  }
 
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
@@ -273,6 +296,32 @@ export default function PreferencesPage() {
     <Page title={t("preferencesPage.title")}>
       {isLoading && <p>{t("preferencesPage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
+
+      {!isLoading && (
+        <section className="preferences-section">
+          <h2 className={styles.preferencesSectionTitle}>
+            {t("preferencesPage.language.title")}
+          </h2>
+          <div className={styles.preferencesToggleRow}>
+            <span className={styles.preferencesToggleRowLabel}>
+              {t("preferencesPage.language.description")}
+            </span>
+            <select
+              className={styles.preferencesLanguageSelect}
+              value={i18n.language}
+              disabled={isLanguageSaving}
+              aria-label={t("preferencesPage.language.ariaLabel")}
+              onChange={(event) => void handleLanguageChange(event.target.value)}
+            >
+              {LANGUAGE_OPTIONS.map((language) => (
+                <option key={language} value={language}>
+                  {t(`preferencesPage.language.options.${language}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+      )}
 
       {!isLoading && tokenUsage && (
         <section className={`preferences-section ${styles.preferencesSectionPlan}`}>

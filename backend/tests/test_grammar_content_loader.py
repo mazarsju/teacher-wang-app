@@ -687,6 +687,46 @@ class TestFetchGrammarContent(unittest.TestCase):
         self.assertIsNone(content["explanation"])
         self.assertIsNone(content["exercises"])
 
+    def test_reads_translated_files_for_non_english_language(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            rule_dir = root / "hsk1" / "01-basic-sentence-structure"
+            rule_dir.mkdir(parents=True)
+            (rule_dir / "explanation.md").write_text("# Basic sentence structure")
+            (rule_dir / "exercises.json").write_text('[{"id": "mcq_001"}]')
+            (rule_dir / "explanation_fr.md").write_text("# Structure de phrase de base")
+            (rule_dir / "exercises_fr.json").write_text('[{"id": "mcq_001_fr"}]')
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                content = fetch_grammar_content(
+                    "hsk1/01-basic-sentence-structure", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(content["explanation"], "# Structure de phrase de base")
+        self.assertEqual(content["exercises"], [{"id": "mcq_001_fr"}])
+
+    def test_reads_translated_files_from_s3_for_non_english_language(self):
+        client = _make_client(
+            {
+                "hsk1/01-basic-sentence-structure/explanation_fr.md": "# Structure de phrase de base",
+                "hsk1/01-basic-sentence-structure/exercises_fr.json": '[{"id": "mcq_001_fr"}]',
+            }
+        )
+
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            content = fetch_grammar_content(
+                "hsk1/01-basic-sentence-structure", "fr", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(content["explanation"], "# Structure de phrase de base")
+        self.assertEqual(content["exercises"], [{"id": "mcq_001_fr"}])
+
 
 class TestFetchWritingPracticeContent(unittest.TestCase):
     def setUp(self) -> None:

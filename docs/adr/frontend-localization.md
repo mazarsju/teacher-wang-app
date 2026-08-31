@@ -8,7 +8,7 @@ Accepted
 
 The frontend UI was English-only, with every user-facing string hardcoded directly in JSX (see [roadmap item 11](../../README.md#11-multi-language-management)). Adding another interface language meant editing every component by hand, with no structural boundary between "the app's logic" and "the app's copy."
 
-This ADR covers the first two roadmap steps: adopting `react-i18next` and extracting existing UI text into translation resources organized by feature. Adding a second language, a language switcher, and internationalizing backend-generated/database content are separate, later roadmap items.
+This ADR covers the first two roadmap steps: adopting `react-i18next` and extracting existing UI text into translation resources organized by feature. Adding a second language and internationalizing backend-generated/database content are separate, later roadmap items. The language switcher UI and its persistence route are covered below (see "Language switcher").
 
 ## Decision
 
@@ -74,6 +74,12 @@ const { t } = useTranslation("home");
 
 Namespace is passed explicitly to `useTranslation()` at every call site rather than relying on a default, so a component's namespace is visible without checking the resource files.
 
+### Language switcher
+
+A `<select>` in `frontend/src/pages/PreferencesPage.tsx` lets the user change their interface language, restricted to `LANGUAGE_OPTIONS` (currently `["en", "fr"]` — the only codes with a translated resource bundle or in progress). Selecting a value calls `i18n.changeLanguage()` immediately (instant UI feedback) and `PATCH /preferences/language` (`backend/routes/language_preference.py`) to persist it; the route validates the code against `LANGUAGE_NAMES` (`backend/utils/aiChat/behavior_spec.py`, the same map used for Teacher Wang's meta-language prompts) and writes `users.language`. A failed request reverts `i18n.changeLanguage()` to the previous language and surfaces an error banner. `App.tsx` still applies `users.language` on login via `GET /auth/me`, so the two entry points (login, switcher) both funnel through `i18n.changeLanguage()`.
+
+`LANGUAGE_OPTIONS` is a separate list from `LANGUAGE_NAMES` on purpose: `LANGUAGE_NAMES` back-fills ahead of full translation work (e.g. it already had `"fr"` before French `locales/fr/*.json` existed), while `LANGUAGE_OPTIONS` should only list codes a user can actually get a translated (or acceptably English-fallback) UI in.
+
 ## Rationale
 
 * Feature-scoped namespaces mirror how the codebase is already split (pages, and modals grouped by the page that opens them), so a contributor adding a string already knows which file to edit.
@@ -100,6 +106,6 @@ Namespace is passed explicitly to `useTranslation()` at every call site rather t
 
 ## Future evolution
 
-* Adding French: create `frontend/src/locales/fr/<namespace>.json` mirroring the `en` key structure, add it to `resources` in `frontend/src/i18n.ts`, and (roadmap item) add a language switcher that writes the choice back to `users.language` (see [schema-tenancy](../architecture/schema-tenancy.md)) and calls `i18n.changeLanguage()`. The read half of this is already in place: `users.language` (default `'en'`) is loaded on every login via `GET /auth/me` and applied with `i18n.changeLanguage(user.language)` in `App.tsx` — there is just no UI yet to change it, and no `PATCH` route to persist a new value.
+* Finishing French: create `frontend/src/locales/fr/<namespace>.json` mirroring the `en` key structure and add it to `resources` in `frontend/src/i18n.ts` (`fr` is already selectable in the Preferences switcher — see "Language switcher" above — but falls back to English string-by-string via `fallbackLng` until this lands). The `.claude/skills/add-language/` skill automates this and the parallel switcher/`LANGUAGE_NAMES` registration steps for any future language.
 * If missing-key drift across languages becomes a real problem, add a CI check (e.g. a script diffing key sets between `locales/en/*.json` and every other language directory) rather than relying on manual review.
 * When challenge/character content moves into Postgres, its translated copy should live wherever that roadmap item lands it (likely DB rows keyed by language) — at that point `locales/en/challenge.json` and `challenges.ts`'s template array become redundant and should be deleted rather than kept as a second, drifting source of the same content.

@@ -12,6 +12,15 @@
   "preferencesPage": {
     "title": "Preferences",
     "loading": "Loading preferences...",
+    "language": {
+      "title": "Language",
+      "description": "Choose the language used across the app.",
+      "ariaLabel": "Language",
+      "options": {
+        "en": "English",
+        "fr": "Français"
+      }
+    },
     "currentPlan": {
       "title": "Current plan",
       "descriptionFree": "You're on the <1>Free</1> plan.",
@@ -67,6 +76,7 @@
       "loadPreferences": "Failed to load preferences.",
       "loadSmartAi": "Failed to load the Smart AI preference.",
       "updateSmartAi": "Failed to update the Smart AI preference.",
+      "updateLanguage": "Failed to update the language preference.",
       "refreshAnkiStatus": "Failed to refresh Anki status.",
       "deleteKnowledgeBase": "Failed to delete knowledge base.",
       "syncFailedMessage": "These cards couldn't be synchronized: {{cards}}",

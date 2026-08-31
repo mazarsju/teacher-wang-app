@@ -19,3 +19,15 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
 
   return (await response.json()) as CurrentUser;
 }
+
+export async function updateUserLanguage(language: string): Promise<void> {
+  const response = await apiFetch(`${API_BASE}/preferences/language`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ language }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update the language preference.");
+  }
+}

@@ -28,6 +28,7 @@ def register_routes(app: Flask) -> None:
         get_hsk_level,
         health,
         ignore_hsk_word,
+        language_preference,
         list_characters,
         list_grammar_points,
         list_hsk_character_words,
@@ -96,5 +97,6 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(upload_hsk_translation.bp)
     app.register_blueprint(reload_grammar_rules.bp)
     app.register_blueprint(smart_ai_preference.bp)
+    app.register_blueprint(language_preference.bp)
     app.register_blueprint(generate_article.bp)
     app.register_blueprint(weekly_articles.bp)

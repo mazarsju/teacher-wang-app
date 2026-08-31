@@ -276,24 +276,34 @@ def _read_s3_object(client, bucket: str, key: str) -> str | None:
         raise
 
 
-def fetch_grammar_content(s3_key: str, client=None) -> dict:
-    """Fetches a grammar point's explanation.md and exercises.json.
+def fetch_grammar_content(s3_key: str, language: str = "en", client=None) -> dict:
+    """Fetches a grammar point's explanation and exercises for ``language``.
 
-    Reads from GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout)
-    when set, otherwise from the GRAMMAR_CONTENT_S3_BUCKET bucket. A missing
-    file returns None for that field rather than raising, since not every
-    topic has exercises authored yet.
+    English reads ``explanation.md``/``exercises.json``; any other language
+    reads the translated ``explanation_<language>.md``/``exercises_<language>.json``
+    siblings instead (e.g. ``explanation_fr.md``). Reads from
+    GRAMMAR_CONTENT_S3_PATH (a local grammar-content checkout) when set,
+    otherwise from the GRAMMAR_CONTENT_S3_BUCKET bucket. A missing file
+    returns None for that field rather than raising, since not every topic
+    has exercises (or a translation) authored yet.
     """
+    explanation_filename = (
+        "explanation.md" if language == "en" else f"explanation_{language}.md"
+    )
+    exercises_filename = (
+        "exercises.json" if language == "en" else f"exercises_{language}.json"
+    )
+
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
         root = Path(local_path)
-        explanation = _read_local_file(root, f"{s3_key}/explanation.md")
-        exercises_raw = _read_local_file(root, f"{s3_key}/exercises.json")
+        explanation = _read_local_file(root, f"{s3_key}/{explanation_filename}")
+        exercises_raw = _read_local_file(root, f"{s3_key}/{exercises_filename}")
     else:
         bucket = _bucket()
         client = client or _s3_client()
-        explanation = _read_s3_object(client, bucket, f"{s3_key}/explanation.md")
-        exercises_raw = _read_s3_object(client, bucket, f"{s3_key}/exercises.json")
+        explanation = _read_s3_object(client, bucket, f"{s3_key}/{explanation_filename}")
+        exercises_raw = _read_s3_object(client, bucket, f"{s3_key}/{exercises_filename}")
 
     return {
         "explanation": explanation,

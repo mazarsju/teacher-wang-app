@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
+import i18n from "../i18n";
 import * as ankiApi from "../utils/anki/ankiApi";
 import * as charactersApi from "../utils/knowledgeBase/charactersApi";
 import * as hskCharactersApi from "../utils/knowledgeBase/hskCharactersApi";
@@ -135,6 +136,7 @@ describe("PreferencesPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+    void i18n.changeLanguage("en");
   });
 
   it("shows AI usage as a percentage bar and a cumulative usage chart", async () => {
@@ -242,6 +244,81 @@ describe("PreferencesPage", () => {
     await user.click(toggle);
 
     await waitFor(() => expect(toggle).toBeChecked());
+  });
+
+  it("shows a language switcher defaulting to the current language", async () => {
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const select = await screen.findByRole("combobox", { name: "Language" });
+    expect(select).toHaveValue("en");
+    expect(
+      within(select).getByRole("option", { name: "English" }),
+    ).toBeInTheDocument();
+    expect(
+      within(select).getByRole("option", { name: "Français" }),
+    ).toBeInTheDocument();
+  });
+
+  it("changes the language and persists the change", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const select = await screen.findByRole("combobox", { name: "Language" });
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/language") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ language: "fr" }),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    await user.selectOptions(select, "fr");
+
+    await waitFor(() => expect(i18n.language).toBe("fr"));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/preferences/language"),
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ language: "fr" }),
+      }),
+    );
+  });
+
+  it("reverts the language if saving the preference fails", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const select = await screen.findByRole("combobox", { name: "Language" });
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/language") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    await user.selectOptions(select, "fr");
+
+    await waitFor(() => expect(i18n.language).toBe("en"));
+    expect(select).toHaveValue("en");
   });
 
   it("prompts to update the plan once the monthly AI usage allowance is reached", async () => {

@@ -107,11 +107,40 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
             },
         )
         self.mock_fetch_content.assert_called_once_with(
-            "hsk1/01-basic-sentence-structure"
+            "hsk1/01-basic-sentence-structure", "en"
         )
         self.mock_progress_cls.query.filter_by.assert_called_once_with(
             user_id=TEST_USER_ID, grammar_id="1|Basic Sentence Structure"
         )
+
+    def test_passes_user_language_to_fetch_content(self):
+        with patch(
+            "backend.routes.get_grammar_point.current_user",
+            return_value=MagicMock(id=TEST_USER_ID, language="fr"),
+        ):
+            self.mock_point_cls.query.get.return_value = MagicMock(
+                id="1|Basic Sentence Structure",
+                hsk_level=1,
+                title="Basic Sentence Structure",
+                s3_key="hsk1/01-basic-sentence-structure",
+                new_words=None,
+            )
+            self.mock_prerequisite_cls.query.filter_by.return_value.all.return_value = (
+                []
+            )
+            self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
+                None
+            )
+            self.mock_fetch_content.return_value = {
+                "explanation": None,
+                "exercises": None,
+            }
+
+            self.client.get("/grammar-points/1%7CBasic%20Sentence%20Structure")
+
+            self.mock_fetch_content.assert_called_once_with(
+                "hsk1/01-basic-sentence-structure", "fr"
+            )
 
     def test_defaults_status_to_todo_when_no_progress_row(self):
         self.mock_point_cls.query.get.return_value = MagicMock(

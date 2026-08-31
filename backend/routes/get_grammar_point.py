@@ -57,7 +57,7 @@ def get_grammar_point(grammar_id: str):
     ).first()
 
     content = (
-        fetch_grammar_content(point.s3_key)
+        fetch_grammar_content(point.s3_key, current_user().language)
         if point.s3_key
         else {"explanation": None, "exercises": None}
     )

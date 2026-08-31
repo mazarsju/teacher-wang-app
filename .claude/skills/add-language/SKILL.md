@@ -17,7 +17,7 @@ Wire a new interface language into the localization framework that already exist
 - `frontend/src/locales/en/` is the only locale directory with files — no other language has translated JSON yet.
 - `backend/utils/aiChat/behavior_spec.py`'s `LANGUAGE_NAMES` already maps `"fr": "French"`, but nothing on the frontend consumes it yet. Finishing French end-to-end (Steps 1, 2, 4, 5 below — Step 3 is already done) is the natural first real run of this skill.
 - `users.language` (Postgres, see `docs/architecture/schema-tenancy.md`) is an unconstrained `TEXT NOT NULL DEFAULT 'en'` — no CHECK constraint to update when adding a code.
-- No language-switcher UI exists yet. `App.tsx` reads `users.language` on login and calls `i18n.changeLanguage(user.language)`; there is no way to change it from the UI yet. See "How to preview" below for testing before that ships.
+- `App.tsx` reads `users.language` on login and calls `i18n.changeLanguage(user.language)`. A language switcher already exists in Preferences (`frontend/src/pages/PreferencesPage.tsx`'s `LANGUAGE_OPTIONS` array + `<select>`), backed by `PATCH /preferences/language` (`backend/routes/language_preference.py`), which validates the code against `LANGUAGE_NAMES` and writes `users.language`. **Adding a language must add its code to `LANGUAGE_OPTIONS` in `PreferencesPage.tsx`** or it won't be selectable from the UI even once translated.
 - `hsk_words_translation` (Postgres, list-partitioned on `language`) already exists and every HSK-word-serving route already reads it (`hsk_translations()`/`serialize_word()` in `backend/routes/suggest_hsk_words.py`) for any language other than `en`, falling back to `hsk_words.definition`. It's just empty for languages that haven't gone through Step 6 below.
 
 ## Checklist
@@ -26,6 +26,7 @@ Wire a new interface language into the localization framework that already exist
 Language Progress:
 - [ ] Frontend: locales/<lang>/*.json created for all 10 namespaces, mirroring en/ key structure
 - [ ] Frontend: language registered in i18n.ts resources
+- [ ] Frontend: language added to LANGUAGE_OPTIONS in PreferencesPage.tsx (language switcher)
 - [ ] Backend: LANGUAGE_NAMES entry in behavior_spec.py (skip if already present)
 - [ ] Key-parity check: every en key exists in the new language, no extras
 - [ ] Frontend tests pass (npx vitest run --silent)
@@ -75,7 +76,17 @@ export const resources = {
 } as const;
 ```
 
-`ns: Object.keys(resources.en)` already derives the namespace list from `en` — no change needed there. `lng`/`fallbackLng` stay `"en"` — the app only switches language at runtime via `i18n.changeLanguage()` (called from `App.tsx` on login), never at init.
+`ns: Object.keys(resources.en)` already derives the namespace list from `en` — no change needed there. `lng`/`fallbackLng` stay `"en"` — the app only switches language at runtime via `i18n.changeLanguage()` (called from `App.tsx` on login, or from the Preferences switcher), never at init.
+
+## Step 2b — Add the language to the Preferences switcher
+
+File: `frontend/src/pages/PreferencesPage.tsx`
+
+```ts
+const LANGUAGE_OPTIONS = ["en", "fr", "<lang>"] as const;
+```
+
+Then add the matching display name to `preferencesPage.language.options.<lang>` in `frontend/src/locales/en/preferences.json` (and any other locale's `preferences.json` that already exists) — use the language's own endonym (e.g. `"es": "Español"`), not its English name. No other change is needed: the `<select>` renders `LANGUAGE_OPTIONS` directly, and `PATCH /preferences/language` (`backend/routes/language_preference.py`) validates the submitted code against `LANGUAGE_NAMES`, registered next in Step 3 — do that step too or picking the language in the switcher will save successfully client-side but be rejected by the backend with a 400.
 
 ## Step 3 — Backend meta-language name
 
@@ -129,10 +140,10 @@ This is content, not UI chrome (see `docs/architecture/schema-tenancy.md`'s note
    ```
 4. **Ask the user to load it.** This skill cannot upload the file itself — hand the zip's path back to the user and ask them to: open the app, go to **Admin** → HSK database section → **Load translation** button, pick the zip, select `<lang>` from the language dropdown (added in step 1 above), and submit. This upserts every entry into `hsk_words_translation` for that language (`POST /admin/hsk/translation`, admin-only).
 
-## How to preview a language before the switcher UI ships
+## How to preview a language
 
-1. **Quickest, local-only:** in `App.tsx`, temporarily change the post-login `i18n.changeLanguage(user.language)` call to hardcode `i18n.changeLanguage("<lang>")`, reload the dev server, preview, then revert before finishing — this skill adds the language, not the switcher.
-2. **Closer to production:** update the logged-in test user's `users.language` row directly in Postgres (`UPDATE users SET language = '<lang>' WHERE id = '<cognito-sub>';`), then log in normally — `App.tsx` picks it up via `GET /auth/me` on login, no code change needed.
+1. **Quickest:** once Step 2b is done, log in and pick the language from the Preferences page switcher — it calls `i18n.changeLanguage()` immediately and persists via `PATCH /preferences/language`.
+2. **Before Step 2b is done:** in `App.tsx`, temporarily change the post-login `i18n.changeLanguage(user.language)` call to hardcode `i18n.changeLanguage("<lang>")`, reload the dev server, preview, then revert before finishing.
 
 ## Do not reinvent
 
@@ -140,6 +151,7 @@ Already implemented — do **not** rebuild:
 
 - The i18next framework itself, synchronous init, namespace-per-feature structure (`docs/adr/frontend-localization.md`)
 - `users.language` column, default `'en'`, loaded on login (`docs/architecture/schema-tenancy.md`)
+- The Preferences language switcher and `PATCH /preferences/language` (`PreferencesPage.tsx`, `backend/routes/language_preference.py`) — Step 2b adds an `<option>` to it, it doesn't rebuild it
 - Teacher Wang's `{language}`-templated behaviors (`backend/utils/aiChat/behavior_spec.py`, `docs/architecture/teacher-wang-behaviors.md`)
 - The `challenge.json` data-catalog pattern (`getChallenges(t)` in `frontend/src/data/challenges.ts`) — copy this shape if another data catalog needs localizing later, don't invent a new one
 - `hsk_words_translation`, its `POST /admin/hsk/translation` upload endpoint, and the read-side join/fallback in every HSK-word-serving route (`docs/architecture/schema-tenancy.md`) — Step 6 populates this table for a language, it doesn't build the pipeline
@@ -147,7 +159,6 @@ Already implemented — do **not** rebuild:
 
 ## Out of scope (separate, larger roadmap items — do not expand this skill to cover them)
 
-- A language switcher UI, and a route to persist the choice back to `users.language` (roadmap: "Add a language switcher in the UI...")
 - Internationalizing backend-generated content beyond Teacher Wang's meta-language (grammar feedback, system messages, emails, exports)
 - Internationalizing PostgreSQL-stored content beyond HSK word definitions — `frontend/src/data/chatCharacters.ts` (still deliberately untranslated — see the ADR's "Out of scope" section), challenge metadata once it moves to Postgres, predefined texts, help content
 - Internationalizing S3-hosted static content (grammar lessons, onboarding guides)
@@ -158,6 +169,7 @@ If the user asks for one of these while running this skill, say so explicitly an
 
 - Every namespace under `frontend/src/locales/<lang>/` exists with the same keys as `en`, values translated
 - `frontend/src/i18n.ts`'s `resources` includes the new language block
+- `LANGUAGE_OPTIONS` in `PreferencesPage.tsx` includes the code, with a matching `preferencesPage.language.options.<lang>` display name
 - `LANGUAGE_NAMES` in `behavior_spec.py` includes the code (if not already present), with a matching test case
 - `npx vitest run --silent` and `python3 -m unittest discover -s backend/tests -q` both pass
 - You previewed at least one page in the new language and saw no raw translation keys or unexpected English fallback text
