@@ -2,8 +2,8 @@ import random
 
 from flask import Blueprint
 
-from backend.routes.suggest_hsk_words import serialize_word
-from backend.utils.auth.user_context import current_user_id
+from backend.routes.suggest_hsk_words import hsk_translations, serialize_word
+from backend.utils.auth.user_context import current_user, current_user_id
 from backend.utils.database.models import (
     GrammarPoint,
     GrammarPrerequisite,
@@ -22,7 +22,7 @@ def _pick_half(exercises):
     return [random.choice(pair) for pair in zip(exercises[::2], exercises[1::2])]
 
 
-def _resolve_new_words(words):
+def _resolve_new_words(words, language):
     """Looks up each word in hsk_words, keeping its lowest-level occurrence."""
     if not words:
         return []
@@ -34,7 +34,12 @@ def _resolve_new_words(words):
     best_by_word = {}
     for row in rows:
         best_by_word.setdefault(row.word, row)
-    return [serialize_word(best_by_word[word]) for word in words if word in best_by_word]
+    translations = hsk_translations([row.id for row in best_by_word.values()], language)
+    return [
+        serialize_word(best_by_word[word], translations)
+        for word in words
+        if word in best_by_word
+    ]
 
 
 @bp.get("/grammar-points/<path:grammar_id>")
@@ -62,7 +67,7 @@ def get_grammar_point(grammar_id: str):
         "hsk_level": point.hsk_level,
         "title": point.title,
         "prerequisites": prerequisites,
-        "new_words": _resolve_new_words(point.new_words),
+        "new_words": _resolve_new_words(point.new_words, current_user().language),
         "status": progress.status if progress else "TODO",
         "explanation": content["explanation"],
         "exercises": _pick_half(content["exercises"]),

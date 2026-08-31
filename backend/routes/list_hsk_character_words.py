@@ -1,6 +1,8 @@
 from flask import Blueprint, request
 
+from backend.routes.suggest_hsk_words import hsk_translations, serialize_word
 from backend.utils.database.models import HskCharacter
+from backend.utils.auth.user_context import current_user
 
 bp = Blueprint("list_hsk_character_words", __name__)
 
@@ -17,14 +19,5 @@ def list_hsk_character_words(character: str):
         words = [word for word in words if word.level <= level]
 
     words = sorted(words, key=lambda word: (word.frequency, word.word, word.pinyin))
-    return [
-        {
-            "id": word.id,
-            "word": word.word,
-            "level": word.level,
-            "frequency": word.frequency,
-            "pinyin": word.pinyin,
-            "definition": word.definition,
-        }
-        for word in words
-    ], 200
+    translations = hsk_translations([word.id for word in words], current_user().language)
+    return [serialize_word(word, translations) for word in words], 200

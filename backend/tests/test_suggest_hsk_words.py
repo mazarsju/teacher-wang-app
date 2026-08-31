@@ -66,6 +66,24 @@ class TestSuggestHskWordsEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"words": []})
 
+    def test_uses_translated_definition_for_the_users_language(self):
+        self.mock_suggest.return_value = [make_word("爱", frequency=1)]
+
+        with (
+            patch(
+                "backend.routes.suggest_hsk_words.current_user",
+                return_value=MagicMock(language="fr"),
+            ),
+            patch(
+                "backend.routes.suggest_hsk_words.hsk_translations",
+                return_value={"爱|py1": "aimer"},
+            ) as mock_translations,
+        ):
+            response = self.client.get("/hsk-words/suggestions")
+
+        self.assertEqual(response.get_json()["words"][0]["definition"], "aimer")
+        mock_translations.assert_called_once_with(["爱|py1"], "fr")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,21 +1,10 @@
 from flask import Blueprint, request
 
+from backend.routes.suggest_hsk_words import hsk_translations, serialize_word
 from backend.utils.knowledgeBase.hsk_word_picker import pick_next_hsk_word
-from backend.utils.database.models import HskWord
-from backend.utils.auth.user_context import current_user_id
+from backend.utils.auth.user_context import current_user, current_user_id
 
 bp = Blueprint("pick_hsk_word", __name__)
-
-
-def _serialize_word(word: HskWord) -> dict:
-    return {
-        "id": word.id,
-        "word": word.word,
-        "level": word.level,
-        "frequency": word.frequency,
-        "pinyin": word.pinyin,
-        "definition": word.definition,
-    }
 
 
 @bp.post("/hsk-words/next")
@@ -32,10 +21,19 @@ def pick_hsk_word():
         exclude_words=exclude_words,
     )
 
+    words_to_translate = list(result.words_between)
+    if result.next_word is not None:
+        words_to_translate.append(result.next_word)
+    translations = hsk_translations(
+        [word.id for word in words_to_translate], current_user().language
+    )
+
     return {
-        "word": _serialize_word(result.next_word) if result.next_word else None,
+        "word": serialize_word(result.next_word, translations) if result.next_word else None,
         "current_index": result.current_index,
         "previous_index": result.previous_index,
         "increment": result.increment,
-        "words_between": [_serialize_word(word) for word in result.words_between],
+        "words_between": [
+            serialize_word(word, translations) for word in result.words_between
+        ],
     }, 200

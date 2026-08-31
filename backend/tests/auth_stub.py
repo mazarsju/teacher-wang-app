@@ -52,7 +52,7 @@ def stub_current_user() -> None:
     g.cognito_claims = TEST_CLAIMS
     g.cognito_sub = TEST_USER_ID
     g.current_user_id = TEST_USER_ID
-    g.current_user = MagicMock(id=TEST_USER_ID)
+    g.current_user = MagicMock(id=TEST_USER_ID, language="en")
 
 
 def patch_request_auth(test_case) -> None:

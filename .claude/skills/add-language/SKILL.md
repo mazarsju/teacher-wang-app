@@ -1,5 +1,5 @@
 ---
-name: add-language description: >- Wires a new interface language into teacher-wang's existing react-i18next framework: translates every frontend/src/locales/en/*.json namespace into locales/<lang>/*.json, registers it in i18n.ts, maps the language code to a display name in behavior_spec.py for Teacher Wang's chat behaviors, and validates end-to-end. Use when the user asks to add a new language, add French/Spanish/etc. localization, register a locale, or finish/extend translations to another language.
+name: add-language description: >- Wires a new interface language into teacher-wang's existing react-i18next framework: translates every frontend/src/locales/en/*.json namespace into locales/<lang>/*.json, registers it in i18n.ts, maps the language code to a display name in behavior_spec.py for Teacher Wang's chat behaviors, validates end-to-end, and optionally loads translated HSK word definitions via the teacher-wang-grammar repo's add-translation skill. Use when the user asks to add a new language, add French/Spanish/etc. localization, register a locale, finish/extend translations to another language, or load HSK translations for a language.
 ---
 
 # Add a new language
@@ -18,6 +18,7 @@ Wire a new interface language into the localization framework that already exist
 - `backend/utils/aiChat/behavior_spec.py`'s `LANGUAGE_NAMES` already maps `"fr": "French"`, but nothing on the frontend consumes it yet. Finishing French end-to-end (Steps 1, 2, 4, 5 below — Step 3 is already done) is the natural first real run of this skill.
 - `users.language` (Postgres, see `docs/architecture/schema-tenancy.md`) is an unconstrained `TEXT NOT NULL DEFAULT 'en'` — no CHECK constraint to update when adding a code.
 - No language-switcher UI exists yet. `App.tsx` reads `users.language` on login and calls `i18n.changeLanguage(user.language)`; there is no way to change it from the UI yet. See "How to preview" below for testing before that ships.
+- `hsk_words_translation` (Postgres, list-partitioned on `language`) already exists and every HSK-word-serving route already reads it (`hsk_translations()`/`serialize_word()` in `backend/routes/suggest_hsk_words.py`) for any language other than `en`, falling back to `hsk_words.definition`. It's just empty for languages that haven't gone through Step 6 below.
 
 ## Checklist
 
@@ -30,6 +31,7 @@ Language Progress:
 - [ ] Frontend tests pass (npx vitest run --silent)
 - [ ] Backend tests pass (python3 -m unittest discover -s backend/tests -q)
 - [ ] Manually previewed the new language end-to-end
+- [ ] HSK word translations loaded (optional content step — see Step 6)
 - [ ] README roadmap box checked if the language is French
 ```
 
@@ -114,6 +116,19 @@ Top-level keys only — re-read a namespace file end-to-end if a nested mismatch
 - Frontend: `cd frontend && npx vitest run --silent`. Adding a language must not change any existing test's output — tests render with `lng: "en"` (the default), so a new `resources.<lang>` block is inert until `i18n.changeLanguage()` is called. A test failure here means the `en` JSON was accidentally edited while copying structure.
 - Backend: `python3 -m unittest discover -s backend/tests -q`. If you added a new `LANGUAGE_NAMES` entry, add a matching case to `backend/tests/test_behavior_spec.py` — mirror the existing `"fr"` assertions in `TestLanguageName`, `TestGetBehaviors`, and `TestGetBehavior` with your new code/name.
 
+## Step 6 — HSK word translations (optional content step)
+
+This is content, not UI chrome (see `docs/architecture/schema-tenancy.md`'s note on `hsk_words_translation`) — it's what makes `MissingHskCharactersModal`, the vocabulary suggestion list, and grammar-point new-words show translated definitions instead of falling back to English. It's a separate, larger effort from Steps 1–5 and can be done later, by someone else, or skipped if English-fallback definitions are acceptable for now.
+
+1. **Add the language option to the upload modal.** File: `frontend/src/components/LoadHskTranslationModal.tsx` — add `<option value="<lang>">{t("admin:adminPage.loadTranslationModal.languageOptions.<lang>")}</option>` to the `<select>`, and add the matching `loadTranslationModal.languageOptions.<lang>` key (the display name) to `frontend/src/locales/en/admin.json` and any other locale's `admin.json` that already exists. `<lang>` must be exactly 2 lowercase letters — `backend/routes/upload_hsk_translation.py` rejects anything else with a 400.
+2. **Generate the translated definitions in the `teacher-wang-grammar` repo.** From `../teacher-wang-grammar` (sibling checkout of this repo), run its `add-translation` skill for `<lang>`. It produces `voc_database_<lang>.json` at that repo's root — an array of `{"id": "word|pinyin", "definition": "..."}` entries, one per HSK vocabulary word, matching `hsk_words.id` — see that skill for its own rules (resuming a partial run, style/length limits, verification).
+3. **Zip the output file.** `backend/routes/upload_hsk_translation.py` expects a zip containing exactly one `.json` file (any filename inside is fine):
+   ```bash
+   cd ../teacher-wang-grammar
+   zip voc_database_<lang>.zip voc_database_<lang>.json
+   ```
+4. **Ask the user to load it.** This skill cannot upload the file itself — hand the zip's path back to the user and ask them to: open the app, go to **Admin** → HSK database section → **Load translation** button, pick the zip, select `<lang>` from the language dropdown (added in step 1 above), and submit. This upserts every entry into `hsk_words_translation` for that language (`POST /admin/hsk/translation`, admin-only).
+
 ## How to preview a language before the switcher UI ships
 
 1. **Quickest, local-only:** in `App.tsx`, temporarily change the post-login `i18n.changeLanguage(user.language)` call to hardcode `i18n.changeLanguage("<lang>")`, reload the dev server, preview, then revert before finishing — this skill adds the language, not the switcher.
@@ -127,12 +142,14 @@ Already implemented — do **not** rebuild:
 - `users.language` column, default `'en'`, loaded on login (`docs/architecture/schema-tenancy.md`)
 - Teacher Wang's `{language}`-templated behaviors (`backend/utils/aiChat/behavior_spec.py`, `docs/architecture/teacher-wang-behaviors.md`)
 - The `challenge.json` data-catalog pattern (`getChallenges(t)` in `frontend/src/data/challenges.ts`) — copy this shape if another data catalog needs localizing later, don't invent a new one
+- `hsk_words_translation`, its `POST /admin/hsk/translation` upload endpoint, and the read-side join/fallback in every HSK-word-serving route (`docs/architecture/schema-tenancy.md`) — Step 6 populates this table for a language, it doesn't build the pipeline
+- The `teacher-wang-grammar` repo's `add-translation` skill — Step 6 calls it, don't reimplement vocabulary translation logic here
 
 ## Out of scope (separate, larger roadmap items — do not expand this skill to cover them)
 
 - A language switcher UI, and a route to persist the choice back to `users.language` (roadmap: "Add a language switcher in the UI...")
 - Internationalizing backend-generated content beyond Teacher Wang's meta-language (grammar feedback, system messages, emails, exports)
-- Internationalizing PostgreSQL-stored content (HSK descriptions, and `frontend/src/data/chatCharacters.ts`, which is still deliberately untranslated — see the ADR's "Out of scope" section)
+- Internationalizing PostgreSQL-stored content beyond HSK word definitions — `frontend/src/data/chatCharacters.ts` (still deliberately untranslated — see the ADR's "Out of scope" section), challenge metadata once it moves to Postgres, predefined texts, help content
 - Internationalizing S3-hosted static content (grammar lessons, onboarding guides)
 
 If the user asks for one of these while running this skill, say so explicitly and point at the matching roadmap item rather than absorbing it into this workflow.
@@ -145,3 +162,4 @@ If the user asks for one of these while running this skill, say so explicitly an
 - `npx vitest run --silent` and `python3 -m unittest discover -s backend/tests -q` both pass
 - You previewed at least one page in the new language and saw no raw translation keys or unexpected English fallback text
 - If the language is French, `README.md`'s roadmap box "Add French as the first additional language and validate the full localization workflow end-to-end" is checked
+- If Step 6 was done: the language option was added to `LoadHskTranslationModal.tsx`, and the user was handed the zipped `voc_database_<lang>.json` with instructions to upload it via Admin → Load translation. If Step 6 was skipped, say so explicitly — HSK definitions will silently fall back to English for this language until it's done.
