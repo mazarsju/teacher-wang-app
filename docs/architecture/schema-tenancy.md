@@ -32,9 +32,11 @@ Canonical decision and rationale: [data isolation ADR](../adr/data-isolation.md)
 
 Character↔word membership is derived at read time (a word contains its characters as substrings); there is no association table.
 
-## Shared tables (no `user_id`, not partitioned)
+## Shared tables (no `user_id`)
 
-`hsk_words`, `hsk_characters`, `hsk_word_character`. They are loaded once at boot (`database.init_db`) and only ever read by the app.
+`hsk_words`, `hsk_characters`, `hsk_word_character` — not partitioned. They are loaded once at boot (`database.init_db`) and only ever read by the app.
+
+`hsk_words_translation` — `(hsk_word_id, language)` PK, `hsk_word_id` FK → `hsk_words.id`, `translate` (`VARCHAR(200)`, the translated `hsk_words.definition`). List-partitioned on `language` (not hash) since every read filters on exactly one language and languages are added one at a time (see [frontend localization ADR](../adr/frontend-localization.md), roadmap item 11); a `DEFAULT` partition catches any language without a dedicated partition yet. Adding a language means a migration adding `CREATE TABLE hsk_words_translation_<lang> PARTITION OF hsk_words_translation FOR VALUES IN ('<lang>')`.
 
 `weekly_articles` — `id` (`BIGINT` PK, autoincrement), unique on `(week, year, hsk_level)`. Holds the 3 LLM-picked China-news articles adapted to that HSK level, written by `run_weekly_article_generation()` (`backend/utils/generateArticle/service.py` → `weekly_article_generator.py`); refreshing overwrites the current week's row per level via upsert.
 
@@ -61,11 +63,25 @@ CREATE TABLE settings_p0 PARTITION OF settings
 
 Modulus 8 is a compromise for the "tens to low hundreds of users" posture: enough to spread hot tables, few enough to keep planning cheap. Changing it means a new migration that rewrites the partition set. Switching the partition key from Cognito `sub` to `shortid` also requires rewriting the partition set (see revision `d5e6f7a8b9c0`).
 
+`hsk_words_translation` is the one exception to hash-partitioning: it uses `PARTITION BY LIST (language)` because the partition key has a small, slowly-growing set of known values and every query already filters on one exact value, so list partitioning gives real pruning where hash would not:
+
+```sql
+CREATE TABLE hsk_words_translation (
+    hsk_word_id VARCHAR(128) NOT NULL REFERENCES hsk_words (id),
+    language VARCHAR(3) NOT NULL,
+    translate VARCHAR(200) NOT NULL,
+    PRIMARY KEY (hsk_word_id, language)
+) PARTITION BY LIST (language);
+
+CREATE TABLE hsk_words_translation_en PARTITION OF hsk_words_translation FOR VALUES IN ('en');
+CREATE TABLE hsk_words_translation_default PARTITION OF hsk_words_translation DEFAULT;
+```
+
 ## Target shape
 
 ```text
 One RDS PostgreSQL database
 ├── users                     -- PK = Cognito sub; shortid = private-table tenant key
 ├── private tables            -- user_id (= shortid) first in the PK, PARTITION BY HASH (user_id) MODULUS 8
-└── hsk_*                     -- shared, read-only for the app role
+└── hsk_*                     -- shared, read-only for the app role (hsk_words_translation: PARTITION BY LIST (language))
 ```

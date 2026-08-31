@@ -127,6 +127,14 @@ class HskWord(db.Model):
     )
 
 
+class HskWordTranslation(db.Model):
+    __tablename__ = "hsk_words_translation"
+
+    hsk_word_id = db.Column(String(128), ForeignKey("hsk_words.id"), primary_key=True)
+    language = db.Column(String(3), primary_key=True)
+    translate = db.Column(String(200), nullable=False)
+
+
 class HskCharacter(db.Model):
     __tablename__ = "hsk_characters"
 
