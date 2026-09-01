@@ -21,6 +21,7 @@
 
 .grammar-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   background: var(--app-surface);
 }
@@ -38,15 +39,21 @@
 }
 
 .grammar-table-col-number {
-  width: 1%;
+  width: 2.75rem;
   white-space: nowrap;
 }
 
-/* Lesson column soaks up the remaining width; status/score shrink to their
-   content and sit on the right, per the "give more room to the lesson name"
-   desktop layout. */
-.grammar-table th:nth-child(2), .grammar-table td:nth-child(2) {
-  width: 100%;
+/* table-layout: fixed needs every column's width pinned except the one that
+   should flex; status/score get just enough room for their content (longest
+   translated label) and sit on the right, lesson (no width set) takes
+   whatever's left and ellipses via .grammar-row-title-text. */
+.grammar-table th:nth-child(3), .grammar-table td:nth-child(3) {
+  width: 9.5rem;
+}
+
+.grammar-table th:nth-child(4), .grammar-table td:nth-child(4) {
+  width: 4rem;
+  padding-right: calc(1.25rem + 10px);
 }
 
 .grammar-table th:nth-child(3), .grammar-table td:nth-child(3),
@@ -263,7 +270,7 @@
     width: 100%;
   }
 
-  .grammar-row {
+  .grammar-row, .grammar-row-writing {
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
