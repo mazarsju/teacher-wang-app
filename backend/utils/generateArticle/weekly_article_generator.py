@@ -88,8 +88,11 @@ ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE = (
     "Length: {length_guideline}\n\n"
     "The source text below contains {article_count} separate articles, "
     "separated by blank lines. Adapt each one independently, writing the "
-    "title and content in Chinese (with pinyin/translation only as "
-    "instructed below).\n"
+    "title and content in Chinese characters only — never include pinyin, "
+    "romanization, or parenthetical pronunciation next to any word in "
+    'the "title" or "content" fields, even if the level instructions '
+    "below say to provide pinyin. Pinyin, if requested, goes only in the "
+    'separate "pinyin" field described below.\n'
     "{adaptation_instructions}\n\n"
     'Reply with only a JSON object: {{"articles": [...]}}, with exactly '
     "{article_count} entries in the same order as the source articles. "
@@ -142,7 +145,8 @@ def _content_adaptation_instructions(hsk_level: int) -> str:
 def _json_field_instructions(hsk_level: int) -> str:
     lines = [
         '- "title": a short Chinese title for the article.',
-        '- "content": the adapted Chinese reading material for the article.',
+        '- "content": the adapted Chinese reading material for the article, '
+        "in Chinese characters only, with no inline pinyin.",
     ]
     if hsk_level in TRANSLATION_LEVELS:
         lines.append('- "translation": an English translation of "content".')

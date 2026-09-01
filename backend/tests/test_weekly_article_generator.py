@@ -4,10 +4,12 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from backend.utils.generateArticle.weekly_article_generator import (
+    ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE,
     ARTICLE_LENGTH_GUIDELINES,
     _content_adaptation_instructions,
     _full_length_text,
     _inject_new_words,
+    _json_field_instructions,
     _known_hsk_words,
     _measure_words_instruction,
     _normalize_article,
@@ -34,6 +36,15 @@ class TestFullLengthText(unittest.TestCase):
 class TestArticleLengthGuidelines(unittest.TestCase):
     def test_has_a_guideline_for_every_hsk_level(self):
         self.assertEqual(set(ARTICLE_LENGTH_GUIDELINES.keys()), {1, 2, 3, 4, 5, 6})
+
+
+class TestArticleAdaptationPromptForbidsInlinePinyin(unittest.TestCase):
+    def test_system_prompt_tells_model_not_to_inline_pinyin(self):
+        self.assertIn("never include pinyin", ARTICLE_ADAPTATION_SYSTEM_PROMPT_TEMPLATE)
+
+    def test_content_field_instructions_forbid_inline_pinyin(self):
+        for hsk_level in range(1, 7):
+            self.assertIn("no inline pinyin", _json_field_instructions(hsk_level))
 
 
 class TestMeasureWordsInstruction(unittest.TestCase):
