@@ -154,6 +154,11 @@ describe("GrammarExercises", () => {
     expect(
       screen.queryByRole("button", { name: "More explanation" }),
     ).not.toBeInTheDocument();
+    // Guards against the chat endpoint being called on a loop: the parent
+    // re-renders when Teacher Wang's approval flips isCorrect, which used to
+    // hand the modal a new (unmemoized) character object and re-trigger the
+    // auto-send effect indefinitely.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps a wrong reorder answer flagged as wrong when Teacher Wang rejects it in the explanation chat", async () => {

@@ -229,8 +229,11 @@ export default function ChatModal({
       isMounted = false;
     };
     // initialMessages is only applied when loadHistory is false on mount/open.
+    // character is keyed by id: getTeacherWang()/getXiaoMing() return a new
+    // object every render, which would otherwise re-fire this reset effect
+    // (and re-arm the auto-send guard below) on every parent re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character, loadHistory, thread?.threadId]);
+  }, [character?.id, loadHistory, thread?.threadId]);
 
   useEffect(() => {
     if (character === null || loadHistory || !autoSendInitialMessage) {
@@ -250,7 +253,7 @@ export default function ChatModal({
     void sendTurn(seeded, seeded.slice(0, -1));
     // initialMessages is only read for the seed at mount/open, same as above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character, loadHistory, autoSendInitialMessage, thread?.threadId]);
+  }, [character?.id, loadHistory, autoSendInitialMessage, thread?.threadId]);
 
   if (character === null) {
     return null;
