@@ -38,7 +38,7 @@ describe("chatCharacters", () => {
   it("translates the description into French", () => {
     const tFr = i18n.getFixedT("fr", "chat");
     expect(getTeacherWang(tFr).description).toBe(
-      "Le professeur de chinois natif qui parle aussi anglais",
+      "Le professeur de chinois natif qui parle aussi français",
     );
     expect(getXiaoMing(tFr).description).toBe("Votre ami chinois natif");
   });
