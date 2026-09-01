@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">60% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/4</span>
+                <span class='fraction'>3/5</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">60% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/4</span>
+                <span class='fraction'>3/5</span>
             </div>
         
             
@@ -121,7 +121,9 @@
 <a name='L56'></a><a href='#L56'>56</a>
 <a name='L57'></a><a href='#L57'>57</a>
 <a name='L58'></a><a href='#L58'>58</a>
-<a name='L59'></a><a href='#L59'>59</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -135,6 +137,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">28x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">28x</span>
 <span class="cline-any cline-yes">28x</span>
@@ -178,8 +183,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import Button from "./Button";
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useTranslation } from "react-i18next";
+import Button from "./Button";
 import { InfoIcon } from "./icons";
 import styles from "./VocabularyNoteTypeInfoModal.module.css";
 &nbsp;
@@ -194,6 +199,8 @@ export default function VocabularyNoteTypeInfoModal({
   onClose,
   onCreateAutomatically,
 }: VocabularyNoteTypeInfoModalProps) {
+  const { t } = useTranslation("preferences");
+&nbsp;
   <span class="missing-if-branch" title="else path not taken" >E</span>if (!isOpen) {
     return null;
   }
@@ -209,27 +216,26 @@ export default function VocabularyNoteTypeInfoModal({
       &gt;
         &lt;div className={styles.ankiNoteTypeInfoHeader}&gt;
           &lt;h2 id="vocabulary-note-type-info-title" className="modal-title"&gt;
-            Vocabulary deck type
+            {t("vocabularyNoteTypeInfoModal.title")}
           &lt;/h2&gt;
           &lt;InfoIcon className="home-hsk-info-icon" /&gt;
         &lt;/div&gt;
         &lt;p className="home-hsk-info-text"&gt;
-          This deck type should have 3 directions:
+          {t("vocabularyNoteTypeInfoModal.intro")}
         &lt;/p&gt;
         &lt;ol className={styles.ankiNoteTypeDirections}&gt;
-          &lt;li&gt;asking writing → guessing pinyin + definition&lt;/li&gt;
-          &lt;li&gt;asking pinyin → guessing writing + definition&lt;/li&gt;
-          &lt;li&gt;asking definition → guessing writing + pinyin&lt;/li&gt;
+          &lt;li&gt;{t("vocabularyNoteTypeInfoModal.direction1")}&lt;/li&gt;
+          &lt;li&gt;{t("vocabularyNoteTypeInfoModal.direction2")}&lt;/li&gt;
+          &lt;li&gt;{t("vocabularyNoteTypeInfoModal.direction3")}&lt;/li&gt;
         &lt;/ol&gt;
         &lt;p className="home-hsk-info-text"&gt;
-          If you do not already have such a deck type in Anki, you can create one
-          automatically with the mandatory fields and optional extras.
+          {t("vocabularyNoteTypeInfoModal.createHint")}
         &lt;/p&gt;
         &lt;div className={`modal-actions ${styles.ankiNoteTypeInfoActions}`}&gt;
-          &lt;Button kind="cancel" text="Close" onClick={onClose} /&gt;
+          &lt;Button kind="cancel" text={t("vocabularyNoteTypeInfoModal.close")} onClick={onClose} /&gt;
           &lt;Button
             kind="confirm"
-            text="Automatically create a 3-directions deck type"
+            text={t("vocabularyNoteTypeInfoModal.createAutomatically")}
             onClick={onCreateAutomatically}
           /&gt;
         &lt;/div&gt;
@@ -244,7 +250,7 @@ export default function VocabularyNoteTypeInfoModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

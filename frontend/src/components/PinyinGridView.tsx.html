@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92.3% </span>
+                <span class="strong">92.45% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>48/52</span>
+                <span class='fraction'>49/53</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92% </span>
+                <span class="strong">92.15% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>46/50</span>
+                <span class='fraction'>47/51</span>
             </div>
         
             
@@ -314,7 +314,18 @@
 <a name='L249'></a><a href='#L249'>249</a>
 <a name='L250'></a><a href='#L250'>250</a>
 <a name='L251'></a><a href='#L251'>251</a>
-<a name='L252'></a><a href='#L252'>252</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -384,6 +395,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">33x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">33x</span>
@@ -396,6 +408,10 @@
 <span class="cline-any cline-yes">47x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">47x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -477,6 +493,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">15x</span>
@@ -565,7 +582,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useMemo, useState, type ReactNode } from "react";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import type { Character } from "../types/character";
 import {
   FINAL,
@@ -588,8 +608,8 @@ type HoveredCell = {
   colIndex: number;
 };
 &nbsp;
-function formatStartLabel(start: string): string {
-  return start === "" ? "—" : start;
+function formatStartLabel(start: string, t: TFunction): string {
+  return start === "" ? t("pinyinGridView.emptyStartLabel") : start;
 }
 &nbsp;
 export function getColumnMinWidthCh(finalValue: string): number {
@@ -632,6 +652,7 @@ function chunkGridCharacters(
 &nbsp;
 function renderCellCharacters(
   characters: GridCharacter[],
+  t: TFunction,
   characterHasWords?: (char: string, pinyin: string) =&gt; boolean,
   onCharacterClick?: (char: string, pinyin: string) =&gt; void,
 ): ReactNode {
@@ -657,7 +678,11 @@ function renderCellCharacters(
                 role={hasWords ? "button" : undefined}
                 tabIndex={hasWords ? 0 : undefined}
                 aria-label={
-                  hasWords ? `${item.char} associated words` : undefined
+                  hasWords
+                    ? t("pinyinGridView.associatedWordsAriaLabel", {
+                        char: item.char,
+                      })
+                    : undefined
                 }
                 onClick={
                   hasWords
@@ -728,6 +753,7 @@ export default function PinyinGridView({
   characterHasWords,
   onCharacterClick,
 }: PinyinGridViewProps) {
+  const { t } = useTranslation("knowledge-base");
   const [hoveredCell, setHoveredCell] = useState&lt;HoveredCell | null&gt;(null);
   const grid = useMemo(
     () =&gt; groupCharactersByPinyin(characters),
@@ -756,7 +782,7 @@ export default function PinyinGridView({
         &lt;thead&gt;
           &lt;tr&gt;
             &lt;th className={styles.pinyinGridCorner} scope="col"&gt;
-              start \ final
+              {t("pinyinGridView.cornerHeader")}
             &lt;/th&gt;
             {FINAL.map((finalValue) =&gt; (
               &lt;th key={finalValue} scope="col"&gt;
@@ -769,7 +795,7 @@ export default function PinyinGridView({
           {START.map((startValue, rowIndex) =&gt; (
             &lt;tr key={startValue || "empty-start"}&gt;
               &lt;th className={styles.pinyinGridRowHeader} scope="row"&gt;
-                {formatStartLabel(startValue)}
+                {formatStartLabel(startValue, t)}
               &lt;/th&gt;
               {FINAL.map((finalValue, colIndex) =&gt; {
                 const cellCharacters =
@@ -801,6 +827,7 @@ export default function PinyinGridView({
                     {cellCharacters.length &gt; 0
                       ? renderCellCharacters(
                           cellCharacters,
+                          t,
                           characterHasWords,
                           onCharacterClick,
                         )
@@ -823,7 +850,7 @@ export default function PinyinGridView({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

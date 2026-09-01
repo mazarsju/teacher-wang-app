@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">71.42% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/7</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">71.42% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/7</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
@@ -178,7 +178,12 @@
 <a name='L113'></a><a href='#L113'>113</a>
 <a name='L114'></a><a href='#L114'>114</a>
 <a name='L115'></a><a href='#L115'>115</a>
-<a name='L116'></a><a href='#L116'>116</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -186,6 +191,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">96x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">96x</span>
+<span class="cline-any cline-yes">94x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
@@ -231,20 +253,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">66x</span>
-<span class="cline-any cline-yes">65x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -260,10 +269,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -293,58 +299,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import Button from "./Button";
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useTranslation } from "react-i18next";
+import Button from "./Button";
 import styles from "./AnkiConnectGuideModal.module.css";
 &nbsp;
 type GuideStep = {
+  id: string;
   title: string;
   description: string;
   imageSrc?: string;
   imageAlt?: string;
 };
-&nbsp;
-const GUIDE_STEPS: GuideStep[] = [
-  {
-    title: "Create an Anki account",
-    description:
-      "Go to ankiweb.net and create a free account so you can sync decks across devices later.",
-    imageSrc: "/anki-connect/01-create-account.png",
-    imageAlt: "AnkiWeb sign-up page",
-  },
-  {
-    title: "Install Anki desktop",
-    description:
-      "Download and install the Anki desktop app for your operating system from apps.ankiweb.net, then open it and sign in if prompted.",
-    imageSrc: "/anki-connect/02-install-desktop.png",
-    imageAlt: "Anki desktop download page",
-  },
-  {
-    title: "Open Anki add-ons",
-    description:
-      "In Anki, open Tools → Add-ons → Get Add-ons… to install new plugins.",
-    imageSrc: "/anki-connect/03-open-addons.png",
-    imageAlt: "Anki Tools menu highlighting Add-ons",
-  },
-  {
-    title: "Install AnkiConnect",
-    description:
-      "Enter the add-on code 2055492159 and confirm. Restart Anki when prompted.",
-    imageSrc: "/anki-connect/04-install-addon.png",
-    imageAlt: "Anki Get Add-ons dialog with code 2055492159",
-  },
-  {
-    title: "Allow browser access (CORS)",
-    description:
-      "In Anki, open Tools → Add-ons → AnkiConnect → Config and set webCorsOriginList to [\"*\"] (or include http://localhost:5173). Restart Anki so Teacher Wang can call AnkiConnect from the app.",
-  },
-  {
-    title: "Verify the connection",
-    description:
-      "Keep Anki open in the background, then open http://localhost:8765 in a browser. You should see the text “AnkiConnect”. Close this guide to refresh the connection status.",
-    imageSrc: "/anki-connect/05-verify-localhost.png",
-    imageAlt: "Browser showing AnkiConnect at localhost:8765",
-  },
-];
 &nbsp;
 type AnkiConnectGuideModalProps = {
   isOpen: boolean;
@@ -355,9 +324,54 @@ export default function AnkiConnectGuideModal({
   isOpen,
   onClose,
 }: AnkiConnectGuideModalProps) {
+  const { t } = useTranslation("preferences");
+&nbsp;
   if (!isOpen) {
     return null;
   }
+&nbsp;
+  const GUIDE_STEPS: GuideStep[] = [
+    {
+      id: "createAccount",
+      title: t("ankiConnectGuideModal.steps.createAccount.title"),
+      description: t("ankiConnectGuideModal.steps.createAccount.description"),
+      imageSrc: "/anki-connect/01-create-account.png",
+      imageAlt: t("ankiConnectGuideModal.steps.createAccount.imageAlt"),
+    },
+    {
+      id: "installDesktop",
+      title: t("ankiConnectGuideModal.steps.installDesktop.title"),
+      description: t("ankiConnectGuideModal.steps.installDesktop.description"),
+      imageSrc: "/anki-connect/02-install-desktop.png",
+      imageAlt: t("ankiConnectGuideModal.steps.installDesktop.imageAlt"),
+    },
+    {
+      id: "openAddons",
+      title: t("ankiConnectGuideModal.steps.openAddons.title"),
+      description: t("ankiConnectGuideModal.steps.openAddons.description"),
+      imageSrc: "/anki-connect/03-open-addons.png",
+      imageAlt: t("ankiConnectGuideModal.steps.openAddons.imageAlt"),
+    },
+    {
+      id: "installAddon",
+      title: t("ankiConnectGuideModal.steps.installAddon.title"),
+      description: t("ankiConnectGuideModal.steps.installAddon.description"),
+      imageSrc: "/anki-connect/04-install-addon.png",
+      imageAlt: t("ankiConnectGuideModal.steps.installAddon.imageAlt"),
+    },
+    {
+      id: "allowCors",
+      title: t("ankiConnectGuideModal.steps.allowCors.title"),
+      description: t("ankiConnectGuideModal.steps.allowCors.description"),
+    },
+    {
+      id: "verify",
+      title: t("ankiConnectGuideModal.steps.verify.title"),
+      description: t("ankiConnectGuideModal.steps.verify.description"),
+      imageSrc: "/anki-connect/05-verify-localhost.png",
+      imageAlt: t("ankiConnectGuideModal.steps.verify.imageAlt"),
+    },
+  ];
 &nbsp;
   return (
     &lt;div className="modal-overlay" onClick={onClose}&gt;
@@ -369,16 +383,13 @@ export default function AnkiConnectGuideModal({
         onClick={<span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; <span class="cstat-no" title="statement not covered" >event.stopPropagation()}</span>
       &gt;
         &lt;h2 id="anki-connect-guide-title" className="modal-title"&gt;
-          Set up AnkiConnect
+          {t("ankiConnectGuideModal.title")}
         &lt;/h2&gt;
-        &lt;p className="modal-message"&gt;
-          Teacher Wang talks to Anki through the AnkiConnect add-on. Follow
-          these steps, then close this guide to re-check the connection.
-        &lt;/p&gt;
+        &lt;p className="modal-message"&gt;{t("ankiConnectGuideModal.description")}&lt;/p&gt;
 &nbsp;
         &lt;ol className={styles.ankiGuideSteps}&gt;
           {GUIDE_STEPS.map((step, index) =&gt; (
-            &lt;li key={step.title} className={styles.ankiGuideStep}&gt;
+            &lt;li key={step.id} className={styles.ankiGuideStep}&gt;
               &lt;div className={styles.ankiGuideStepHeader}&gt;
                 &lt;div&gt;
                   &lt;h3 className={styles.ankiGuideStepTitle}&gt;&lt;span className={styles.ankiGuideStepNumber}&gt;{index + 1}&lt;/span&gt;&amp;nbsp;{step.title}&lt;/h3&gt;
@@ -402,7 +413,11 @@ export default function AnkiConnectGuideModal({
         &lt;/ol&gt;
 &nbsp;
         &lt;div className="modal-actions"&gt;
-          &lt;Button kind="confirm" text="Close and check connection" onClick={onClose} /&gt;
+          &lt;Button
+            kind="confirm"
+            text={t("ankiConnectGuideModal.closeButton")}
+            onClick={onClose}
+          /&gt;
         &lt;/div&gt;
       &lt;/div&gt;
     &lt;/div&gt;
@@ -415,7 +430,7 @@ export default function AnkiConnectGuideModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

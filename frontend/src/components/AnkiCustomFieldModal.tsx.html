@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.73% </span>
+                <span class="strong">95% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>18/19</span>
+                <span class='fraction'>19/20</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.73% </span>
+                <span class="strong">95% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>18/19</span>
+                <span class='fraction'>19/20</span>
             </div>
         
             
@@ -148,7 +148,13 @@
 <a name='L83'></a><a href='#L83'>83</a>
 <a name='L84'></a><a href='#L84'>84</a>
 <a name='L85'></a><a href='#L85'>85</a>
-<a name='L86'></a><a href='#L86'>86</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -162,6 +168,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">127x</span>
 <span class="cline-any cline-yes">127x</span>
 <span class="cline-any cline-yes">127x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -207,7 +215,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">46x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -234,6 +246,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 &nbsp;
 type AnkiCustomFieldModalProps = {
@@ -247,6 +260,7 @@ export default function AnkiCustomFieldModal({
   onConfirm,
   onCancel,
 }: AnkiCustomFieldModalProps) {
+  const { t } = useTranslation("preferences");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 &nbsp;
@@ -283,33 +297,37 @@ export default function AnkiCustomFieldModal({
         onClick={(event) =&gt; event.stopPropagation()}
       &gt;
         &lt;h2 id="anki-custom-field-title" className="modal-title"&gt;
-          Add custom field
+          {t("ankiCustomFieldModal.title")}
         &lt;/h2&gt;
         &lt;form className="modal-form" onSubmit={handleSubmit}&gt;
           &lt;label className="modal-field"&gt;
-            &lt;span className="modal-field-label"&gt;Title&lt;/span&gt;
+            &lt;span className="modal-field-label"&gt;
+              {t("ankiCustomFieldModal.titleFieldLabel")}
+            &lt;/span&gt;
             &lt;input
               type="text"
               value={title}
-              placeholder="e.g. example sentence"
+              placeholder={t("ankiCustomFieldModal.titleFieldPlaceholder")}
               onChange={(event) =&gt; setTitle(event.target.value)}
             /&gt;
           &lt;/label&gt;
           &lt;label className="modal-field"&gt;
-            &lt;span className="modal-field-label"&gt;Description&lt;/span&gt;
+            &lt;span className="modal-field-label"&gt;
+              {t("ankiCustomFieldModal.descriptionFieldLabel")}
+            &lt;/span&gt;
             &lt;input
               type="text"
               value={description}
-              placeholder="What this field is for"
+              placeholder={t("ankiCustomFieldModal.descriptionFieldPlaceholder")}
               onChange={(event) =&gt; setDescription(event.target.value)}
             /&gt;
           &lt;/label&gt;
           &lt;div className="modal-actions"&gt;
-            &lt;Button kind="cancel" text="Cancel" onClick={onCancel} /&gt;
+            &lt;Button kind="cancel" text={t("ankiCustomFieldModal.cancel")} onClick={onCancel} /&gt;
             &lt;Button
               kind="confirm"
               htmlType="submit"
-              text="Confirm"
+              text={t("ankiCustomFieldModal.confirm")}
               disabled={isConfirmDisabled}
             /&gt;
           &lt;/div&gt;
@@ -325,7 +343,7 @@ export default function AnkiCustomFieldModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

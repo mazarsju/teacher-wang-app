@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.87% </span>
+                <span class="strong">97.91% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>46/47</span>
+                <span class='fraction'>47/48</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.82% </span>
+                <span class="strong">97.87% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>45/46</span>
+                <span class='fraction'>46/47</span>
             </div>
         
             
@@ -293,8 +293,7 @@
 <a name='L228'></a><a href='#L228'>228</a>
 <a name='L229'></a><a href='#L229'>229</a>
 <a name='L230'></a><a href='#L230'>230</a>
-<a name='L231'></a><a href='#L231'>231</a>
-<a name='L232'></a><a href='#L232'>232</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L231'></a><a href='#L231'>231</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -335,6 +334,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">366x</span>
 <span class="cline-any cline-yes">366x</span>
 <span class="cline-any cline-yes">366x</span>
 <span class="cline-any cline-yes">366x</span>
@@ -466,9 +467,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">156x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -526,6 +524,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { AnkiCustomFieldDef } from "../types/anki";
 import type { Word } from "../types/word";
 import {
@@ -566,6 +565,7 @@ export default function AddWordModal({
   onConfirm,
   onCancel,
 }: AddWordModalProps) {
+  const { t } = useTranslation("common");
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [pinyin, setPinyin] = useState("");
@@ -644,11 +644,11 @@ export default function AddWordModal({
         onClick={(event) =&gt; event.stopPropagation()}
       &gt;
         &lt;h2 id="word-form-title" className="modal-title"&gt;
-          {mode === "add" ? "Add word" : "Edit word"}
+          {mode === "add" ? t("addWordModal.titleAdd") : t("addWordModal.titleEdit")}
         &lt;/h2&gt;
         &lt;form className="modal-form" onSubmit={handleSubmit}&gt;
           &lt;label className="modal-field"&gt;
-            &lt;span className="modal-field-label"&gt;words&lt;/span&gt;
+            &lt;span className="modal-field-label"&gt;{t("addWordModal.wordLabel")}&lt;/span&gt;
             &lt;input
               type="text"
               value={word}
@@ -669,11 +669,11 @@ export default function AddWordModal({
           &lt;/label&gt;
           {isDuplicateWord &amp;&amp; (
             &lt;p className={styles.formWarning}&gt;
-              This word already exists in the database.
+              {t("addWordModal.duplicateWarning")}
             &lt;/p&gt;
           )}
           &lt;label className="modal-field"&gt;
-            &lt;span className="modal-field-label"&gt;pinyin&lt;/span&gt;
+            &lt;span className="modal-field-label"&gt;{t("addWordModal.pinyinLabel")}&lt;/span&gt;
             &lt;input
               type="text"
               value={pinyin}
@@ -685,14 +685,11 @@ export default function AddWordModal({
           &lt;/label&gt;
           {showPinyinWarning &amp;&amp; (
             &lt;p id="word-pinyin-warning" className={styles.formWarning}&gt;
-              Enter one valid pinyin syllable per Chinese character (e.g.
-              hao3), with a tone number. Any non-Chinese characters in the
-              word don&amp;rsquo;t need matching pinyin — spacing and content
-              around them are not checked.
+              {t("addWordModal.pinyinWarning")}
             &lt;/p&gt;
           )}
           &lt;label className="modal-field"&gt;
-            &lt;span className="modal-field-label"&gt;definition&lt;/span&gt;
+            &lt;span className="modal-field-label"&gt;{t("addWordModal.definitionLabel")}&lt;/span&gt;
             &lt;input
               type="text"
               value={definition}
@@ -705,7 +702,7 @@ export default function AddWordModal({
           &lt;/label&gt;
           {isDefinitionTooLong &amp;&amp; (
             &lt;p id="word-definition-warning" className={styles.formWarning}&gt;
-              Definition must be no more than 100 characters long.
+              {t("addWordModal.definitionTooLong")}
             &lt;/p&gt;
           )}
           {customFields.map((field) =&gt; (
@@ -731,7 +728,7 @@ export default function AddWordModal({
             &lt;/label&gt;
           ))}
           &lt;label className="modal-field-toggle"&gt;
-            &lt;span className="modal-field-label"&gt;writing known&lt;/span&gt;
+            &lt;span className="modal-field-label"&gt;{t("addWordModal.writingKnownLabel")}&lt;/span&gt;
             &lt;span className="toggle"&gt;
               &lt;input
                 type="checkbox"
@@ -743,10 +740,10 @@ export default function AddWordModal({
             &lt;/span&gt;
           &lt;/label&gt;
           &lt;div className="modal-actions"&gt;
-            &lt;Button kind="cancel" text="Cancel" onClick={onCancel} /&gt;
+            &lt;Button kind="cancel" text={t("confirmModal.cancel")} onClick={onCancel} /&gt;
             &lt;Button
               kind="confirm"
-              text="Confirm"
+              text={t("confirmModal.confirm")}
               htmlType="submit"
               disabled={isConfirmDisabled}
             /&gt;
@@ -763,7 +760,7 @@ export default function AddWordModal({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -154,7 +154,14 @@
 <a name='L89'></a><a href='#L89'>89</a>
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
-<a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -207,8 +214,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">32x</span>
-<span class="cline-any cline-yes">32x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38x</span>
+<span class="cline-any cline-yes">38x</span>
+<span class="cline-any cline-yes">38x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -218,9 +230,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">163x</span>
+<span class="cline-any cline-yes">194x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">163x</span>
+<span class="cline-any cline-yes">194x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -245,7 +257,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useTranslation } from "react-i18next";
+import {
   BookOpenIcon,
   ChatBubbleIcon,
   HouseIcon,
@@ -267,19 +280,23 @@ export type PageId =
 &nbsp;
 type NavItem = {
   id: PageId;
-  label: string;
+  labelKey: string;
   icon: typeof HouseIcon;
 };
 &nbsp;
 const NAV_ITEMS: NavItem[] = [
-  { id: "home", label: "Home", icon: HouseIcon },
-  { id: "knowledge-base", label: "Knowledge base", icon: NotebookIcon },
-  { id: "grammar", label: "Grammar", icon: BookOpenIcon },
-  { id: "chat", label: "Chat", icon: ChatBubbleIcon },
-  { id: "preferences", label: "Preferences", icon: SettingsIcon },
+  { id: "home", labelKey: "navbar.nav.home", icon: HouseIcon },
+  { id: "knowledge-base", labelKey: "navbar.nav.knowledgeBase", icon: NotebookIcon },
+  { id: "grammar", labelKey: "navbar.nav.grammar", icon: BookOpenIcon },
+  { id: "chat", labelKey: "navbar.nav.chat", icon: ChatBubbleIcon },
+  { id: "preferences", labelKey: "navbar.nav.preferences", icon: SettingsIcon },
 ];
 &nbsp;
-const ADMIN_NAV_ITEM: NavItem = { id: "admin", label: "Admin", icon: ProfileIcon };
+const ADMIN_NAV_ITEM: NavItem = {
+  id: "admin",
+  labelKey: "navbar.nav.admin",
+  icon: ProfileIcon,
+};
 &nbsp;
 type NavbarProps = {
   activePage: PageId;
@@ -298,17 +315,18 @@ export default function Navbar({
   isSyncing = false,
   isAdmin = false,
 }: NavbarProps) {
+  const { t } = useTranslation("common");
   const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
   return (
-    &lt;nav className={styles.navbar} aria-label="Main navigation"&gt;
+    &lt;nav className={styles.navbar} aria-label={t("navbar.mainNavigation")}&gt;
       &lt;div className={styles.navbarInner}&gt;
         &lt;div className={styles.navbarNavGroup}&gt;
           &lt;div className={styles.navbarBrand}&gt;
             &lt;img className={styles.navbarBrandLogo} src={logo} alt="" /&gt;
-            &lt;span className="navbar-brand-text"&gt;Teacher Wang&lt;/span&gt;
+            &lt;span className="navbar-brand-text"&gt;{t("navbar.brand")}&lt;/span&gt;
           &lt;/div&gt;
           &lt;ul className={styles.navbarList}&gt;
-            {navItems.map(({ id, label, icon: Icon }) =&gt; {
+            {navItems.map(({ id, labelKey, icon: Icon }) =&gt; {
               const isActive = activePage === id;
 &nbsp;
               return (
@@ -320,7 +338,7 @@ export default function Navbar({
                     onClick={() =&gt; onPageChange(id)}
                   &gt;
                     &lt;Icon className={styles.navbarIcon} /&gt;
-                    &lt;span&gt;{label}&lt;/span&gt;
+                    &lt;span&gt;{t(labelKey)}&lt;/span&gt;
                   &lt;/button&gt;
                 &lt;/li&gt;
               );
@@ -343,7 +361,7 @@ export default function Navbar({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92.3% </span>
+                <span class="strong">92.45% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>48/52</span>
+                <span class='fraction'>49/53</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92% </span>
+                <span class="strong">92.15% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>46/50</span>
+                <span class='fraction'>47/51</span>
             </div>
         
             
@@ -309,7 +309,12 @@
 <a name='L244'></a><a href='#L244'>244</a>
 <a name='L245'></a><a href='#L245'>245</a>
 <a name='L246'></a><a href='#L246'>246</a>
-<a name='L247'></a><a href='#L247'>247</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -334,8 +339,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -352,6 +355,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">57x</span>
+<span class="cline-any cline-yes">57x</span>
 <span class="cline-any cline-yes">57x</span>
 <span class="cline-any cline-yes">82x</span>
 <span class="cline-any cline-yes">57x</span>
@@ -429,6 +434,11 @@
 <span class="cline-any cline-yes">57x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">57x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -556,13 +566,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
 import ConfirmModal from "../components/ConfirmModal";
 import GrammarExercises, { scoreBand } from "../components/GrammarExercises";
 import GrammarVocabularyTab from "../components/GrammarVocabularyTab";
 import Page from "../components/Page";
-import { TEACHER_WANG } from "../data/chatCharacters";
+import { getTeacherWang } from "../data/chatCharacters";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   setGrammarPointScore,
@@ -580,9 +591,6 @@ import styles from "./GrammarPointDetailPage.module.css";
 &nbsp;
 type GrammarDetailTab = "explanation" | "exercises" | "vocabulary";
 &nbsp;
-const LESSON_CHAT_GREETING =
-  "Ask me what you did not understand on this lesson, will be happy to help!";
-&nbsp;
 function buildLessonTopicContext(detail: GrammarPointDetail): string {
   return detail.explanation
     ? `# ${detail.title}\n\n${detail.explanation}`
@@ -598,6 +606,8 @@ export default function GrammarPointDetailPage({
   grammarId,
   onBack,
 }: GrammarPointDetailPageProps) {
+  const { t } = useTranslation(["grammar", "common"]);
+  const { t: tChat } = useTranslation("chat");
   const dispatch = useAppDispatch();
   const quizInProgress = useAppSelector((state) =&gt; state.grammar.quizInProgress);
   const currentHskLevel = useAppSelector(
@@ -627,7 +637,7 @@ export default function GrammarPointDetailPage({
           setError(
             fetchError instanceof Error
               ? fetchError.message
-              : <span class="branch-1 cbranch-no" title="branch not covered" >"Failed to load grammar topic.",</span>
+              : <span class="branch-1 cbranch-no" title="branch not covered" >t("grammarPointDetailPage.loadError"),</span>
           );
         }
       })
@@ -640,7 +650,7 @@ export default function GrammarPointDetailPage({
     return () =&gt; {
       cancelled = true;
     };
-  }, [grammarId]);
+  }, [grammarId, t]);
 &nbsp;
   function handleBackClick() {
     if (quizInProgress) {
@@ -654,7 +664,7 @@ export default function GrammarPointDetailPage({
     const status = scoreBand(percentage) === "good" ? "DONE" : "WIP";
     dispatch(setGrammarPointScore({ id: grammarId, status, score: percentage }));
     completeGrammarPoint(grammarId, percentage).catch(<span class="fstat-no" title="function not covered" >() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      setSaveError("Failed to save the quiz result.");</span>
+<span class="cstat-no" title="statement not covered" >      setSaveError(t("grammarPointDetailPage.saveQuizError"));</span>
     });
   }
 &nbsp;
@@ -667,7 +677,7 @@ export default function GrammarPointDetailPage({
 <span class="cstat-no" title="statement not covered" >      setSaveError(</span>
         skipError instanceof Error
           ? skipError.message
-          : "Failed to mark this lesson as known.",
+          : t("grammarPointDetailPage.skipError"),
       );
     }
   }
@@ -676,21 +686,26 @@ export default function GrammarPointDetailPage({
 &nbsp;
   return (
     &lt;Page
-      title={detail?.title ?? "Grammar topic"}
+      title={detail?.title ?? t("grammarPointDetailPage.titleFallback")}
       headerAction={
-        &lt;Button kind="cancel" variant="page" text="Back" onClick={handleBackClick} /&gt;
+        &lt;Button
+          kind="cancel"
+          variant="page"
+          text={t("grammarPointDetailPage.back")}
+          onClick={handleBackClick}
+        /&gt;
       }
     &gt;
       &lt;ConfirmModal
         isOpen={showLeaveConfirm}
-        message="You've started this questionnaire. Leaving now means you'll need to start it over from the first question. Leave anyway?"
+        message={t("common:app.leaveQuizConfirm")}
         onConfirm={() =&gt; {
           setShowLeaveConfirm(false);
           onBack();
         }}
         onCancel={() =&gt; setShowLeaveConfirm(false)}
       /&gt;
-      {isLoading &amp;&amp; &lt;p&gt;Loading grammar topic...&lt;/p&gt;}
+      {isLoading &amp;&amp; &lt;p&gt;{t("grammarPointDetailPage.loading")}&lt;/p&gt;}
       {error &amp;&amp; &lt;p className="table-error"&gt;{error}&lt;/p&gt;}
       {saveError &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >&lt;p className="table-error"&gt;{saveError}&lt;/p&gt;}</span>
       {!isLoading &amp;&amp; !error &amp;&amp; detail &amp;&amp; (
@@ -707,7 +722,7 @@ export default function GrammarPointDetailPage({
               }
               onClick={() =&gt; setActiveTab("explanation")}
             &gt;
-              Explanation
+              {t("grammarPointDetailPage.tabs.explanation")}
             &lt;/button&gt;
             &lt;button
               type="button"
@@ -720,7 +735,7 @@ export default function GrammarPointDetailPage({
               }
               onClick={() =&gt; setActiveTab("exercises")}
             &gt;
-              Exercises
+              {t("grammarPointDetailPage.tabs.exercises")}
             &lt;/button&gt;
             &lt;button
               type="button"
@@ -733,7 +748,7 @@ export default function GrammarPointDetailPage({
               }
               onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etActiveTab("vocabulary")}</span>
             &gt;
-              Vocabulary
+              {t("grammarPointDetailPage.tabs.vocabulary")}
             &lt;/button&gt;
           &lt;/div&gt;
           &lt;div
@@ -745,16 +760,16 @@ export default function GrammarPointDetailPage({
           &gt;
             {detail.explanation
               ? renderFormattedText(detail.explanation.replace(/\n{2,}/g, "\n"))
-              : "No explanation available yet."}
+              : t("grammarPointDetailPage.noExplanation")}
             {canSkip &amp;&amp; (
               &lt;div className={styles.grammarDetailSkip}&gt;
                 &lt;p className={styles.grammarDetailSkipHint}&gt;
-                  Already know this lesson? You can skip it and its exercises.
+                  {t("grammarPointDetailPage.skipHint")}
                 &lt;/p&gt;
                 &lt;Button
                   kind="confirm"
                   variant="page"
-                  text="Skip this lesson"
+                  text={t("grammarPointDetailPage.skipButton")}
                   onClick={handleSkip}
                 /&gt;
               &lt;/div&gt;
@@ -762,7 +777,7 @@ export default function GrammarPointDetailPage({
             &lt;Button
               kind="cancel"
               variant="page"
-              text="Ask more information to Teacher Wang"
+              text={t("grammarPointDetailPage.askTeacherWangButton")}
               onClick={() =&gt; setIsLessonChatOpen(true)}
             /&gt;
           &lt;/div&gt;
@@ -781,12 +796,12 @@ export default function GrammarPointDetailPage({
           &lt;/div&gt;
           {isLessonChatOpen &amp;&amp; (
             &lt;ChatModal
-              character={TEACHER_WANG}
+              character={getTeacherWang(tChat)}
               onClose={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etIsLessonChatOpen(false)}</span>
               initialMessages={[
                 {
                   role: "assistant",
-                  content: LESSON_CHAT_GREETING,
+                  content: t("grammarPointDetailPage.chatGreeting"),
                   isDisplayOnly: true,
                 },
               ]}
@@ -808,7 +823,7 @@ export default function GrammarPointDetailPage({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-27T13:06:20.056Z
+                at 2026-09-01T04:47:13.616Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
