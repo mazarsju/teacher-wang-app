@@ -100,10 +100,20 @@ function exerciseQuestionText(exercise: GrammarExercise): string {
   return `${exercise.instruction ?? "transform this sentence"} — "${exercise.source}"`;
 }
 
+const AI_ANSWER_LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  fr: "French",
+};
+
+function aiAnswerLanguageName(lng: string): string {
+  return AI_ANSWER_LANGUAGE_NAMES[lng] ?? AI_ANSWER_LANGUAGE_NAMES.en;
+}
+
 function buildExplanationRequest(
   exercise: GrammarExercise,
   userAnswerText: string,
   correctAnswerText: string,
+  language: string,
   grammarPointTitle?: string,
 ): string {
   const topic = grammarPointTitle ? ` about "${grammarPointTitle}"` : "";
@@ -113,7 +123,7 @@ function buildExplanationRequest(
     `My answer: "${userAnswerText || "(no answer)"}". ` +
     `The correct answer: "${correctAnswerText}". ` +
     "Can you explain why my answer is wrong and the correct one is right? " +
-    "Answer concisely, in English only — use Chinese exclusively for quoting example words or sentences."
+    `Answer concisely, in ${aiAnswerLanguageName(language)} only — use Chinese exclusively for quoting example words or sentences.`
   );
 }
 
@@ -132,6 +142,7 @@ function buildExplanationDisplayText(
 function buildAnswerCheckRequest(
   exercise: TranslationExercise | TransformExercise,
   userAnswerText: string,
+  language: string,
   grammarPointTitle?: string,
 ): string {
   const topic = grammarPointTitle ? ` for the grammar point "${grammarPointTitle}"` : "";
@@ -146,13 +157,14 @@ function buildAnswerCheckRequest(
     `The expected answer is "${exercise.accepted_answers[0]}", but I answered: "${userAnswerText}". ` +
     "Is my answer also a correct, acceptable answer, even if it isn't word-for-word the same? " +
     'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student. ' +
-    "Keep the explanation concise, in English only — use Chinese exclusively for quoting example words or sentences."
+    `Keep the explanation concise, in ${aiAnswerLanguageName(language)} only — use Chinese exclusively for quoting example words or sentences.`
   );
 }
 
 function buildReorderCheckRequest(
   exercise: SentenceReorderingExercise,
   userOrderText: string,
+  language: string,
   grammarPointTitle?: string,
 ): string {
   const topic = grammarPointTitle ? ` for the grammar point "${grammarPointTitle}"` : "";
@@ -163,7 +175,7 @@ function buildReorderCheckRequest(
     `The expected order is "${exercise.answer.join(" ")}", but I answered: "${userOrderText}". ` +
     "Is my order also grammatically correct and natural, even if it isn't the same as the expected order? " +
     'Start your reply with exactly "YES" or "NO" as the very first word, then briefly explain why for the student. ' +
-    "Keep the explanation concise, in English only — use Chinese exclusively for quoting example words or sentences."
+    `Keep the explanation concise, in ${aiAnswerLanguageName(language)} only — use Chinese exclusively for quoting example words or sentences.`
   );
 }
 
@@ -177,7 +189,7 @@ export default function GrammarExercises({
   onFinish,
   onProgressChange,
 }: GrammarExercisesProps) {
-  const { t } = useTranslation("grammar");
+  const { t, i18n } = useTranslation("grammar");
   const { t: tChat } = useTranslation("chat");
   const [index, setIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -291,7 +303,7 @@ export default function GrammarExercises({
         [
           {
             role: "user",
-            content: buildAnswerCheckRequest(exercise, textAnswer, grammarPointTitle),
+            content: buildAnswerCheckRequest(exercise, textAnswer, i18n.language, grammarPointTitle),
           },
         ],
         undefined,
@@ -331,8 +343,14 @@ export default function GrammarExercises({
       isContext: true,
       content:
         exercise.type === "sentence_reordering"
-          ? buildReorderCheckRequest(exercise, userAnswerText, grammarPointTitle)
-          : buildExplanationRequest(exercise, userAnswerText, correctAnswerText, grammarPointTitle),
+          ? buildReorderCheckRequest(exercise, userAnswerText, i18n.language, grammarPointTitle)
+          : buildExplanationRequest(
+              exercise,
+              userAnswerText,
+              correctAnswerText,
+              i18n.language,
+              grammarPointTitle,
+            ),
       displayContent: buildExplanationDisplayText(
         exercise,
         userAnswerText,
