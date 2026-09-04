@@ -5,12 +5,20 @@ export type ChallengeTask = {
   label: string;
 };
 
+export type ChallengeVocabularyWord = {
+  id: string;
+  word: string;
+  pinyin: string;
+  definition: string;
+};
+
 export type Challenge = {
   id: string;
   title: string;
   description: string;
   character: ChatCharacter;
   tasks: ChallengeTask[];
+  vocabulary: ChallengeVocabularyWord[];
   hskLevel: number;
 };
 

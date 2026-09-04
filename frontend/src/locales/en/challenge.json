@@ -11,6 +11,13 @@
       "askNoMeat": "Ask if they have a dish without meat",
       "askBill": "Ask for the bill",
       "payBill": "Pay the bill"
+    },
+    "vocabulary": {
+      "fuwuyuan": "waiter",
+      "caidan": "menu",
+      "rou": "meat",
+      "maidan": "to pay the bill",
+      "haochi": "tasty, delicious"
     }
   },
   "taxi": {
@@ -25,6 +32,13 @@
       "giveDestination": "Tell the driver your destination",
       "askFare": "Ask how much the ride costs",
       "payFare": "Pay for the ride"
+    },
+    "vocabulary": {
+      "chuzuche": "taxi",
+      "qu": "to go",
+      "duoshaoqian": "how much money",
+      "shifu": "master (polite term for a driver/worker)",
+      "dao": "to arrive"
     }
   },
   "hotel": {
@@ -39,6 +53,13 @@
       "checkIn": "Check in to your room",
       "askBreakfast": "Ask what time breakfast starts",
       "checkOut": "Check out of the hotel"
+    },
+    "vocabulary": {
+      "fangjian": "room",
+      "dingfang": "to book a room",
+      "zaocan": "breakfast",
+      "tuifang": "to check out",
+      "huzhao": "passport"
     }
   },
   "shop": {
@@ -53,6 +74,13 @@
       "askPrice": "Ask the price of a shirt",
       "askDifferentSize": "Ask for a different size",
       "payItem": "Pay for the item"
+    },
+    "vocabulary": {
+      "chenshan": "shirt",
+      "duoshaoqian": "how much money",
+      "haoma": "size, number",
+      "huan": "to exchange",
+      "xianjin": "cash"
     }
   },
   "newFriend": {
@@ -66,6 +94,13 @@
       "greetFriend": "Say hi to your new friend",
       "introduceName": "Introduce yourself by name",
       "sayAge": "Tell them your age"
+    },
+    "vocabulary": {
+      "niHao": "hello",
+      "jiao": "to be called (name)",
+      "mingzi": "name",
+      "sui": "years old",
+      "renshi": "to know, to meet"
     }
   }
 }

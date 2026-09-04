@@ -8,12 +8,13 @@ Add a new challenge by wiring one shared `character_id` through backend + fronte
 
 ## Required input from the user
 
-Collect these four fields (ask if any is missing):
+Collect these five fields (ask if any is missing):
 
 1. **Challenge name** — short English title for the card / scenario (e.g. `Waiter`)
 2. **Person involved** — English name + Chinese name of the role-play agent (e.g. `Waiter` / `服务员`)
 3. **Situation + agent rules** — brief description of the setting, initial state, and any progression rules (what must happen in which order)
 4. **Tasks** — ordered list of actions the learner must accomplish (English labels)
+5. **Vocabulary** — 4-10 words/phrases useful for this scenario (e.g. `服务员`, `买单` for the waiter challenge). If the user doesn't supply a list, derive it yourself from the situation and tasks — every challenge must ship with one; don't skip this field.
 
 Derive:
 
@@ -22,6 +23,8 @@ Derive:
 | `character_id` | `challenge-<slug>` from the name/person, kebab-case, unique (e.g. `challenge-restaurant`) |
 | `avatarVariant` | New short slug if needed (e.g. `waiter`, `cashier`) — add SVG avatar when not reusable |
 | Task `id`s | kebab-case from the label, unique within the challenge (e.g. `call-waiter`) |
+| Vocabulary word `id`s | kebab-case pinyin-derived slug, unique within the challenge (e.g. `maidan` for 买单) |
+| Vocabulary `pinyin` | space-separated syllables with numeric tones (e.g. `mai3 dan1`), matching the app's pinyin convention |
 | Card `description` | One short sentence from the situation (what the learner practices) |
 
 ## Mandatory agent behavior (every challenge)
@@ -47,7 +50,8 @@ Challenge Progress:
 - [ ] Scenario config in challenge_prompts.py (+ CHALLENGE_SCENARIOS map)
 - [ ] Backend chat agent in chat_agents.py (uses builder output)
 - [ ] Backend tasks in challenges.py (same ids/labels as frontend)
-- [ ] Frontend challenge in data/challenges.ts + CHALLENGES array
+- [ ] Frontend challenge template in data/challenges.ts (CHALLENGE_TEMPLATES), incl. vocabulary
+- [ ] Translations in locales/en/challenge.json + fr/challenge.json (title/description/tasks/vocabulary)
 - [ ] Avatar variant (reuse or add SVG + type unions)
 - [ ] Tests updated if needed
 - [ ] Remind user to restart backend
@@ -126,36 +130,56 @@ The Challenge Judge runs automatically after each chat turn for ids in this map.
 
 ## Step 3 — Frontend challenge data
 
+Challenges are localized: stable data (ids, Chinese characters, pinyin, avatar variant) lives in `frontend/src/data/challenges.ts`; translatable text (title, description, task labels, vocabulary definitions) lives in `frontend/src/locales/<lang>/challenge.json`, keyed by `translationKey`.
+
+### 3a. Template entry
+
 File: `frontend/src/data/challenges.ts`
 
-1. Define a constant challenge object.
-2. Append it to `CHALLENGES`.
+Append a `ChallengeTemplate` to `CHALLENGE_TEMPLATES`:
 
 ```ts
-export const <CONST>_CHALLENGE: Challenge = {
+{
   id: "<character_id>",
-  title: "<Challenge name>",
-  description: "<short practice description>",
+  translationKey: "<camelCaseKey>",
   character: {
     id: "<character_id>",
-    name: "<English name>",
     chineseName: "<中文名>",
-    description: "<same or shorter blurb>",
     avatarVariant: "<variant>",
   },
   tasks: [
-    { id: "<task-id>", label: "<Task label>" },
+    { id: "<task-id>", key: "<taskCamelKey>" },
     // ...
   ],
-};
-
-export const CHALLENGES: Challenge[] = [
-  // existing...,
-  <CONST>_CHALLENGE,
-];
+  vocabulary: [
+    { id: "<word-slug>", word: "<汉字>", pinyin: "<syllable1 syllable2>", key: "<vocabCamelKey>" },
+    // 4-6 entries covering the words most useful for this scenario
+  ],
+  hskLevel: <number>,
+},
 ```
 
-`ChatPage` already maps `CHALLENGES` — no page wiring unless the Challenges section is missing.
+`getChallenges(t)` renders this into a `Challenge` (resolving `title`/`description`/`character.name`/`character.description`/`tasks[].label`/`vocabulary[].definition` via `t()`) — no separate `Challenge` object or `CHALLENGES` array to hand-write.
+
+### 3b. Translations
+
+Files: `frontend/src/locales/en/challenge.json` and `frontend/src/locales/fr/challenge.json`
+
+Add a `<translationKey>` entry with `title`, `description`, `character.name`, `character.description`, `tasks.<taskCamelKey>`, and `vocabulary.<vocabCamelKey>` (the English gloss/definition for each vocabulary word — one line per word, not a full sentence):
+
+```json
+"<translationKey>": {
+  "title": "<Challenge name>",
+  "description": "<short practice description>",
+  "character": { "name": "<English name>", "description": "<same or shorter blurb>" },
+  "tasks": { "<taskCamelKey>": "<Task label>" },
+  "vocabulary": { "<vocabCamelKey>": "<short English gloss>" }
+}
+```
+
+Both `en` and `fr` files must get the entry — the app has no fallback locale.
+
+`ChatPage` already maps `getChallenges(t)` — no page wiring unless the Challenges section is missing.
 
 ## Step 4 — Avatar
 
@@ -181,6 +205,7 @@ Already implemented — do **not** rebuild unless broken:
 
 - Challenges section + `ChallengeCard` on Chat page
 - `ChatModal` tasks panel (read-only; ticked by judge via `completed_task_ids`)
+- The vocabulary help button + `ChallengeVocabularyModal` on `ChatModal` (renders `vocabulary`, reuses `GrammarVocabularyTab` for the add-to-knowledge-base flow) — a new challenge only needs to supply the `vocabulary` data, not any UI
 - Stage directions via `getStageDirectionLines` (`[[...]]` only)
 - `judge_challenge_progress` + progress load/save/clear on chat / history / clear
 - Grammar check + correction threads for non–Teacher Wang characters
@@ -192,12 +217,14 @@ Restaurant waiter (`challenge-restaurant`):
 - Person: Waiter / 服务员
 - Progression: call waiter → order → eat → pay (refuse out-of-order)
 - Leave form: `[[The waiter leaves]][[...next action...]]您的菜来了。`
-- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register), `challenges.py`, `frontend/src/data/challenges.ts`, avatar `waiter`
+- Vocabulary: 服务员 (waiter), 菜单 (menu), 肉 (meat), 买单 (to pay the bill), 好吃 (tasty)
+- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register), `challenges.py`, `frontend/src/data/challenges.ts` (template incl. vocabulary), `frontend/src/locales/{en,fr}/challenge.json`, avatar `waiter`
 
 ## Done criteria
 
 - Card appears under **Challenges** as `<Name> (<中文名>)` with description
 - Opening it chats with the new agent id and shows the task list
+- A **Vocabulary** button appears after the task list; it opens a modal listing the challenge's vocabulary (character, pinyin, definition) with the same add-to-knowledge-base / already-known behavior as the grammar vocabulary tab
 - Completing tasks in conversation gets them auto-ticked by the judge
 - Stage directions render as italic non-bubble lines
 - Backend restarted so the new agent loads

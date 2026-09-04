@@ -93,6 +93,7 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
           void loadChallengeProgress();
         }}
         tasks={selectedChallenge?.tasks}
+        vocabulary={selectedChallenge?.vocabulary}
         challengeTitle={selectedChallenge?.title}
       />
 

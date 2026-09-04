@@ -11,6 +11,13 @@
       "askNoMeat": "Demandez s'ils ont un plat sans viande",
       "askBill": "Demandez l'addition",
       "payBill": "Payez l'addition"
+    },
+    "vocabulary": {
+      "fuwuyuan": "serveur",
+      "caidan": "menu",
+      "rou": "viande",
+      "maidan": "payer l'addition",
+      "haochi": "délicieux"
     }
   },
   "taxi": {
@@ -25,6 +32,13 @@
       "giveDestination": "Indiquez votre destination au chauffeur",
       "askFare": "Demandez le prix de la course",
       "payFare": "Payez la course"
+    },
+    "vocabulary": {
+      "chuzuche": "taxi",
+      "qu": "aller",
+      "duoshaoqian": "combien ça coûte",
+      "shifu": "maître (terme poli pour un chauffeur/ouvrier)",
+      "dao": "arriver"
     }
   },
   "hotel": {
@@ -39,6 +53,13 @@
       "checkIn": "Enregistrez-vous dans votre chambre",
       "askBreakfast": "Demandez à quelle heure commence le petit-déjeuner",
       "checkOut": "Quittez l'hôtel"
+    },
+    "vocabulary": {
+      "fangjian": "chambre",
+      "dingfang": "réserver une chambre",
+      "zaocan": "petit-déjeuner",
+      "tuifang": "quitter la chambre (check-out)",
+      "huzhao": "passeport"
     }
   },
   "shop": {
@@ -53,6 +74,13 @@
       "askPrice": "Demandez le prix d'une chemise",
       "askDifferentSize": "Demandez une autre taille",
       "payItem": "Payez l'article"
+    },
+    "vocabulary": {
+      "chenshan": "chemise",
+      "duoshaoqian": "combien ça coûte",
+      "haoma": "taille, numéro",
+      "huan": "échanger",
+      "xianjin": "argent liquide"
     }
   },
   "newFriend": {
@@ -66,6 +94,13 @@
       "greetFriend": "Dites bonjour à votre nouvel ami",
       "introduceName": "Présentez-vous par votre nom",
       "sayAge": "Dites-lui votre âge"
+    },
+    "vocabulary": {
+      "niHao": "bonjour",
+      "jiao": "s'appeler",
+      "mingzi": "nom, prénom",
+      "sui": "ans (âge)",
+      "renshi": "connaître, rencontrer"
     }
   }
 }

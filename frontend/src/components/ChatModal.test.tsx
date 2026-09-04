@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatModal from "./ChatModal";
 import type { ChatCharacter } from "./ChatCharacterCard";
+import { renderWithStore } from "../test/renderWithStore";
 
 const teacherWang: ChatCharacter = {
   id: "teacher-wang",
@@ -993,5 +994,98 @@ describe("ChatModal", () => {
     expect(body.context).toBe(
       "# The verb 是\n是 means 'to be' and links two nouns.",
     );
+  });
+
+  it("shows a vocabulary help button for challenges and opens the word list", async () => {
+    const user = userEvent.setup();
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [], completed_task_ids: [] }),
+          });
+        }
+
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(
+      <ChatModal
+        character={waiter}
+        onClose={() => undefined}
+        tasks={[{ id: "call-waiter", label: "Call the waiter" }]}
+        vocabulary={[
+          { id: "fuwuyuan", word: "服务员", pinyin: "fu2 wu4 yuan2", definition: "waiter" },
+        ]}
+        challengeTitle="Waiter"
+      />,
+    );
+
+    await screen.findByLabelText("Call the waiter");
+    expect(screen.queryByRole("dialog", { name: /Vocabulary/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Vocabulary" }));
+
+    expect(screen.getByText("Vocabulary for Waiter")).toBeInTheDocument();
+    expect(screen.getByText("服务员 - fu2 wu4 yuan2")).toBeInTheDocument();
+  });
+
+  it("does not show a vocabulary help button when no vocabulary is provided", async () => {
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [], completed_task_ids: [] }),
+          });
+        }
+
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(
+      <ChatModal
+        character={waiter}
+        onClose={() => undefined}
+        tasks={[{ id: "call-waiter", label: "Call the waiter" }]}
+        challengeTitle="Waiter"
+      />,
+    );
+
+    await screen.findByLabelText("Call the waiter");
+    expect(screen.queryByRole("button", { name: "Vocabulary" })).not.toBeInTheDocument();
   });
 });

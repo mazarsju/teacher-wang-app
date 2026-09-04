@@ -4,6 +4,7 @@ import type { ChatCharacter } from "./ChatCharacterCard";
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
+import ChallengeVocabularyModal from "./ChallengeVocabularyModal";
 import ConfirmModal from "./ConfirmModal";
 import GrammarMasteryModal from "./GrammarMasteryModal";
 import {
@@ -16,7 +17,7 @@ import {
   WarningIcon,
 } from "./icons";
 import { getTeacherWang } from "../data/chatCharacters";
-import type { ChallengeTask } from "../types/challenge";
+import type { ChallengeTask, ChallengeVocabularyWord } from "../types/challenge";
 import type {
   ChatMessage,
   ChatThreadContext,
@@ -51,6 +52,7 @@ type ChatModalProps = {
   thread?: ChatThreadContext;
   onThreadMessagesChange?: (messages: ChatMessage[]) => void;
   tasks?: ChallengeTask[];
+  vocabulary?: ChallengeVocabularyWord[];
   challengeTitle?: string;
   grammarSeverity?: GrammarSeverity;
   /** Skip server-side persistence for this conversation entirely (no history, no thread). */
@@ -105,6 +107,7 @@ export default function ChatModal({
   thread,
   onThreadMessagesChange,
   tasks,
+  vocabulary,
   challengeTitle,
   grammarSeverity,
   ephemeral = false,
@@ -132,6 +135,7 @@ export default function ChatModal({
     () => new Set(),
   );
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isVocabularyOpen, setIsVocabularyOpen] = useState(false);
   const [masteredGrammarPoints, setMasteredGrammarPoints] = useState<
     string[] | null
   >(null);
@@ -190,6 +194,7 @@ export default function ChatModal({
     setActiveCorrection(null);
     setCompletedTaskIds(new Set());
     setShowConfetti(false);
+    setIsVocabularyOpen(false);
     setMasteredGrammarPoints(null);
     wasChallengeCompleteRef.current = false;
     autoSentRef.current = false;
@@ -591,6 +596,18 @@ export default function ChatModal({
                   );
                 })}
               </ul>
+              {vocabulary && vocabulary.length > 0 && (
+                <div className={styles.chatModalTasksFooter}>
+                  <button
+                    type="button"
+                    className={styles.chatModalHelpButton}
+                    onClick={() => setIsVocabularyOpen(true)}
+                  >
+                    <QuestionIcon className={styles.chatModalHelpIcon} />
+                    <span>{t("chatModal.vocabularyHelpButton")}</span>
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
@@ -798,6 +815,15 @@ export default function ChatModal({
               ),
             );
           }}
+        />
+      )}
+
+      {vocabulary && vocabulary.length > 0 && (
+        <ChallengeVocabularyModal
+          isOpen={isVocabularyOpen}
+          challengeTitle={challengeTitle ?? character.name}
+          vocabulary={vocabulary}
+          onClose={() => setIsVocabularyOpen(false)}
         />
       )}
 

@@ -64,6 +64,7 @@
     "closeChat": "Fermer la discussion",
     "tasksTitle": "Tâches",
     "tasksTitleWithChallenge": "{{challengeTitle}} — tâches",
+    "vocabularyHelpButton": "Vocabulaire",
     "loadingConversation": "Chargement de la conversation...",
     "emptyState": "Démarrez une conversation avec {{name}}.",
     "typingIndicator": "{{name}} est en train d'écrire...",
@@ -81,6 +82,9 @@
       "clearHistory": "Échec de l'effacement de l'historique de discussion.",
       "correctionThreadUnavailable": "Cette note de grammaire ne peut pas continuer en tant que fil enregistré. Envoyez un nouveau message pour en créer un."
     }
+  },
+  "challengeVocabularyModal": {
+    "title": "Vocabulaire pour {{challengeTitle}}"
   },
   "grammarMasteryModal": {
     "title": "Grammaire maîtrisée !",

@@ -64,6 +64,7 @@
     "closeChat": "Close chat",
     "tasksTitle": "Tasks",
     "tasksTitleWithChallenge": "{{challengeTitle}} — tasks",
+    "vocabularyHelpButton": "Vocabulary",
     "loadingConversation": "Loading conversation...",
     "emptyState": "Start a conversation with {{name}}.",
     "typingIndicator": "{{name}} is typing...",
@@ -81,6 +82,9 @@
       "clearHistory": "Failed to clear chat history.",
       "correctionThreadUnavailable": "This grammar note can’t continue as a saved thread. Send a new message to create one."
     }
+  },
+  "challengeVocabularyModal": {
+    "title": "Vocabulary for {{challengeTitle}}"
   },
   "grammarMasteryModal": {
     "title": "Grammar mastered!",
