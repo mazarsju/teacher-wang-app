@@ -1,4 +1,5 @@
 .challenge-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14,6 +15,26 @@
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
+
+.challenge-card-hsk-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  color: #111827;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+/* Same per-level palette as .grammar-level-section-N in GrammarPage.module.css. */
+.challenge-card-hsk-badge-1 { background: #eef5ff; }
+.challenge-card-hsk-badge-2 { background: #eefbf3; }
+.challenge-card-hsk-badge-3 { background: #fff8e8; }
+.challenge-card-hsk-badge-4 { background: #fdf0f6; }
+.challenge-card-hsk-badge-5 { background: #f3f0fd; }
+.challenge-card-hsk-badge-6 { background: #eafbfa; }
 
 .challenge-card:hover {
   border-color: var(--app-sea);

@@ -64,6 +64,70 @@ CHAT_CHARACTERS = {
             CHALLENGE_SCENARIOS["challenge-new-friend"]
         ),
     },
+    "challenge-directions": {
+        "name": "Passerby",
+        "chinese_name": "路人",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-directions"]
+        ),
+    },
+    "challenge-train-station": {
+        "name": "Ticket Seller",
+        "chinese_name": "售票员",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-train-station"]
+        ),
+    },
+    "challenge-doctor": {
+        "name": "Doctor",
+        "chinese_name": "医生",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-doctor"]
+        ),
+    },
+    "challenge-job-interview": {
+        "name": "Interviewer",
+        "chinese_name": "面试官",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-job-interview"]
+        ),
+    },
+    "challenge-library": {
+        "name": "Librarian",
+        "chinese_name": "图书管理员",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-library"]
+        ),
+    },
+    "challenge-bus": {
+        "name": "Bus Driver",
+        "chinese_name": "公交车司机",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-bus"]
+        ),
+    },
+    "challenge-hair-salon": {
+        "name": "Hairdresser",
+        "chinese_name": "理发师",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-hair-salon"]
+        ),
+    },
+    "challenge-apartment": {
+        "name": "Landlord",
+        "chinese_name": "房东",
+        "retry_unknown_characters": True,
+        "system_prompt": build_challenge_system_prompt(
+            CHALLENGE_SCENARIOS["challenge-apartment"]
+        ),
+    },
 }
 
 

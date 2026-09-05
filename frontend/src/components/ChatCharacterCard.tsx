@@ -12,7 +12,15 @@ export type ChatCharacter = {
     | "waiter"
     | "taxi-driver"
     | "hotel-receptionist"
-    | "shop-assistant";
+    | "shop-assistant"
+    | "passerby"
+    | "ticket-seller"
+    | "doctor"
+    | "interviewer"
+    | "librarian"
+    | "bus-driver"
+    | "hairdresser"
+    | "landlord";
 };
 
 type ChatCharacterCardProps = {

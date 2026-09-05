@@ -24,6 +24,14 @@ SCENARIO_GATES = {
     "challenge-hotel": "[[The receptionist needs to be greeted]]",
     "challenge-shop": "[[The shop assistant needs to be greeted]]",
     "challenge-new-friend": "[[Xiao Ming needs to be greeted first]]",
+    "challenge-directions": "[[The passerby needs to be greeted or asked for help]]",
+    "challenge-train-station": "[[The ticket seller needs to be greeted]]",
+    "challenge-doctor": "[[The doctor needs to be greeted]]",
+    "challenge-job-interview": "[[The interviewer needs to be greeted]]",
+    "challenge-library": "[[The librarian needs to be greeted]]",
+    "challenge-bus": "[[The bus driver needs to be asked about the route]]",
+    "challenge-hair-salon": "[[The hairdresser needs to be greeted]]",
+    "challenge-apartment": "[[The landlord needs to be greeted]]",
 }
 
 

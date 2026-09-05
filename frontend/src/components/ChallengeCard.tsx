@@ -5,6 +5,10 @@ import type { Challenge } from "../types/challenge";
 import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
 import styles from "./ChallengeCard.module.css";
 
+// Matches LEVEL_PALETTE_SIZE in GrammarPage.tsx, so badges reuse the same
+// per-level colors as the grammar level sections.
+const HSK_BADGE_PALETTE_SIZE = 6;
+
 type ChallengeCardProps = {
   challenge: Challenge;
   completed?: boolean;
@@ -18,6 +22,8 @@ export default function ChallengeCard({
 }: ChallengeCardProps) {
   const { t } = useTranslation("chat");
   const { character } = challenge;
+  const badgePaletteIndex =
+    ((Math.max(challenge.hskLevel, 1) - 1) % HSK_BADGE_PALETTE_SIZE) + 1;
 
   return (
     <button
@@ -37,6 +43,13 @@ export default function ChallengeCard({
           : undefined
       }
     >
+      <span
+        className={`${styles.challengeCardHskBadge} ${
+          styles[`challenge-card-hsk-badge-${badgePaletteIndex}`] ?? ""
+        }`}
+      >
+        {t("challengeCard.hskLevelBadge", { level: challenge.hskLevel })}
+      </span>
       <div className={styles.challengeCardAvatarWrap}>
         <ChatCharacterAvatar variant={character.avatarVariant} />
         {completed && (

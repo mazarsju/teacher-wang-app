@@ -41,6 +41,13 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
   const currentHskLevel = useAppSelector(
     (state) => state.hsk.status?.current_level ?? 0,
   );
+  const maxHskLevel = useAppSelector((state) => state.hsk.status?.max_level);
+  // Achieved level is already done; the learner is aiming at the next one
+  // (capped at the catalog max), so that level's challenges are available too.
+  const targetHskLevel = Math.min(
+    currentHskLevel + 1,
+    maxHskLevel ?? currentHskLevel + 1,
+  );
   const hasEnoughCharacters = characterCount >= KB_CHARACTER_THRESHOLD;
   const isNewFriendChallengeDone = completedChallengeIds.has(
     NEW_FRIEND_CHALLENGE_ID,
@@ -56,7 +63,7 @@ export default function ChatPage({ onNavigate }: ChatPageProps) {
   const visibleChallenges = hasEnoughCharacters
     ? challenges.filter(
         (challenge) =>
-          challenge.hskLevel <= currentHskLevel &&
+          challenge.hskLevel <= targetHskLevel &&
           (challenge.id !== NEW_FRIEND_CHALLENGE_ID || !isNewFriendChallengeDone),
       )
     : [];

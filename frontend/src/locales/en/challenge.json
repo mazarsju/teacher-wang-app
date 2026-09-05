@@ -37,7 +37,6 @@
       "chuzuche": "taxi",
       "qu": "to go",
       "duoshaoqian": "how much money",
-      "shifu": "master (polite term for a driver/worker)",
       "dao": "to arrive"
     }
   },
@@ -101,6 +100,174 @@
       "mingzi": "name",
       "sui": "years old",
       "renshi": "to know, to meet"
+    }
+  },
+  "directions": {
+    "title": "Passerby",
+    "description": "Stop a passerby and ask for directions",
+    "character": {
+      "name": "Passerby",
+      "description": "Stop a passerby and ask for directions"
+    },
+    "tasks": {
+      "greetPasserby": "Greet the passerby or ask for help",
+      "askLocation": "Ask where a place is",
+      "askDirections": "Ask how to get there",
+      "thankPasserby": "Thank the passerby"
+    },
+    "vocabulary": {
+      "qingwen": "excuse me, may I ask",
+      "nali": "where",
+      "zenmezou": "how to get there",
+      "yuan": "far",
+      "xiexie": "thank you"
+    }
+  },
+  "trainStation": {
+    "title": "Ticket Seller",
+    "description": "Buy a train ticket and ask when it departs",
+    "character": {
+      "name": "Ticket Seller",
+      "description": "Buy a train ticket and ask when it departs"
+    },
+    "tasks": {
+      "greetTicketSeller": "Greet the ticket seller",
+      "buyTicket": "Ask for a ticket to your destination",
+      "askDepartureTime": "Ask what time the train departs",
+      "payTicket": "Pay for the ticket"
+    },
+    "vocabulary": {
+      "chepiao": "ticket",
+      "huochezhan": "train station",
+      "chufa": "to depart",
+      "zuowei": "seat",
+      "daoda": "to arrive"
+    }
+  },
+  "doctor": {
+    "title": "Doctor",
+    "description": "Describe your symptoms and ask the doctor for advice",
+    "character": {
+      "name": "Doctor",
+      "description": "Describe your symptoms and ask the doctor for advice"
+    },
+    "tasks": {
+      "greetDoctor": "Greet the doctor",
+      "describeSymptoms": "Describe how you feel",
+      "askForMedicine": "Ask what medicine to take",
+      "askRestDays": "Ask how many days you need to rest"
+    },
+    "vocabulary": {
+      "ganmao": "to catch a cold",
+      "fashao": "fever",
+      "kesou": "cough",
+      "guahao": "to register (at a hospital/clinic)",
+      "xiuxi": "to rest"
+    }
+  },
+  "jobInterview": {
+    "title": "Job Interview",
+    "description": "Interview for a job and ask about salary and next steps",
+    "character": {
+      "name": "Interviewer",
+      "description": "Interview for a job and ask about salary and next steps"
+    },
+    "tasks": {
+      "greetInterviewer": "Greet the interviewer",
+      "introduceExperience": "Talk about your work experience",
+      "askSalary": "Ask about the salary",
+      "askResult": "Ask when you will hear back about the result"
+    },
+    "vocabulary": {
+      "mianshi": "interview",
+      "jingyan": "experience",
+      "gongzi": "salary",
+      "zhiwei": "position",
+      "hetong": "contract"
+    }
+  },
+  "library": {
+    "title": "Librarian",
+    "description": "Borrow a book from the library",
+    "character": {
+      "name": "Librarian",
+      "description": "Borrow a book from the library"
+    },
+    "tasks": {
+      "greetLibrarian": "Greet the librarian",
+      "borrowBook": "Ask to borrow a book",
+      "askReturnDate": "Ask when you need to return it",
+      "thankLibrarian": "Thank the librarian"
+    },
+    "vocabulary": {
+      "shu": "book",
+      "jie": "to borrow",
+      "huan": "to return (something)",
+      "ka": "card",
+      "xiexie": "thank you"
+    }
+  },
+  "bus": {
+    "title": "Bus Driver",
+    "description": "Ask the bus driver about your route and when to get off",
+    "character": {
+      "name": "Bus Driver",
+      "description": "Ask the bus driver about your route and when to get off"
+    },
+    "tasks": {
+      "askBusRoute": "Ask if this bus goes to your destination",
+      "askStops": "Ask how many stops it takes",
+      "askGetOffStop": "Ask when to get off",
+      "thankDriver": "Thank the driver when getting off"
+    },
+    "vocabulary": {
+      "gongjiaoche": "bus",
+      "chezhan": "bus stop, station",
+      "shangche": "to get on (a vehicle)",
+      "xiache": "to get off (a vehicle)",
+      "zhan": "stop"
+    }
+  },
+  "hairSalon": {
+    "title": "Hairdresser",
+    "description": "Get a haircut and describe how you want it",
+    "character": {
+      "name": "Hairdresser",
+      "description": "Get a haircut and describe how you want it"
+    },
+    "tasks": {
+      "greetHairdresser": "Greet the hairdresser",
+      "askForHaircut": "Say you want a haircut",
+      "describeLength": "Say how short or long you want it",
+      "payHaircut": "Pay for the haircut"
+    },
+    "vocabulary": {
+      "lifa": "to get a haircut",
+      "toufa": "hair",
+      "xi": "to wash",
+      "duan": "short",
+      "chang": "long"
+    }
+  },
+  "apartment": {
+    "title": "Landlord",
+    "description": "Ask about renting an apartment",
+    "character": {
+      "name": "Landlord",
+      "description": "Ask about renting an apartment"
+    },
+    "tasks": {
+      "greetLandlord": "Greet the landlord",
+      "askRent": "Ask how much the rent is",
+      "askArea": "Ask how big the apartment is",
+      "confirmRental": "Say you want to rent the apartment"
+    },
+    "vocabulary": {
+      "fangzu": "rent",
+      "fangdong": "landlord",
+      "hetong": "contract",
+      "zhongjie": "agent, agency",
+      "mianji": "floor area"
     }
   }
 }

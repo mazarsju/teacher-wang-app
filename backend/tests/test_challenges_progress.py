@@ -11,6 +11,14 @@ ALL_CHALLENGE_IDS = (
     "challenge-hotel",
     "challenge-shop",
     "challenge-new-friend",
+    "challenge-directions",
+    "challenge-train-station",
+    "challenge-doctor",
+    "challenge-job-interview",
+    "challenge-library",
+    "challenge-bus",
+    "challenge-hair-salon",
+    "challenge-apartment",
 )
 
 

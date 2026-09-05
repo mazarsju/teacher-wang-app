@@ -23,8 +23,8 @@ const UNLOCKED_STATE = {
   },
   hsk: {
     status: {
-      current_level: 2,
-      next_level: 3,
+      current_level: 3,
+      next_level: 4,
       characters_to_next_level: 10,
       progress_to_next_level: 50,
       missing_characters: [],
@@ -100,8 +100,8 @@ describe("ChatPage", () => {
 
     const challengeButtons = [
       screen.getByRole("button", { name: /Xiao Ming/ }),
-      screen.getByRole("button", { name: /Waiter/ }),
       screen.getByRole("button", { name: /Taxi Driver/ }),
+      screen.getByRole("button", { name: /Waiter/ }),
       screen.getByRole("button", { name: /Hotel Receptionist/ }),
       screen.getByRole("button", { name: /Shop Assistant/ }),
     ];
@@ -135,6 +135,12 @@ describe("ChatPage", () => {
     expect(
       screen.getByText("Buy a shirt and practice shopping vocabulary"),
     ).toBeInTheDocument();
+
+    expect(within(challengeButtons[0]).getByText("HSK 0")).toBeInTheDocument();
+    expect(within(challengeButtons[1]).getByText("HSK 1")).toBeInTheDocument();
+    expect(within(challengeButtons[2]).getByText("HSK 2")).toBeInTheDocument();
+    expect(within(challengeButtons[3]).getByText("HSK 2")).toBeInTheDocument();
+    expect(within(challengeButtons[4]).getByText("HSK 3")).toBeInTheDocument();
   });
 
   it("marks completed challenges on the card", async () => {
@@ -366,7 +372,7 @@ describe("ChatPage", () => {
     const challengeSection = container.querySelector(
       ".challenge-card-grid",
     ) as HTMLElement;
-    expect(within(challengeSection).getAllByRole("button")).toHaveLength(4);
+    expect(within(challengeSection).getAllByRole("button")).toHaveLength(12);
     expect(
       within(challengeSection).queryByText("(小明)"),
     ).not.toBeInTheDocument();
@@ -408,11 +414,11 @@ describe("ChatPage", () => {
     expect(onNavigate).toHaveBeenCalledWith("knowledge-base");
   });
 
-  it("hides challenges above the user's achieved HSK level, keeping HSK0 New Friend visible", () => {
+  it("hides challenges above the user's achieved HSK level + 1, keeping HSK0 New Friend visible", () => {
     renderWithStore(<ChatPage />, {
       preloadedState: {
         ...UNLOCKED_STATE,
-        hsk: { status: { ...UNLOCKED_STATE.hsk.status, current_level: 1 } },
+        hsk: { status: { ...UNLOCKED_STATE.hsk.status, current_level: 0 } },
       },
     });
 

@@ -11,7 +11,8 @@
   },
   "challengeCard": {
     "completedAriaLabel": "{{name}} ({{chineseName}}), completed",
-    "completedLabel": "Completed"
+    "completedLabel": "Completed",
+    "hskLevelBadge": "HSK {{level}}"
   },
   "chatCharacters": {
     "teacherWang": {
