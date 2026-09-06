@@ -46,9 +46,20 @@ Publishes one HSK grammar rule as a static, crawlable page at `teacherwang.xyz/g
    python3 -m http.server 8123 --directory public   # or any static server
    ```
 
-   Open `http://localhost:8123/grammar/<grammar-id>/` and check: all 3 tabs render and switch, an exercise can be answered and validated with correct/incorrect feedback, the score screen appears after the last question, the vocabulary table lists real words, and the header's "← teacherwang.xyz" link points at the real site. Compare side-by-side against the same rule in the logged-in app if unsure about visual parity.
+   Open `http://localhost:8123/grammar/<grammar-id>/` and check: all 3 tabs render and switch, an exercise can be answered and validated with correct/incorrect feedback, the score screen appears after the last question, the vocabulary table lists real words, the limited-preview banner shows between the title and the tabs, and the header's "View all lessons" button links to `/curriculum/`. Compare side-by-side against the same rule in the logged-in app if unsure about visual parity.
 
-4. **Deploy**: same pipeline as any other frontend change — `.cursor/skills/update-ecr-images/scripts/push.sh frontend` (or the plain `docker build` + ECS force-deploy steps in that skill) once committed.
+   Local links use the real `https://teacherwang.xyz` absolute URL — clicking "View all lessons" or "Sign up free" while testing on `localhost` will jump to the live site, not a local page. That's correct for production; just navigate back to `localhost` to keep testing.
+
+4. **Regenerate the curriculum page** so it picks up the newly-published lesson as clickable:
+
+   ```bash
+   python3 -m backend.jobs.generate_public_curriculum   # no DB needed, just content manifests
+   npm run generate:public-curriculum                   # writes public/curriculum/
+   ```
+
+   `generate-public-curriculum-page.ts` decides whether an HSK1 lesson is clickable by checking whether `public/grammar/<id>/index.html` already exists on disk — so this step must be re-run after every new lesson (or it'll still show the just-published one as locked).
+
+5. **Deploy**: same pipeline as any other frontend change — `.cursor/skills/update-ecr-images/scripts/push.sh frontend` (or the plain `docker build` + ECS force-deploy steps in that skill) once committed.
 
 ## Extending the CSS/markup set
 
@@ -65,7 +76,16 @@ These exist in the real page and must **not** appear here — that's the entire 
 - Saving quiz score (`completeGrammarPoint` API) — the score gauge still shows locally, it just isn't persisted anywhere
 - "More explanation" button and the AI-checks-your-answer fallback for translation/transform exercises (`sendChatMessage` API) — those exercises only get the deterministic (exact-match) check
 - "Add" button on vocabulary rows (`createWord`/`bulkCreateCharacters` API)
-- The authenticated app's `Navbar` (Home/Knowledge Base/Chat/Preferences/Admin) — replaced by a single link back to `https://teacherwang.xyz/`
+- The authenticated app's `Navbar` (Home/Knowledge Base/Chat/Preferences/Admin) — replaced by a "View all lessons" link to `/curriculum/`
+
+## Companion page: /curriculum/
+
+`generate-public-curriculum-page.ts` (`npm run generate:public-curriculum`, fed by `python3 -m backend.jobs.generate_public_curriculum`) renders the full HSK1–4 curriculum as collapsible `<details>` sections (same as the authenticated `GrammarPage.tsx`, native HTML disclosure — no JS needed to expand/collapse). Every HSK1 grammar row with a published page is a real link to it; every other row (other levels, and every writing-practice row regardless of level) is shown locked/non-clickable, matching the real app's `.grammar-row-locked` look. It has its own self-contained `public/curriculum/curriculum.css` (same real-file-concatenation approach as `grammar.css`) so it doesn't depend on a grammar page having been generated first.
+
+## Do not skip
+
+- The limited-preview banner (reuses the app's real `Banner` component styling) between the page title and the tabs, linking to `https://teacherwang.xyz/`
+- The `app-main` padding wrapper (`App.module.css`) around the page — without it the content sits flush against the top of the viewport
 
 ## Done criteria
 
@@ -73,5 +93,7 @@ These exist in the real page and must **not** appear here — that's the entire 
 - Explanation tab shows fully formatted content with zero JS required
 - Exercises tab lets you answer every exercise type present and reach a score screen, entirely client-side
 - Vocabulary tab lists real word/pinyin/definition rows with no "Add" button
+- The limited-preview banner is visible between the title and the tabs
 - No `fetch`/`XMLHttpRequest` to `/api/...` anywhere in the page (check the Network tab — should be empty other than the HTML/CSS/JS/favicon)
 - `public/sitemap.xml` includes the new URL
+- `public/curriculum/` regenerated so the new lesson shows as clickable there too

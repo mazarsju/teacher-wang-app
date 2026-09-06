@@ -305,6 +305,18 @@ def list_grammar_manifests(hsk_level: int | None = None) -> dict[str, dict]:
     }
 
 
+def list_writing_practice_manifests() -> dict[str, dict]:
+    """Maps folder key -> parsed overview.yaml for every writing-practice topic.
+
+    Same source selection as list_grammar_manifests (GRAMMAR_CONTENT_S3_PATH or
+    GRAMMAR_CONTENT_S3_BUCKET), no database involved.
+    """
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        return _load_manifests_from_local(Path(local_path), WRITING_PRACTICE_MANIFEST_FILENAME)
+    return _load_manifests(_s3_client(), _bucket(), WRITING_PRACTICE_MANIFEST_SUFFIX)
+
+
 def fetch_grammar_content(s3_key: str, language: str = "en", client=None) -> dict:
     """Fetches a grammar point's explanation and exercises for ``language``.
 

@@ -127,7 +127,7 @@ function renderPage(point: GrammarPointExport): string {
       <header class="page-header">
         <h1>${escapeHtml(point.title)}</h1>
         <div class="page-header-actions">
-          <a class="btn btn-cancel btn-page" href="${SITE_URL}/">&larr; teacherwang.xyz</a>
+          <a class="btn btn-cancel btn-page" href="${SITE_URL}/curriculum/">View all lessons</a>
         </div>
       </header>
       <div class="page-content">
@@ -169,6 +169,7 @@ function updateSitemap() {
 
   const urls = [
     { loc: `${SITE_URL}/`, changefreq: "monthly", priority: "1.0" },
+    { loc: `${SITE_URL}/curriculum/`, changefreq: "weekly", priority: "0.8" },
     ...grammarIds.map((id) => ({
       loc: `${SITE_URL}/grammar/${id}/`,
       changefreq: "monthly",

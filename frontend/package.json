@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "generate:public-grammar-page": "tsx scripts/generate-public-grammar-page.ts"
+    "generate:public-grammar-page": "tsx scripts/generate-public-grammar-page.ts",
+    "generate:public-curriculum": "tsx scripts/generate-public-curriculum-page.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",
