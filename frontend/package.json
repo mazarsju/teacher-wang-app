@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "generate:public-grammar-page": "tsx scripts/generate-public-grammar-page.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",
@@ -28,6 +29,7 @@
     "@vitejs/plugin-react": "^4.4.1",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",
+    "tsx": "^4.23.13",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^4.1.10"

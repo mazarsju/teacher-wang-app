@@ -282,6 +282,29 @@ def _read_s3_object(client, bucket: str, key: str) -> str | None:
         raise
 
 
+def list_grammar_manifests(hsk_level: int | None = None) -> dict[str, dict]:
+    """Maps folder key -> parsed grammar.yaml, optionally filtered to one HSK level.
+
+    Reads from GRAMMAR_CONTENT_S3_PATH when set, otherwise GRAMMAR_CONTENT_S3_BUCKET
+    — same source selection as reload_grammar_content, but skips the database
+    entirely (used by scripts that just need the content, e.g. static page export).
+    """
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        manifests = _load_manifests_from_local(Path(local_path), GRAMMAR_MANIFEST_FILENAME)
+    else:
+        bucket = _bucket()
+        manifests = _load_manifests(_s3_client(), bucket, GRAMMAR_MANIFEST_SUFFIX)
+
+    if hsk_level is None:
+        return manifests
+    return {
+        folder_key: manifest
+        for folder_key, manifest in manifests.items()
+        if manifest.get("hsk_level") == hsk_level
+    }
+
+
 def fetch_grammar_content(s3_key: str, language: str = "en", client=None) -> dict:
     """Fetches a grammar point's explanation and exercises for ``language``.
 
