@@ -16,9 +16,10 @@ def record_grammar_usage():
     point used in 3 sentences appears 3 times), matching how
     POST /grammar-points/check increments per call."""
     user = current_user()
+    empty_response = {"new_grammar_points_mastered": [], "updated_grammar_points": []}
 
     if user.plan == DEFAULT_USER_PLAN:
-        return {"new_grammar_points_mastered": []}, 200
+        return empty_response, 200
 
     body = request.get_json(silent=True) or {}
     grammar_ids = body.get("grammar_ids")
@@ -26,7 +27,7 @@ def record_grammar_usage():
         return {"error": "grammar_ids must be a list of strings"}, 400
 
     if not grammar_ids:
-        return {"new_grammar_points_mastered": []}, 200
+        return empty_response, 200
 
     progress_rows = UserGrammarProgress.query.filter(
         UserGrammarProgress.user_id == user.shortid,
@@ -35,6 +36,7 @@ def record_grammar_usage():
     progress_by_id = {progress.grammar_id: progress for progress in progress_rows}
 
     new_grammar_points_mastered: list[str] = []
+    updated_by_id: dict[str, dict] = {}
     for grammar_id in grammar_ids:
         progress = progress_by_id.get(grammar_id)
         if progress is None or progress.status != "DONE":
@@ -44,6 +46,15 @@ def record_grammar_usage():
             progress.status = "MASTERED"
             new_grammar_points_mastered.append(grammar_id)
 
+        updated_by_id[grammar_id] = {
+            "id": grammar_id,
+            "status": progress.status,
+            "usage_count": progress.usage_in_real_life,
+        }
+
     db.session.commit()
 
-    return {"new_grammar_points_mastered": new_grammar_points_mastered}, 200
+    return {
+        "new_grammar_points_mastered": new_grammar_points_mastered,
+        "updated_grammar_points": list(updated_by_id.values()),
+    }, 200

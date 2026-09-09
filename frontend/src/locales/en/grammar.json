@@ -5,6 +5,7 @@
     "loadError": "Failed to load grammar points.",
     "levelSummary": "HSK {{level}} ({{levelLabel}})",
     "practiceLabel": "Practice: {{title}}",
+    "practiceCount": "You've used this grammar structure in real conversation {{count}}/{{total}} times. Keep using it to move this lesson to \"Mastered\".",
     "status": {
       "todo": "Not started",
       "wip": "In progress",

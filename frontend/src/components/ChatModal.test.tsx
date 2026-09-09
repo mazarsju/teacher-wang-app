@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatModal from "./ChatModal";
 import type { ChatCharacter } from "./ChatCharacterCard";
@@ -54,7 +54,7 @@ describe("ChatModal", () => {
   it("sends a message and displays the assistant reply", async () => {
     const user = userEvent.setup();
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     expect(
       await screen.findByText("Start a conversation with Teacher Wang."),
@@ -116,6 +116,7 @@ describe("ChatModal", () => {
             json: async () => ({
               grammar_points_covered: [],
               new_grammar_points_mastered: [],
+              updated_grammar_points: [],
             }),
           });
         }
@@ -127,7 +128,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "我很好");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -140,6 +141,80 @@ describe("ChatModal", () => {
         body: JSON.stringify({ text: "我很好" }),
       }),
     );
+  });
+
+  it("patches the grammar store with the updated status and usage count from the check", async () => {
+    const user = userEvent.setup();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+        }
+
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: { role: "assistant", content: "你好！" },
+              correction: { severity: "none" },
+            }),
+          });
+        }
+
+        if (url.endsWith("/grammar-points/check") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              grammar_points_covered: ["Ba construction"],
+              new_grammar_points_mastered: [],
+              updated_grammar_points: [
+                { id: "g1", status: "DONE", usage_count: 1 },
+              ],
+            }),
+          });
+        }
+
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    const { store } = renderWithStore(
+      <ChatModal character={teacherWang} onClose={() => undefined} />,
+      {
+        preloadedState: {
+          grammar: {
+            items: [
+              {
+                id: "g1",
+                hsk_level: 1,
+                index: 1,
+                title: "Ba construction",
+                prerequisites: [],
+                status: "DONE",
+                score: 90,
+                usage_count: 0,
+              },
+            ],
+            writingPractices: [],
+            loaded: true,
+            quizInProgress: false,
+          },
+        },
+      },
+    );
+
+    await user.type(screen.getByLabelText("Message"), "我把书放下了");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() =>
+      expect(store.getState().grammar.items[0].usage_count).toBe(1),
+    );
+    expect(store.getState().grammar.items[0].status).toBe("DONE");
   });
 
   it("opens a mastery modal listing newly mastered grammar points", async () => {
@@ -174,6 +249,9 @@ describe("ChatModal", () => {
             json: async () => ({
               grammar_points_covered: ["Ba construction"],
               new_grammar_points_mastered: ["Ba construction"],
+              updated_grammar_points: [
+                { id: "g1", status: "MASTERED", usage_count: 3 },
+              ],
             }),
           });
         }
@@ -185,7 +263,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "我把书放下了");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -223,7 +301,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     expect(await screen.findByText("Earlier message")).toBeInTheDocument();
     expect(screen.getByText("Earlier reply")).toBeInTheDocument();
@@ -276,7 +354,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={xiaoMing} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={xiaoMing} onClose={() => undefined} />);
 
     expect(await screen.findByText("我是很好")).toBeInTheDocument();
     await user.click(
@@ -326,7 +404,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     expect(await screen.findByText("Earlier message")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Clear chat history" }));
@@ -379,7 +457,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     expect(await screen.findByText("Earlier message")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Clear chat history" }));
@@ -415,7 +493,7 @@ describe("ChatModal", () => {
 
     const user = userEvent.setup();
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "Hello");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -452,7 +530,7 @@ describe("ChatModal", () => {
 
     const user = userEvent.setup();
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "你好");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -513,7 +591,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={xiaoMing} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={xiaoMing} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "我是很好");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -587,7 +665,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(
+    renderWithStore(
       <ChatModal
         character={waiter}
         onClose={() => undefined}
@@ -655,7 +733,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={waiter} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={waiter} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "你好");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -704,7 +782,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "你好");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -750,7 +828,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "你好");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -810,7 +888,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(<ChatModal character={waiter} onClose={() => undefined} />);
+    renderWithStore(<ChatModal character={waiter} onClose={() => undefined} />);
 
     await user.type(screen.getByLabelText("Message"), "买单");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -861,7 +939,7 @@ describe("ChatModal", () => {
       }),
     );
 
-    render(
+    renderWithStore(
       <ChatModal
         character={waiter}
         onClose={() => undefined}
@@ -893,7 +971,7 @@ describe("ChatModal", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { container } = render(
+    const { container } = renderWithStore(
       <ChatModal
         character={teacherWang}
         onClose={() => undefined}
@@ -957,7 +1035,7 @@ describe("ChatModal", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(
+    renderWithStore(
       <ChatModal
         character={teacherWang}
         onClose={() => undefined}

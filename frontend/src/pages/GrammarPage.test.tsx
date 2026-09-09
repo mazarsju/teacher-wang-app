@@ -11,6 +11,7 @@ type StubGrammarPoint = {
   prerequisites: string[];
   status: string;
   score?: number | null;
+  usage_count?: number;
 };
 
 type StubWritingPractice = {
@@ -203,6 +204,56 @@ describe("GrammarPage", () => {
     renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
 
     await waitFor(() => expect(screen.getByText("82%")).toBeInTheDocument());
+  });
+
+  it("shows a practice-count star next to a DONE lesson, but not for other statuses", async () => {
+    stubGrammarPointsFetch([
+      {
+        id: "1|Finished",
+        hsk_level: 1,
+        index: 1,
+        title: "Finished Topic",
+        prerequisites: [],
+        status: "DONE",
+        usage_count: 2,
+      },
+      {
+        id: "1|Todo",
+        hsk_level: 1,
+        index: 2,
+        title: "Todo Topic",
+        prerequisites: [],
+        status: "TODO",
+      },
+      {
+        id: "1|Mastered",
+        hsk_level: 1,
+        index: 3,
+        title: "Mastered Topic",
+        prerequisites: [],
+        status: "MASTERED",
+      },
+    ]);
+
+    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+
+    await waitFor(() => expect(screen.getByText("Completed")).toBeInTheDocument());
+
+    expect(
+      screen.getByTitle(
+        'You\'ve used this grammar structure in real conversation 2/3 times. Keep using it to move this lesson to "Mastered".',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("button", { name: /Todo Topic/ })).queryByTitle(
+        /real conversation/,
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("button", { name: /Mastered Topic/ })).queryByTitle(
+        /real conversation/,
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a blue, star-labeled badge and blue score for a MASTERED lesson", async () => {

@@ -5,6 +5,7 @@
     "loadError": "Échec du chargement des points de grammaire.",
     "levelSummary": "HSK {{level}} ({{levelLabel}})",
     "practiceLabel": "Pratique : {{title}}",
+    "practiceCount": "Vous avez utilisé cette structure grammaticale en conditions réelles {{count}}/{{total}} fois. Continuez à l'utiliser pour faire passer cette leçon au statut « Maîtrisé ».",
     "status": {
       "todo": "Non commencé",
       "wip": "En cours",

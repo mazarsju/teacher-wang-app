@@ -13,6 +13,8 @@ import type { CoveredGrammarPoint, WritingSentenceCheck } from "../types/writing
 import { renderFormattedText } from "../utils/formatMarkdownText";
 import { detectGrammarPoints, recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
+import { useAppDispatch } from "../store/hooks";
+import { applyGrammarPointUsageUpdates } from "../store/slices/grammarSlice";
 import { splitIntoSentences } from "../utils/writing/splitSentences";
 import {
   checkWritingSentence,
@@ -106,25 +108,11 @@ function buildReviewSummary(checks: WritingSentenceCheck[], allCorrect: boolean)
   };
 }
 
-// Only called once the whole text is correct (see settleReview) — a point
-// used while other sentences still have mistakes doesn't get credit yet.
-// One id per usage (not deduped), matching how the backend increments per
-// occurrence.
-function creditGrammarUsage(checks: WritingSentenceCheck[]): void {
-  const grammarIds = checks.flatMap((sentence) =>
-    sentence.grammarPointsCovered.map((point) => point.id),
-  );
-  if (grammarIds.length === 0) return;
-  recordGrammarUsage(grammarIds).catch(() => {
-    // Best-effort: the review modal already celebrated the correct text;
-    // a failed usage recording shouldn't surface as a user-facing error.
-  });
-}
-
 export default function WritingPracticeDetailPage({
   topicId,
   onBack,
 }: WritingPracticeDetailPageProps) {
+  const dispatch = useAppDispatch();
   const { t } = useTranslation("writing");
   const { t: tChat } = useTranslation("chat");
   const [topicTitle, setTopicTitle] = useState<string | null>(null);
@@ -181,6 +169,27 @@ export default function WritingPracticeDetailPage({
       cancelled = true;
     };
   }, [topicId, t]);
+
+  // Only called once the whole text is correct (see settleReview) — a point
+  // used while other sentences still have mistakes doesn't get credit yet.
+  // One id per usage (not deduped), matching how the backend increments per
+  // occurrence.
+  function creditGrammarUsage(checks: WritingSentenceCheck[]): void {
+    const grammarIds = checks.flatMap((sentence) =>
+      sentence.grammarPointsCovered.map((point) => point.id),
+    );
+    if (grammarIds.length === 0) return;
+    recordGrammarUsage(grammarIds)
+      .then((result) => {
+        if (result.updated_grammar_points.length > 0) {
+          dispatch(applyGrammarPointUsageUpdates(result.updated_grammar_points));
+        }
+      })
+      .catch(() => {
+        // Best-effort: the review modal already celebrated the correct text;
+        // a failed usage recording shouldn't surface as a user-facing error.
+      });
+  }
 
   // Best-effort, like creditGrammarUsage above: archiving is a bonus record
   // of a completed text, not something that should surface as a user-facing

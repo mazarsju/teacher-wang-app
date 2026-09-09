@@ -8,6 +8,7 @@ export type GrammarPoint = {
   prerequisites: string[];
   status: string;
   score: number | null;
+  usage_count: number;
 };
 
 export type MultipleChoiceExercise = {

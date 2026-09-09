@@ -54,6 +54,18 @@ const grammarSlice = createSlice({
     setGrammarQuizInProgress(state, action: PayloadAction<boolean>) {
       state.quizInProgress = action.payload;
     },
+    applyGrammarPointUsageUpdates(
+      state,
+      action: PayloadAction<{ id: string; status: string; usage_count: number }[]>,
+    ) {
+      for (const update of action.payload) {
+        const point = state.items.find((item) => item.id === update.id);
+        if (point) {
+          point.status = update.status;
+          point.usage_count = update.usage_count;
+        }
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(resetAppData, () => initialState);
@@ -66,5 +78,6 @@ export const {
   setGrammarPointStatus,
   setGrammarPointScore,
   setGrammarQuizInProgress,
+  applyGrammarPointUsageUpdates,
 } = grammarSlice.actions;
 export default grammarSlice.reducer;

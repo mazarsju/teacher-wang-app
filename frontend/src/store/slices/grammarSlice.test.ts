@@ -1,5 +1,6 @@
 import { resetAppData } from "../thunks/syncAppData";
 import reducer, {
+  applyGrammarPointUsageUpdates,
   setGrammarData,
   setGrammarPointScore,
   setGrammarPointStatus,
@@ -85,6 +86,36 @@ describe("grammarSlice", () => {
     );
 
     expect(state.items).toEqual([{ ...SAMPLE_POINT, status: "DONE", score: 82 }]);
+  });
+
+  it("applies real-life-usage updates (status and usage count) to matching grammar points", () => {
+    const populated = reducer(
+      undefined,
+      setGrammarPoints([SAMPLE_POINT, { ...SAMPLE_POINT, id: "other" }]),
+    );
+
+    const state = reducer(
+      populated,
+      applyGrammarPointUsageUpdates([
+        { id: SAMPLE_POINT.id, status: "MASTERED", usage_count: 3 },
+      ]),
+    );
+
+    expect(state.items).toEqual([
+      { ...SAMPLE_POINT, status: "MASTERED", usage_count: 3 },
+      { ...SAMPLE_POINT, id: "other" },
+    ]);
+  });
+
+  it("ignores a usage update for an unknown grammar point id", () => {
+    const populated = reducer(undefined, setGrammarPoints([SAMPLE_POINT]));
+
+    const state = reducer(
+      populated,
+      applyGrammarPointUsageUpdates([{ id: "unknown", status: "DONE", usage_count: 1 }]),
+    );
+
+    expect(state.items).toEqual([SAMPLE_POINT]);
   });
 
   it("tracks whether a quiz is in progress", () => {

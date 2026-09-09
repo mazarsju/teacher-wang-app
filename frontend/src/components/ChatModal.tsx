@@ -32,6 +32,8 @@ import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
 import { renderFormattedText } from "../utils/formatMarkdownText";
 import { checkGrammarPoint } from "../utils/grammar/grammarPointsApi";
+import { useAppDispatch } from "../store/hooks";
+import { applyGrammarPointUsageUpdates } from "../store/slices/grammarSlice";
 import chatCharacterCardStyles from "./ChatCharacterCard.module.css";
 import styles from "./ChatModal.module.css";
 
@@ -114,6 +116,7 @@ export default function ChatModal({
   autoSendInitialMessage = false,
   topicContext,
 }: ChatModalProps) {
+  const dispatch = useAppDispatch();
   const { t } = useTranslation("common");
   const { t: tChat } = useTranslation("chat");
   const grammarSeverityLabels: Record<GrammarSeverity, string> = {
@@ -302,6 +305,9 @@ export default function ChatModal({
           if (lastUserMessage?.role === "user") {
             checkGrammarPoint(lastUserMessage.content)
               .then((result) => {
+                if (result.updated_grammar_points.length > 0) {
+                  dispatch(applyGrammarPointUsageUpdates(result.updated_grammar_points));
+                }
                 if (result.new_grammar_points_mastered.length > 0) {
                   setMasteredGrammarPoints(result.new_grammar_points_mastered);
                 }

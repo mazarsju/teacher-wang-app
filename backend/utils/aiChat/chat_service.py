@@ -25,6 +25,14 @@ MAX_REPHRASE_ATTEMPTS = 3
 TEACHER_CHARACTER_ID = "teacher-wang"
 KNOWN_CHARACTERS_PROMPT_LIMIT = 250
 GRAMMAR_SEVERITIES = frozenset({"none", "minor", "awkward", "incorrect"})
+LOW_HSK_LENIENCY_LEVEL = 2
+LOW_HSK_LENIENCY_INSTRUCTION = (
+    "The learner is at HSK level {level}, a beginner. Be lenient: if the "
+    "sentence is grammatically correct and understandable, rate it \"none\" "
+    "even if the word choice isn't the best or most natural one — do not "
+    "mark it \"minor\" or \"awkward\" just for suboptimal wording at this "
+    "level."
+)
 GRAMMAR_CHECK_INSTRUCTION = (
     "Check the learner's Chinese message and assign a grammar severity. "
     "If an AI character previous statement is given, use it as context: a short "
@@ -351,12 +359,18 @@ def check_user_grammar(
     else:
         prompt = f'User response: "{content}"'
 
+    from backend.utils.knowledgeBase.hsk_level import get_chat_speaking_hsk_level
+
+    hsk_level = get_chat_speaking_hsk_level(user_id)
+    instruction = GRAMMAR_CHECK_INSTRUCTION
+    if hsk_level <= LOW_HSK_LENIENCY_LEVEL:
+        instruction = (
+            f"{instruction} {LOW_HSK_LENIENCY_INSTRUCTION.format(level=hsk_level)}"
+        )
+
     messages = [
         SystemMessage(
-            content=(
-                f"{get_system_prompt(user_id, TEACHER_CHARACTER_ID)} "
-                f"{GRAMMAR_CHECK_INSTRUCTION}"
-            )
+            content=f"{get_system_prompt(user_id, TEACHER_CHARACTER_ID)} {instruction}"
         ),
         HumanMessage(content=prompt),
     ]

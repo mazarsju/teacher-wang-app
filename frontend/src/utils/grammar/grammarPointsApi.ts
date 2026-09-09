@@ -55,9 +55,19 @@ export async function skipGrammarPoint(grammarId: string): Promise<void> {
   }
 }
 
+/** A grammar point whose real-life usage count (and possibly status, once it
+ * flips to MASTERED) changed as a side effect of the call — lets the caller
+ * patch the Redux store in place instead of refetching the whole list. */
+export type GrammarPointUsageUpdate = {
+  id: string;
+  status: string;
+  usage_count: number;
+};
+
 export type CheckGrammarPointResult = {
   grammar_points_covered: string[];
   new_grammar_points_mastered: string[];
+  updated_grammar_points: GrammarPointUsageUpdate[];
 };
 
 export async function checkGrammarPoint(text: string): Promise<CheckGrammarPointResult> {
@@ -94,6 +104,7 @@ export async function detectGrammarPoints(text: string): Promise<CoveredGrammarP
 
 export type RecordGrammarUsageResult = {
   new_grammar_points_mastered: string[];
+  updated_grammar_points: GrammarPointUsageUpdate[];
 };
 
 /** `grammarIds` has one entry per usage (a point used in 3 sentences appears 3 times). */

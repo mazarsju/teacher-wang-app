@@ -1,13 +1,16 @@
-import { render, screen, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
+import { screen, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
+import { renderWithStore } from "../test/renderWithStore";
 import userEvent from "@testing-library/user-event";
 import WritingPracticeDetailPage from "./WritingPracticeDetailPage";
 
 type SentenceCheckResponse = { severity: string; answer?: string };
 type CoveredGrammarPointResponse = { id: string; title: string };
+type GrammarPointUsageUpdate = { id: string; status: string; usage_count: number };
 
 function stubApiFetch(handlers: {
   checkSentence?: (text: string) => SentenceCheckResponse | Promise<SentenceCheckResponse>;
   detectGrammarPoints?: (text: string) => CoveredGrammarPointResponse[];
+  updatedGrammarPoints?: GrammarPointUsageUpdate[];
   onTopic?: boolean | ((text: string) => boolean);
   savedDraft?: string;
   savedArchive?: { timestamp: string; content: string }[];
@@ -70,7 +73,13 @@ function stubApiFetch(handlers: {
       }
       if (url.endsWith("/grammar-points/record-usage")) {
         recordUsageCalls.push(body.grammar_ids);
-        return { ok: true, json: async () => ({ new_grammar_points_mastered: [] }) };
+        return {
+          ok: true,
+          json: async () => ({
+            new_grammar_points_mastered: [],
+            updated_grammar_points: handlers.updatedGrammarPoints ?? [],
+          }),
+        };
       }
       if (url.endsWith("/chat") && method === "POST") {
         chatCalls.push(body);
@@ -106,7 +115,7 @@ describe("WritingPracticeDetailPage", () => {
           "Write a short introduction of yourself.\n\n## Grammar you can use\n- 是",
       },
     });
-    render(
+    renderWithStore(
       <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
     );
 
@@ -120,7 +129,7 @@ describe("WritingPracticeDetailPage", () => {
 
   it("shows a fallback message when a topic has no context yet", async () => {
     stubApiFetch({ topic: { title: "Present yourself", context: null } });
-    render(
+    renderWithStore(
       <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
     );
 
@@ -129,7 +138,7 @@ describe("WritingPracticeDetailPage", () => {
 
   it("shows an error when the writing practice topic fails to load", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
-    render(
+    renderWithStore(
       <WritingPracticeDetailPage topicId="writing-unknown" onBack={vi.fn()} />,
     );
 
@@ -140,7 +149,7 @@ describe("WritingPracticeDetailPage", () => {
 
   it("switches to the writing tab and lets the user type multi-line text", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithStore(
       <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
     );
 
@@ -157,7 +166,7 @@ describe("WritingPracticeDetailPage", () => {
   it("calls onBack when the back button is clicked", async () => {
     const user = userEvent.setup();
     const onBack = vi.fn();
-    render(
+    renderWithStore(
       <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={onBack} />,
     );
 
@@ -175,7 +184,7 @@ describe("WritingPracticeDetailPage", () => {
       stubApiFetch({ savedDraft: "我叫小明。" });
 
       const user = userEvent.setup();
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -186,7 +195,7 @@ describe("WritingPracticeDetailPage", () => {
     it("saves the current draft when Save draft is clicked", async () => {
       const user = userEvent.setup();
       const { saveDraftCalls } = stubApiFetch({});
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -210,7 +219,7 @@ describe("WritingPracticeDetailPage", () => {
           return { ok: false };
         }),
       );
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -224,7 +233,7 @@ describe("WritingPracticeDetailPage", () => {
     it("asks for confirmation before deleting the draft, and does nothing if cancelled", async () => {
       const user = userEvent.setup();
       const { saveDraftCalls } = stubApiFetch({});
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -243,7 +252,7 @@ describe("WritingPracticeDetailPage", () => {
     it("removes the draft and returns to a blank edit mode once deletion is confirmed", async () => {
       const user = userEvent.setup();
       const { saveDraftCalls } = stubApiFetch({});
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -270,7 +279,7 @@ describe("WritingPracticeDetailPage", () => {
           return { ok: false };
         }),
       );
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -285,7 +294,7 @@ describe("WritingPracticeDetailPage", () => {
     it("saves the draft when Submit is clicked", async () => {
       const user = userEvent.setup();
       const { saveDraftCalls } = stubApiFetch({ checkSentence: () => ({ severity: "none" }) });
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -304,7 +313,7 @@ describe("WritingPracticeDetailPage", () => {
 
     async function typeAndSubmit(text: string) {
       const user = userEvent.setup();
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
       await user.click(screen.getByRole("tab", { name: "Writing" }));
@@ -485,6 +494,49 @@ describe("WritingPracticeDetailPage", () => {
       );
     });
 
+    it("patches the grammar store with the status and usage count returned by record-usage", async () => {
+      stubApiFetch({
+        checkSentence: () => ({ severity: "none" }),
+        detectGrammarPoints: () => [{ id: "hsk1_existence_with_you", title: "Existence with 有" }],
+        updatedGrammarPoints: [
+          { id: "hsk1_existence_with_you", status: "MASTERED", usage_count: 3 },
+        ],
+      });
+      const user = userEvent.setup();
+      const { store } = renderWithStore(
+        <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
+        {
+          preloadedState: {
+            grammar: {
+              items: [
+                {
+                  id: "hsk1_existence_with_you",
+                  hsk_level: 1,
+                  index: 1,
+                  title: "Existence with 有",
+                  prerequisites: [],
+                  status: "DONE",
+                  score: 90,
+                  usage_count: 2,
+                },
+              ],
+              writingPractices: [],
+              loaded: true,
+              quizInProgress: false,
+            },
+          },
+        },
+      );
+      await user.click(screen.getByRole("tab", { name: "Writing" }));
+      await user.type(screen.getByLabelText("Your writing"), "我有一本书。");
+      await user.click(screen.getByRole("button", { name: "Submit" }));
+
+      await waitFor(() =>
+        expect(store.getState().grammar.items[0].status).toBe("MASTERED"),
+      );
+      expect(store.getState().grammar.items[0].usage_count).toBe(3);
+    });
+
     it("opens a warning review modal telling the user to fix mistakes when some sentences are wrong, without recording any usage yet", async () => {
       const { recordUsageCalls } = stubApiFetch({
         checkSentence: (text) =>
@@ -656,7 +708,7 @@ describe("WritingPracticeDetailPage", () => {
           { timestamp: "2026-01-02T10:00:00.000Z", content: "newer version" },
         ],
       });
-      render(
+      renderWithStore(
         <WritingPracticeDetailPage topicId="writing-present-yourself" onBack={vi.fn()} />,
       );
 

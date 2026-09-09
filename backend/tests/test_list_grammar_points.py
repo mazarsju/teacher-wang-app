@@ -70,7 +70,12 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
             ),
         ]
         self.mock_progress_cls.query.filter_by.return_value.all.return_value = [
-            MagicMock(grammar_id="1|Basic Sentence Structure", status="DONE", score=82),
+            MagicMock(
+                grammar_id="1|Basic Sentence Structure",
+                status="DONE",
+                score=82,
+                usage_in_real_life=1,
+            ),
         ]
 
         self.mock_writing_practice_cls.query.all.return_value = [
@@ -99,6 +104,7 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                         "prerequisites": [],
                         "status": "DONE",
                         "score": 82,
+                        "usage_count": 1,
                     },
                     {
                         "id": "1|Questions with Ma",
@@ -108,6 +114,7 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                         "prerequisites": ["1|Basic Sentence Structure"],
                         "status": "TODO",
                         "score": None,
+                        "usage_count": 0,
                     },
                 ],
                 "writing_practices": [

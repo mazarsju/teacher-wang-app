@@ -46,7 +46,11 @@ class TestCheckGrammarPointEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.get_json(),
-            {"grammar_points_covered": [], "new_grammar_points_mastered": []},
+            {
+                "grammar_points_covered": [],
+                "new_grammar_points_mastered": [],
+                "updated_grammar_points": [],
+            },
         )
         self.mock_check_usage.assert_not_called()
 
@@ -64,7 +68,11 @@ class TestCheckGrammarPointEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.get_json(),
-            {"grammar_points_covered": [], "new_grammar_points_mastered": []},
+            {
+                "grammar_points_covered": [],
+                "new_grammar_points_mastered": [],
+                "updated_grammar_points": [],
+            },
         )
         self.mock_check_usage.assert_not_called()
 
@@ -79,6 +87,10 @@ class TestCheckGrammarPointEndpoint(unittest.TestCase):
         body = response.get_json()
         self.assertEqual(body["grammar_points_covered"], ["Ba construction"])
         self.assertEqual(body["new_grammar_points_mastered"], [])
+        self.assertEqual(
+            body["updated_grammar_points"],
+            [{"id": "g1", "status": "DONE", "usage_count": 1}],
+        )
         self.assertEqual(progress.usage_in_real_life, 1)
         self.assertEqual(progress.status, "DONE")
         self.mock_db.session.commit.assert_called_once()
@@ -93,6 +105,10 @@ class TestCheckGrammarPointEndpoint(unittest.TestCase):
         body = response.get_json()
         self.assertEqual(body["grammar_points_covered"], ["Ba construction"])
         self.assertEqual(body["new_grammar_points_mastered"], ["Ba construction"])
+        self.assertEqual(
+            body["updated_grammar_points"],
+            [{"id": "g1", "status": "MASTERED", "usage_count": 3}],
+        )
         self.assertEqual(progress.usage_in_real_life, 3)
         self.assertEqual(progress.status, "MASTERED")
 
@@ -106,6 +122,7 @@ class TestCheckGrammarPointEndpoint(unittest.TestCase):
         body = response.get_json()
         self.assertEqual(body["grammar_points_covered"], [])
         self.assertEqual(body["new_grammar_points_mastered"], [])
+        self.assertEqual(body["updated_grammar_points"], [])
         self.assertEqual(progress.usage_in_real_life, 1)
 
     # check_only=True: report usage without touching the database. Pairs

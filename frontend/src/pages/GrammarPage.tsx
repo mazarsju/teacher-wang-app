@@ -21,6 +21,11 @@ const COMPLETED_STATUSES = new Set(["DONE", "SKIP", "MASTERED"]);
 // Free-plan users only get the first 10 lessons of each HSK level unlocked.
 const FREE_PLAN_LESSON_LIMIT = 10;
 
+// Matches the backend's MASTERY_THRESHOLD (check_grammar_point.py /
+// record_grammar_usage.py): a DONE point flips to MASTERED once its
+// real-life usage count reaches this.
+const MASTERY_THRESHOLD = 3;
+
 const STATUS_LABEL_KEYS: Record<string, string> = {
   TODO: "todo",
   WIP: "wip",
@@ -126,6 +131,31 @@ function StatusBadge({ status }: { status: string }) {
         <span className={styles.grammarStatusDot} />
       )}
       {label}
+    </span>
+  );
+}
+
+// Single star icon partially filled to usage/MASTERY_THRESHOLD, shown next
+// to the score for a DONE lesson (not repeated per usage — one icon, fractional).
+function PracticeStars({ count }: { count: number }) {
+  const { t } = useTranslation("grammar");
+  const percent = (Math.min(count, MASTERY_THRESHOLD) / MASTERY_THRESHOLD) * 100;
+
+  const tooltip = t("grammarPage.practiceCount", { count, total: MASTERY_THRESHOLD });
+
+  // A native `title` here gets shadowed by the row's own title (the lesson
+  // name) since the row is a large hoverable target too, so the count is
+  // shown via a CSS-driven tooltip instead; `title` stays as an accessible
+  // fallback (e.g. for screen readers exposing it as the accessible name).
+  return (
+    <span className={styles.grammarPracticeStars} title={tooltip}>
+      <StarIcon className={styles.grammarPracticeStarTrack} />
+      <span className={styles.grammarPracticeStarFillClip} style={{ width: `${percent}%` }}>
+        <StarIcon className={styles.grammarPracticeStarFill} />
+      </span>
+      <span className={styles.grammarPracticeStarsTooltip} role="tooltip">
+        {tooltip}
+      </span>
     </span>
   );
 }
@@ -406,10 +436,15 @@ export default function GrammarPage() {
                           <StatusBadge status={row.grammarPoint.status} />
                         </td>
                         <td>
-                          <ScoreValue
-                            score={row.grammarPoint.score}
-                            status={row.grammarPoint.status}
-                          />
+                          <span className={styles.grammarScoreCell}>
+                            {row.grammarPoint.status === "DONE" && (
+                              <PracticeStars count={row.grammarPoint.usage_count ?? 0} />
+                            )}
+                            <ScoreValue
+                              score={row.grammarPoint.score}
+                              status={row.grammarPoint.status}
+                            />
+                          </span>
                         </td>
                       </tr>
                     ),

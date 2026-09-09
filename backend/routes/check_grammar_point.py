@@ -23,6 +23,7 @@ def check_grammar_point():
     empty_response: dict = {"grammar_points_covered": []}
     if not check_only:
         empty_response["new_grammar_points_mastered"] = []
+        empty_response["updated_grammar_points"] = []
 
     if user.plan == DEFAULT_USER_PLAN:
         return empty_response, 200
@@ -60,6 +61,7 @@ def check_grammar_point():
 
     grammar_points_covered: list[str] = []
     new_grammar_points_mastered: list[str] = []
+    updated_grammar_points: list[dict] = []
     for grammar_id in result.covered_grammar_ids:
         progress, title = progress_by_id[grammar_id]
         grammar_points_covered.append(title)
@@ -69,9 +71,18 @@ def check_grammar_point():
             progress.status = "MASTERED"
             new_grammar_points_mastered.append(title)
 
+        updated_grammar_points.append(
+            {
+                "id": grammar_id,
+                "status": progress.status,
+                "usage_count": progress.usage_in_real_life,
+            }
+        )
+
     db.session.commit()
 
     return {
         "grammar_points_covered": grammar_points_covered,
         "new_grammar_points_mastered": new_grammar_points_mastered,
+        "updated_grammar_points": updated_grammar_points,
     }, 200

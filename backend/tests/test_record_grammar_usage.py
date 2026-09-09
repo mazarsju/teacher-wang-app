@@ -43,7 +43,10 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"new_grammar_points_mastered": []})
+        self.assertEqual(
+            response.get_json(),
+            {"new_grammar_points_mastered": [], "updated_grammar_points": []},
+        )
         self.mock_db.session.commit.assert_not_called()
 
     def test_rejects_non_list_grammar_ids(self):
@@ -64,7 +67,10 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         response = self.client.post("/grammar-points/record-usage", json={"grammar_ids": []})
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"new_grammar_points_mastered": []})
+        self.assertEqual(
+            response.get_json(),
+            {"new_grammar_points_mastered": [], "updated_grammar_points": []},
+        )
         self.mock_db.session.commit.assert_not_called()
 
     def test_increments_usage_once_per_occurrence(self):
@@ -76,7 +82,12 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        body = response.get_json()
         self.assertEqual(progress.usage_in_real_life, 2)
+        self.assertEqual(
+            body["updated_grammar_points"],
+            [{"id": "g1", "status": "DONE", "usage_count": 2}],
+        )
         self.mock_db.session.commit.assert_called_once()
 
     def test_marks_mastered_at_threshold(self):
@@ -91,6 +102,10 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         self.assertEqual(progress.usage_in_real_life, 3)
         self.assertEqual(progress.status, "MASTERED")
         self.assertEqual(body["new_grammar_points_mastered"], ["g1"])
+        self.assertEqual(
+            body["updated_grammar_points"],
+            [{"id": "g1", "status": "MASTERED", "usage_count": 3}],
+        )
 
     def test_ignores_grammar_ids_not_belonging_to_the_user(self):
         self._set_progress_rows([])
@@ -100,7 +115,10 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"new_grammar_points_mastered": []})
+        self.assertEqual(
+            response.get_json(),
+            {"new_grammar_points_mastered": [], "updated_grammar_points": []},
+        )
 
     def test_ignores_grammar_points_not_yet_done(self):
         progress = MagicMock(grammar_id="g1", usage_in_real_life=0, status="WIP")
@@ -111,7 +129,9 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        body = response.get_json()
         self.assertEqual(progress.usage_in_real_life, 0)
+        self.assertEqual(body["updated_grammar_points"], [])
 
     def test_skips_already_mastered_points(self):
         progress = MagicMock(grammar_id="g1", usage_in_real_life=5, status="MASTERED")
@@ -124,6 +144,7 @@ class TestRecordGrammarUsageEndpoint(unittest.TestCase):
         body = response.get_json()
         self.assertEqual(progress.usage_in_real_life, 5)
         self.assertEqual(body["new_grammar_points_mastered"], [])
+        self.assertEqual(body["updated_grammar_points"], [])
 
 
 if __name__ == "__main__":

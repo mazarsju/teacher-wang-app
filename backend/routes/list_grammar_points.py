@@ -43,6 +43,9 @@ def list_grammar_points():
     ).all()
     status_by_grammar_id = {row.grammar_id: row.status for row in progress_rows}
     score_by_grammar_id = {row.grammar_id: row.score for row in progress_rows}
+    usage_by_grammar_id = {
+        row.grammar_id: row.usage_in_real_life for row in progress_rows
+    }
 
     writing_progress_rows = WritingProgress.query.filter_by(
         user_id=current_user_id()
@@ -65,6 +68,7 @@ def list_grammar_points():
                     if score_by_grammar_id.get(point.id) is not None
                     else None
                 ),
+                "usage_count": usage_by_grammar_id.get(point.id) or 0,
             }
             for point in points
         ],

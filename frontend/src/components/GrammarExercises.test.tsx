@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
+import { renderWithStore } from "../test/renderWithStore";
 import userEvent from "@testing-library/user-event";
 import type { GrammarExercise } from "../types/grammarPoint";
 import GrammarExercises from "./GrammarExercises";
@@ -53,7 +54,7 @@ describe("GrammarExercises", () => {
       answer: 0,
     };
 
-    render(<GrammarExercises exercises={[threeChoices]} />);
+    renderWithStore(<GrammarExercises exercises={[threeChoices]} />);
 
     const choiceOrder = () =>
       screen
@@ -77,14 +78,14 @@ describe("GrammarExercises", () => {
   });
 
   it("shows a fallback message when there are no exercises", () => {
-    render(<GrammarExercises exercises={[]} />);
+    renderWithStore(<GrammarExercises exercises={[]} />);
 
     expect(screen.getByText("No exercises available yet.")).toBeInTheDocument();
   });
 
   it("validates a correct multiple_choice answer and advances on Next", async () => {
     const user = userEvent.setup();
-    render(<GrammarExercises exercises={[MCQ, TRANSLATION]} />);
+    renderWithStore(<GrammarExercises exercises={[MCQ, TRANSLATION]} />);
 
     await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -98,7 +99,7 @@ describe("GrammarExercises", () => {
 
   it("builds an answer for sentence_reordering by tapping tokens in order", async () => {
     const user = userEvent.setup();
-    render(<GrammarExercises exercises={[REORDER]} />);
+    renderWithStore(<GrammarExercises exercises={[REORDER]} />);
 
     await user.click(screen.getAllByRole("button", { name: "我" })[0]);
     await user.click(screen.getAllByRole("button", { name: "喜欢" })[0]);
@@ -114,7 +115,7 @@ describe("GrammarExercises", () => {
     const fetchMock = vi.fn(() => new Promise((resolve) => { resolveChat = resolve; }));
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<GrammarExercises exercises={[REORDER]} />);
+    renderWithStore(<GrammarExercises exercises={[REORDER]} />);
 
     await user.click(screen.getAllByRole("button", { name: "茶" })[0]);
     await user.click(screen.getAllByRole("button", { name: "我" })[0]);
@@ -173,7 +174,7 @@ describe("GrammarExercises", () => {
       }),
     );
 
-    render(<GrammarExercises exercises={[REORDER]} />);
+    renderWithStore(<GrammarExercises exercises={[REORDER]} />);
 
     await user.click(screen.getAllByRole("button", { name: "茶" })[0]);
     await user.click(screen.getAllByRole("button", { name: "我" })[0]);
@@ -193,7 +194,7 @@ describe("GrammarExercises", () => {
   });
 
   it("shows a generic instruction before the translation prompt", () => {
-    render(<GrammarExercises exercises={[TRANSLATION]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSLATION]} />);
 
     expect(
       screen.getByText("Translate the following sentence into Chinese:"),
@@ -202,7 +203,7 @@ describe("GrammarExercises", () => {
   });
 
   it("shows the transform instruction and the source sentence to transform", () => {
-    render(<GrammarExercises exercises={[TRANSFORM]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSFORM]} />);
 
     expect(screen.getByText("Make this sentence negative.")).toBeInTheDocument();
     expect(screen.getByText("我喜欢茶。")).toBeInTheDocument();
@@ -214,7 +215,7 @@ describe("GrammarExercises", () => {
     const fetchMock = vi.fn(() => new Promise((resolve) => { resolveChat = resolve; }));
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<GrammarExercises exercises={[TRANSLATION]} grammarPointTitle="Liking things" />);
+    renderWithStore(<GrammarExercises exercises={[TRANSLATION]} grammarPointTitle="Liking things" />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "wrong");
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -254,7 +255,7 @@ describe("GrammarExercises", () => {
       }),
     );
 
-    render(<GrammarExercises exercises={[TRANSLATION]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSLATION]} />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "我很喜欢喝茶。");
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -278,7 +279,7 @@ describe("GrammarExercises", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<GrammarExercises exercises={[TRANSLATION]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSLATION]} />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "wrong");
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -303,7 +304,7 @@ describe("GrammarExercises", () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
 
-    render(<GrammarExercises exercises={[TRANSLATION]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSLATION]} />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "wrong");
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -321,7 +322,7 @@ describe("GrammarExercises", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<GrammarExercises exercises={[TRANSFORM]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSFORM]} />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "茶，我不喜欢。");
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -344,7 +345,7 @@ describe("GrammarExercises", () => {
       }),
     );
 
-    render(<GrammarExercises exercises={[TRANSFORM]} />);
+    renderWithStore(<GrammarExercises exercises={[TRANSFORM]} />);
 
     await user.type(screen.getByPlaceholderText("Type your answer"), "wrong");
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -355,7 +356,7 @@ describe("GrammarExercises", () => {
 
   it("shows a 'More explanation' button only after a wrong answer, not a correct one", async () => {
     const user = userEvent.setup();
-    render(<GrammarExercises exercises={[MCQ]} />);
+    renderWithStore(<GrammarExercises exercises={[MCQ]} />);
 
     await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -379,7 +380,7 @@ describe("GrammarExercises", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { container } = render(
+    const { container } = renderWithStore(
       <GrammarExercises exercises={[MCQ]} grammarPointTitle="Basic Sentence Structure" />,
     );
 
@@ -432,7 +433,7 @@ describe("GrammarExercises", () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
 
-    render(<GrammarExercises exercises={[MCQ]} />);
+    renderWithStore(<GrammarExercises exercises={[MCQ]} />);
 
     await user.click(screen.getByRole("button", { name: "我喝茶。" }));
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -447,7 +448,7 @@ describe("GrammarExercises", () => {
 
   it("shows the passing score message once all questions are answered", async () => {
     const user = userEvent.setup();
-    render(<GrammarExercises exercises={[MCQ]} />);
+    renderWithStore(<GrammarExercises exercises={[MCQ]} />);
 
     await user.click(screen.getByRole("button", { name: "我喜欢茶。" }));
     await user.click(screen.getByRole("button", { name: "Validate" }));
@@ -460,7 +461,7 @@ describe("GrammarExercises", () => {
 
   it("plays the challenge-complete confetti once a passing score's gauge animation settles", () => {
     vi.useFakeTimers();
-    render(<GrammarExercises exercises={[MCQ]} />);
+    renderWithStore(<GrammarExercises exercises={[MCQ]} />);
 
     fireEvent.click(screen.getByRole("button", { name: "我喜欢茶。" }));
     fireEvent.click(screen.getByRole("button", { name: "Validate" }));
@@ -477,7 +478,7 @@ describe("GrammarExercises", () => {
 
   it("shows the encouraging low-score message and allows restarting once the gauge animation settles", () => {
     vi.useFakeTimers();
-    render(<GrammarExercises exercises={[MCQ]} />);
+    renderWithStore(<GrammarExercises exercises={[MCQ]} />);
 
     fireEvent.click(screen.getByRole("button", { name: "我喝茶。" }));
     fireEvent.click(screen.getByRole("button", { name: "Validate" }));
