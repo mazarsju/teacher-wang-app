@@ -135,11 +135,25 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// Single star icon partially filled to usage/MASTERY_THRESHOLD, shown next
-// to the score for a DONE lesson (not repeated per usage — one icon, fractional).
+// A 5-point star centered on (0,0) with an outer radius of 1, so it can be
+// placed via a plain translate+scale transform.
+const PYRAMID_STAR_PATH =
+  "M0,-1 L0.22,-0.31 L0.95,-0.31 L0.36,0.12 L0.59,0.81 L0,0.38 L-0.59,0.81 L-0.36,0.12 L-0.95,-0.31 L-0.22,-0.31 Z";
+
+// One star on top, two on the base — lit up left-to-right-ish (top, then
+// bottom-left, then bottom-right) as usage/MASTERY_THRESHOLD count comes in.
+const PYRAMID_STAR_POSITIONS = [
+  { x: 12, y: 7 },
+  { x: 6.6, y: 17 },
+  { x: 17.4, y: 17 },
+];
+const PYRAMID_STAR_SCALE = 5.6;
+
+// Single badge icon combining 3 stars (pyramid layout), shown next to the
+// score for a DONE lesson — lit stars count usage towards MASTERY_THRESHOLD.
 function PracticeStars({ count }: { count: number }) {
   const { t } = useTranslation("grammar");
-  const percent = (Math.min(count, MASTERY_THRESHOLD) / MASTERY_THRESHOLD) * 100;
+  const activeCount = Math.min(count, MASTERY_THRESHOLD);
 
   const tooltip = t("grammarPage.practiceCount", { count, total: MASTERY_THRESHOLD });
 
@@ -149,10 +163,21 @@ function PracticeStars({ count }: { count: number }) {
   // fallback (e.g. for screen readers exposing it as the accessible name).
   return (
     <span className={styles.grammarPracticeStars} title={tooltip}>
-      <StarIcon className={styles.grammarPracticeStarTrack} />
-      <span className={styles.grammarPracticeStarFillClip} style={{ width: `${percent}%` }}>
-        <StarIcon className={styles.grammarPracticeStarFill} />
-      </span>
+      <svg viewBox="0 0 24 24" className={styles.grammarPracticeStarsIcon} aria-hidden="true">
+        {PYRAMID_STAR_POSITIONS.map((position, index) => (
+          <g
+            key={index}
+            className={
+              index < activeCount
+                ? styles.grammarPracticeStarActive
+                : styles.grammarPracticeStarInactive
+            }
+            transform={`translate(${position.x},${position.y}) scale(${PYRAMID_STAR_SCALE})`}
+          >
+            <path d={PYRAMID_STAR_PATH} fill="currentColor" />
+          </g>
+        ))}
+      </svg>
       <span className={styles.grammarPracticeStarsTooltip} role="tooltip">
         {tooltip}
       </span>

@@ -196,8 +196,8 @@
 .grammar-practice-stars {
   position: relative;
   display: inline-flex;
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1rem;
+  height: 1rem;
   flex-shrink: 0;
 }
 
@@ -229,26 +229,18 @@
   visibility: visible;
 }
 
-.grammar-practice-star-track {
+.grammar-practice-stars-icon {
   width: 100%;
   height: 100%;
-  color: #d1d5db;
-}
-
-.grammar-practice-star-fill-clip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  overflow: hidden;
-  display: inline-block;
-}
-
-.grammar-practice-star-fill {
-  width: 0.85rem;
-  height: 0.85rem;
   display: block;
+}
+
+.grammar-practice-star-active {
   color: #f59e0b;
+}
+
+.grammar-practice-star-inactive {
+  color: #d1d5db;
 }
 
 .grammar-score {
