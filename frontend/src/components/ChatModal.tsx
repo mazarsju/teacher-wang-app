@@ -12,6 +12,7 @@ import {
   CloseIcon,
   IncorrectIcon,
   QuestionIcon,
+  SpeakerIcon,
   TrashIcon,
   TrophyIcon,
   WarningIcon,
@@ -26,9 +27,11 @@ import type {
 import {
   clearChatHistory,
   fetchChatHistory,
+  fetchChatTts,
   sendChatMessage,
 } from "../utils/aiChat/chatApi";
 import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
+import { isChineseOnlyText } from "../utils/aiChat/chineseText";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
 import { renderFormattedText } from "../utils/formatMarkdownText";
 import { checkGrammarPoint } from "../utils/grammar/grammarPointsApi";
@@ -143,15 +146,26 @@ export default function ChatModal({
     string[] | null
   >(null);
   const [showMasteryConfetti, setShowMasteryConfetti] = useState(false);
+  const [audioUrlByIndex, setAudioUrlByIndex] = useState<Record<number, string>>(
+    {},
+  );
   const wasChallengeCompleteRef = useRef(false);
   const autoSentRef = useRef(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlsRef = useRef<Record<number, string>>({});
 
   const isChallengeComplete = Boolean(
     tasks &&
       tasks.length > 0 &&
       tasks.every((task) => completedTaskIds.has(task.id)),
   );
+
+  useEffect(() => {
+    return () => {
+      Object.values(audioUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   useEffect(() => {
     if (isChallengeComplete && !wasChallengeCompleteRef.current) {
@@ -199,6 +213,9 @@ export default function ChatModal({
     setShowConfetti(false);
     setIsVocabularyOpen(false);
     setMasteredGrammarPoints(null);
+    Object.values(audioUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
+    audioUrlsRef.current = {};
+    setAudioUrlByIndex({});
     wasChallengeCompleteRef.current = false;
     autoSentRef.current = false;
 
@@ -271,6 +288,30 @@ export default function ChatModal({
 
   function focusMessageInput() {
     messageInputRef.current?.focus();
+  }
+
+  function requestTtsForMessage(index: number, chatMessage: ChatMessage) {
+    if (chatMessage.role !== "assistant" || !isChineseOnlyText(chatMessage.content)) {
+      return;
+    }
+
+    fetchChatTts(chatMessage.content, activeCharacter.voice)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        audioUrlsRef.current = { ...audioUrlsRef.current, [index]: url };
+        setAudioUrlByIndex(audioUrlsRef.current);
+      })
+      .catch(() => {
+        // Best-effort; missing audio just hides the speaker button.
+      });
+  }
+
+  function playAudio(url: string) {
+    if (!audioPlayerRef.current) {
+      audioPlayerRef.current = new Audio();
+    }
+    audioPlayerRef.current.src = url;
+    void audioPlayerRef.current.play();
   }
 
   async function sendTurn(
@@ -353,6 +394,7 @@ export default function ChatModal({
       })();
 
       setMessages(updatedMessages);
+      requestTtsForMessage(updatedMessages.length - 1, response.message);
       onThreadMessagesChange?.(updatedMessages);
       if (response.completed_task_ids) {
         setCompletedTaskIds(new Set(response.completed_task_ids));
@@ -715,6 +757,18 @@ export default function ChatModal({
                             styles.chatMessageHeading,
                           )}
                         </div>
+                        {chatMessage.role === "assistant" &&
+                          audioUrlByIndex[index] && (
+                            <button
+                              type="button"
+                              className={styles.chatMessageSpeakerButton}
+                              aria-label={t("chatModal.playAudio")}
+                              title={t("chatModal.playAudio")}
+                              onClick={() => playAudio(audioUrlByIndex[index])}
+                            >
+                              <SpeakerIcon className={styles.chatMessageSpeakerIcon} />
+                            </button>
+                          )}
                       </div>
                     </li>
                   );

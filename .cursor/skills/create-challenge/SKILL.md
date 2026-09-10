@@ -8,20 +8,22 @@ Add a new challenge by wiring one shared `character_id` through backend + fronte
 
 ## Required input from the user
 
-Collect these five fields (ask if any is missing):
+Collect these six fields (ask if any is missing):
 
-1. **Challenge name** — short English title for the card / scenario (e.g. `Waiter`)
-2. **Person involved** — English name + Chinese name of the role-play agent (e.g. `Waiter` / `服务员`)
-3. **Situation + agent rules** — brief description of the setting, initial state, and any progression rules (what must happen in which order)
-4. **Tasks** — ordered list of actions the learner must accomplish (English labels)
-5. **Vocabulary** — 4-10 words/phrases useful for this scenario (e.g. `服务员`, `买单` for the waiter challenge). If the user doesn't supply a list, derive it yourself from the situation and tasks — every challenge must ship with one; don't skip this field.
+1. **Challenge name** — short English title for the card / scenario (e.g. `Waitress`)
+2. **Person involved** — English name + Chinese name of the role-play agent (e.g. `Waitress` / `服务员`)
+3. **Gender** — `male` or `female` for the role-play agent. Ask if not obvious from the role; every character must have one (drives the avatar and the TTS voice — see Derive below)
+4. **Situation + agent rules** — brief description of the setting, initial state, and any progression rules (what must happen in which order)
+5. **Tasks** — ordered list of actions the learner must accomplish (English labels)
+6. **Vocabulary** — 4-10 words/phrases useful for this scenario (e.g. `服务员`, `买单` for the waitress challenge). If the user doesn't supply a list, derive it yourself from the situation and tasks — every challenge must ship with one; don't skip this field.
 
 Derive:
 
 | Field | Rule |
 | --- | --- |
 | `character_id` | `challenge-<slug>` from the name/person, kebab-case, unique (e.g. `challenge-restaurant`) |
-| `avatarVariant` | New short slug if needed (e.g. `waiter`, `cashier`) — add SVG avatar when not reusable |
+| `avatarVariant` | New short slug if needed (e.g. `waiter`, `cashier`) — add SVG avatar when not reusable, generated to match the stated **gender** (see [generate-dicebear-avatar](../generate-dicebear-avatar/SKILL.md) — no beard + a feminine hair variant for `female`) |
+| `voice` (TTS) | Pick **one** voice at creation time and hardcode it (not randomized at runtime): `male` → randomly one of `alloy`, `echo`, `fable`, `onyx`; `female` → randomly one of `nova`, `shimmer`. This is the voice sent as the `voice` param to `POST /chat/tts` whenever this character's reply is spoken aloud |
 | Task `id`s | kebab-case from the label, unique within the challenge (e.g. `call-waiter`) |
 | Vocabulary word `id`s | kebab-case pinyin-derived slug, unique within the challenge (e.g. `maidan` for 买单) |
 | Vocabulary `pinyin` | space-separated syllables with numeric tones (e.g. `mai3 dan1`), matching the app's pinyin convention |
@@ -50,9 +52,9 @@ Challenge Progress:
 - [ ] Scenario config in challenge_prompts.py (+ CHALLENGE_SCENARIOS map)
 - [ ] Backend chat agent in chat_agents.py (uses builder output)
 - [ ] Backend tasks in challenges.py (same ids/labels as frontend)
-- [ ] Frontend challenge template in data/challenges.ts (CHALLENGE_TEMPLATES), incl. vocabulary
-- [ ] Translations in locales/en/challenge.json + fr/challenge.json (title/description/tasks/vocabulary)
-- [ ] Avatar variant (reuse or add SVG + type unions)
+- [ ] Frontend challenge template in data/challenges.ts (CHALLENGE_TEMPLATES), incl. vocabulary, gender, voice
+- [ ] Translations in locales/en/challenge.json + fr/challenge.json (title/description/tasks/vocabulary), gender-agreement checked in every language (see 3b)
+- [ ] Avatar variant (reuse, or add SVG matching the stated gender + type unions)
 - [ ] Tests updated if needed
 - [ ] Remind user to restart backend
 ```
@@ -146,6 +148,8 @@ Append a `ChallengeTemplate` to `CHALLENGE_TEMPLATES`:
     id: "<character_id>",
     chineseName: "<中文名>",
     avatarVariant: "<variant>",
+    gender: "male" | "female",
+    voice: "<alloy|echo|fable|onyx if male; nova|shimmer if female>",
   },
   tasks: [
     { id: "<task-id>", key: "<taskCamelKey>" },
@@ -179,6 +183,8 @@ Add a `<translationKey>` entry with `title`, `description`, `character.name`, `c
 
 Both `en` and `fr` files must get the entry — the app has no fallback locale.
 
+**Gender agreement is mandatory in every language, not just the character's `name`.** Any translated string that refers to the character — `title`, `character.name`, `character.description`, task labels that mention them (e.g. `greetLibrarian`), and vocabulary glosses that name the role itself — must use the grammatically correct gendered form for the stated gender, in every locale, even where English wouldn't normally distinguish. French in particular has many occupation nouns with distinct masculine/feminine forms (`serveur`/`serveuse`, `vendeur`/`vendeuse`, `recruteur`/`recruteuse`, `coiffeur`/`coiffeuse`) and gendered articles even on epicene nouns (`le`/`la bibliothécaire`, `le`/`la propriétaire`); some roles use an altogether different word for the feminine form in French (bus/taxi "chauffeur" → "conductrice"). When unsure of the correct feminine/masculine form in a target language, check rather than guess. Do not default every character to the masculine form.
+
 `ChatPage` already maps `getChallenges(t)` — no page wiring unless the Challenges section is missing.
 
 ## Step 4 — Avatar
@@ -187,8 +193,9 @@ If `avatarVariant` is new:
 
 1. Extend the union in `frontend/src/components/ChatCharacterCard.tsx` (`avatarVariant`).
 2. Extend the union + add an SVG branch in `frontend/src/components/ChatCharacterAvatar.tsx` (same style as existing `teacher` / `friend` / `waiter` faces).
+3. Generate the SVG with the [generate-dicebear-avatar](../generate-dicebear-avatar/SKILL.md) skill, matching the character's stated **gender** (e.g. `beardProbability=0` + a feminine hair variant for `female`).
 
-Reuse an existing variant only when the role visually matches.
+Reuse an existing variant only when the role visually matches — including gender; don't reuse a differently-gendered avatar just because the job title is similar.
 
 ## Step 5 — Tests (light touch)
 
@@ -212,13 +219,13 @@ Already implemented — do **not** rebuild unless broken:
 
 ## Reference example
 
-Restaurant waiter (`challenge-restaurant`):
+Restaurant waitress (`challenge-restaurant`):
 
-- Person: Waiter / 服务员
-- Progression: call waiter → order → eat → pay (refuse out-of-order)
-- Leave form: `[[The waiter leaves]][[...next action...]]您的菜来了。`
-- Vocabulary: 服务员 (waiter), 菜单 (menu), 肉 (meat), 买单 (to pay the bill), 好吃 (tasty)
-- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register), `challenges.py`, `frontend/src/data/challenges.ts` (template incl. vocabulary), `frontend/src/locales/{en,fr}/challenge.json`, avatar `waiter`
+- Person: Waitress / 服务员, gender `female`, voice `nova`
+- Progression: call waitress → order → eat → pay (refuse out-of-order)
+- Leave form: `[[The waitress leaves]][[...next action...]]您的菜来了。`
+- Vocabulary: 服务员 (waitress), 菜单 (menu), 肉 (meat), 买单 (to pay the bill), 好吃 (tasty)
+- Files: `challenge_prompts.py` (scenario), `chat_agents.py` (register), `challenges.py`, `frontend/src/data/challenges.ts` (template incl. vocabulary, gender, voice), `frontend/src/locales/{en,fr}/challenge.json` (French: "Serveuse", not "Serveur"), avatar `waiter`
 
 ## Done criteria
 

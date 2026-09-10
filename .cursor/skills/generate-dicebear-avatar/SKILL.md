@@ -45,7 +45,8 @@ Extract intents such as:
 
 - Mouth: never `variant05`, `variant06`, or `variant16`
 - Eyes: never `variant02` or `variant04`
-- When forcing mouth/eyes, pick only from the allowed set. If the seed might land on a banned variant, set an explicit allowed `mouthVariant` / `eyesVariant` (do not leave those to chance when the brief needs a clear expression).
+- Hair: never `variant61`, `variant62`, or `variant63`
+- When forcing mouth/eyes/hair, pick only from the allowed set. If the seed might land on a banned variant, set an explicit allowed `mouthVariant` / `eyesVariant` / `hairVariant` (do not leave those to chance when the brief needs a clear expression).
 
 **Hard rule — no gesture unless asked:**
 

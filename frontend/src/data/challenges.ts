@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import type { ChatCharacter } from "../components/ChatCharacterCard";
 import type { Challenge } from "../types/challenge";
+import type { TtsVoice } from "../types/chat";
 
 export const NEW_FRIEND_CHALLENGE_ID = "challenge-new-friend";
 
@@ -15,15 +16,18 @@ type ChallengeTemplate = {
     id: string;
     chineseName: string;
     avatarVariant: ChatCharacter["avatarVariant"];
+    gender: ChatCharacter["gender"];
+    voice: TtsVoice;
   };
   tasks: ChallengeTaskTemplate[];
   vocabulary: ChallengeVocabularyTemplate[];
   hskLevel: number;
 };
 
-// The `id`/`chineseName`/`avatarVariant`/task `id`s/vocabulary `word`+`pinyin`
-// are stable data (used as React keys, completion-progress ids, and avatar
-// lookups) — only translationKey/key resolve into locales/en/challenge.json
+// The `id`/`chineseName`/`avatarVariant`/`gender`/`voice`/task `id`s/vocabulary
+// `word`+`pinyin` are stable data (used as React keys, completion-progress
+// ids, avatar lookups, and the TTS voice) — only translationKey/key resolve
+// into locales/en/challenge.json
 // via `getChallenges()`. Keep this array's order in sync with
 // challenge.json; display order is sorted by hskLevel in `getChallenges()`
 // regardless of declaration order here.
@@ -35,6 +39,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: NEW_FRIEND_CHALLENGE_ID,
       chineseName: "小明",
       avatarVariant: "friend",
+      gender: "male",
+      voice: "echo",
     },
     tasks: [
       { id: "greet-friend", key: "greetFriend" },
@@ -57,6 +63,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-restaurant",
       chineseName: "服务员",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     },
     tasks: [
       { id: "call-waiter", key: "callWaiter" },
@@ -80,6 +88,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-taxi",
       chineseName: "出租车司机",
       avatarVariant: "taxi-driver",
+      gender: "male",
+      voice: "fable",
     },
     tasks: [
       { id: "hail-taxi", key: "hailTaxi" },
@@ -102,6 +112,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-hotel",
       chineseName: "前台",
       avatarVariant: "hotel-receptionist",
+      gender: "male",
+      voice: "alloy",
     },
     tasks: [
       { id: "greet-receptionist", key: "greetReceptionist" },
@@ -125,6 +137,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-shop",
       chineseName: "售货员",
       avatarVariant: "shop-assistant",
+      gender: "male",
+      voice: "echo",
     },
     tasks: [
       { id: "greet-assistant", key: "greetAssistant" },
@@ -148,6 +162,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-directions",
       chineseName: "路人",
       avatarVariant: "passerby",
+      gender: "male",
+      voice: "onyx",
     },
     tasks: [
       { id: "greet-passerby", key: "greetPasserby" },
@@ -171,6 +187,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-train-station",
       chineseName: "售票员",
       avatarVariant: "ticket-seller",
+      gender: "female",
+      voice: "shimmer",
     },
     tasks: [
       { id: "greet-ticket-seller", key: "greetTicketSeller" },
@@ -194,6 +212,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-doctor",
       chineseName: "医生",
       avatarVariant: "doctor",
+      gender: "male",
+      voice: "fable",
     },
     tasks: [
       { id: "greet-doctor", key: "greetDoctor" },
@@ -217,6 +237,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-job-interview",
       chineseName: "面试官",
       avatarVariant: "interviewer",
+      gender: "female",
+      voice: "nova",
     },
     tasks: [
       { id: "greet-interviewer", key: "greetInterviewer" },
@@ -240,6 +262,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-library",
       chineseName: "图书管理员",
       avatarVariant: "librarian",
+      gender: "female",
+      voice: "shimmer",
     },
     tasks: [
       { id: "greet-librarian", key: "greetLibrarian" },
@@ -263,6 +287,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-bus",
       chineseName: "公交车司机",
       avatarVariant: "bus-driver",
+      gender: "female",
+      voice: "nova",
     },
     tasks: [
       { id: "ask-bus-route", key: "askBusRoute" },
@@ -286,6 +312,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-hair-salon",
       chineseName: "理发师",
       avatarVariant: "hairdresser",
+      gender: "female",
+      voice: "nova",
     },
     tasks: [
       { id: "greet-hairdresser", key: "greetHairdresser" },
@@ -309,6 +337,8 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       id: "challenge-apartment",
       chineseName: "房东",
       avatarVariant: "landlord",
+      gender: "female",
+      voice: "shimmer",
     },
     tasks: [
       { id: "greet-landlord", key: "greetLandlord" },
@@ -341,6 +371,8 @@ function renderChallenge(
       chineseName: template.character.chineseName,
       description: t(`${template.translationKey}.character.description`),
       avatarVariant: template.character.avatarVariant,
+      gender: template.character.gender,
+      voice: template.character.voice,
     },
     tasks: template.tasks.map((task) => ({
       id: task.id,

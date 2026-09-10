@@ -1,19 +1,19 @@
 {
   "restaurant": {
-    "title": "Serveur",
-    "description": "Parlez avec le serveur et commandez un repas",
+    "title": "Serveuse",
+    "description": "Parlez avec la serveuse et commandez un repas",
     "character": {
-      "name": "Serveur",
-      "description": "Parlez avec le serveur et commandez un repas"
+      "name": "Serveuse",
+      "description": "Parlez avec la serveuse et commandez un repas"
     },
     "tasks": {
-      "callWaiter": "Appelez le serveur",
+      "callWaiter": "Appelez la serveuse",
       "askNoMeat": "Demandez s'ils ont un plat sans viande",
       "askBill": "Demandez l'addition",
       "payBill": "Payez l'addition"
     },
     "vocabulary": {
-      "fuwuyuan": "serveur",
+      "fuwuyuan": "serveuse",
       "caidan": "menu",
       "rou": "viande",
       "maidan": "payer l'addition",
@@ -124,14 +124,14 @@
     }
   },
   "trainStation": {
-    "title": "Vendeur de billets",
+    "title": "Vendeuse de billets",
     "description": "Achetez un billet de train et demandez l'heure de départ",
     "character": {
-      "name": "Vendeur de billets",
+      "name": "Vendeuse de billets",
       "description": "Achetez un billet de train et demandez l'heure de départ"
     },
     "tasks": {
-      "greetTicketSeller": "Saluez le vendeur de billets",
+      "greetTicketSeller": "Saluez la vendeuse de billets",
       "buyTicket": "Demandez un billet pour votre destination",
       "askDepartureTime": "Demandez à quelle heure le train part",
       "payTicket": "Payez le billet"
@@ -169,11 +169,11 @@
     "title": "Entretien d'embauche",
     "description": "Passez un entretien d'embauche et renseignez-vous sur le salaire",
     "character": {
-      "name": "Recruteur",
+      "name": "Recruteuse",
       "description": "Passez un entretien d'embauche et renseignez-vous sur le salaire"
     },
     "tasks": {
-      "greetInterviewer": "Saluez le recruteur",
+      "greetInterviewer": "Saluez la recruteuse",
       "introduceExperience": "Parlez de votre expérience professionnelle",
       "askSalary": "Renseignez-vous sur le salaire",
       "askResult": "Demandez quand vous aurez une réponse"
@@ -194,10 +194,10 @@
       "description": "Empruntez un livre à la bibliothèque"
     },
     "tasks": {
-      "greetLibrarian": "Saluez le bibliothécaire",
+      "greetLibrarian": "Saluez la bibliothécaire",
       "borrowBook": "Demandez à emprunter un livre",
       "askReturnDate": "Demandez quand le rendre",
-      "thankLibrarian": "Remerciez le bibliothécaire"
+      "thankLibrarian": "Remerciez la bibliothécaire"
     },
     "vocabulary": {
       "shu": "livre",
@@ -208,17 +208,17 @@
     }
   },
   "bus": {
-    "title": "Chauffeur de bus",
-    "description": "Demandez au chauffeur votre trajet et où descendre",
+    "title": "Conductrice de bus",
+    "description": "Demandez à la conductrice votre trajet et où descendre",
     "character": {
-      "name": "Chauffeur de bus",
-      "description": "Demandez au chauffeur votre trajet et où descendre"
+      "name": "Conductrice de bus",
+      "description": "Demandez à la conductrice votre trajet et où descendre"
     },
     "tasks": {
       "askBusRoute": "Demandez si ce bus va à votre destination",
       "askStops": "Demandez combien d'arrêts il faut",
       "askGetOffStop": "Demandez quand descendre",
-      "thankDriver": "Remerciez le chauffeur en descendant"
+      "thankDriver": "Remerciez la conductrice en descendant"
     },
     "vocabulary": {
       "gongjiaoche": "bus",
@@ -229,14 +229,14 @@
     }
   },
   "hairSalon": {
-    "title": "Coiffeur",
+    "title": "Coiffeuse",
     "description": "Faites-vous couper les cheveux et décrivez ce que vous voulez",
     "character": {
-      "name": "Coiffeur",
+      "name": "Coiffeuse",
       "description": "Faites-vous couper les cheveux et décrivez ce que vous voulez"
     },
     "tasks": {
-      "greetHairdresser": "Saluez le coiffeur",
+      "greetHairdresser": "Saluez la coiffeuse",
       "askForHaircut": "Dites que vous voulez une coupe de cheveux",
       "describeLength": "Dites si vous les voulez courts ou longs",
       "payHaircut": "Payez la coupe de cheveux"
@@ -257,7 +257,7 @@
       "description": "Renseignez-vous sur la location d'un appartement"
     },
     "tasks": {
-      "greetLandlord": "Saluez le propriétaire",
+      "greetLandlord": "Saluez la propriétaire",
       "askRent": "Demandez le montant du loyer",
       "askArea": "Demandez la superficie de l'appartement",
       "confirmRental": "Dites que vous voulez louer l'appartement"

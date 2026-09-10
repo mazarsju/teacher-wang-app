@@ -24,7 +24,7 @@ Each component has `*Probability` (0–100) and usually `*Variant`.
 | --- | --- | --- |
 | `beard` | `beardProbability` | 12 (`variant01`–`variant12`) |
 | `glasses` | `glassesProbability` | 11 (`variant01`–`variant11`) |
-| `hair` | `hairProbability` | `hat` + `variant01`–`variant63` |
+| `hair` | `hairProbability` | `hat` + `variant01`–`variant63` (`variant61`–`variant63` banned, see below) |
 | `eyes` | `eyesProbability` | 5 |
 | `eyebrows` | `eyebrowsProbability` | 13 |
 | `mouth` | `mouthProbability` | 30 |
@@ -68,16 +68,18 @@ Notionists beards are **black fills** — ignore “white / grey beard” as col
 | light stubble / hint of mustache | `variant04` | Minimal |
 | no beard / clean-shaven | `beardProbability=0` | |
 
-### Hair (`hairVariant` / probability) — required
+### Hair (`hairVariant` / probability) — required, banned set
 
 **Always** set `hairProbability=100` and a `hairVariant`. Never use `hairProbability=0`.
+
+**Never use:** `variant61`, `variant62`, `variant63`.
 
 | User says | Prefer |
 | --- | --- |
 | (unspecified) / default | `hairVariant=variant25` (short neat hair) |
 | bald / balding / old / sparse | short hair still — e.g. `variant25`, `variant15`; never remove hair |
 | hat | `hairVariant=hat` |
-| short / long / styled | Preview a few `variantNN` PNGs; Notionists has 63 hair cuts — do not guess blindly when the user is specific |
+| short / long / styled | Preview a few `variantNN` PNGs from the allowed set (`variant01`–`variant60`); do not guess blindly when the user is specific |
 
 ### Mouth (`mouthVariant`) — banned set
 

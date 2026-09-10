@@ -4,6 +4,7 @@ import type {
   ChatRequest,
   ChatResponse,
   ChatThreadContext,
+  TtsVoice,
 } from "../../types/chat";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
@@ -74,6 +75,26 @@ export async function sendChatMessage(
   }
 
   return (await response.json()) as ChatResponse;
+}
+
+export async function fetchChatTts(
+  text: string,
+  voice: TtsVoice,
+): Promise<Blob> {
+  const response = await apiFetch(`${API_BASE}/chat/tts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, voice }),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new Error(data?.error ?? "Failed to generate speech.");
+  }
+
+  return response.blob();
 }
 
 export async function clearChatHistory(characterId: string): Promise<void> {

@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
 
 LLM_API_KEY_ENV = "LLM_API_KEY"
 LLM_MODEL_ENV = "LLM_MODEL"
@@ -26,3 +27,8 @@ def get_llm() -> BaseChatModel:
     model = _get_config_value(LLM_MODEL_ENV)
 
     return ChatOpenAI(api_key=api_key, model=model)
+
+
+@lru_cache(maxsize=1)
+def get_openai_client() -> OpenAI:
+    return OpenAI(api_key=_get_config_value(LLM_API_KEY_ENV))

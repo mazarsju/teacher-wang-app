@@ -1,4 +1,5 @@
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
+import type { TtsVoice } from "../types/chat";
 import styles from "./ChatCharacterCard.module.css";
 
 export type ChatCharacter = {
@@ -21,6 +22,8 @@ export type ChatCharacter = {
     | "bus-driver"
     | "hairdresser"
     | "landlord";
+  gender: "male" | "female";
+  voice: TtsVoice;
 };
 
 type ChatCharacterCardProps = {

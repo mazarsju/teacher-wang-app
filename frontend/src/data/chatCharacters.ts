@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import type { ChatCharacter } from "../components/ChatCharacterCard";
+import type { TtsVoice } from "../types/chat";
 
 export const TEACHER_WANG_ID = "teacher-wang";
 export const XIAO_MING_ID = "xiao-ming";
@@ -10,18 +11,23 @@ type ChatCharacterTemplate = {
   chineseName: string;
   translationKey: string;
   avatarVariant: ChatCharacter["avatarVariant"];
+  gender: ChatCharacter["gender"];
+  voice: TtsVoice;
 };
 
-// `name`/`chineseName`/`avatarVariant` are stable, deliberately untranslated
-// data (see docs/adr/frontend-localization.md's "Out of scope" note) — only
-// `description` resolves into locales/en/chat.json's `chatCharacters` key,
-// via `getTeacherWang`/`getXiaoMing`/`getChatCharacters`.
+// `name`/`chineseName`/`avatarVariant`/`gender`/`voice` are stable,
+// deliberately untranslated data (see docs/adr/frontend-localization.md's
+// "Out of scope" note) — only `description` resolves into
+// locales/en/chat.json's `chatCharacters` key, via
+// `getTeacherWang`/`getXiaoMing`/`getChatCharacters`.
 const TEACHER_WANG_TEMPLATE: ChatCharacterTemplate = {
   id: TEACHER_WANG_ID,
   name: "Teacher Wang",
   chineseName: "王老师",
   translationKey: "teacherWang",
   avatarVariant: "teacher",
+  gender: "male",
+  voice: "alloy",
 };
 
 const XIAO_MING_TEMPLATE: ChatCharacterTemplate = {
@@ -30,6 +36,8 @@ const XIAO_MING_TEMPLATE: ChatCharacterTemplate = {
   chineseName: "小明",
   translationKey: "xiaoMing",
   avatarVariant: "friend",
+  gender: "male",
+  voice: "echo",
 };
 
 function renderChatCharacter(
@@ -42,6 +50,8 @@ function renderChatCharacter(
     chineseName: template.chineseName,
     description: t(`chatCharacters.${template.translationKey}.description`),
     avatarVariant: template.avatarVariant,
+    gender: template.gender,
+    voice: template.voice,
   };
 }
 

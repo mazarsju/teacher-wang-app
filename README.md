@@ -241,6 +241,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
 | `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, challenge progress, and stored conversation summary |
 | `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
+| `POST` | `/chat/tts` | Given `{ "text": "...", "voice": "alloy" \| "echo" \| "fable" \| "onyx" \| "nova" \| "shimmer" }` (Chinese text; voice picked by the frontend from the chat character's fixed `voice`, see `frontend/src/data/chatCharacters.ts`/`challenges.ts`), return an `audio/mpeg` clip from OpenAI TTS (`tts-1`). Playback speed is not client-supplied — it's derived server-side from the caller's chat-speaking HSK level (0.75 at HSK1 up to 1.1 at HSK6+, see `get_chat_tts_speed` in `backend/utils/knowledgeBase/hsk_level.py`) |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
 | `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writing_known` |
@@ -469,7 +470,19 @@ The app UI and explanations are English-only today. Learners should be able to p
 - [x] Add French as the first additional language and validate the full localization workflow end-to-end
 - [x] Add a language switcher in the UI and persist the user's preferred interface language
 
-### 12. Gamification
+### 12. Voice interaction (TTS & STT)
+
+Let learners hear Mandarin spoken aloud and practice speaking it back, not just read and type.
+
+- [ ] TTS (Text to Speech)
+  - [x] Playable audio generation for each AI agent reply
+  - [ ] New setting to prioritize audio playback over the written text
+- [ ] STT (Speech to Text)
+  - [ ] Record the learner's voice and transcribe it to text (within conversations)
+  - [ ] Analyze the learner's pronunciation issues
+- [ ] Listening challenges
+
+### 13. Gamification
 
 Light rewards so progress feels visible without turning the app into a points grind.
 
@@ -477,7 +490,7 @@ Light rewards so progress feels visible without turning the app into a points gr
 - [ ] Award and display badges on the profile / home progress area
 - [ ] Notifications or toasts when a new badge is unlocked
 
-### 13. Peer chat (real persons)
+### 14. Peer chat (real persons)
 
 Let learners practice with each other, not only with AI agents — with clear presence, consent, and safety controls.
 
@@ -486,7 +499,7 @@ Let learners practice with each other, not only with AI agents — with clear pr
 - [ ] 1:1 chat sessions between two learners
 - [ ] Block a user so they can no longer contact you
 
-### 14. Interactive games with Xiao Ming
+### 15. Interactive games with Xiao Ming
 
 Short playful games in chat to reinforce vocabulary and comprehension alongside free conversation.
 

@@ -12,6 +12,7 @@ from backend.utils.knowledgeBase.hsk_level import (
     get_hsk_level_status,
     refresh_current_hsk_level,
     speaking_hsk_level_from_current,
+    tts_speed_for_hsk_level,
 )
 from backend.utils.database.models import Character, HskCharacter
 from backend.utils.database.settings import SETTING_LEVEL, get_setting
@@ -111,6 +112,15 @@ class TestHskLevel(PostgresTestCase):
         self.assertEqual(speaking_hsk_level_from_current(None), 1)
         self.assertEqual(speaking_hsk_level_from_current(2), 3)
         self.assertEqual(speaking_hsk_level_from_current(7), 7)
+
+    def test_tts_speed_by_hsk_level(self):
+        self.assertEqual(tts_speed_for_hsk_level(1), 0.75)
+        self.assertEqual(tts_speed_for_hsk_level(2), 0.85)
+        self.assertEqual(tts_speed_for_hsk_level(3), 0.95)
+        self.assertEqual(tts_speed_for_hsk_level(4), 1.0)
+        self.assertEqual(tts_speed_for_hsk_level(5), 1.05)
+        self.assertEqual(tts_speed_for_hsk_level(6), 1.1)
+        self.assertEqual(tts_speed_for_hsk_level(7), 1.1)
 
     def test_refresh_persists_current_level(self):
         for char in ("爱", "好", "八"):

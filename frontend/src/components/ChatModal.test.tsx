@@ -10,6 +10,8 @@ const teacherWang: ChatCharacter = {
   chineseName: "王老师",
   description: "The native Chinese teacher who can also speak English",
   avatarVariant: "teacher",
+  gender: "male",
+  voice: "alloy",
 };
 
 describe("ChatModal", () => {
@@ -315,6 +317,8 @@ describe("ChatModal", () => {
       chineseName: "小明",
       description: "Your native Chinese friend",
       avatarVariant: "friend",
+      gender: "male",
+      voice: "echo",
     };
 
     vi.stubGlobal(
@@ -546,6 +550,8 @@ describe("ChatModal", () => {
       chineseName: "小明",
       description: "Your native Chinese friend",
       avatarVariant: "friend",
+      gender: "male",
+      voice: "echo",
     };
 
     vi.stubGlobal(
@@ -624,6 +630,8 @@ describe("ChatModal", () => {
       chineseName: "服务员",
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -696,6 +704,8 @@ describe("ChatModal", () => {
       chineseName: "服务员",
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -850,6 +860,8 @@ describe("ChatModal", () => {
       chineseName: "服务员",
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -911,6 +923,8 @@ describe("ChatModal", () => {
       chineseName: "服务员",
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -1082,6 +1096,8 @@ describe("ChatModal", () => {
       chineseName: "服务员",
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -1132,6 +1148,8 @@ describe("ChatModal", () => {
       chineseName: "服务员",
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
     };
 
     vi.stubGlobal(

@@ -1,19 +1,19 @@
 {
   "restaurant": {
-    "title": "Waiter",
-    "description": "Talk with the waiter and order a meal",
+    "title": "Waitress",
+    "description": "Talk with the waitress and order a meal",
     "character": {
-      "name": "Waiter",
-      "description": "Talk with the waiter and order a meal"
+      "name": "Waitress",
+      "description": "Talk with the waitress and order a meal"
     },
     "tasks": {
-      "callWaiter": "Call the waiter",
+      "callWaiter": "Call the waitress",
       "askNoMeat": "Ask if they have a dish without meat",
       "askBill": "Ask for the bill",
       "payBill": "Pay the bill"
     },
     "vocabulary": {
-      "fuwuyuan": "waiter",
+      "fuwuyuan": "waitress",
       "caidan": "menu",
       "rou": "meat",
       "maidan": "to pay the bill",
@@ -250,21 +250,21 @@
     }
   },
   "apartment": {
-    "title": "Landlord",
+    "title": "Landlady",
     "description": "Ask about renting an apartment",
     "character": {
-      "name": "Landlord",
+      "name": "Landlady",
       "description": "Ask about renting an apartment"
     },
     "tasks": {
-      "greetLandlord": "Greet the landlord",
+      "greetLandlord": "Greet the landlady",
       "askRent": "Ask how much the rent is",
       "askArea": "Ask how big the apartment is",
       "confirmRental": "Say you want to rent the apartment"
     },
     "vocabulary": {
       "fangzu": "rent",
-      "fangdong": "landlord",
+      "fangdong": "landlady",
       "hetong": "contract",
       "zhongjie": "agent, agency",
       "mianji": "floor area"

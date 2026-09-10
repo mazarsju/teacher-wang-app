@@ -1,4 +1,6 @@
-from flask import Blueprint, current_app, request
+import io
+
+from flask import Blueprint, current_app, request, send_file
 
 from backend.utils.aiChat.challenge_progress import (
     clear_challenge_progress,
@@ -39,10 +41,14 @@ from backend.utils.aiChat.conversation_summary import (
     should_summarize,
 )
 from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.aiChat.llm import get_openai_client
 from backend.utils.aiChat.token_usage import record_token_usage
 from backend.utils.auth.user_context import current_user, current_user_id
+from backend.utils.knowledgeBase.hsk_level import get_chat_tts_speed
 
 bp = Blueprint("chat", __name__)
+
+TTS_VOICES = {"alloy", "echo", "fable", "onyx", "nova", "shimmer"}
 
 
 def _history_payload(user_id: str, character_id: str) -> dict:
@@ -419,6 +425,41 @@ def _handle_main_chat(
             response["behaviors"] = behavior_report
 
     return response, 200
+
+
+@bp.post("/chat/tts")
+def tts():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return {"error": "Request body must be a JSON object"}, 400
+
+    text = data.get("text")
+    if not isinstance(text, str) or text.strip() == "":
+        return {"error": "text must be a non-empty string"}, 400
+
+    voice = data.get("voice")
+    if voice not in TTS_VOICES:
+        return {"error": f"voice must be one of {sorted(TTS_VOICES)}"}, 400
+
+    speed = get_chat_tts_speed(current_user_id())
+
+    try:
+        response = get_openai_client().audio.speech.create(
+            model="tts-1",
+            voice=voice,
+            input=text.strip(),
+            speed=speed,
+            response_format="mp3",
+        )
+    except Exception:
+        return {"error": "Failed to generate speech"}, 500
+
+    return send_file(
+        io.BytesIO(response.content),
+        mimetype="audio/mpeg",
+        as_attachment=False,
+        download_name="speech.mp3",
+    )
 
 
 @bp.get("/chat/history/<character_id>")

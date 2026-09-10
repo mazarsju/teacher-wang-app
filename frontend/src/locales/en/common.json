@@ -74,6 +74,7 @@
     "sending": "Sending...",
     "send": "Send",
     "clearHistoryConfirm": "Clear all chat history with {{name}}? This cannot be undone.",
+    "playAudio": "Play audio",
     "openGrammarNoteAriaLabel": "Open grammar note ({{severity}}) with Teacher Wang",
     "askTeacherWangTitle": "{{severity}} — ask Teacher Wang",
     "errors": {

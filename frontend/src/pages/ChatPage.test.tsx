@@ -101,7 +101,7 @@ describe("ChatPage", () => {
     const challengeButtons = [
       screen.getByRole("button", { name: /Xiao Ming/ }),
       screen.getByRole("button", { name: /Taxi Driver/ }),
-      screen.getByRole("button", { name: /Waiter/ }),
+      screen.getByRole("button", { name: /Waitress/ }),
       screen.getByRole("button", { name: /Hotel Receptionist/ }),
       screen.getByRole("button", { name: /Shop Assistant/ }),
     ];
@@ -121,7 +121,7 @@ describe("ChatPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("(服务员)")).toBeInTheDocument();
     expect(
-      screen.getByText("Talk with the waiter and order a meal"),
+      screen.getByText("Talk with the waitress and order a meal"),
     ).toBeInTheDocument();
     expect(screen.getByText("(出租车司机)")).toBeInTheDocument();
     expect(
@@ -156,7 +156,7 @@ describe("ChatPage", () => {
 
     expect(
       await screen.findByRole("button", {
-        name: /Waiter \(服务员\), completed/,
+        name: /Waitress \(服务员\), completed/,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Completed")).toBeInTheDocument();
@@ -184,17 +184,17 @@ describe("ChatPage", () => {
 
     render(<ChatPage />);
 
-    await user.click(screen.getByRole("button", { name: /Waiter/ }));
+    await user.click(screen.getByRole("button", { name: /Waitress/ }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /Waiter \(服务员\)/ }),
+      screen.getByRole("heading", { name: /Waitress \(服务员\)/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Waiter — tasks" }),
+      screen.getByRole("heading", { name: "Waitress — tasks" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Call the waiter")).toBeDisabled();
-    expect(screen.getByLabelText("Call the waiter")).not.toBeChecked();
+    expect(screen.getByLabelText("Call the waitress")).toBeDisabled();
+    expect(screen.getByLabelText("Call the waitress")).not.toBeChecked();
   });
 
   it("opens the taxi challenge chat modal with tasks", async () => {
@@ -337,13 +337,13 @@ describe("ChatPage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<ChatPage />);
-    await user.click(screen.getByRole("button", { name: /Waiter/ }));
+    await user.click(screen.getByRole("button", { name: /Waitress/ }));
     await user.click(screen.getByRole("button", { name: "Close chat" }));
 
     await waitFor(() => {
       expect(
         screen.getByRole("button", {
-          name: /Waiter \(服务员\), completed/,
+          name: /Waitress \(服务员\), completed/,
         }),
       ).toBeInTheDocument();
     });
@@ -423,7 +423,7 @@ describe("ChatPage", () => {
     });
 
     expect(
-      screen.queryByRole("button", { name: /Waiter/ }),
+      screen.queryByRole("button", { name: /Waitress/ }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Xiao Ming/ }),

@@ -353,6 +353,29 @@ button.chat-message-severity-badge {
   cursor: pointer;
 }
 
+.chat-message-speaker-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.35rem;
+  padding: 0.3rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.chat-message-speaker-button:hover {
+  background: var(--app-mist);
+  color: var(--app-ink);
+}
+
+.chat-message-speaker-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
 .chat-message-severity-badge--none {
   border-color: #16a34a;
   background: #f0fdf4;

@@ -160,3 +160,15 @@ def speaking_hsk_level_from_current(current_level: int | None) -> int:
 
 def get_chat_speaking_hsk_level(user_id: str) -> int:
     return speaking_hsk_level_from_current(get_stored_current_hsk_level(user_id))
+
+
+TTS_SPEED_BY_HSK_LEVEL = {1: 0.75, 2: 0.85, 3: 0.95, 4: 1.0, 5: 1.05}
+TTS_SPEED_HSK6_PLUS = 1.1
+
+
+def tts_speed_for_hsk_level(level: int) -> float:
+    return TTS_SPEED_BY_HSK_LEVEL.get(level, TTS_SPEED_HSK6_PLUS)
+
+
+def get_chat_tts_speed(user_id: str) -> float:
+    return tts_speed_for_hsk_level(get_chat_speaking_hsk_level(user_id))

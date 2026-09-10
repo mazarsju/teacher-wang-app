@@ -24,6 +24,8 @@ export type ChatRequest = {
 
 export type GrammarSeverity = "none" | "minor" | "awkward" | "incorrect";
 
+export type TtsVoice = "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer";
+
 export type GrammarCorrection = {
   severity: GrammarSeverity;
   answer?: string;

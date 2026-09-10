@@ -74,6 +74,7 @@
     "sending": "Envoi...",
     "send": "Envoyer",
     "clearHistoryConfirm": "Effacer tout l'historique de discussion avec {{name}} ? Cette action est irréversible.",
+    "playAudio": "Écouter l'audio",
     "openGrammarNoteAriaLabel": "Ouvrir la note de grammaire ({{severity}}) avec Teacher Wang",
     "askTeacherWangTitle": "{{severity}} — demander à Teacher Wang",
     "errors": {
