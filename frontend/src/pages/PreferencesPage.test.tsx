@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
 import i18n from "../i18n";
@@ -122,6 +122,16 @@ describe("PreferencesPage", () => {
           return Promise.resolve({
             ok: true,
             json: async () => ({ enabled: true }),
+          });
+        }
+
+        if (url.endsWith("/preferences/chat-setup")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              listening_mode: "reading_first",
+              listen_speed_adjustment: 0,
+            }),
           });
         }
 
@@ -319,6 +329,135 @@ describe("PreferencesPage", () => {
 
     await waitFor(() => expect(i18n.language).toBe("en"));
     expect(select).toHaveValue("en");
+  });
+
+  it("shows the chat setup section with reading first selected by default", async () => {
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    await screen.findByRole("heading", { name: "Chat setup" });
+    const readingFirst = await screen.findByRole("radio", {
+      name: /Reading first/,
+    });
+    const listeningFirst = screen.getByRole("radio", {
+      name: /Listening first/,
+    });
+    expect(readingFirst).toBeChecked();
+    expect(listeningFirst).not.toBeChecked();
+    expect(
+      screen.getByText(/only hear the audio/),
+    ).toBeInTheDocument();
+  });
+
+  it("switches to listening first and persists the change", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const listeningFirst = await screen.findByRole("radio", {
+      name: /Listening first/,
+    });
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/chat-setup") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            listening_mode: "listening_first",
+            listen_speed_adjustment: 0,
+          }),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    await user.click(listeningFirst);
+
+    await waitFor(() => expect(listeningFirst).toBeChecked());
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/preferences/chat-setup"),
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ listening_mode: "listening_first" }),
+      }),
+    );
+  });
+
+  it("reverts the listening mode if saving the preference fails", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const readingFirst = await screen.findByRole("radio", {
+      name: /Reading first/,
+    });
+    const listeningFirst = screen.getByRole("radio", {
+      name: /Listening first/,
+    });
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/chat-setup") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({}),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    await user.click(listeningFirst);
+
+    await waitFor(() => expect(readingFirst).toBeChecked());
+    expect(listeningFirst).not.toBeChecked();
+  });
+
+  it("shows the listening speed slider defaulting to Normal and persists a change", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+
+    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
+
+    const slider = await screen.findByRole("slider", {
+      name: "Listening speed adjustment",
+    });
+    expect(slider).toHaveValue("2");
+
+    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/preferences/chat-setup") && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            listening_mode: "reading_first",
+            listen_speed_adjustment: 10,
+          }),
+        }) as unknown as ReturnType<typeof fetch>;
+      }
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({}),
+      }) as unknown as ReturnType<typeof fetch>;
+    });
+
+    fireEvent.change(slider, { target: { value: "3" } });
+
+    await waitFor(() => expect(slider).toHaveValue("3"));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/preferences/chat-setup"),
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ listen_speed_adjustment: 10 }),
+      }),
+    );
   });
 
   it("prompts to update the plan once the monthly AI usage allowance is reached", async () => {

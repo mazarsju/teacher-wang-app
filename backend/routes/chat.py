@@ -44,6 +44,7 @@ from backend.utils.database.settings import ADMIN_EMAIL
 from backend.utils.aiChat.llm import get_openai_client
 from backend.utils.aiChat.token_usage import record_token_usage
 from backend.utils.auth.user_context import current_user, current_user_id
+from backend.utils.database.settings import get_chat_listen_speed_adjustment
 from backend.utils.knowledgeBase.hsk_level import get_chat_tts_speed
 
 bp = Blueprint("chat", __name__)
@@ -441,7 +442,8 @@ def tts():
     if voice not in TTS_VOICES:
         return {"error": f"voice must be one of {sorted(TTS_VOICES)}"}, 400
 
-    speed = get_chat_tts_speed(current_user_id())
+    user_id = current_user_id()
+    speed = get_chat_tts_speed(user_id) + get_chat_listen_speed_adjustment(user_id) / 100
 
     try:
         response = get_openai_client().audio.speech.create(

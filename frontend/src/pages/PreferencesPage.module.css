@@ -106,6 +106,76 @@
   cursor: not-allowed;
 }
 
+.preferences-field-group {
+  margin-bottom: 1.5rem;
+}
+
+.preferences-field-group-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.preferences-mode-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.preferences-mode-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem 0.9rem 2.25rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  cursor: pointer;
+}
+
+.preferences-mode-option input {
+  position: absolute;
+  top: 0.95rem;
+  left: 1rem;
+  margin: 0;
+}
+
+.preferences-mode-option--selected {
+  border-color: var(--app-sea);
+  box-shadow: 0 0 0 1px var(--app-sea);
+}
+
+.preferences-mode-option-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.preferences-mode-option-description {
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.preferences-speed-slider {
+  width: 100%;
+  margin: 0.5rem 0 0.35rem;
+  accent-color: var(--app-sea);
+}
+
+.preferences-speed-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.preferences-speed-slider-label-active {
+  color: var(--app-sea);
+  font-weight: 700;
+}
+
 .preferences-usage-progress {
   margin: 0 0 1.25rem;
   padding: 0.9rem 1rem;

@@ -31,6 +31,7 @@ Use this index to find the right document. Prefer **one source of truth** and li
 | Frontend localization (react-i18next) | [adr/frontend-localization.md](adr/frontend-localization.md) |
 | Grammar content (lessons, exercises, mastery) | [adr/grammar-content.md](adr/grammar-content.md) |
 | Writing practice | [adr/writing-practice.md](adr/writing-practice.md) |
+| Voice interaction (TTS) | [adr/voice-interaction.md](adr/voice-interaction.md) |
 
 Obsolete decisions: [adr/archived/](adr/archived/) (history only).
 
@@ -76,6 +77,7 @@ Example header:
 | Translations / `react-i18next` / UI text / `users.language` | [adr/frontend-localization.md](adr/frontend-localization.md), [architecture/schema-tenancy.md](architecture/schema-tenancy.md) |
 | Grammar lessons / exercises / mastery | [adr/grammar-content.md](adr/grammar-content.md) |
 | Writing topics / drafts / sentence correction / `writing_progress` | [adr/writing-practice.md](adr/writing-practice.md) |
+| `/chat/tts` / character voices / listening mode / `chat_listening_mode` / `chat_listen_speed_adjustment` | [adr/voice-interaction.md](adr/voice-interaction.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |
 | Product screenshots | [screenshots/](screenshots/) |
 | AnkiConnect install UI | [anki/setup/](anki/setup/) |

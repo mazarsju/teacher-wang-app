@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatModal from "./ChatModal";
 import type { ChatCharacter } from "./ChatCharacterCard";
@@ -1071,14 +1071,20 @@ describe("ChatModal", () => {
       screen.getByText("Ask me what you did not understand on this lesson!"),
     ).toHaveClass("chat-message--assistant");
     // Nothing sent yet: the greeting is display-only, not auto-sent.
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/chat"),
+      expect.objectContaining({ method: "POST" }),
+    );
 
     await user.type(screen.getByLabelText("Message"), "Why does 是 work here?");
     await user.click(screen.getByRole("button", { name: "Send" }));
 
     expect(await screen.findByText("是 means 'to be'.")).toBeInTheDocument();
 
-    const [, init] = fetchMock.mock.calls[0];
+    const [, init] = fetchMock.mock.calls.find(
+      ([callUrl, callInit]) =>
+        String(callUrl).endsWith("/chat") && callInit?.method === "POST",
+    )!;
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.messages).toEqual([
       { role: "user", content: "Why does 是 work here?" },
@@ -1183,5 +1189,265 @@ describe("ChatModal", () => {
 
     await screen.findByLabelText("Call the waiter");
     expect(screen.queryByRole("button", { name: "Vocabulary" })).not.toBeInTheDocument();
+  });
+
+  it("masks the assistant reply until revealed and autoplays audio when listening first is enabled", async () => {
+    const user = userEvent.setup();
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, "play")
+      .mockResolvedValue(undefined);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+        }
+        if (url.endsWith("/preferences/chat-setup") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              listening_mode: "listening_first",
+              listen_speed_adjustment: 0,
+            }),
+          });
+        }
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: { role: "assistant", content: "你好！" },
+            }),
+          });
+        }
+        if (url.endsWith("/chat/tts") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            blob: async () => new Blob(["fake-audio"], { type: "audio/mpeg" }),
+          });
+        }
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(
+      <ChatModal character={teacherWang} onClose={() => undefined} />,
+    );
+
+    await user.type(screen.getByLabelText("Message"), "Hello");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("你好！")).toBeInTheDocument();
+
+    const revealButton = await screen.findByRole("button", {
+      name: "Reveal text",
+    });
+    // Both controls are reachable while the text is still blurred.
+    expect(
+      screen.getByRole("button", { name: "Play audio" }),
+    ).toBeInTheDocument();
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalled());
+
+    await user.click(revealButton);
+
+    expect(
+      screen.queryByRole("button", { name: "Reveal text" }),
+    ).not.toBeInTheDocument();
+
+    playSpy.mockRestore();
+  });
+
+  it("does not mask the assistant reply or autoplay audio in the default reading-first mode", async () => {
+    const user = userEvent.setup();
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, "play")
+      .mockResolvedValue(undefined);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+        }
+        if (url.endsWith("/preferences/chat-setup") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              listening_mode: "reading_first",
+              listen_speed_adjustment: 0,
+            }),
+          });
+        }
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: { role: "assistant", content: "你好！" },
+            }),
+          });
+        }
+        if (url.endsWith("/chat/tts") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            blob: async () => new Blob(["fake-audio"], { type: "audio/mpeg" }),
+          });
+        }
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(
+      <ChatModal character={teacherWang} onClose={() => undefined} />,
+    );
+
+    await user.type(screen.getByLabelText("Message"), "Hello");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("你好！")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reveal text" }),
+    ).not.toBeInTheDocument();
+
+    const speakerButton = await screen.findByRole("button", {
+      name: "Play audio",
+    });
+    expect(playSpy).not.toHaveBeenCalled();
+
+    await user.click(speakerButton);
+    expect(playSpy).toHaveBeenCalled();
+
+    playSpy.mockRestore();
+  });
+
+  it("shows a listen button for a Chinese assistant message loaded from history, fetching and playing audio on click", async () => {
+    const user = userEvent.setup();
+    const playSpy = vi
+      .spyOn(window.HTMLMediaElement.prototype, "play")
+      .mockResolvedValue(undefined);
+    let resolveTts: (value: unknown) => void = () => {};
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              messages: [
+                { role: "user", content: "Hello" },
+                { role: "assistant", content: "你好！" },
+              ],
+            }),
+          });
+        }
+        if (url.endsWith("/preferences/chat-setup") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              listening_mode: "reading_first",
+              listen_speed_adjustment: 0,
+            }),
+          });
+        }
+        if (url.endsWith("/chat/tts") && method === "POST") {
+          return new Promise((resolve) => {
+            resolveTts = resolve;
+          });
+        }
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(
+      <ChatModal character={teacherWang} onClose={() => undefined} />,
+    );
+
+    expect(await screen.findByText("你好！")).toBeInTheDocument();
+
+    // No TTS call happens just from loading history — the button appears
+    // unloaded, ready to be fetched lazily on click.
+    const listenButton = screen.getByRole("button", { name: "Play audio" });
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/chat/tts"),
+      expect.anything(),
+    );
+
+    await user.click(listenButton);
+
+    expect(
+      await screen.findByRole("button", { name: "Loading audio…" }),
+    ).toBeDisabled();
+    expect(playSpy).not.toHaveBeenCalled();
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/chat/tts",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+
+    await act(async () => {
+      resolveTts({
+        ok: true,
+        blob: async () => new Blob(["fake-audio"], { type: "audio/mpeg" }),
+      });
+    });
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalled());
+    expect(
+      await screen.findByRole("button", { name: "Play audio" }),
+    ).not.toBeDisabled();
+
+    playSpy.mockRestore();
+  });
+
+  it("puts the listen button inside the message bubble", async () => {
+    const user = userEvent.setup();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+        }
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: { role: "assistant", content: "你好！" },
+            }),
+          });
+        }
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(
+      <ChatModal character={teacherWang} onClose={() => undefined} />,
+    );
+
+    await user.type(screen.getByLabelText("Message"), "Hello");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const bubble = (await screen.findByText("你好！")).closest(
+      ".chat-message--assistant",
+    ) as HTMLElement;
+    expect(bubble).not.toBeNull();
+    expect(
+      within(bubble).getByRole("button", { name: "Play audio" }),
+    ).toBeInTheDocument();
   });
 });

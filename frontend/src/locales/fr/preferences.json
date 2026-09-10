@@ -21,6 +21,29 @@
         "fr": "Français"
       }
     },
+    "chatSetup": {
+      "title": "Configuration des discussions",
+      "description": "Choisissez comment le chinois parlé et écrit apparaît dans vos conversations avec l'IA.",
+      "listeningMode": {
+        "title": "Lecture d'abord vs. Écoute d'abord",
+        "options": {
+          "reading_first": {
+            "title": "Lecture d'abord (par défaut)",
+            "description": "Chaque réponse de l'IA affiche immédiatement son texte en chinois, comme aujourd'hui. Choisissez cette option si vous ne pouvez pas jouer de son dans votre configuration actuelle, ou si vous préférez lire en même temps que vous apprenez les caractères."
+          },
+          "listening_first": {
+            "title": "Écoute d'abord",
+            "description": "Le texte chinois des réponses de l'IA reste caché au départ — vous n'entendrez que l'audio. Vous pouvez révéler le texte à tout moment. Choisissez cette option pour entraîner votre oreille et pratiquer la compréhension du chinois parlé sans vous appuyer sur les caractères."
+          }
+        }
+      },
+      "listenSpeed": {
+        "title": "Vitesse d'écoute",
+        "description": "Accélérez ou ralentissez la voix de l'IA, en plus du rythme déjà défini pour votre niveau HSK.",
+        "ariaLabel": "Ajustement de la vitesse d'écoute",
+        "normal": "Normal"
+      }
+    },
     "currentPlan": {
       "title": "Offre actuelle",
       "descriptionFree": "Vous êtes sur l'offre <1>Gratuite</1>.",
@@ -76,6 +99,8 @@
       "loadPreferences": "Échec du chargement des préférences.",
       "loadSmartAi": "Échec du chargement de la préférence IA intelligente.",
       "updateSmartAi": "Échec de la mise à jour de la préférence IA intelligente.",
+      "loadChatSetup": "Échec du chargement de la préférence de configuration des discussions.",
+      "updateChatSetup": "Échec de la mise à jour de la préférence de configuration des discussions.",
       "updateLanguage": "Échec de la mise à jour de la préférence de langue.",
       "refreshAnkiStatus": "Échec de l'actualisation du statut Anki.",
       "deleteKnowledgeBase": "Échec de la suppression de la base de connaissances.",

@@ -21,6 +21,29 @@
         "fr": "Français"
       }
     },
+    "chatSetup": {
+      "title": "Chat setup",
+      "description": "Choose how spoken and written Chinese show up in your AI conversations.",
+      "listeningMode": {
+        "title": "Reading first vs. Listening first",
+        "options": {
+          "reading_first": {
+            "title": "Reading first (default)",
+            "description": "Every AI reply shows its Chinese text right away, exactly like today. Pick this if you can't play sound in your current setup, or if you'd rather read along while you're still learning the characters."
+          },
+          "listening_first": {
+            "title": "Listening first",
+            "description": "The Chinese text of AI replies stays hidden at first — you'll only hear the audio. You can reveal the text any time you want. Pick this to train your ear and practice understanding spoken Chinese without leaning on the characters."
+          }
+        }
+      },
+      "listenSpeed": {
+        "title": "Listening speed",
+        "description": "Speed up or slow down the AI voice, on top of the pace already set for your HSK level.",
+        "ariaLabel": "Listening speed adjustment",
+        "normal": "Normal"
+      }
+    },
     "currentPlan": {
       "title": "Current plan",
       "descriptionFree": "You're on the <1>Free</1> plan.",
@@ -76,6 +99,8 @@
       "loadPreferences": "Failed to load preferences.",
       "loadSmartAi": "Failed to load the Smart AI preference.",
       "updateSmartAi": "Failed to update the Smart AI preference.",
+      "loadChatSetup": "Failed to load the chat setup preference.",
+      "updateChatSetup": "Failed to update the chat setup preference.",
       "updateLanguage": "Failed to update the language preference.",
       "refreshAnkiStatus": "Failed to refresh Anki status.",
       "deleteKnowledgeBase": "Failed to delete knowledge base.",

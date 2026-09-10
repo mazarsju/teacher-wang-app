@@ -119,7 +119,7 @@ describe("GrammarPointDetailPage", () => {
     // The greeting is a scripted display bubble, not a real API call.
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining("/chat"),
-      expect.anything(),
+      expect.objectContaining({ method: "POST" }),
     );
 
     await user.type(screen.getByLabelText("Message"), "What does SVO mean?");

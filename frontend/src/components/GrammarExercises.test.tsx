@@ -131,7 +131,9 @@ describe("GrammarExercises", () => {
       screen.queryByText("Teacher Wang detected this answer as correct"),
     ).not.toBeInTheDocument();
 
-    const [, init] = fetchMock.mock.calls[0];
+    const [, init] = fetchMock.mock.calls.find(([callInput]) =>
+      String(callInput).endsWith("/chat"),
+    )!;
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.messages[0].content).toContain("茶 我 喜欢");
     expect(body.messages[0].content).toContain("我 喜欢 茶");
@@ -159,7 +161,11 @@ describe("GrammarExercises", () => {
     // re-renders when Teacher Wang's approval flips isCorrect, which used to
     // hand the modal a new (unmemoized) character object and re-trigger the
     // auto-send effect indefinitely.
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      fetchMock.mock.calls.filter(([callInput]) =>
+        String(callInput).endsWith("/chat"),
+      ),
+    ).toHaveLength(1);
   });
 
   it("keeps a wrong reorder answer flagged as wrong when Teacher Wang rejects it in the explanation chat", async () => {
@@ -297,7 +303,13 @@ describe("GrammarExercises", () => {
     expect(
       screen.queryByText("Teacher Wang is typing..."),
     ).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // The explanation reuses the already-fetched aiExplanation, so no second
+    // /chat POST should fire when the modal mounts.
+    expect(
+      fetchMock.mock.calls.filter(([callInput]) =>
+        String(callInput).endsWith("/chat"),
+      ),
+    ).toHaveLength(1);
   });
 
   it("falls back to incorrect when the Teacher Wang check itself fails", async () => {

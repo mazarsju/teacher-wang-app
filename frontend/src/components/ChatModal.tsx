@@ -10,6 +10,7 @@ import GrammarMasteryModal from "./GrammarMasteryModal";
 import {
   CheckIcon,
   CloseIcon,
+  EyeIcon,
   IncorrectIcon,
   QuestionIcon,
   SpeakerIcon,
@@ -24,12 +25,14 @@ import type {
   ChatThreadContext,
   GrammarSeverity,
 } from "../types/chat";
+import type { ChatListeningMode } from "../types/chatSetupPreference";
 import {
   clearChatHistory,
   fetchChatHistory,
   fetchChatTts,
   sendChatMessage,
 } from "../utils/aiChat/chatApi";
+import { fetchChatSetupPreference } from "../utils/aiChat/chatSetupPreferenceApi";
 import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
 import { isChineseOnlyText } from "../utils/aiChat/chineseText";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
@@ -90,6 +93,10 @@ function hasCorrectionThread(message: ChatMessage): boolean {
   );
 }
 
+function isTtsEligibleMessage(message: ChatMessage): boolean {
+  return message.role === "assistant" && isChineseOnlyText(message.content);
+}
+
 function getCorrectionThreadMessages(message: ChatMessage): ChatMessage[] {
   if (message.correctionThread && message.correctionThread.length > 0) {
     return message.correctionThread;
@@ -146,14 +153,20 @@ export default function ChatModal({
     string[] | null
   >(null);
   const [showMasteryConfetti, setShowMasteryConfetti] = useState(false);
-  const [audioUrlByIndex, setAudioUrlByIndex] = useState<Record<number, string>>(
-    {},
+  const [loadingAudioIndices, setLoadingAudioIndices] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [listeningMode, setListeningMode] =
+    useState<ChatListeningMode>("reading_first");
+  const [revealedIndices, setRevealedIndices] = useState<Set<number>>(
+    () => new Set(),
   );
   const wasChallengeCompleteRef = useRef(false);
   const autoSentRef = useRef(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlsRef = useRef<Record<number, string>>({});
+  const loadingAudioIndicesRef = useRef<Set<number>>(new Set());
 
   const isChallengeComplete = Boolean(
     tasks &&
@@ -165,6 +178,14 @@ export default function ChatModal({
     return () => {
       Object.values(audioUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
     };
+  }, []);
+
+  useEffect(() => {
+    fetchChatSetupPreference()
+      .then((preference) => setListeningMode(preference.listening_mode))
+      .catch(() => {
+        // Best-effort; falls back to the reading-first default.
+      });
   }, []);
 
   useEffect(() => {
@@ -215,7 +236,9 @@ export default function ChatModal({
     setMasteredGrammarPoints(null);
     Object.values(audioUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
     audioUrlsRef.current = {};
-    setAudioUrlByIndex({});
+    loadingAudioIndicesRef.current = new Set();
+    setLoadingAudioIndices(new Set());
+    setRevealedIndices(new Set());
     wasChallengeCompleteRef.current = false;
     autoSentRef.current = false;
 
@@ -290,19 +313,55 @@ export default function ChatModal({
     messageInputRef.current?.focus();
   }
 
-  function requestTtsForMessage(index: number, chatMessage: ChatMessage) {
-    if (chatMessage.role !== "assistant" || !isChineseOnlyText(chatMessage.content)) {
+  /**
+   * Fetches TTS audio for a message the first time it's needed (a fresh
+   * reply, or a history bubble the learner clicks on), caching the result so
+   * later clicks just replay it. `autoplay` forces playback once the audio
+   * arrives (a manual click); otherwise it only plays when listening-first
+   * mode wants it read out automatically.
+   */
+  function requestAudioForMessage(
+    index: number,
+    chatMessage: ChatMessage,
+    { autoplay }: { autoplay: boolean },
+  ) {
+    if (!isTtsEligibleMessage(chatMessage)) {
       return;
     }
+
+    const existingUrl = audioUrlsRef.current[index];
+    if (existingUrl) {
+      if (autoplay) {
+        playAudio(existingUrl);
+      }
+      return;
+    }
+
+    if (loadingAudioIndicesRef.current.has(index)) {
+      return;
+    }
+
+    loadingAudioIndicesRef.current = new Set(loadingAudioIndicesRef.current).add(
+      index,
+    );
+    setLoadingAudioIndices(new Set(loadingAudioIndicesRef.current));
 
     fetchChatTts(chatMessage.content, activeCharacter.voice)
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         audioUrlsRef.current = { ...audioUrlsRef.current, [index]: url };
-        setAudioUrlByIndex(audioUrlsRef.current);
+        if (autoplay || listeningMode === "listening_first") {
+          playAudio(url);
+        }
       })
       .catch(() => {
-        // Best-effort; missing audio just hides the speaker button.
+        // Best-effort; the button returns to its idle state so the learner can retry.
+      })
+      .finally(() => {
+        const next = new Set(loadingAudioIndicesRef.current);
+        next.delete(index);
+        loadingAudioIndicesRef.current = next;
+        setLoadingAudioIndices(new Set(next));
       });
   }
 
@@ -312,6 +371,38 @@ export default function ChatModal({
     }
     audioPlayerRef.current.src = url;
     void audioPlayerRef.current.play();
+  }
+
+  function revealMessage(index: number) {
+    setRevealedIndices((current) => new Set(current).add(index));
+  }
+
+  function renderListenButton(
+    index: number,
+    chatMessage: ChatMessage,
+    isAudioLoading: boolean,
+  ) {
+    return (
+      <button
+        key="listen"
+        type="button"
+        className={styles.chatMessageListenButton}
+        aria-label={
+          isAudioLoading ? t("chatModal.loadingAudio") : t("chatModal.playAudio")
+        }
+        title={
+          isAudioLoading ? t("chatModal.loadingAudio") : t("chatModal.playAudio")
+        }
+        disabled={isAudioLoading}
+        onClick={() => requestAudioForMessage(index, chatMessage, { autoplay: true })}
+      >
+        {isAudioLoading ? (
+          <span className={styles.chatMessageListenSpinner} aria-hidden="true" />
+        ) : (
+          <SpeakerIcon className={styles.chatMessageListenIcon} />
+        )}
+      </button>
+    );
   }
 
   async function sendTurn(
@@ -394,7 +485,9 @@ export default function ChatModal({
       })();
 
       setMessages(updatedMessages);
-      requestTtsForMessage(updatedMessages.length - 1, response.message);
+      requestAudioForMessage(updatedMessages.length - 1, response.message, {
+        autoplay: false,
+      });
       onThreadMessagesChange?.(updatedMessages);
       if (response.completed_task_ids) {
         setCompletedTaskIds(new Set(response.completed_task_ids));
@@ -727,6 +820,13 @@ export default function ChatModal({
                     }
                   }
 
+                  const isTtsEligible = isTtsEligibleMessage(chatMessage);
+                  const isMasked =
+                    listeningMode === "listening_first" &&
+                    isTtsEligible &&
+                    !revealedIndices.has(index);
+                  const isAudioLoading = loadingAudioIndices.has(index);
+
                   return (
                     <li
                       key={`${chatMessage.role}-${index}-${chatMessage.content}`}
@@ -752,23 +852,43 @@ export default function ChatModal({
                               : `${styles.chatMessage} ${styles.chatMessageAssistant}`
                           }
                         >
-                          {renderFormattedText(
-                            chatMessage.content,
-                            styles.chatMessageHeading,
+                          {isMasked ? (
+                            <div className={styles.chatMessageMaskedWrap}>
+                              <div
+                                className={styles.chatMessageMaskedText}
+                                aria-hidden="true"
+                              >
+                                {renderFormattedText(
+                                  chatMessage.content,
+                                  styles.chatMessageHeading,
+                                )}
+                              </div>
+                              {renderListenButton(index, chatMessage, isAudioLoading)}
+                              <button
+                                type="button"
+                                className={styles.chatMessageRevealButton}
+                                aria-label={t("chatModal.revealText")}
+                                title={t("chatModal.revealText")}
+                                onClick={() => revealMessage(index)}
+                              >
+                                <EyeIcon className={styles.chatMessageRevealIcon} />
+                              </button>
+                            </div>
+                          ) : isTtsEligible ? (
+                            <div className={styles.chatMessageTextWithListen}>
+                              {renderFormattedText(
+                                chatMessage.content,
+                                styles.chatMessageHeading,
+                              )}
+                              {renderListenButton(index, chatMessage, isAudioLoading)}
+                            </div>
+                          ) : (
+                            renderFormattedText(
+                              chatMessage.content,
+                              styles.chatMessageHeading,
+                            )
                           )}
                         </div>
-                        {chatMessage.role === "assistant" &&
-                          audioUrlByIndex[index] && (
-                            <button
-                              type="button"
-                              className={styles.chatMessageSpeakerButton}
-                              aria-label={t("chatModal.playAudio")}
-                              title={t("chatModal.playAudio")}
-                              onClick={() => playAudio(audioUrlByIndex[index])}
-                            >
-                              <SpeakerIcon className={styles.chatMessageSpeakerIcon} />
-                            </button>
-                          )}
                       </div>
                     </li>
                   );

@@ -27,6 +27,16 @@ SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED = (
 )
 SETTING_AVAILABLE_TOKEN = "available_token"
 SETTING_SMART_AI_ENABLED = "smart_ai_enabled"
+SETTING_CHAT_LISTENING_MODE = "chat_listening_mode"
+SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT = "chat_listen_speed_adjustment"
+
+CHAT_LISTENING_MODE_READING_FIRST = "reading_first"
+CHAT_LISTENING_MODE_LISTENING_FIRST = "listening_first"
+CHAT_LISTENING_MODES = {
+    CHAT_LISTENING_MODE_READING_FIRST,
+    CHAT_LISTENING_MODE_LISTENING_FIRST,
+}
+CHAT_LISTEN_SPEED_ADJUSTMENTS = {-20, -10, 0, 10, 20}
 
 FREE_PLAN_MAX_ALLOWED_TOKEN = 100_000
 PRO_PLAN_TOKEN_GRANT = 10_000_000
@@ -68,6 +78,8 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_ANKI_MANDARIN_WRITING_PULL_IGNORED: "[]",
     SETTING_AVAILABLE_TOKEN: str(FREE_PLAN_MAX_ALLOWED_TOKEN),
     SETTING_SMART_AI_ENABLED: "true",
+    SETTING_CHAT_LISTENING_MODE: CHAT_LISTENING_MODE_READING_FIRST,
+    SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT: "0",
 }
 
 def get_setting(user_id: str, key: str, default: str = "") -> str:
@@ -149,6 +161,32 @@ def set_smart_ai_enabled(user_id: str, enabled: bool, *, commit: bool = True) ->
         SETTING_SMART_AI_ENABLED,
         "true" if enabled else "false",
         commit=commit,
+    )
+
+
+def get_chat_listening_mode(user_id: str) -> str:
+    return get_setting(user_id, SETTING_CHAT_LISTENING_MODE, CHAT_LISTENING_MODE_READING_FIRST)
+
+
+def set_chat_listening_mode(user_id: str, mode: str, *, commit: bool = True) -> None:
+    ensure_default_settings(user_id, commit=False)
+    set_setting(user_id, SETTING_CHAT_LISTENING_MODE, mode, commit=commit)
+
+
+def get_chat_listen_speed_adjustment(user_id: str) -> int:
+    raw = get_setting(user_id, SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT, "0")
+    try:
+        return int(raw)
+    except ValueError:
+        return 0
+
+
+def set_chat_listen_speed_adjustment(
+    user_id: str, adjustment: int, *, commit: bool = True
+) -> None:
+    ensure_default_settings(user_id, commit=False)
+    set_setting(
+        user_id, SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT, str(adjustment), commit=commit
     )
 
 

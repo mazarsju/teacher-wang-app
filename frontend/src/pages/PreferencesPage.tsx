@@ -25,18 +25,43 @@ import {
 } from "../types/anki";
 import type { UserPlan } from "../types/adminUser";
 import type { TokenUsageSummary } from "../types/tokenUsage";
+import type {
+  ChatListenSpeedAdjustment,
+  ChatListeningMode,
+  ChatSetupPreference,
+} from "../types/chatSetupPreference";
 import { fetchAnkiStatus } from "../utils/anki/ankiApi";
 import { fetchTokenUsage } from "../utils/aiChat/tokenUsageApi";
 import {
   fetchSmartAiPreference,
   updateSmartAiPreference,
 } from "../utils/aiChat/smartAiApi";
+import {
+  fetchChatSetupPreference,
+  updateChatSetupPreference,
+} from "../utils/aiChat/chatSetupPreferenceApi";
 import { updateUserLanguage } from "../utils/auth/meApi";
 import { deleteKnowledgeBase } from "../utils/knowledgeBase/knowledgeBaseApi";
 
 // Adding a language: also add its <option> here (.claude/skills/add-language/SKILL.md).
 const LANGUAGE_OPTIONS = ["en", "fr"] as const;
+const LISTENING_MODE_OPTIONS: ChatListeningMode[] = [
+  "reading_first",
+  "listening_first",
+];
+const LISTEN_SPEED_STEPS: ChatListenSpeedAdjustment[] = [-20, -10, 0, 10, 20];
+const DEFAULT_CHAT_SETUP: ChatSetupPreference = {
+  listening_mode: "reading_first",
+  listen_speed_adjustment: 0,
+};
 import styles from "./PreferencesPage.module.css";
+
+function formatSpeedStep(step: ChatListenSpeedAdjustment, t: TFunction<"preferences">): string {
+  if (step === 0) {
+    return t("preferencesPage.chatSetup.listenSpeed.normal");
+  }
+  return step > 0 ? `+${step}%` : `${step}%`;
+}
 
 function formatDayLabel(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
@@ -88,6 +113,10 @@ export default function PreferencesPage() {
   const [isSmartAiLoading, setIsSmartAiLoading] = useState(true);
   const [isSmartAiSaving, setIsSmartAiSaving] = useState(false);
   const [isLanguageSaving, setIsLanguageSaving] = useState(false);
+  const [chatSetup, setChatSetup] = useState<ChatSetupPreference>(DEFAULT_CHAT_SETUP);
+  const [isChatSetupLoading, setIsChatSetupLoading] = useState(true);
+  const [isListeningModeSaving, setIsListeningModeSaving] = useState(false);
+  const [isListenSpeedSaving, setIsListenSpeedSaving] = useState(false);
   const [extrasError, setExtrasError] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isSyncHelpOpen, setIsSyncHelpOpen] = useState(false);
@@ -134,6 +163,21 @@ export default function PreferencesPage() {
     }
   }, [t]);
 
+  const loadChatSetupPreference = useCallback(async () => {
+    try {
+      const preference = await fetchChatSetupPreference();
+      setChatSetup(preference);
+    } catch (loadError) {
+      setExtrasError(
+        loadError instanceof Error
+          ? loadError.message
+          : t("preferencesPage.errors.loadChatSetup"),
+      );
+    } finally {
+      setIsChatSetupLoading(false);
+    }
+  }, [t]);
+
   useEffect(() => {
     void loadTokenUsage();
   }, [loadTokenUsage]);
@@ -141,6 +185,10 @@ export default function PreferencesPage() {
   useEffect(() => {
     void loadSmartAiPreference();
   }, [loadSmartAiPreference]);
+
+  useEffect(() => {
+    void loadChatSetupPreference();
+  }, [loadChatSetupPreference]);
 
   async function handleToggleSmartAi(nextEnabled: boolean) {
     const previousEnabled = isSmartAiEnabled;
@@ -157,6 +205,45 @@ export default function PreferencesPage() {
       );
     } finally {
       setIsSmartAiSaving(false);
+    }
+  }
+
+  async function handleListeningModeChange(nextMode: ChatListeningMode) {
+    const previousChatSetup = chatSetup;
+    setChatSetup((current) => ({ ...current, listening_mode: nextMode }));
+    setIsListeningModeSaving(true);
+    try {
+      await updateChatSetupPreference({ listening_mode: nextMode });
+    } catch (updateError) {
+      setChatSetup(previousChatSetup);
+      setExtrasError(
+        updateError instanceof Error
+          ? updateError.message
+          : t("preferencesPage.errors.updateChatSetup"),
+      );
+    } finally {
+      setIsListeningModeSaving(false);
+    }
+  }
+
+  async function handleListenSpeedChange(nextAdjustment: ChatListenSpeedAdjustment) {
+    const previousChatSetup = chatSetup;
+    setChatSetup((current) => ({
+      ...current,
+      listen_speed_adjustment: nextAdjustment,
+    }));
+    setIsListenSpeedSaving(true);
+    try {
+      await updateChatSetupPreference({ listen_speed_adjustment: nextAdjustment });
+    } catch (updateError) {
+      setChatSetup(previousChatSetup);
+      setExtrasError(
+        updateError instanceof Error
+          ? updateError.message
+          : t("preferencesPage.errors.updateChatSetup"),
+      );
+    } finally {
+      setIsListenSpeedSaving(false);
     }
   }
 
@@ -437,7 +524,95 @@ export default function PreferencesPage() {
         </section>
       )}
 
-{!isLoading && tokenUsage && (
+      {!isLoading && !isChatSetupLoading && (
+        <section className="preferences-section">
+          <h2 className={styles.preferencesSectionTitle}>
+            {t("preferencesPage.chatSetup.title")}
+          </h2>
+          <p className={styles.preferencesSectionDescription}>
+            {t("preferencesPage.chatSetup.description")}
+          </p>
+
+          <div className={styles.preferencesFieldGroup}>
+            <span className={styles.preferencesFieldGroupLabel}>
+              {t("preferencesPage.chatSetup.listeningMode.title")}
+            </span>
+            <div
+              className={styles.preferencesModeOptions}
+              role="radiogroup"
+              aria-label={t("preferencesPage.chatSetup.listeningMode.title")}
+            >
+              {LISTENING_MODE_OPTIONS.map((mode) => (
+                <label
+                  key={mode}
+                  className={
+                    chatSetup.listening_mode === mode
+                      ? `${styles.preferencesModeOption} ${styles.preferencesModeOptionSelected}`
+                      : styles.preferencesModeOption
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="chat-listening-mode"
+                    value={mode}
+                    checked={chatSetup.listening_mode === mode}
+                    disabled={isListeningModeSaving}
+                    onChange={() => void handleListeningModeChange(mode)}
+                  />
+                  <span className={styles.preferencesModeOptionTitle}>
+                    {t(`preferencesPage.chatSetup.listeningMode.options.${mode}.title`)}
+                  </span>
+                  <span className={styles.preferencesModeOptionDescription}>
+                    {t(
+                      `preferencesPage.chatSetup.listeningMode.options.${mode}.description`,
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.preferencesFieldGroup}>
+            <span className={styles.preferencesFieldGroupLabel}>
+              {t("preferencesPage.chatSetup.listenSpeed.title")}
+            </span>
+            <p className={styles.preferencesToggleRowDescription}>
+              {t("preferencesPage.chatSetup.listenSpeed.description")}
+            </p>
+            <input
+              type="range"
+              className={styles.preferencesSpeedSlider}
+              min={0}
+              max={LISTEN_SPEED_STEPS.length - 1}
+              step={1}
+              value={LISTEN_SPEED_STEPS.indexOf(chatSetup.listen_speed_adjustment)}
+              disabled={isListenSpeedSaving}
+              aria-label={t("preferencesPage.chatSetup.listenSpeed.ariaLabel")}
+              onChange={(event) =>
+                void handleListenSpeedChange(
+                  LISTEN_SPEED_STEPS[Number(event.target.value)],
+                )
+              }
+            />
+            <div className={styles.preferencesSpeedSliderLabels}>
+              {LISTEN_SPEED_STEPS.map((step) => (
+                <span
+                  key={step}
+                  className={
+                    step === chatSetup.listen_speed_adjustment
+                      ? styles.preferencesSpeedSliderLabelActive
+                      : undefined
+                  }
+                >
+                  {formatSpeedStep(step, t)}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!isLoading && tokenUsage && (
         <section className={`preferences-section ${styles.preferencesSectionUsage}`}>
           <h2 className={styles.preferencesSectionTitle}>
             {t("preferencesPage.usage.title")}

@@ -31,6 +31,13 @@ class TestChatTtsEndpoint(unittest.TestCase):
         self.addCleanup(self.speed_patcher.stop)
         self.mock_get_speed.return_value = 0.95
 
+        self.adjustment_patcher = patch(
+            "backend.routes.chat.get_chat_listen_speed_adjustment"
+        )
+        self.mock_get_adjustment = self.adjustment_patcher.start()
+        self.addCleanup(self.adjustment_patcher.stop)
+        self.mock_get_adjustment.return_value = 0
+
     def test_returns_mp3_using_hsk_level_speed_and_requested_voice(self):
         response = self.client.post(
             "/chat/tts", json={"text": "你好", "voice": "nova"}
@@ -44,6 +51,22 @@ class TestChatTtsEndpoint(unittest.TestCase):
             voice="nova",
             input="你好",
             speed=0.95,
+            response_format="mp3",
+        )
+
+    def test_applies_listen_speed_adjustment_on_top_of_hsk_speed(self):
+        self.mock_get_adjustment.return_value = 10
+
+        response = self.client.post(
+            "/chat/tts", json={"text": "你好", "voice": "nova"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.mock_openai_client.audio.speech.create.assert_called_once_with(
+            model="tts-1",
+            voice="nova",
+            input="你好",
+            speed=1.05,
             response_format="mp3",
         )
 

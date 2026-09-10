@@ -113,6 +113,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Frontend localization](docs/adr/frontend-localization.md) — react-i18next, synchronous init, one translation namespace per feature area
 - [Grammar content architecture](docs/adr/grammar-content.md) — content in Git/S3 vs. metadata and learner progress in Postgres, prerequisite resolution
 - [Writing practice](docs/adr/writing-practice.md) — topics anchored to grammar lessons, sentence-level checks reusing chat's grammar correction, S3 drafts, deferred grammar-usage recording
+- [Voice interaction (TTS)](docs/adr/voice-interaction.md) — per-character OpenAI voices, HSK-derived speed + learner adjustment, reading-first vs. listening-first mode
 
 Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
 
@@ -230,6 +231,8 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/weekly-articles` | This week's `weekly_articles` content for the caller's stored HSK level (clamped to 1-6; `content` is `null` if not generated yet) |
 | `GET` | `/preferences/smart-ai` | Current Smart AI preference (`{ "enabled": bool }`, default `true`) — see [Smart AI toggle](docs/adr/ai-agents.md#smart-ai-toggle-light-vs-full-pipeline) |
 | `PATCH` | `/preferences/smart-ai` | Set the Smart AI preference (`{ "enabled": bool }`) |
+| `GET` | `/preferences/chat-setup` | Current chat setup preference: `{ "listening_mode": "reading_first" \| "listening_first", "listen_speed_adjustment": -20 \| -10 \| 0 \| 10 \| 20 }` (defaults `reading_first` / `0`) |
+| `PATCH` | `/preferences/chat-setup` | Set either or both fields of the chat setup preference (same shape, partial body allowed). `listen_speed_adjustment` is added, as a fraction (e.g. `10` → `+0.10`), to the HSK-derived speed used by `/chat/tts` |
 | `GET` | `/anki/status` | Mandarin vocabulary/writing deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
 | `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writing deck, deck type, and field mapping |
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
@@ -241,7 +244,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
 | `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, challenge progress, and stored conversation summary |
 | `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
-| `POST` | `/chat/tts` | Given `{ "text": "...", "voice": "alloy" \| "echo" \| "fable" \| "onyx" \| "nova" \| "shimmer" }` (Chinese text; voice picked by the frontend from the chat character's fixed `voice`, see `frontend/src/data/chatCharacters.ts`/`challenges.ts`), return an `audio/mpeg` clip from OpenAI TTS (`tts-1`). Playback speed is not client-supplied — it's derived server-side from the caller's chat-speaking HSK level (0.75 at HSK1 up to 1.1 at HSK6+, see `get_chat_tts_speed` in `backend/utils/knowledgeBase/hsk_level.py`) |
+| `POST` | `/chat/tts` | Given `{ "text": "...", "voice": "alloy" \| "echo" \| "fable" \| "onyx" \| "nova" \| "shimmer" }` (Chinese text; voice picked by the frontend from the chat character's fixed `voice`, see `frontend/src/data/chatCharacters.ts`/`challenges.ts`), return an `audio/mpeg` clip from OpenAI TTS (`tts-1`). Playback speed is not client-supplied — it's derived server-side from the caller's chat-speaking HSK level (0.75 at HSK1 up to 1.1 at HSK6+, see `get_chat_tts_speed` in `backend/utils/knowledgeBase/hsk_level.py`), then adjusted by the caller's `listen_speed_adjustment` chat setup preference |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
 | `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writing_known` |
@@ -474,9 +477,10 @@ The app UI and explanations are English-only today. Learners should be able to p
 
 Let learners hear Mandarin spoken aloud and practice speaking it back, not just read and type.
 
-- [ ] TTS (Text to Speech)
+- [x] TTS (Text to Speech)
   - [x] Playable audio generation for each AI agent reply
-  - [ ] New setting to prioritize audio playback over the written text
+  - [x] Listening speed preference (slider, layered on top of the HSK-derived voice speed)
+  - [x] Reading first / Listening first preference — in "Listening first", the AI reply is blurred behind a reveal (eye) button and its audio autoplays as soon as it's ready; "Reading first" keeps today's behavior
 - [ ] STT (Speech to Text)
   - [ ] Record the learner's voice and transcribe it to text (within conversations)
   - [ ] Analyze the learner's pronunciation issues
