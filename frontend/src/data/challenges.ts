@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import type { ChatCharacter } from "../components/ChatCharacterCard";
 import type { Challenge } from "../types/challenge";
-import type { TtsVoice } from "../types/chat";
+import type { CharacterVoiceOption } from "../types/chat";
 
 export const NEW_FRIEND_CHALLENGE_ID = "challenge-new-friend";
 
@@ -17,7 +17,7 @@ type ChallengeTemplate = {
     chineseName: string;
     avatarVariant: ChatCharacter["avatarVariant"];
     gender: ChatCharacter["gender"];
-    voice: TtsVoice;
+    voice: CharacterVoiceOption[];
   };
   tasks: ChallengeTaskTemplate[];
   vocabulary: ChallengeVocabularyTemplate[];
@@ -40,7 +40,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "小明",
       avatarVariant: "friend",
       gender: "male",
-      voice: "echo",
+      voice: [
+        { provider: "chatgpt", name: "echo" },
+        { provider: "elevenlabs", name: "chris" },
+      ],
     },
     tasks: [
       { id: "greet-friend", key: "greetFriend" },
@@ -64,7 +67,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "服务员",
       avatarVariant: "waiter",
       gender: "female",
-      voice: "nova",
+      voice: [
+        { provider: "chatgpt", name: "nova" },
+        { provider: "elevenlabs", name: "sarah" },
+      ],
     },
     tasks: [
       { id: "call-waiter", key: "callWaiter" },
@@ -89,7 +95,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "出租车司机",
       avatarVariant: "taxi-driver",
       gender: "male",
-      voice: "fable",
+      voice: [
+        { provider: "chatgpt", name: "fable" },
+        { provider: "elevenlabs", name: "callum" },
+      ],
     },
     tasks: [
       { id: "hail-taxi", key: "hailTaxi" },
@@ -113,7 +122,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "前台",
       avatarVariant: "hotel-receptionist",
       gender: "male",
-      voice: "alloy",
+      voice: [
+        { provider: "chatgpt", name: "alloy" },
+        { provider: "elevenlabs", name: "eric" },
+      ],
     },
     tasks: [
       { id: "greet-receptionist", key: "greetReceptionist" },
@@ -138,7 +150,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "售货员",
       avatarVariant: "shop-assistant",
       gender: "male",
-      voice: "echo",
+      voice: [
+        { provider: "chatgpt", name: "echo" },
+        { provider: "elevenlabs", name: "roger" },
+      ],
     },
     tasks: [
       { id: "greet-assistant", key: "greetAssistant" },
@@ -163,7 +178,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "路人",
       avatarVariant: "passerby",
       gender: "male",
-      voice: "onyx",
+      voice: [
+        { provider: "chatgpt", name: "onyx" },
+        { provider: "elevenlabs", name: "daniel" },
+      ],
     },
     tasks: [
       { id: "greet-passerby", key: "greetPasserby" },
@@ -188,7 +206,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "售票员",
       avatarVariant: "ticket-seller",
       gender: "female",
-      voice: "shimmer",
+      voice: [
+        { provider: "chatgpt", name: "shimmer" },
+        { provider: "elevenlabs", name: "jessica" },
+      ],
     },
     tasks: [
       { id: "greet-ticket-seller", key: "greetTicketSeller" },
@@ -213,7 +234,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "医生",
       avatarVariant: "doctor",
       gender: "male",
-      voice: "fable",
+      voice: [
+        { provider: "chatgpt", name: "fable" },
+        { provider: "elevenlabs", name: "arnold" },
+      ],
     },
     tasks: [
       { id: "greet-doctor", key: "greetDoctor" },
@@ -238,7 +262,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "面试官",
       avatarVariant: "interviewer",
       gender: "female",
-      voice: "nova",
+      voice: [
+        { provider: "chatgpt", name: "nova" },
+        { provider: "elevenlabs", name: "alice" },
+      ],
     },
     tasks: [
       { id: "greet-interviewer", key: "greetInterviewer" },
@@ -263,7 +290,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "图书管理员",
       avatarVariant: "librarian",
       gender: "female",
-      voice: "shimmer",
+      voice: [
+        { provider: "chatgpt", name: "shimmer" },
+        { provider: "elevenlabs", name: "matilda" },
+      ],
     },
     tasks: [
       { id: "greet-librarian", key: "greetLibrarian" },
@@ -288,7 +318,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "公交车司机",
       avatarVariant: "bus-driver",
       gender: "female",
-      voice: "nova",
+      voice: [
+        { provider: "chatgpt", name: "nova" },
+        { provider: "elevenlabs", name: "laura" },
+      ],
     },
     tasks: [
       { id: "ask-bus-route", key: "askBusRoute" },
@@ -313,7 +346,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "理发师",
       avatarVariant: "hairdresser",
       gender: "female",
-      voice: "nova",
+      voice: [
+        { provider: "chatgpt", name: "nova" },
+        { provider: "elevenlabs", name: "lily" },
+      ],
     },
     tasks: [
       { id: "greet-hairdresser", key: "greetHairdresser" },
@@ -338,7 +374,10 @@ const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       chineseName: "房东",
       avatarVariant: "landlord",
       gender: "female",
-      voice: "shimmer",
+      voice: [
+        { provider: "chatgpt", name: "shimmer" },
+        { provider: "elevenlabs", name: "sarah" },
+      ],
     },
     tasks: [
       { id: "greet-landlord", key: "greetLandlord" },

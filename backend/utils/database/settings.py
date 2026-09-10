@@ -29,6 +29,7 @@ SETTING_AVAILABLE_TOKEN = "available_token"
 SETTING_SMART_AI_ENABLED = "smart_ai_enabled"
 SETTING_CHAT_LISTENING_MODE = "chat_listening_mode"
 SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT = "chat_listen_speed_adjustment"
+SETTING_CHAT_REALISTIC_VOICE_ENABLED = "chat_realistic_voice_enabled"
 
 CHAT_LISTENING_MODE_READING_FIRST = "reading_first"
 CHAT_LISTENING_MODE_LISTENING_FIRST = "listening_first"
@@ -80,6 +81,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_SMART_AI_ENABLED: "true",
     SETTING_CHAT_LISTENING_MODE: CHAT_LISTENING_MODE_READING_FIRST,
     SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT: "0",
+    SETTING_CHAT_REALISTIC_VOICE_ENABLED: "false",
 }
 
 def get_setting(user_id: str, key: str, default: str = "") -> str:
@@ -187,6 +189,22 @@ def set_chat_listen_speed_adjustment(
     ensure_default_settings(user_id, commit=False)
     set_setting(
         user_id, SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT, str(adjustment), commit=commit
+    )
+
+
+def get_chat_realistic_voice_enabled(user_id: str) -> bool:
+    return get_setting(user_id, SETTING_CHAT_REALISTIC_VOICE_ENABLED, "false") == "true"
+
+
+def set_chat_realistic_voice_enabled(
+    user_id: str, enabled: bool, *, commit: bool = True
+) -> None:
+    ensure_default_settings(user_id, commit=False)
+    set_setting(
+        user_id,
+        SETTING_CHAT_REALISTIC_VOICE_ENABLED,
+        "true" if enabled else "false",
+        commit=commit,
     )
 
 

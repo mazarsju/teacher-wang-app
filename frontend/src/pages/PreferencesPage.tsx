@@ -53,6 +53,7 @@ const LISTEN_SPEED_STEPS: ChatListenSpeedAdjustment[] = [-20, -10, 0, 10, 20];
 const DEFAULT_CHAT_SETUP: ChatSetupPreference = {
   listening_mode: "reading_first",
   listen_speed_adjustment: 0,
+  realistic_voice_enabled: false,
 };
 import styles from "./PreferencesPage.module.css";
 
@@ -117,6 +118,7 @@ export default function PreferencesPage() {
   const [isChatSetupLoading, setIsChatSetupLoading] = useState(true);
   const [isListeningModeSaving, setIsListeningModeSaving] = useState(false);
   const [isListenSpeedSaving, setIsListenSpeedSaving] = useState(false);
+  const [isRealisticVoiceSaving, setIsRealisticVoiceSaving] = useState(false);
   const [extrasError, setExtrasError] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isSyncHelpOpen, setIsSyncHelpOpen] = useState(false);
@@ -244,6 +246,27 @@ export default function PreferencesPage() {
       );
     } finally {
       setIsListenSpeedSaving(false);
+    }
+  }
+
+  async function handleRealisticVoiceChange(nextEnabled: boolean) {
+    const previousChatSetup = chatSetup;
+    setChatSetup((current) => ({
+      ...current,
+      realistic_voice_enabled: nextEnabled,
+    }));
+    setIsRealisticVoiceSaving(true);
+    try {
+      await updateChatSetupPreference({ realistic_voice_enabled: nextEnabled });
+    } catch (updateError) {
+      setChatSetup(previousChatSetup);
+      setExtrasError(
+        updateError instanceof Error
+          ? updateError.message
+          : t("preferencesPage.errors.updateChatSetup"),
+      );
+    } finally {
+      setIsRealisticVoiceSaving(false);
     }
   }
 
@@ -609,6 +632,34 @@ export default function PreferencesPage() {
               ))}
             </div>
           </div>
+
+          {currentPlan === "pro" && (
+            <div className={styles.preferencesToggleRow}>
+              <span className={styles.preferencesToggleRowLabel}>
+                <span className={styles.preferencesToggleRowTitle}>
+                  {t("preferencesPage.chatSetup.realisticVoice.title")}
+                </span>
+                <p className={styles.preferencesToggleRowDescription}>
+                  {t("preferencesPage.chatSetup.realisticVoice.description")}
+                </p>
+              </span>
+              <label
+                className={styles.preferencesToggle}
+                aria-label={t("preferencesPage.chatSetup.realisticVoice.ariaLabel")}
+              >
+                <input
+                  type="checkbox"
+                  checked={chatSetup.realistic_voice_enabled}
+                  disabled={isRealisticVoiceSaving}
+                  onChange={(event) =>
+                    void handleRealisticVoiceChange(event.target.checked)
+                  }
+                />
+                <span className={styles.preferencesToggleTrack} />
+                <span className={styles.preferencesToggleThumb} />
+              </label>
+            </div>
+          )}
         </section>
       )}
 

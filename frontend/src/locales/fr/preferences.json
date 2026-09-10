@@ -42,6 +42,11 @@
         "description": "Accélérez ou ralentissez la voix de l'IA, en plus du rythme déjà défini pour votre niveau HSK.",
         "ariaLabel": "Ajustement de la vitesse d'écoute",
         "normal": "Normal"
+      },
+      "realisticVoice": {
+        "title": "Voix réaliste (pro)",
+        "description": "Utilise les voix plus naturelles et humaines d'ElevenLabs à la place des voix standard pour la voix de chaque personnage.",
+        "ariaLabel": "Voix réaliste"
       }
     },
     "currentPlan": {

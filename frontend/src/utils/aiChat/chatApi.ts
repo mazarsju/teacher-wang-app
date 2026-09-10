@@ -1,10 +1,10 @@
 import type {
+  CharacterVoiceOption,
   ChatHistoryResponse,
   ChatMessage,
   ChatRequest,
   ChatResponse,
   ChatThreadContext,
-  TtsVoice,
 } from "../../types/chat";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
@@ -79,12 +79,12 @@ export async function sendChatMessage(
 
 export async function fetchChatTts(
   text: string,
-  voice: TtsVoice,
+  voices: CharacterVoiceOption[],
 ): Promise<Blob> {
   const response = await apiFetch(`${API_BASE}/chat/tts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, voice }),
+    body: JSON.stringify({ text, voices }),
   });
 
   if (!response.ok) {

@@ -113,7 +113,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Frontend localization](docs/adr/frontend-localization.md) — react-i18next, synchronous init, one translation namespace per feature area
 - [Grammar content architecture](docs/adr/grammar-content.md) — content in Git/S3 vs. metadata and learner progress in Postgres, prerequisite resolution
 - [Writing practice](docs/adr/writing-practice.md) — topics anchored to grammar lessons, sentence-level checks reusing chat's grammar correction, S3 drafts, deferred grammar-usage recording
-- [Voice interaction (TTS)](docs/adr/voice-interaction.md) — per-character OpenAI voices, HSK-derived speed + learner adjustment, reading-first vs. listening-first mode
+- [Voice interaction (TTS)](docs/adr/voice-interaction.md) — per-character OpenAI/ElevenLabs voices (server-resolved provider, pro-gated), HSK-derived speed + learner adjustment, reading-first vs. listening-first mode
 
 Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
 
@@ -209,6 +209,10 @@ Both are read the same way as `LLM_API_KEY` above (`.config.txt` first, then the
 
 Use `backend.llm.get_llm()` to obtain a cached chat model instance. Values are read from `.config.txt` first (if present), then from environment variables.
 
+| Key / variable | Description |
+| --- | --- |
+| `ELEVENLABS_API_KEY` | [ElevenLabs](https://elevenlabs.io/) API key, used by `/chat/tts` only when a pro-plan user has the "Realistic voice" preference on (see [voice interaction](docs/adr/voice-interaction.md)) — read the same way as `LLM_API_KEY` above |
+
 #### Free-plan token budget
 
 Free accounts (`users.plan = free`) get a lifetime **100 000**-token allowance (`settings.available_token`), enforced on every LLM invoke. Preferences shows remaining vs max; historical usage lives in `token_count`. Design notes: [plan management](docs/adr/plan-management.md).
@@ -231,8 +235,8 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/weekly-articles` | This week's `weekly_articles` content for the caller's stored HSK level (clamped to 1-6; `content` is `null` if not generated yet) |
 | `GET` | `/preferences/smart-ai` | Current Smart AI preference (`{ "enabled": bool }`, default `true`) — see [Smart AI toggle](docs/adr/ai-agents.md#smart-ai-toggle-light-vs-full-pipeline) |
 | `PATCH` | `/preferences/smart-ai` | Set the Smart AI preference (`{ "enabled": bool }`) |
-| `GET` | `/preferences/chat-setup` | Current chat setup preference: `{ "listening_mode": "reading_first" \| "listening_first", "listen_speed_adjustment": -20 \| -10 \| 0 \| 10 \| 20 }` (defaults `reading_first` / `0`) |
-| `PATCH` | `/preferences/chat-setup` | Set either or both fields of the chat setup preference (same shape, partial body allowed). `listen_speed_adjustment` is added, as a fraction (e.g. `10` → `+0.10`), to the HSK-derived speed used by `/chat/tts` |
+| `GET` | `/preferences/chat-setup` | Current chat setup preference: `{ "listening_mode": "reading_first" \| "listening_first", "listen_speed_adjustment": -20 \| -10 \| 0 \| 10 \| 20, "realistic_voice_enabled": bool }` (defaults `reading_first` / `0` / `false`). `realistic_voice_enabled` reports the *effective* value — always `false` for a free-plan account, even if the underlying setting is `true` from a past pro subscription |
+| `PATCH` | `/preferences/chat-setup` | Set any subset of the three fields (partial body allowed). `listen_speed_adjustment` is added, as a fraction (e.g. `10` → `+0.10`), to the HSK-derived speed used by `/chat/tts`. Setting `realistic_voice_enabled: true` on a non-pro account returns `403` |
 | `GET` | `/anki/status` | Mandarin vocabulary/writing deck mapping status and pending push estimate (DB only; frontend adds AnkiConnect reachability) |
 | `POST` | `/anki/decks/setup` | Persist a mandarin_vocabulary/mandarin_writing deck, deck type, and field mapping |
 | `GET` | `/anki/sync/data/<kind>` | Push candidates, ignore keys, and local word/character snapshot for frontend sync orchestration |
@@ -244,7 +248,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
 | `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, challenge progress, and stored conversation summary |
 | `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
-| `POST` | `/chat/tts` | Given `{ "text": "...", "voice": "alloy" \| "echo" \| "fable" \| "onyx" \| "nova" \| "shimmer" }` (Chinese text; voice picked by the frontend from the chat character's fixed `voice`, see `frontend/src/data/chatCharacters.ts`/`challenges.ts`), return an `audio/mpeg` clip from OpenAI TTS (`tts-1`). Playback speed is not client-supplied — it's derived server-side from the caller's chat-speaking HSK level (0.75 at HSK1 up to 1.1 at HSK6+, see `get_chat_tts_speed` in `backend/utils/knowledgeBase/hsk_level.py`), then adjusted by the caller's `listen_speed_adjustment` chat setup preference |
+| `POST` | `/chat/tts` | Given `{ "text": "...", "voices": [{ "provider": "chatgpt" \| "elevenlabs", "name": "..." }, ...] }` (Chinese text; the frontend sends both of the chat character's fixed voice options, see `frontend/src/data/chatCharacters.ts`/`challenges.ts`), return an `audio/mpeg` clip. The server — never the client — picks which entry to use: OpenAI TTS (`tts-1`) normally, or ElevenLabs (`eleven_multilingual_v2`) when the caller is on the pro plan **and** has `realistic_voice_enabled` on (see `_resolve_tts_provider` in `backend/routes/chat.py`). Playback speed is not client-supplied either — it's derived server-side from the caller's chat-speaking HSK level (0.75 at HSK1 up to 1.1 at HSK6+, see `get_chat_tts_speed` in `backend/utils/knowledgeBase/hsk_level.py`), then adjusted by the caller's `listen_speed_adjustment` chat setup preference |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
 | `PATCH` | `/characters/<char>` | Update a character's `pinyin` and `writing_known` |
@@ -481,6 +485,7 @@ Let learners hear Mandarin spoken aloud and practice speaking it back, not just 
   - [x] Playable audio generation for each AI agent reply
   - [x] Listening speed preference (slider, layered on top of the HSK-derived voice speed)
   - [x] Reading first / Listening first preference — in "Listening first", the AI reply is blurred behind a reveal (eye) button and its audio autoplays as soon as it's ready; "Reading first" keeps today's behavior
+  - [x] Realistic voice (pro-only toggle): switches TTS from OpenAI to ElevenLabs for a more natural, human-sounding voice, per character
 - [ ] STT (Speech to Text)
   - [ ] Record the learner's voice and transcribe it to text (within conversations)
   - [ ] Analyze the learner's pronunciation issues

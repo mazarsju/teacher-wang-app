@@ -9,9 +9,11 @@ from backend.utils.database.settings import (
     SETTING_AVAILABLE_TOKEN,
     SETTING_LEVEL,
     ensure_default_settings,
+    get_chat_realistic_voice_enabled,
     get_setting,
     get_smart_ai_enabled,
     reset_available_token,
+    set_chat_realistic_voice_enabled,
     set_setting,
     set_smart_ai_enabled,
 )
@@ -112,6 +114,16 @@ class TestSettings(PostgresTestCase):
 
         self.assertFalse(get_smart_ai_enabled(self.user_id))
         self.assertTrue(get_smart_ai_enabled(other.shortid))
+
+    def test_realistic_voice_defaults_to_disabled(self):
+        self.assertFalse(get_chat_realistic_voice_enabled(self.user_id))
+
+    def test_realistic_voice_can_be_enabled_and_disabled(self):
+        set_chat_realistic_voice_enabled(self.user_id, True)
+        self.assertTrue(get_chat_realistic_voice_enabled(self.user_id))
+
+        set_chat_realistic_voice_enabled(self.user_id, False)
+        self.assertFalse(get_chat_realistic_voice_enabled(self.user_id))
 
 
 if __name__ == "__main__":

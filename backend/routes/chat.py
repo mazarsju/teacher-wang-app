@@ -40,16 +40,29 @@ from backend.utils.aiChat.conversation_summary import (
     queue_conversation_summary,
     should_summarize,
 )
-from backend.utils.database.settings import ADMIN_EMAIL
+from backend.utils.aiChat.elevenlabs_client import (
+    generate_speech as generate_elevenlabs_speech,
+)
 from backend.utils.aiChat.llm import get_openai_client
 from backend.utils.aiChat.token_usage import record_token_usage
 from backend.utils.auth.user_context import current_user, current_user_id
-from backend.utils.database.settings import get_chat_listen_speed_adjustment
+from backend.utils.database.settings import (
+    ADMIN_EMAIL,
+    get_chat_listen_speed_adjustment,
+    get_chat_realistic_voice_enabled,
+)
 from backend.utils.knowledgeBase.hsk_level import get_chat_tts_speed
 
 bp = Blueprint("chat", __name__)
 
 TTS_VOICES = {"alloy", "echo", "fable", "onyx", "nova", "shimmer"}
+TTS_PROVIDERS = {"chatgpt", "elevenlabs"}
+
+
+def _resolve_tts_provider(plan: str, user_id: str) -> str:
+    if plan == "pro" and get_chat_realistic_voice_enabled(user_id):
+        return "elevenlabs"
+    return "chatgpt"
 
 
 def _history_payload(user_id: str, character_id: str) -> dict:
@@ -438,26 +451,49 @@ def tts():
     if not isinstance(text, str) or text.strip() == "":
         return {"error": "text must be a non-empty string"}, 400
 
-    voice = data.get("voice")
-    if voice not in TTS_VOICES:
-        return {"error": f"voice must be one of {sorted(TTS_VOICES)}"}, 400
+    voices = data.get("voices")
+    if not isinstance(voices, list) or not voices:
+        return {"error": "voices must be a non-empty array"}, 400
+
+    voice_by_provider: dict[str, str] = {}
+    for entry in voices:
+        if not isinstance(entry, dict):
+            return {"error": "each voices entry must be an object"}, 400
+        provider = entry.get("provider")
+        name = entry.get("name")
+        if provider not in TTS_PROVIDERS or not isinstance(name, str) or not name:
+            return {
+                "error": f"each voices entry needs a provider in {sorted(TTS_PROVIDERS)} and a name"
+            }, 400
+        voice_by_provider[provider] = name
 
     user_id = current_user_id()
+    provider = _resolve_tts_provider(current_user().plan, user_id)
+    voice_name = voice_by_provider.get(provider)
+    if voice_name is None:
+        return {"error": f"missing voice for provider {provider}"}, 400
+
     speed = get_chat_tts_speed(user_id) + get_chat_listen_speed_adjustment(user_id) / 100
 
     try:
-        response = get_openai_client().audio.speech.create(
-            model="tts-1",
-            voice=voice,
-            input=text.strip(),
-            speed=speed,
-            response_format="mp3",
-        )
+        if provider == "elevenlabs":
+            audio_bytes = generate_elevenlabs_speech(voice_name, text.strip(), speed)
+        else:
+            if voice_name not in TTS_VOICES:
+                return {"error": f"voice must be one of {sorted(TTS_VOICES)}"}, 400
+            response = get_openai_client().audio.speech.create(
+                model="tts-1",
+                voice=voice_name,
+                input=text.strip(),
+                speed=speed,
+                response_format="mp3",
+            )
+            audio_bytes = response.content
     except Exception:
         return {"error": "Failed to generate speech"}, 500
 
     return send_file(
-        io.BytesIO(response.content),
+        io.BytesIO(audio_bytes),
         mimetype="audio/mpeg",
         as_attachment=False,
         download_name="speech.mp3",
