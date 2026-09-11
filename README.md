@@ -44,7 +44,9 @@ teacher-wang/
 │   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml/overview.yaml files from S3
 │   │   │                   # into grammar_points/grammar_prerequisites/writing_practice)
 │   │   ├── listening/      # listening_content_loader.py (loads listening_practice/*/overview.yaml
-│   │   │                   # + text.txt from S3 into listening_practice); listening_progress.py
+│   │   │                   # + text.txt from S3 into listening_practice; also serves per-topic detail
+│   │   │                   # content on demand — text.txt, audio.mp3, audio/audio-<n>.mp3,
+│   │   │                   # breakdown.json/breakdown_<lang>.json); listening_progress.py
 │   │   │                   # (vocabulary_score/grammar_score computation, listening_progress upsert)
 │   │   ├── writing/        # writing_drafts.py (S3-backed draft load/save, conversation-logs bucket)
 │   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
@@ -276,6 +278,9 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `POST` | `/writing-practice/<topic_id>/complete` | Save a fully-corrected draft and append it to `archive` with a timestamp (`{ "draft": "..." }`) |
 | `GET` | `/listening-practices` | List `listening_practice` topics with `hsk_level` at or below the caller's current HSK level + 1, each with the caller's `listening_progress` (`status`/`vocabulary_score`/`grammar_score`, defaulting to `TODO`/`0`/`0` for a topic never refreshed) |
 | `POST` | `/listening-practices/refresh` | Recompute `vocabulary_score`/`grammar_score` for every currently visible listening topic and upsert `listening_progress` (new rows start `TODO`; an existing row's `status` is left untouched). `vocabulary_score` is the percentage of the topic's `unique_chars` already in the caller's `character` rows; `grammar_score` is the percentage of its comma-separated `grammar_rules` already `DONE`/`MASTERED` in `user_grammar_progress`. Called once by the frontend on every login |
+| `GET` | `/listening-practices/<topic_id>` | One topic's detail: Postgres metadata plus its full `text.txt` transcript and per-sentence `breakdown.json` (`[{id, mandarin, translation}]`, `translation` merged from `breakdown_<language>.json` for the caller's language, falling back to English), and `segment_count` (number of `audio/audio-<n>.mp3` shadowing clips) — `404` if the topic doesn't exist |
+| `GET` | `/listening-practices/<topic_id>/audio` | Streams the topic's full `audio.mp3` (`audio/mpeg`) from the `GRAMMAR_CONTENT_S3_BUCKET` bucket or `GRAMMAR_CONTENT_S3_PATH` local checkout — `404` if missing |
+| `GET` | `/listening-practices/<topic_id>/audio/<segment>` | Streams one `audio/audio-<segment>.mp3` shadowing clip (`audio/mpeg`) — `404` if missing |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
@@ -497,8 +502,10 @@ Let learners hear Mandarin spoken aloud and practice speaking it back, not just 
   - [x] Record the learner's voice and transcribe it to text (within conversations)
   - [ ] Analyze the learner's pronunciation issues
 - [ ] Listening challenges
-  - [x] Listening-practice catalog and per-user progress ("Listening and Speaking" nav section; `GET /listening-practices`, `POST /listening-practices/refresh` computing `vocabulary_score`/`grammar_score`; admin S3 reload — see [grammar content](docs/adr/grammar-content.md), [schema tenancy](docs/architecture/schema-tenancy.md))
-  - [ ] Actual listening exercise flow (audio playback, comprehension checks, status transitions beyond TODO)
+  - [x] Listening-practice catalog and per-user progress ("Listening and Speaking" nav section, a mosaic ordered by overall score with a per-lesson fit dialog; `GET /listening-practices`, `POST /listening-practices/refresh` computing `vocabulary_score`/`grammar_score`; admin S3 reload — see [grammar content](docs/adr/grammar-content.md), [schema tenancy](docs/architecture/schema-tenancy.md))
+  - [x] Practice detail page (`GET /listening-practices/<id>`): full-audio player with ±5s skip, shadowing (per-sentence audio + blurred transcript + type-or-speak-and-check input reusing `/chat/stt`), and a blurred full transcript with an on-demand translation reveal
+  - [ ] Comprehension questions (shadowing section's "Questions" placeholder)
+  - [ ] `listening_progress.status` transitions beyond `TODO` (no "mark complete" flow yet — refresh only updates the two scores)
 
 ### 13. Gamification
 

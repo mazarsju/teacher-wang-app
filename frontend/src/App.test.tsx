@@ -186,7 +186,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
   });
 
-  it("navigates to the Listening and Speaking tab", async () => {
+  it("navigates to the Listening tab", async () => {
     const user = userEvent.setup();
 
     renderWithStore(<App />);
@@ -197,9 +197,7 @@ describe("App", () => {
 
     await screen.findByRole("heading", { name: "Home" });
 
-    await user.click(
-      screen.getByRole("button", { name: "Listening and Speaking" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Listening" }));
 
     expect(
       screen.getByRole("heading", { name: "Listening and Speaking" }),

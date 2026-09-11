@@ -1,0 +1,64 @@
+from flask import Blueprint, Response
+
+from backend.utils.auth.user_context import current_user, current_user_id
+from backend.utils.database.models import ListeningPractice, ListeningProgress
+from backend.utils.listening.listening_content_loader import (
+    fetch_listening_breakdown,
+    fetch_listening_text,
+    list_listening_audio_segments,
+    read_listening_audio,
+    read_listening_audio_segment,
+)
+
+bp = Blueprint("get_listening_practice", __name__)
+
+
+@bp.get("/listening-practices/<topic_id>")
+def get_listening_practice(topic_id: str):
+    topic = ListeningPractice.query.get(topic_id)
+    if topic is None:
+        return {"error": "Listening practice not found"}, 404
+
+    progress = ListeningProgress.query.filter_by(
+        user_id=current_user_id(), listening_topic=topic_id
+    ).first()
+
+    return {
+        "id": topic.id,
+        "title": topic.title,
+        "hsk_level": topic.hsk_level,
+        "status": progress.status if progress else "TODO",
+        "vocabulary_score": progress.vocabulary_score if progress else 0,
+        "grammar_score": progress.grammar_score if progress else 0,
+        "text": fetch_listening_text(topic.hsk_level, topic.id) or "",
+        "sentences": fetch_listening_breakdown(
+            topic.hsk_level, topic.id, current_user().language
+        ),
+        "segment_count": len(
+            list_listening_audio_segments(topic.hsk_level, topic.id)
+        ),
+    }, 200
+
+
+@bp.get("/listening-practices/<topic_id>/audio")
+def get_listening_practice_audio(topic_id: str):
+    topic = ListeningPractice.query.get(topic_id)
+    if topic is None:
+        return {"error": "Listening practice not found"}, 404
+
+    audio = read_listening_audio(topic.hsk_level, topic.id)
+    if audio is None:
+        return {"error": "Audio not found"}, 404
+    return Response(audio, mimetype="audio/mpeg")
+
+
+@bp.get("/listening-practices/<topic_id>/audio/<int:segment>")
+def get_listening_practice_audio_segment(topic_id: str, segment: int):
+    topic = ListeningPractice.query.get(topic_id)
+    if topic is None:
+        return {"error": "Listening practice not found"}, 404
+
+    audio = read_listening_audio_segment(topic.hsk_level, topic.id, segment)
+    if audio is None:
+        return {"error": "Audio not found"}, 404
+    return Response(audio, mimetype="audio/mpeg")

@@ -16,5 +16,41 @@
       "fair": "Cet exercice d'écoute pourrait être un peu difficile pour votre niveau actuel.",
       "poor": "Cet exercice d'écoute est assez avancé pour votre niveau actuel."
     }
+  },
+  "audioPlayer": {
+    "play": "Lecture",
+    "pause": "Pause",
+    "rewind": "Reculer de 5 secondes",
+    "forward": "Avancer de 5 secondes",
+    "seek": "Position de lecture",
+    "loadError": "Échec du chargement de l'audio."
+  },
+  "shadowingSentence": {
+    "reveal": "Afficher la phrase",
+    "inputPlaceholder": "Écrivez ou enregistrez ce que vous entendez...",
+    "transcribing": "Transcription en cours...",
+    "record": "Maintenir pour enregistrer",
+    "check": "Vérifier"
+  },
+  "listeningPracticeDetailPage": {
+    "title": "Exercice d'écoute",
+    "back": "Retour",
+    "loading": "Chargement...",
+    "loadError": "Échec du chargement de l'exercice d'écoute.",
+    "audioSection": {
+      "title": "Écouter"
+    },
+    "questionsSection": {
+      "title": "Questions",
+      "comingSoon": "Les questions de compréhension arrivent bientôt."
+    },
+    "shadowingSection": {
+      "title": "Répétition (shadowing)"
+    },
+    "textSection": {
+      "title": "Texte complet",
+      "reveal": "Afficher le texte",
+      "showTranslation": "Afficher la traduction"
+    }
   }
 }

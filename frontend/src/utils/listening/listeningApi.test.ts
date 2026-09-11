@@ -1,4 +1,11 @@
-import { fetchListeningPractices, refreshListeningPractices } from "./listeningApi";
+import {
+  fetchListeningAudioBlob,
+  fetchListeningAudioSegmentBlob,
+  fetchListeningPracticeDetail,
+  fetchListeningPractices,
+  refreshListeningPractices,
+  transcribeListeningAudio,
+} from "./listeningApi";
 
 describe("listeningApi", () => {
   afterEach(() => {
@@ -67,5 +74,113 @@ describe("listeningApi", () => {
     await expect(refreshListeningPractices()).rejects.toThrow(
       "Failed to refresh listening practices.",
     );
+  });
+
+  it("loads a listening practice's detail", async () => {
+    const detail = {
+      id: "listening-family-size",
+      title: "How many are in your family?",
+      hsk_level: 1,
+      status: "TODO",
+      vocabulary_score: 0,
+      grammar_score: 0,
+      text: "你家有几个人？",
+      sentences: [{ id: 1, mandarin: "你家有几个人？", translation: "..." }],
+      segment_count: 1,
+    };
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: async () => detail }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      fetchListeningPracticeDetail("listening-family-size"),
+    ).resolves.toEqual(detail);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/listening-practices/listening-family-size",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("throws when loading a listening practice's detail fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve({ ok: false, json: async () => ({}) })),
+    );
+
+    await expect(
+      fetchListeningPracticeDetail("listening-family-size"),
+    ).rejects.toThrow("Failed to load the listening practice.");
+  });
+
+  it("loads the full audio blob", async () => {
+    const blob = new Blob(["audio"], { type: "audio/mpeg" });
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, blob: async () => blob }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      fetchListeningAudioBlob("listening-family-size"),
+    ).resolves.toBe(blob);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/listening-practices/listening-family-size/audio",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("throws when loading the full audio blob fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+
+    await expect(
+      fetchListeningAudioBlob("listening-family-size"),
+    ).rejects.toThrow("Failed to load the audio.");
+  });
+
+  it("loads a segment audio blob", async () => {
+    const blob = new Blob(["segment"], { type: "audio/mpeg" });
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, blob: async () => blob }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      fetchListeningAudioSegmentBlob("listening-family-size", 2),
+    ).resolves.toBe(blob);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/listening-practices/listening-family-size/audio/2",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("transcribes recorded audio via the chat STT endpoint", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: async () => ({ text: "你好" }) }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      transcribeListeningAudio(new Blob(["voice"], { type: "audio/webm" })),
+    ).resolves.toBe("你好");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/chat/stt",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("throws with the server's error message when transcription fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          json: async () => ({ error: "No audio file provided" }),
+        }),
+      ),
+    );
+
+    await expect(
+      transcribeListeningAudio(new Blob(["voice"], { type: "audio/webm" })),
+    ).rejects.toThrow("No audio file provided");
   });
 });

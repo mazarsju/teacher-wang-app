@@ -5,9 +5,16 @@ import * as listeningApi from "../utils/listening/listeningApi";
 
 vi.mock("../utils/listening/listeningApi", () => ({
   fetchListeningPractices: vi.fn(),
+  fetchListeningPracticeDetail: vi.fn(),
+  fetchListeningAudioBlob: vi.fn(),
+  fetchListeningAudioSegmentBlob: vi.fn(),
+  transcribeListeningAudio: vi.fn(),
 }));
 
 const fetchListeningPractices = vi.mocked(listeningApi.fetchListeningPractices);
+const fetchListeningPracticeDetail = vi.mocked(
+  listeningApi.fetchListeningPracticeDetail,
+);
 
 describe("ListeningPage", () => {
   beforeEach(() => {
@@ -79,6 +86,67 @@ describe("ListeningPage", () => {
       screen.getByText(
         "This listening practice is an excellent fit for your current level!",
       ),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the practice detail when clicking a lesson card", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue([
+      {
+        id: "best-fit",
+        title: "Best fit lesson",
+        hsk_level: 1,
+        status: "TODO",
+        vocabulary_score: 100,
+        grammar_score: 90,
+      },
+    ]);
+    fetchListeningPracticeDetail.mockResolvedValue({
+      id: "best-fit",
+      title: "Best fit lesson",
+      hsk_level: 1,
+      status: "TODO",
+      vocabulary_score: 100,
+      grammar_score: 90,
+      text: "你好",
+      sentences: [],
+      segment_count: 0,
+    });
+
+    render(<ListeningPage />);
+
+    await user.click(await screen.findByText("Best fit lesson"));
+
+    expect(
+      await screen.findByRole("heading", { name: "Best fit lesson" }),
+    ).toBeInTheDocument();
+    expect(fetchListeningPracticeDetail).toHaveBeenCalledWith("best-fit");
+  });
+
+  it("clicking the score icon does not open the practice detail", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue([
+      {
+        id: "best-fit",
+        title: "Best fit lesson",
+        hsk_level: 1,
+        status: "TODO",
+        vocabulary_score: 100,
+        grammar_score: 90,
+      },
+    ]);
+
+    render(<ListeningPage />);
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: 'See your level for "Best fit lesson"',
+      }),
+    );
+
+    expect(fetchListeningPracticeDetail).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("You already know 100% of this lesson's vocabulary."),
     ).toBeInTheDocument();
   });
 

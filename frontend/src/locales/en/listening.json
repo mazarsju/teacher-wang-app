@@ -16,5 +16,41 @@
       "fair": "This listening practice may be a bit challenging for your current level.",
       "poor": "This listening practice is quite advanced for your current level."
     }
+  },
+  "audioPlayer": {
+    "play": "Play",
+    "pause": "Pause",
+    "rewind": "Go back 5 seconds",
+    "forward": "Go forward 5 seconds",
+    "seek": "Playback position",
+    "loadError": "Failed to load the audio."
+  },
+  "shadowingSentence": {
+    "reveal": "Show the sentence",
+    "inputPlaceholder": "Type or record what you hear...",
+    "transcribing": "Transcribing...",
+    "record": "Hold to record",
+    "check": "Check"
+  },
+  "listeningPracticeDetailPage": {
+    "title": "Listening practice",
+    "back": "Back",
+    "loading": "Loading...",
+    "loadError": "Failed to load the listening practice.",
+    "audioSection": {
+      "title": "Listen"
+    },
+    "questionsSection": {
+      "title": "Questions",
+      "comingSoon": "Comprehension questions are coming soon."
+    },
+    "shadowingSection": {
+      "title": "Shadowing"
+    },
+    "textSection": {
+      "title": "Full text",
+      "reveal": "Show the text",
+      "showTranslation": "Show translation"
+    }
   }
 }

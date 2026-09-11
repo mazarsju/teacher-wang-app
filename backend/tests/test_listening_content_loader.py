@@ -15,20 +15,29 @@ from backend.utils.database.models import (
 )
 from backend.utils.listening.listening_content_loader import (
     _unique_chars,
+    fetch_listening_breakdown,
+    fetch_listening_text,
+    list_listening_audio_segments,
+    read_listening_audio,
+    read_listening_audio_segment,
     reload_listening_content,
 )
 from postgres_test_case import PostgresTestCase
 
 
 class _FakeBody:
-    def __init__(self, text: str):
-        self._text = text
+    def __init__(self, content: str | bytes):
+        self._content = content
 
     def read(self):
-        return self._text.encode("utf-8")
+        return (
+            self._content
+            if isinstance(self._content, bytes)
+            else self._content.encode("utf-8")
+        )
 
 
-def _make_client(objects: dict[str, str]) -> MagicMock:
+def _make_client(objects: dict[str, str | bytes]) -> MagicMock:
     client = MagicMock()
 
     def get_object(*, Bucket, Key):
@@ -261,6 +270,297 @@ class TestReloadListeningContent(PostgresTestCase):
 
         self.assertEqual(ListeningPractice.query.count(), 0)
         self.assertEqual(ListeningProgress.query.count(), 0)
+
+
+class TestFetchListeningText(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_reads_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "text.txt").write_text("你好\n")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                text = fetch_listening_text(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(text, "你好\n")
+
+    def test_missing_file_returns_none(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                text = fetch_listening_text(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertIsNone(text)
+
+    def test_reads_from_s3(self):
+        client = _make_client(
+            {"listening_practice/hsk1/listening-family-size/text.txt": "你好\n"}
+        )
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            text = fetch_listening_text(1, "listening-family-size", client=client)
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(text, "你好\n")
+
+
+class TestReadListeningAudio(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_reads_full_audio_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "audio.mp3").write_bytes(b"\x00\x01fake-mp3")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                audio = read_listening_audio(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(audio, b"\x00\x01fake-mp3")
+
+    def test_missing_full_audio_returns_none(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                audio = read_listening_audio(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertIsNone(audio)
+
+    def test_reads_full_audio_from_s3(self):
+        client = _make_client(
+            {
+                "listening_practice/hsk1/listening-family-size/audio.mp3": (
+                    b"\x00\x01fake-mp3"
+                )
+            }
+        )
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            audio = read_listening_audio(1, "listening-family-size", client=client)
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(audio, b"\x00\x01fake-mp3")
+
+    def test_reads_audio_segment_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            audio_dir = (
+                root
+                / "listening_practice"
+                / "hsk1"
+                / "listening-family-size"
+                / "audio"
+            )
+            audio_dir.mkdir(parents=True)
+            (audio_dir / "audio-1.mp3").write_bytes(b"segment-1")
+            (audio_dir / "audio-2.mp3").write_bytes(b"segment-2")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                first = read_listening_audio_segment(1, "listening-family-size", 1)
+                missing = read_listening_audio_segment(1, "listening-family-size", 3)
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(first, b"segment-1")
+        self.assertIsNone(missing)
+
+
+class TestListListeningAudioSegments(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_lists_and_sorts_segment_numbers_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            audio_dir = (
+                root
+                / "listening_practice"
+                / "hsk1"
+                / "listening-family-size"
+                / "audio"
+            )
+            audio_dir.mkdir(parents=True)
+            for name in ("audio-2.mp3", "audio-1.mp3", "audio-10.mp3", "not-audio.txt"):
+                (audio_dir / name).write_bytes(b"x")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                segments = list_listening_audio_segments(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(segments, [1, 2, 10])
+
+    def test_missing_audio_folder_returns_empty_list(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                segments = list_listening_audio_segments(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(segments, [])
+
+    def test_lists_segments_from_s3(self):
+        client = _make_client(
+            {
+                "listening_practice/hsk1/listening-family-size/audio/audio-1.mp3": b"x",
+                "listening_practice/hsk1/listening-family-size/audio/audio-2.mp3": b"x",
+            }
+        )
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            segments = list_listening_audio_segments(
+                1, "listening-family-size", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(segments, [1, 2])
+
+
+class TestFetchListeningBreakdown(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def _write_breakdown(self, topic_dir: Path) -> None:
+        topic_dir.mkdir(parents=True)
+        (topic_dir / "breakdown.json").write_text(
+            '{"sentences": ['
+            '{"id": 1, "transcript": "[neutral]你好", "mandarin": "你好", '
+            '"english": "Hello"},'
+            '{"id": 2, "transcript": "[neutral]再见", "mandarin": "再见", '
+            '"english": "Goodbye"}'
+            "]}"
+        )
+
+    def test_defaults_to_english_field(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._write_breakdown(
+                root / "listening_practice" / "hsk1" / "listening-family-size"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                sentences = fetch_listening_breakdown(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(
+            sentences,
+            [
+                {"id": 1, "mandarin": "你好", "translation": "Hello"},
+                {"id": 2, "mandarin": "再见", "translation": "Goodbye"},
+            ],
+        )
+
+    def test_merges_translated_sibling_for_non_english_language(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = (
+                root / "listening_practice" / "hsk1" / "listening-family-size"
+            )
+            self._write_breakdown(topic_dir)
+            (topic_dir / "breakdown_fr.json").write_text(
+                '{"sentences": ['
+                '{"id": 1, "translate": "Bonjour"},'
+                '{"id": 2, "translate": "Au revoir"}'
+                "]}"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                sentences = fetch_listening_breakdown(
+                    1, "listening-family-size", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(
+            sentences,
+            [
+                {"id": 1, "mandarin": "你好", "translation": "Bonjour"},
+                {"id": 2, "mandarin": "再见", "translation": "Au revoir"},
+            ],
+        )
+
+    def test_falls_back_to_english_when_translation_sibling_missing(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._write_breakdown(
+                root / "listening_practice" / "hsk1" / "listening-family-size"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                sentences = fetch_listening_breakdown(
+                    1, "listening-family-size", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(sentences[0]["translation"], "Hello")
+
+    def test_reads_from_s3(self):
+        client = _make_client(
+            {
+                "listening_practice/hsk1/listening-family-size/breakdown.json": (
+                    '{"sentences": [{"id": 1, "transcript": "[neutral]你好", '
+                    '"mandarin": "你好", "english": "Hello"}]}'
+                ),
+            }
+        )
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            sentences = fetch_listening_breakdown(
+                1, "listening-family-size", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(
+            sentences, [{"id": 1, "mandarin": "你好", "translation": "Hello"}]
+        )
 
 
 if __name__ == "__main__":

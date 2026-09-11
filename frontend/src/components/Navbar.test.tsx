@@ -19,7 +19,7 @@ describe("Navbar", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Grammar" })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Listening and Speaking" }),
+      screen.getByRole("button", { name: "Listening" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chat" })).toBeInTheDocument();
     expect(

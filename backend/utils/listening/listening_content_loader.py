@@ -14,10 +14,12 @@ Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout (e.g. this repo's own
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from pathlib import Path
 
+from botocore.exceptions import ClientError
 from sqlalchemy.dialects.postgresql import insert
 
 from backend.utils.database.extensions import db
@@ -39,7 +41,10 @@ LISTENING_PRACTICE_PREFIX = "listening_practice/"
 LISTENING_PRACTICE_MANIFEST_SUFFIX = "/overview.yaml"
 LISTENING_PRACTICE_MANIFEST_FILENAME = "overview.yaml"
 LISTENING_PRACTICE_TEXT_FILENAME = "text.txt"
+LISTENING_PRACTICE_AUDIO_FILENAME = "audio.mp3"
+LISTENING_PRACTICE_BREAKDOWN_FILENAME = "breakdown.json"
 _CJK_RE = re.compile(r"[一-鿿]")
+_AUDIO_SEGMENT_RE = re.compile(r"^audio-(\d+)\.mp3$")
 
 
 def _unique_chars(text: str) -> str:
@@ -152,3 +157,137 @@ def reload_listening_content(client=None) -> dict[str, int]:
 
     db.session.commit()
     return {"listening_practice": len(topics)}
+
+
+def _topic_folder(hsk_level: int, topic_id: str) -> str:
+    return f"listening_practice/hsk{hsk_level}/{topic_id}"
+
+
+def _read_local_bytes(root: Path, relative_path: str) -> bytes | None:
+    path = root / relative_path
+    return path.read_bytes() if path.exists() else None
+
+
+def _read_s3_bytes(client, bucket: str, key: str) -> bytes | None:
+    try:
+        return client.get_object(Bucket=bucket, Key=key)["Body"].read()
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+            return None
+        raise
+
+
+def fetch_listening_text(hsk_level: int, topic_id: str, client=None) -> str | None:
+    """The topic's full ``text.txt`` transcript, or None if missing."""
+    relative_path = f"{_topic_folder(hsk_level, topic_id)}/{LISTENING_PRACTICE_TEXT_FILENAME}"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        return _read_local_file(Path(local_path), relative_path)
+    bucket = _bucket()
+    client = client or _s3_client()
+    return _read_s3_object(client, bucket, relative_path)
+
+
+def read_listening_audio(hsk_level: int, topic_id: str, client=None) -> bytes | None:
+    """Raw bytes of the topic's full ``audio.mp3``, or None if missing."""
+    relative_path = f"{_topic_folder(hsk_level, topic_id)}/{LISTENING_PRACTICE_AUDIO_FILENAME}"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        return _read_local_bytes(Path(local_path), relative_path)
+    bucket = _bucket()
+    client = client or _s3_client()
+    return _read_s3_bytes(client, bucket, relative_path)
+
+
+def list_listening_audio_segments(hsk_level: int, topic_id: str, client=None) -> list[int]:
+    """Sorted segment numbers available under the topic's ``audio/`` folder.
+
+    e.g. ``audio/audio-1.mp3``, ``audio/audio-2.mp3`` -> ``[1, 2]``.
+    """
+    audio_folder = f"{_topic_folder(hsk_level, topic_id)}/audio"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    filenames: list[str] = []
+    if local_path:
+        folder = Path(local_path) / audio_folder
+        if folder.is_dir():
+            filenames = [path.name for path in folder.iterdir()]
+    else:
+        bucket = _bucket()
+        client = client or _s3_client()
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket, Prefix=f"{audio_folder}/"):
+            for item in page.get("Contents", []) or []:
+                filenames.append(item.get("Key", "").rsplit("/", 1)[-1])
+
+    numbers = []
+    for filename in filenames:
+        match = _AUDIO_SEGMENT_RE.match(filename)
+        if match:
+            numbers.append(int(match.group(1)))
+    return sorted(numbers)
+
+
+def read_listening_audio_segment(
+    hsk_level: int, topic_id: str, segment: int, client=None
+) -> bytes | None:
+    """Raw bytes of one ``audio/audio-<segment>.mp3`` shadowing clip, or None if missing."""
+    relative_path = f"{_topic_folder(hsk_level, topic_id)}/audio/audio-{segment}.mp3"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        return _read_local_bytes(Path(local_path), relative_path)
+    bucket = _bucket()
+    client = client or _s3_client()
+    return _read_s3_bytes(client, bucket, relative_path)
+
+
+def fetch_listening_breakdown(
+    hsk_level: int, topic_id: str, language: str = "en", client=None
+) -> list[dict]:
+    """Per-sentence breakdown: ``[{id, mandarin, translation}, ...]``.
+
+    ``translation`` is ``breakdown.json``'s own ``english`` field for
+    ``language == "en"``; for any other language it's read from the sibling
+    ``breakdown_<language>.json`` (``{"sentences": [{"id", "translate"}]}``),
+    falling back to English per-sentence when that file or a given sentence
+    id is missing from it — same fallback contract as the rest of this
+    module's translation siblings (``explanation_<language>.md`` etc.).
+    """
+    folder = _topic_folder(hsk_level, topic_id)
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        root: Path | None = Path(local_path)
+        bucket = None
+    else:
+        root = None
+        bucket = _bucket()
+        client = client or _s3_client()
+
+    def _read_json(filename: str) -> dict | None:
+        relative_path = f"{folder}/{filename}"
+        raw = (
+            _read_local_file(root, relative_path)
+            if root is not None
+            else _read_s3_object(client, bucket, relative_path)
+        )
+        return json.loads(raw) if raw else None
+
+    base = _read_json(LISTENING_PRACTICE_BREAKDOWN_FILENAME) or {"sentences": []}
+    translations_by_id: dict[int, str] = {}
+    if language != "en":
+        translated = _read_json(f"breakdown_{language}.json")
+        if translated:
+            translations_by_id = {
+                entry["id"]: entry["translate"]
+                for entry in translated.get("sentences", [])
+            }
+
+    return [
+        {
+            "id": sentence["id"],
+            "mandarin": sentence["mandarin"],
+            "translation": translations_by_id.get(
+                sentence["id"], sentence.get("english", "")
+            ),
+        }
+        for sentence in base.get("sentences", [])
+    ]

@@ -5,6 +5,7 @@ import Page from "../components/Page";
 import type { ListeningPractice } from "../types/listeningPractice";
 import { fetchListeningPractices } from "../utils/listening/listeningApi";
 import { overallScore, scoreTier } from "../utils/listening/overallScore";
+import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import styles from "./ListeningPage.module.css";
 
 export default function ListeningPage() {
@@ -14,6 +15,7 @@ export default function ListeningPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPractice, setSelectedPractice] =
     useState<ListeningPractice | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +58,15 @@ export default function ListeningPage() {
     [practices],
   );
 
+  if (selectedTopicId !== null) {
+    return (
+      <ListeningPracticeDetailPage
+        topicId={selectedTopicId}
+        onBack={() => setSelectedTopicId(null)}
+      />
+    );
+  }
+
   return (
     <Page title={t("listeningPage.title")}>
       {isLoading && <p>{t("listeningPage.loading")}</p>}
@@ -70,7 +81,19 @@ export default function ListeningPage() {
               overallScore(practice.vocabulary_score, practice.grammar_score),
             );
             return (
-              <div key={practice.id} className={styles.listeningTile}>
+              <div
+                key={practice.id}
+                className={styles.listeningTile}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedTopicId(practice.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedTopicId(practice.id);
+                  }
+                }}
+              >
                 <span className={styles.listeningTileTitle}>
                   {practice.title}
                 </span>
@@ -80,7 +103,10 @@ export default function ListeningPage() {
                   aria-label={t("listeningPage.scoreIconAriaLabel", {
                     title: practice.title,
                   })}
-                  onClick={() => setSelectedPractice(practice)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedPractice(practice);
+                  }}
                 />
               </div>
             );

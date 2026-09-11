@@ -1,0 +1,61 @@
+.listening-detail-section {
+  margin-bottom: 2rem;
+}
+
+.listening-detail-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: #111827;
+}
+
+.listening-detail-text-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  margin-bottom: 0.75rem;
+}
+
+.listening-detail-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre-line;
+  color: #111827;
+}
+
+.listening-detail-text-blurred {
+  filter: blur(6px);
+  user-select: none;
+}
+
+.listening-detail-reveal-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border: none;
+  border-radius: 9999px;
+  background: var(--app-mist);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.listening-detail-reveal-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.listening-detail-translation {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  white-space: pre-line;
+  color: #111827;
+}
