@@ -10,7 +10,7 @@ Related: [auth](./auth.md) (who the user is), [data isolation](./data-isolation.
 
 ## Context
 
-LLM chat (character reply, grammar teacher, challenge judge) costs real money. Every authenticated user starts on a **free** plan. We need a simple, enforceable budget so free usage cannot grow without bound, while leaving room for a future **paid** tier that is not capped the same way.
+LLM chat (character reply, grammar teacher, challenge judge, background conversation-memory summarization) costs real money. Every authenticated user starts on a **free** plan. We need a simple, enforceable budget so free usage cannot grow without bound, while leaving room for a future **paid** tier that is not capped the same way.
 
 Constraints:
 
@@ -45,8 +45,9 @@ Constraints:
 | Remaining budget | Per-user setting key `available_token` (`SETTING_AVAILABLE_TOKEN`) |
 | Initial allowance | `FREE_PLAN_MAX_ALLOWED_TOKEN = 100_000`, seeded in `DEFAULT_SETTINGS` |
 | Seed timing | `ensure_default_settings(user_id)` on **new and returning** users (inserts missing keys only) — no Alembic data migration |
-| Gate | Before every LLM call in `_invoke_llm` (`backend/utils/aiChat/chat_service.py`): if `plan == free` and `available_token <= 0` → `ValueError` with a user-facing message |
-| Deduct | After a successful invoke, subtract `input + output` tokens from `available_token` (may go **negative** so one large call can overshoot; the next call is blocked) |
+| Gate | Before every LLM call in `_invoke_llm` (`backend/utils/aiChat/chat_service.py`): if `plan == free` and `available_token <= 0` → `ValueError` with a user-facing message. `POST /chat/tts` and `POST /chat/stt` (`backend/routes/chat.py`) call the same `assert_free_plan_has_tokens` directly (not through `_invoke_llm`, since they don't go through the chat LLM) before calling OpenAI |
+| Deduct | After a successful invoke, subtract `input + output` tokens from `available_token` (may go **negative** so one large call can overshoot; the next call is blocked). TTS/STT deduct through the same `deduct_available_token`, via a small `_charge_token_usage` helper in `backend/routes/chat.py` — since neither OpenAI call returns real token usage, the count is `estimate_text_tokens()` (a `tiktoken` `cl100k_base` count of the TTS input text or the STT output transcript), and `record_token_usage` prices it at the configured chat model's rate rather than tts-1/whisper-1's real per-character/per-minute billing (see [voice-interaction.md](./voice-interaction.md)) |
+| No request context | `_invoke_llm` normally resolves the caller via `current_user()`, which needs a Flask request context. A caller without one (a background thread) can't use that — it now accepts an explicit `user=` argument instead. `_summarize_and_store` (`backend/utils/aiChat/conversation_summary.py`, the background job queued after a chat turn to update the learner's conversation memory) resolves its own `User` row from the `user_id` it already has and passes it in, so this LLM call is gated/charged like any other. Weekly article generation (a true batch job, not billed to one learner) still calls `_invoke_llm` with no `user` at all, which is treated as ungated by design — see Consequences |
 | Paid | Skip check and deduct |
 
 User-facing exhaustion message (also returned as `{"error": "..."}` with HTTP 400 from chat routes):
@@ -83,7 +84,7 @@ Two complementary numbers:
 POST /chat (or any path that calls _invoke_llm)
         │
         ▼
-  current_user() → users.plan
+  current_user() (or an explicit user= for a background caller) → users.plan
         │
         ├─ free & available_token <= 0 ──► 400 + exhaustion message
         │
@@ -92,6 +93,8 @@ POST /chat (or any path that calls _invoke_llm)
               record token_count (usage history)
               if free: available_token -= used
 ```
+
+The background conversation-summarization thread runs the same shape, just with `user` resolved from `user_id` instead of `current_user()` (no Flask request context there): see [voice-interaction.md](./voice-interaction.md) for `POST /chat/tts`/`POST /chat/stt`, which aren't `_invoke_llm` calls at all (no langchain `messages` list) but gate/charge the same budget directly.
 
 ## Out of scope (remaining)
 
@@ -106,7 +109,8 @@ POST /chat (or any path that calls _invoke_llm)
 ### Advantages
 
 * No schema migration: settings key/value + existing `users.plan`.
-* Enforcement sits on the single LLM entry point, so grammar checks, challenge replies, and judges share the same budget.
+* Enforcement sits on the single LLM entry point, so grammar checks, challenge replies, judges, and background conversation-memory summarization all share the same budget.
+* Weekly article generation (a system-wide batch job with no single owning learner) deliberately bypasses this gate — `_invoke_llm` with no resolvable `user` skips the check entirely. That exemption exists only because no individual learner is being billed for it; a new per-user feature must never rely on the same "no user" path to skip gating (see `.cursor/rules/llm-token-quota.mdc`).
 * Returning free users pick up `available_token` automatically on next authenticated request.
 * Preferences can show remaining vs max without a second endpoint.
 
@@ -117,6 +121,7 @@ POST /chat (or any path that calls _invoke_llm)
 * Paid is currently “any plan ≠ free” with no product catalog — refine when billing lands.
 * Concurrent LLM calls could race on the settings row; acceptable at current scale; revisit if needed.
 * Operators must not expose LLM keys via API; plan limits control **usage**, not model access (see README LLM configuration).
+* `/chat/tts`/`/chat/stt` token counts are a text-length estimate (`estimate_text_tokens`), not real OpenAI usage — accurate enough to gate/deduct the budget, but the `token_count` price for these events is computed at the chat model's per-token rate, not tts-1/whisper-1's real pricing (see [voice-interaction.md](./voice-interaction.md)).
 
 ## Open questions for a future revision
 

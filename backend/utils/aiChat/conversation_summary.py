@@ -17,12 +17,12 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from backend.utils.aiChat.chat_service import (
     TEACHER_CHARACTER_ID,
     _extract_json_object,
-    _llm_response_text,
+    _invoke_llm,
 )
 from backend.utils.aiChat.conversation_logs import load_conversation
-from backend.utils.aiChat.llm import get_llm
+from backend.utils.aiChat.token_usage import record_token_usage
 from backend.utils.database.extensions import db
-from backend.utils.database.models import ConversationSummary
+from backend.utils.database.models import ConversationSummary, User
 
 logger = logging.getLogger(__name__)
 
@@ -268,17 +268,30 @@ def _human_message(existing_memory: dict | None, new_messages: list[dict[str, st
 def _summarize_and_store(app, user_id, log_user_id: str, character_id: str) -> None:
     with app.app_context():
         try:
+            # No Flask request context in this background thread, so _invoke_llm
+            # can't resolve the caller via current_user() — load the row directly
+            # and pass it in, so this still gates/charges the learner's quota.
+            user = User.query.filter_by(shortid=user_id).first()
+            if user is None:
+                return
+
             messages = load_conversation(log_user_id, character_id)
             new_messages = _last_n_user_turns(messages, SUMMARY_TRIGGER_MESSAGE_COUNT)
             existing_memory = _existing_memory(user_id, character_id)
 
-            response = get_llm().invoke(
+            raw, usage = _invoke_llm(
                 [
                     SystemMessage(content=_system_prompt(character_id)),
                     HumanMessage(content=_human_message(existing_memory, new_messages)),
-                ]
+                ],
+                user=user,
             )
-            memory = _extract_json_object(_llm_response_text(response))
+            record_token_usage(
+                user_id,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+            )
+            memory = _extract_json_object(raw)
             store_conversation_summary(user_id, character_id, memory)
         except Exception:
             logger.exception(

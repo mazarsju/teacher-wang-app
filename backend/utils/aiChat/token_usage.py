@@ -31,6 +31,20 @@ TOKEN_PRICE_PATH = Path(
 )
 
 
+def estimate_text_tokens(text: str) -> int:
+    """Token count for text that has no LLM usage response to read (TTS input, STT output).
+
+    ponytail: cl100k_base is not tts-1/whisper-1's real tokenizer (OpenAI bills those
+    per character/minute, not per token) and record_token_usage() below prices the
+    result at the configured chat model's rate, not real audio pricing — good enough
+    for quota tracking; add real per-model pricing if dollar accuracy is needed.
+    """
+    import tiktoken
+
+    encoding = tiktoken.get_encoding("cl100k_base")
+    return len(encoding.encode(text))
+
+
 def load_token_prices() -> list[dict]:
     if not TOKEN_PRICE_PATH.is_file():
         raise ValueError(f"Token price file not found: {TOKEN_PRICE_PATH}")

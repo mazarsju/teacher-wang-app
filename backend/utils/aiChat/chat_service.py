@@ -229,16 +229,30 @@ def _current_language_code() -> str | None:
         return None
 
 
-def _invoke_llm(messages) -> tuple[str, LlmTokenUsage]:
+def _invoke_llm(messages, *, user=None) -> tuple[str, LlmTokenUsage]:
+    """Every LLM chat-completion call in this app goes through here.
+
+    This is the single point that gates a free-plan user's quota before the
+    call and deducts actual usage from it after — a new feature that talks
+    to the LLM must call this (or, for a non-chat-completion call like TTS/
+    STT, mirror its gate-then-charge shape; see backend/routes/chat.py) and
+    must not call ``get_llm()``/``get_openai_client()`` directly.
+
+    ``user`` lets a caller without a Flask request context (a background
+    thread, e.g. conversation summarization) pass the ``User`` row it already
+    has instead of relying on ``current_user()``.
+    """
     from backend.utils.database.models import DEFAULT_USER_PLAN
     from backend.utils.database.settings import assert_free_plan_has_tokens, deduct_available_token
-    from backend.utils.auth.user_context import current_user
 
-    # Batch jobs (weekly articles) have an app context but no Cognito user.
-    try:
-        user = current_user()
-    except RuntimeError:
-        user = None
+    if user is None:
+        from backend.utils.auth.user_context import current_user
+
+        # Batch jobs (weekly articles) have an app context but no Cognito user.
+        try:
+            user = current_user()
+        except RuntimeError:
+            user = None
 
     if user is not None:
         assert_free_plan_has_tokens(user)

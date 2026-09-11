@@ -13,6 +13,7 @@ from backend.utils.aiChat.token_usage import (
     TOKEN_TYPE_INPUT,
     TOKEN_TYPE_OUTPUT,
     compute_price_cents,
+    estimate_text_tokens,
     get_daily_usage,
     get_token_usage_summary,
     get_total_tokens,
@@ -135,6 +136,17 @@ class TestTokenUsage(PostgresTestCase):
         summary = get_token_usage_summary(self.user_id)
         self.assertEqual(summary["plan"], "pro")
         self.assertEqual(summary["max_allowed_token"], 10_000_000)
+
+
+class TestEstimateTextTokens(unittest.TestCase):
+    def test_counts_more_tokens_for_longer_text(self):
+        short = estimate_text_tokens("你好")
+        long = estimate_text_tokens("你好，我今天想练习说中文，可以吗？")
+        self.assertGreater(short, 0)
+        self.assertGreater(long, short)
+
+    def test_empty_text_has_no_tokens(self):
+        self.assertEqual(estimate_text_tokens(""), 0)
 
 
 if __name__ == "__main__":

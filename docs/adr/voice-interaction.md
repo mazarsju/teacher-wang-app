@@ -4,7 +4,7 @@
 
 Draft / partially accepted — text-to-speech (playback, per-character voices on two providers, reading/listening mode, speed control, a pro-only "realistic voice" provider switch) is implemented. Speech-to-text recording and transcription (press-and-hold record button → `POST /chat/stt` → learner reviews the transcript in the message input before sending) is implemented; pronunciation feedback and listening challenges are not started (README roadmap §12).
 
-Related: [plan-management.md](./plan-management.md) (the free-plan token budget does **not** cover TTS calls; `realistic_voice_enabled` is a separate, plan-based gate — see Open questions), [frontend-localization.md](./frontend-localization.md) (per-character description strings), [schema tenancy](../architecture/schema-tenancy.md) (generic `settings` key/value store used for the new preferences).
+Related: [plan-management.md](./plan-management.md) (`/chat/tts` and `/chat/stt` are gated and deducted against the same free-plan `available_token` budget as chat, via an estimated token count — see Decision below; `realistic_voice_enabled` is a separate, plan-based gate), [frontend-localization.md](./frontend-localization.md) (per-character description strings), [schema tenancy](../architecture/schema-tenancy.md) (generic `settings` key/value store used for the new preferences).
 
 ## Context
 
@@ -21,7 +21,7 @@ Constraints:
 | Providers | OpenAI TTS (`tts-1`, reuses the chat `LLM_API_KEY`) for everyone; ElevenLabs (`eleven_multilingual_v2`, own `ELEVENLABS_API_KEY`) for pro accounts that opt in |
 | Who calls it | Only the frontend, per message, on demand — not batch-generated server-side |
 | Which provider is used | **Server-decided, not client-supplied** — the client cannot force ElevenLabs by sending a flag; see Decision |
-| Cost control | No dedicated token/cost budget for either provider (see Open questions); ElevenLabs access itself is plan-gated |
+| Cost control | Both `/chat/tts` and `/chat/stt` are gated/deducted against the same free-plan `available_token` budget as chat (see Decision below); ElevenLabs access itself is separately plan-gated |
 | Voice selection | Fixed per character per provider (not user-selectable), picked once when the character was created |
 | Speed | Derived, not literal client input — HSK level sets a baseline, a user preference nudges it (applied to whichever provider ends up used) |
 
@@ -45,9 +45,11 @@ Constraints:
 
 1. Resolves the provider itself, ignoring anything the client might imply about it: `_resolve_tts_provider(plan, user_id)` returns `"elevenlabs"` only when `plan == "pro"` **and** `get_chat_realistic_voice_enabled(user_id)`; otherwise `"chatgpt"`.
 2. Picks the `name` from the `voices` array matching that resolved provider (`400` if the client didn't send one for it).
-3. Generates the audio with that provider and streams back `audio/mpeg`:
+3. Calls `assert_free_plan_has_tokens(user)` (same check `_invoke_llm` uses for chat — see [plan-management.md](./plan-management.md)) — `400` with the same exhaustion message if a free-plan user's `available_token <= 0`. This runs **before** generating audio, so an exhausted account never reaches OpenAI/ElevenLabs for this call.
+4. Generates the audio with that provider and streams back `audio/mpeg`:
    - **chatgpt**: `get_openai_client().audio.speech.create(model="tts-1", voice=name, input=text, speed=..., response_format="mp3")` (`name` validated against `TTS_VOICES`).
    - **elevenlabs**: `generate_speech(name, text, speed)` in `backend/utils/aiChat/elevenlabs_client.py` — POSTs to `https://api.elevenlabs.io/v1/text-to-speech/{voice_id}` with `model_id="eleven_multilingual_v2"` and `voice_settings.speed` (clamped to ElevenLabs' `[0.7, 1.2]` accepted range), where `voice_id` comes from a small hardcoded `name → voice_id` table (`ELEVENLABS_VOICE_IDS`) — chosen because the API key in use lacks the `voices_read` scope, so the backend cannot resolve names to ids at runtime (see the quirk note below).
+5. On success, charges `estimate_text_tokens(text)` (`backend/utils/aiChat/token_usage.py`, a `tiktoken` `cl100k_base` count of the TTS input) as `input_tokens` via the shared `_charge_token_usage` helper — records a `token_count` row (`record_token_usage`) and, for free-plan users, deducts it from `available_token` (`deduct_available_token`). Both providers are charged the same way; ElevenLabs' own per-character billing is untouched by this.
 
 `speed` is never client-supplied, for either provider. It is computed server-side as:
 
@@ -97,7 +99,13 @@ The Preferences page's "Chat setup" section (placed after Anki sync) exposes two
 
 ### Backend: `POST /chat/stt`
 
-`backend/routes/chat.py` — given a multipart `audio` file field (whatever `MediaRecorder` produced, typically `audio/webm`), the route reads it and calls `get_openai_client().audio.transcriptions.create(model="whisper-1", file=(filename, bytes, mimetype), language="zh")`. The `language="zh"` hint is hardcoded, not derived from the learner's app locale — every character in this app is a Mandarin-speaking role regardless of the UI language the learner reads in. The response is `{ "text": transcript.text }`; a missing `audio` field is `400`, a transcription failure is `500`. No persistence, no token/cost accounting (mirrors `/chat/tts` — see Open questions).
+`backend/routes/chat.py` — given a multipart `audio` file field (whatever `MediaRecorder` produced, typically `audio/webm`), the route:
+
+1. Calls `assert_free_plan_has_tokens(user)` before touching OpenAI — same `400` exhaustion behavior as `/chat/tts`, and before spending any money transcribing audio for an exhausted account.
+2. Calls `get_openai_client().audio.transcriptions.create(model="whisper-1", file=(filename, bytes, mimetype), language="zh")`. The `language="zh"` hint is hardcoded, not derived from the learner's app locale — every character in this app is a Mandarin-speaking role regardless of the UI language the learner reads in.
+3. On success, charges `estimate_text_tokens(transcript.text)` as `output_tokens` (the learner's spoken words, transcribed, are the "generated" side of this call, mirroring how a chat reply's tokens are `output_tokens`) via the same `_charge_token_usage` helper as `/chat/tts`.
+
+The response is `{ "text": transcript.text }`; a missing `audio` field is `400`, a transcription failure is `500` (and charges nothing — the charge only runs after a successful transcription). No conversation persistence — the learner reviews/edits the transcript in the message input and sends it through the normal `POST /chat` flow themselves.
 
 ### Frontend recording (`ChatModal.tsx`)
 
@@ -108,7 +116,7 @@ A small icon-only "record" button (mic icon, an icon-only-trigger exception to t
 - STT: analyzing pronunciation quality/mistakes from the recording (recording + transcription itself is done — see above).
 - Touch/pointer support for the record button (mouse-only today) and a click-to-toggle alternative to press-and-hold.
 - Listening challenges (a dedicated exercise type).
-- Token/cost accounting for TTS calls, on either provider — unlike chat LLM calls, `/chat/tts` is not gated by `plan`/`available_token` (see [plan-management.md](./plan-management.md)); only whether ElevenLabs is reachable at all is plan-gated, not how much of it is used.
+- A real per-provider dollar cost for TTS/STT accounting — `record_token_usage` prices these estimated-token events at the configured chat model's per-token rate (see [plan-management.md](./plan-management.md)), not tts-1/whisper-1/ElevenLabs' actual per-character/per-minute billing.
 - User-selectable voice (voice is fixed per character/provider, not a learner preference) — "realistic voice" switches provider, not which voice.
 - Playback controls beyond a single restart-on-click — no stop button, no queue; a second click restarts from the top.
 - ElevenLabs voice variety is capped at what the free-tier key can reach today (13 male / 6 female voices) — a female character repeats one voice, and every character is stuck with whatever a one-time random draw assigned it (no re-roll, no per-user variation).
@@ -125,7 +133,7 @@ A small icon-only "record" button (mic icon, an icon-only-trigger exception to t
 
 ### Drawbacks / follow-ups
 
-- TTS calls have no budget/cost gate on either provider — a very active listening-first user (or a pro user with realistic voice on) could generate many calls with no cap (see Open questions).
+- The `available_token` gate only applies to free-plan users (same as chat) — a pro user (with or without realistic voice) has no cap on TTS/STT call volume; ElevenLabs' own account-level billing is the only backstop there.
 - No caching across sessions or users: the same assistant sentence is re-synthesized every time a different conversation (or a reloaded page) needs it — object URLs live only for the mounted `ChatModal`, nothing is persisted. This is more expensive for ElevenLabs, whose free/entry tiers bill per character generated.
 - Voice assignment is entirely manual/static; adding a new challenge character requires a human (or the `create-challenge` skill) to pick a plausible voice for **both** providers — there is no runtime gender inference or provider-catalog lookup.
 - `isChineseOnlyText` is a blunt gate — a reply that's mostly Chinese with one stray Latin character or digit gets no listen button at all.
@@ -134,7 +142,7 @@ A small icon-only "record" button (mic icon, an icon-only-trigger exception to t
 
 ## Open questions for a future revision
 
-1. Should `/chat/tts` be covered by the same free-plan budget as chat (README roadmap §8 / [plan-management.md](./plan-management.md)), or get a separate cap? This is now sharper for ElevenLabs specifically, since it bills per character even for pro accounts.
+1. `/chat/tts` and `/chat/stt` are now covered by the same free-plan `available_token` budget as chat (see Decision above) — should pro accounts get any cap too, given ElevenLabs bills per character regardless of plan? And should the estimated-token charge be replaced with each provider's real billing unit (characters for TTS, minutes for STT) for accurate `token_count` pricing?
 2. Should generated audio be cached server-side (e.g. by a `(provider, voice, text, speed)` hash) to avoid re-synthesizing identical sentences? Especially valuable for ElevenLabs cost.
 3. Where does pronunciation-quality feedback come from — a separate LLM judge call, similar to the existing grammar checker? (Recording + transcription itself is answered — `POST /chat/stt` wrapping OpenAI Whisper, see above.)
 4. Should `listening_first` eventually extend to `[[stage direction]]` segments, or stay scoped to plain Chinese-only bubbles as today?

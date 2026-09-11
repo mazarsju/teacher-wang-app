@@ -1,6 +1,8 @@
 import bootstrap  # noqa: F401
 import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
 
 from backend.utils.aiChat.conversation_summary import (
@@ -16,7 +18,10 @@ from backend.utils.aiChat.conversation_summary import (
     should_summarize,
     store_conversation_summary,
 )
+from backend.utils.aiChat.token_usage import get_total_tokens
+from backend.utils.database.extensions import db
 from backend.utils.database.models import ConversationSummary
+from backend.utils.database.settings import get_available_token, set_setting, SETTING_AVAILABLE_TOKEN
 from postgres_test_case import PostgresTestCase
 
 
@@ -187,13 +192,44 @@ class TestDeleteConversationSummaries(PostgresTestCase):
 
 
 class TestSummarizeAndStore(PostgresTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.temp_dir = TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        price_path = Path(self.temp_dir.name) / "token_price.json"
+        price_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "companyName": "openai",
+                        "modelName": "gpt-4o-mini",
+                        "inputPrice": 0.15,
+                        "outputPrice": 0.6,
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        self.price_patcher = patch(
+            "backend.utils.aiChat.token_usage.TOKEN_PRICE_PATH", price_path
+        )
+        self.price_patcher.start()
+        self.addCleanup(self.price_patcher.stop)
+        self.model_patcher = patch(
+            "backend.utils.aiChat.token_usage.read_llm_config",
+            return_value={"LLM_MODEL": "gpt-4o-mini"},
+        )
+        self.model_patcher.start()
+        self.addCleanup(self.model_patcher.stop)
+
     def test_stores_parsed_json_memory_from_llm_response(self):
         memory = {"teaching_context": {"current_topic": "greetings"}}
         with patch(
             "backend.utils.aiChat.conversation_summary.load_conversation",
             return_value=[{"role": "user", "content": "你好"}],
         ), patch(
-            "backend.utils.aiChat.conversation_summary.get_llm"
+            "backend.utils.aiChat.chat_service.get_llm"
         ) as mock_get_llm:
             mock_get_llm.return_value.invoke.return_value = MagicMock(
                 content=json.dumps(memory)
@@ -209,7 +245,7 @@ class TestSummarizeAndStore(PostgresTestCase):
             "backend.utils.aiChat.conversation_summary.load_conversation",
             return_value=[{"role": "user", "content": "你好"}],
         ), patch(
-            "backend.utils.aiChat.conversation_summary.get_llm"
+            "backend.utils.aiChat.chat_service.get_llm"
         ) as mock_get_llm:
             mock_get_llm.return_value.invoke.return_value = MagicMock(
                 content=json.dumps({"teaching_context": {}})
@@ -224,7 +260,7 @@ class TestSummarizeAndStore(PostgresTestCase):
             "backend.utils.aiChat.conversation_summary.load_conversation",
             return_value=[{"role": "user", "content": "你好"}],
         ), patch(
-            "backend.utils.aiChat.conversation_summary.get_llm"
+            "backend.utils.aiChat.chat_service.get_llm"
         ) as mock_get_llm:
             mock_get_llm.return_value.invoke.return_value = MagicMock(
                 content=json.dumps({"conversation_context": {}})
@@ -250,7 +286,7 @@ class TestSummarizeAndStore(PostgresTestCase):
             "backend.utils.aiChat.conversation_summary.load_conversation",
             return_value=many_messages,
         ), patch(
-            "backend.utils.aiChat.conversation_summary.get_llm"
+            "backend.utils.aiChat.chat_service.get_llm"
         ) as mock_get_llm:
             mock_get_llm.return_value.invoke.return_value = MagicMock(
                 content=json.dumps({"teaching_context": "updated"})
@@ -269,12 +305,51 @@ class TestSummarizeAndStore(PostgresTestCase):
             "backend.utils.aiChat.conversation_summary.load_conversation",
             return_value=[{"role": "user", "content": "你好"}],
         ), patch(
-            "backend.utils.aiChat.conversation_summary.get_llm",
+            "backend.utils.aiChat.chat_service.get_llm",
             side_effect=RuntimeError("boom"),
         ):
             _summarize_and_store(self.app, self.user_id, self.cognito_sub, "teacher-wang")
 
         self.assertEqual(ConversationSummary.query.filter_by(user_id=self.user_id).count(), 0)
+
+    def test_records_and_deducts_token_usage_on_success(self):
+        starting_available = get_available_token(self.user_id)
+        # _summarize_and_store opens its own app context (a separate DB
+        # session, scoped by Flask-SQLAlchemy per app-context id) since in
+        # production it runs from a background thread with no request
+        # context — commit here so that session isn't left waiting on this
+        # (uncommitted, from ensure_default_settings) one's row lock.
+        db.session.commit()
+
+        with patch(
+            "backend.utils.aiChat.conversation_summary.load_conversation",
+            return_value=[{"role": "user", "content": "你好"}],
+        ), patch(
+            "backend.utils.aiChat.chat_service.get_llm"
+        ) as mock_get_llm:
+            mock_get_llm.return_value.invoke.return_value = MagicMock(
+                content=json.dumps({"teaching_context": {}}),
+                usage_metadata={"input_tokens": 50, "output_tokens": 20},
+            )
+            _summarize_and_store(self.app, self.user_id, self.cognito_sub, "teacher-wang")
+
+        self.assertEqual(get_total_tokens(self.user_id), 70)
+        self.assertEqual(get_available_token(self.user_id), starting_available - 70)
+
+    def test_skips_llm_call_and_storage_when_free_plan_quota_exhausted(self):
+        set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
+
+        with patch(
+            "backend.utils.aiChat.conversation_summary.load_conversation",
+            return_value=[{"role": "user", "content": "你好"}],
+        ), patch(
+            "backend.utils.aiChat.chat_service.get_llm"
+        ) as mock_get_llm:
+            _summarize_and_store(self.app, self.user_id, self.cognito_sub, "teacher-wang")
+
+        mock_get_llm.return_value.invoke.assert_not_called()
+        self.assertEqual(ConversationSummary.query.filter_by(user_id=self.user_id).count(), 0)
+        self.assertEqual(get_total_tokens(self.user_id), 0)
 
 
 if __name__ == "__main__":

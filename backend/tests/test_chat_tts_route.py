@@ -58,6 +58,20 @@ class TestChatTtsEndpoint(unittest.TestCase):
         self.addCleanup(self.realistic_voice_patcher.stop)
         self.mock_realistic_voice.return_value = False
 
+        self.assert_tokens_patcher = patch(
+            "backend.routes.chat.assert_free_plan_has_tokens"
+        )
+        self.mock_assert_tokens = self.assert_tokens_patcher.start()
+        self.addCleanup(self.assert_tokens_patcher.stop)
+
+        self.deduct_tokens_patcher = patch("backend.routes.chat.deduct_available_token")
+        self.mock_deduct_tokens = self.deduct_tokens_patcher.start()
+        self.addCleanup(self.deduct_tokens_patcher.stop)
+
+        self.record_tokens_patcher = patch("backend.routes.chat.record_token_usage")
+        self.mock_record_tokens = self.record_tokens_patcher.start()
+        self.addCleanup(self.record_tokens_patcher.stop)
+
     def _make_pro(self):
         patcher = patch("backend.routes.chat.current_user")
         mock_current_user = patcher.start()
@@ -79,6 +93,29 @@ class TestChatTtsEndpoint(unittest.TestCase):
             speed=0.95,
             response_format="mp3",
         )
+        self.mock_assert_tokens.assert_called_once()
+        self.mock_record_tokens.assert_called_once()
+        _, kwargs = self.mock_record_tokens.call_args
+        self.assertGreater(kwargs["input_tokens"], 0)
+        self.assertEqual(kwargs["output_tokens"], 0)
+
+    def test_rejects_request_when_free_plan_token_quota_is_exhausted(self):
+        from backend.utils.database.settings import FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
+
+        self.mock_assert_tokens.side_effect = ValueError(
+            FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
+        )
+
+        response = self.client.post(
+            "/chat/tts", json={"text": "你好", "voices": [CHATGPT_VOICE]}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json(), {"error": FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE}
+        )
+        self.mock_openai_client.audio.speech.create.assert_not_called()
+        self.mock_record_tokens.assert_not_called()
 
     def test_applies_listen_speed_adjustment_on_top_of_hsk_speed(self):
         self.mock_get_adjustment.return_value = 10
