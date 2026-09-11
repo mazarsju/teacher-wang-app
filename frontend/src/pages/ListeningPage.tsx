@@ -1,32 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import ListeningScoreModal from "../components/ListeningScoreModal";
 import Page from "../components/Page";
 import type { ListeningPractice } from "../types/listeningPractice";
 import { fetchListeningPractices } from "../utils/listening/listeningApi";
+import { overallScore, scoreTier } from "../utils/listening/overallScore";
 import styles from "./ListeningPage.module.css";
-
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  TODO: "todo",
-  WIP: "wip",
-  DONE: "done",
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const { t } = useTranslation("listening");
-  const statusKey = STATUS_LABEL_KEYS[status];
-  const label = statusKey ? t(`listeningPage.status.${statusKey}`) : status;
-  const modifier = styles[`listening-status-${status.toLowerCase()}`] ?? "";
-
-  return (
-    <span className={`${styles.listeningStatus} ${modifier}`}>{label}</span>
-  );
-}
 
 export default function ListeningPage() {
   const { t } = useTranslation("listening");
   const [practices, setPractices] = useState<ListeningPractice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPractice, setSelectedPractice] =
+    useState<ListeningPractice | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,39 +44,53 @@ export default function ListeningPage() {
     };
   }, [t]);
 
+  const sortedPractices = useMemo(
+    () =>
+      practices
+        .slice()
+        .sort(
+          (a, b) =>
+            overallScore(b.vocabulary_score, b.grammar_score) -
+            overallScore(a.vocabulary_score, a.grammar_score),
+        ),
+    [practices],
+  );
+
   return (
     <Page title={t("listeningPage.title")}>
       {isLoading && <p>{t("listeningPage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
-      {!isLoading && !error && practices.length === 0 && (
+      {!isLoading && !error && sortedPractices.length === 0 && (
         <p>{t("listeningPage.empty")}</p>
       )}
-      {!isLoading && !error && practices.length > 0 && (
-        <table className={styles.listeningTable}>
-          <thead>
-            <tr>
-              <th>{t("listeningPage.table.level")}</th>
-              <th>{t("listeningPage.table.title")}</th>
-              <th>{t("listeningPage.table.status")}</th>
-              <th>{t("listeningPage.table.vocabulary")}</th>
-              <th>{t("listeningPage.table.grammar")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {practices.map((practice) => (
-              <tr key={practice.id} className={styles.listeningRow}>
-                <td>{practice.hsk_level}</td>
-                <td className={styles.listeningRowTitle}>{practice.title}</td>
-                <td>
-                  <StatusBadge status={practice.status} />
-                </td>
-                <td>{practice.vocabulary_score}%</td>
-                <td>{practice.grammar_score}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!isLoading && !error && sortedPractices.length > 0 && (
+        <div className={styles.listeningMosaic}>
+          {sortedPractices.map((practice) => {
+            const tier = scoreTier(
+              overallScore(practice.vocabulary_score, practice.grammar_score),
+            );
+            return (
+              <div key={practice.id} className={styles.listeningTile}>
+                <span className={styles.listeningTileTitle}>
+                  {practice.title}
+                </span>
+                <button
+                  type="button"
+                  className={`${styles.listeningScoreIcon} ${styles[`listening-score-icon-${tier}`]}`}
+                  aria-label={t("listeningPage.scoreIconAriaLabel", {
+                    title: practice.title,
+                  })}
+                  onClick={() => setSelectedPractice(practice)}
+                />
+              </div>
+            );
+          })}
+        </div>
       )}
+      <ListeningScoreModal
+        practice={selectedPractice}
+        onClose={() => setSelectedPractice(null)}
+      />
     </Page>
   );
 }

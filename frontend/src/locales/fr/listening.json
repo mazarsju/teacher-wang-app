@@ -4,17 +4,17 @@
     "loading": "Chargement des exercices d'écoute...",
     "loadError": "Échec du chargement des exercices d'écoute.",
     "empty": "Aucun exercice d'écoute disponible pour le moment.",
-    "table": {
-      "level": "Niveau",
-      "title": "Leçon",
-      "status": "Statut",
-      "vocabulary": "Vocabulaire",
-      "grammar": "Grammaire"
-    },
-    "status": {
-      "todo": "À faire",
-      "wip": "En cours",
-      "done": "Terminé"
+    "scoreIconAriaLabel": "Voir votre niveau pour « {{title}} »"
+  },
+  "listeningScoreModal": {
+    "vocabularyKnown": "Vous connaissez déjà {{percent}}% du vocabulaire de cette leçon.",
+    "grammarKnown": "Vous connaissez déjà {{percent}}% de la grammaire de cette leçon.",
+    "close": "Fermer",
+    "fit": {
+      "excellent": "Cet exercice d'écoute correspond parfaitement à votre niveau actuel !",
+      "good": "Cet exercice d'écoute correspond bien à votre niveau actuel.",
+      "fair": "Cet exercice d'écoute pourrait être un peu difficile pour votre niveau actuel.",
+      "poor": "Cet exercice d'écoute est assez avancé pour votre niveau actuel."
     }
   }
 }
