@@ -73,6 +73,9 @@
     "messagePlaceholder": "Type your message...",
     "sending": "Sending...",
     "send": "Send",
+    "recordVoice": "Hold to record your voice",
+    "recording": "Recording… release to transcribe",
+    "transcribing": "Transcribing...",
     "clearHistoryConfirm": "Clear all chat history with {{name}}? This cannot be undone.",
     "playAudio": "Play audio",
     "loadingAudio": "Loading audio…",
@@ -83,7 +86,9 @@
       "loadHistory": "Failed to load chat history.",
       "sendMessage": "Failed to send chat message.",
       "clearHistory": "Failed to clear chat history.",
-      "correctionThreadUnavailable": "This grammar note can’t continue as a saved thread. Send a new message to create one."
+      "correctionThreadUnavailable": "This grammar note can’t continue as a saved thread. Send a new message to create one.",
+      "microphoneUnavailable": "Couldn’t access your microphone.",
+      "transcribeAudio": "Failed to transcribe your recording."
     }
   },
   "challengeVocabularyModal": {

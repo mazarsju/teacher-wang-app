@@ -97,6 +97,26 @@ export async function fetchChatTts(
   return response.blob();
 }
 
+export async function transcribeChatAudio(audio: Blob): Promise<string> {
+  const formData = new FormData();
+  formData.append("audio", audio, "recording.webm");
+
+  const response = await apiFetch(`${API_BASE}/chat/stt`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new Error(data?.error ?? "Failed to transcribe audio.");
+  }
+
+  const data = (await response.json()) as { text: string };
+  return data.text;
+}
+
 export async function clearChatHistory(characterId: string): Promise<void> {
   const response = await apiFetch(
     `${API_BASE}/conversation-logs/${encodeURIComponent(characterId)}`,

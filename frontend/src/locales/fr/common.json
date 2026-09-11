@@ -73,6 +73,9 @@
     "messagePlaceholder": "Tapez votre message...",
     "sending": "Envoi...",
     "send": "Envoyer",
+    "recordVoice": "Maintenir pour enregistrer votre voix",
+    "recording": "Enregistrement… relâchez pour transcrire",
+    "transcribing": "Transcription...",
     "clearHistoryConfirm": "Effacer tout l'historique de discussion avec {{name}} ? Cette action est irréversible.",
     "playAudio": "Écouter l'audio",
     "loadingAudio": "Chargement de l'audio…",
@@ -83,7 +86,9 @@
       "loadHistory": "Échec du chargement de l'historique de discussion.",
       "sendMessage": "Échec de l'envoi du message.",
       "clearHistory": "Échec de l'effacement de l'historique de discussion.",
-      "correctionThreadUnavailable": "Cette note de grammaire ne peut pas continuer en tant que fil enregistré. Envoyez un nouveau message pour en créer un."
+      "correctionThreadUnavailable": "Cette note de grammaire ne peut pas continuer en tant que fil enregistré. Envoyez un nouveau message pour en créer un.",
+      "microphoneUnavailable": "Impossible d'accéder à votre microphone.",
+      "transcribeAudio": "Échec de la transcription de votre enregistrement."
     }
   },
   "challengeVocabularyModal": {

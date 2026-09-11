@@ -1,8 +1,8 @@
-# Voice Interaction (TTS)
+# Voice Interaction (TTS & STT)
 
 ## Status
 
-Draft / partially accepted — text-to-speech (playback, per-character voices on two providers, reading/listening mode, speed control, a pro-only "realistic voice" provider switch) is implemented. Speech-to-text (recording, transcription, pronunciation feedback) and listening challenges are not started (README roadmap §12).
+Draft / partially accepted — text-to-speech (playback, per-character voices on two providers, reading/listening mode, speed control, a pro-only "realistic voice" provider switch) is implemented. Speech-to-text recording and transcription (press-and-hold record button → `POST /chat/stt` → learner reviews the transcript in the message input before sending) is implemented; pronunciation feedback and listening challenges are not started (README roadmap §12).
 
 Related: [plan-management.md](./plan-management.md) (the free-plan token budget does **not** cover TTS calls; `realistic_voice_enabled` is a separate, plan-based gate — see Open questions), [frontend-localization.md](./frontend-localization.md) (per-character description strings), [schema tenancy](../architecture/schema-tenancy.md) (generic `settings` key/value store used for the new preferences).
 
@@ -95,9 +95,18 @@ The Preferences page's "Chat setup" section (placed after Anki sync) exposes two
 - Freshly-received replies eagerly pre-fetch audio in the background (silently, no autoplay), so the button is usually already loaded by the time the learner clicks it.
 - In `listening_first` mode: the reply text renders CSS-blurred behind an eye ("reveal") button; the listen button stays visible next to it so both controls are reachable while the text is masked. Audio for a fresh reply autoplays as soon as it's fetched. Reveal is per-message and permanent once clicked; both the mask and the audio cache reset when the conversation/character changes.
 
+### Backend: `POST /chat/stt`
+
+`backend/routes/chat.py` — given a multipart `audio` file field (whatever `MediaRecorder` produced, typically `audio/webm`), the route reads it and calls `get_openai_client().audio.transcriptions.create(model="whisper-1", file=(filename, bytes, mimetype), language="zh")`. The `language="zh"` hint is hardcoded, not derived from the learner's app locale — every character in this app is a Mandarin-speaking role regardless of the UI language the learner reads in. The response is `{ "text": transcript.text }`; a missing `audio` field is `400`, a transcription failure is `500`. No persistence, no token/cost accounting (mirrors `/chat/tts` — see Open questions).
+
+### Frontend recording (`ChatModal.tsx`)
+
+A small icon-only "record" button (mic icon, an icon-only-trigger exception to the `Button.tsx` kind/variant system — see [frontend-styling.md](./frontend-styling.md)) sits in the composer row next to Send. It is a **press-and-hold** control, not a toggle: `onMouseDown` requests the mic (`navigator.mediaDevices.getUserMedia`) and starts a `MediaRecorder`; `onMouseUp`/`onMouseLeave` stops it, assembles the recorded chunks into a `Blob`, and posts it to `/chat/stt`. The returned text **replaces the message input's contents** — it is never auto-sent — so the learner reviews (and can edit) the transcript before pressing Send themselves. Only mouse events are wired (no touch/pointer events, no click-to-toggle fallback); the mic stream's tracks are stopped both after each recording and on unmount so the browser's mic-in-use indicator doesn't linger.
+
 ## Out of scope (remaining)
 
-- STT: recording the learner's voice, transcribing it to text within a conversation, analyzing pronunciation (README roadmap §12).
+- STT: analyzing pronunciation quality/mistakes from the recording (recording + transcription itself is done — see above).
+- Touch/pointer support for the record button (mouse-only today) and a click-to-toggle alternative to press-and-hold.
 - Listening challenges (a dedicated exercise type).
 - Token/cost accounting for TTS calls, on either provider — unlike chat LLM calls, `/chat/tts` is not gated by `plan`/`available_token` (see [plan-management.md](./plan-management.md)); only whether ElevenLabs is reachable at all is plan-gated, not how much of it is used.
 - User-selectable voice (voice is fixed per character/provider, not a learner preference) — "realistic voice" switches provider, not which voice.
@@ -127,6 +136,6 @@ The Preferences page's "Chat setup" section (placed after Anki sync) exposes two
 
 1. Should `/chat/tts` be covered by the same free-plan budget as chat (README roadmap §8 / [plan-management.md](./plan-management.md)), or get a separate cap? This is now sharper for ElevenLabs specifically, since it bills per character even for pro accounts.
 2. Should generated audio be cached server-side (e.g. by a `(provider, voice, text, speed)` hash) to avoid re-synthesizing identical sentences? Especially valuable for ElevenLabs cost.
-3. What does STT look like — a new endpoint wrapping OpenAI's transcription API? Where does pronunciation-quality feedback come from — a separate LLM judge call, similar to the existing grammar checker?
+3. Where does pronunciation-quality feedback come from — a separate LLM judge call, similar to the existing grammar checker? (Recording + transcription itself is answered — `POST /chat/stt` wrapping OpenAI Whisper, see above.)
 4. Should `listening_first` eventually extend to `[[stage direction]]` segments, or stay scoped to plain Chinese-only bubbles as today?
 5. Once the ElevenLabs account is upgraded (or more voices are added to its own "My Voices" library), should the female pool grow past 6 (to remove the one forced repeat), and is a fixed random draw per character still right, or should voice assignment become an explicit product decision (e.g. picked to match each character's personality) instead? Re-run the same probe (or, once `voices_read` is granted, just list `GET /v1/voices`) to find what's newly available.

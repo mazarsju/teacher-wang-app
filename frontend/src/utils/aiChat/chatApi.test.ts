@@ -1,4 +1,9 @@
-import { clearChatHistory, fetchChatHistory, sendChatMessage } from "./chatApi";
+import {
+  clearChatHistory,
+  fetchChatHistory,
+  sendChatMessage,
+  transcribeChatAudio,
+} from "./chatApi";
 
 describe("chatApi", () => {
   afterEach(() => {
@@ -100,6 +105,41 @@ describe("chatApi", () => {
         }),
       }),
     );
+  });
+
+  it("transcribes recorded audio", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({ text: "你好" }),
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      transcribeChatAudio(new Blob(["fake-audio"], { type: "audio/webm" })),
+    ).resolves.toBe("你好");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/chat/stt");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeInstanceOf(FormData);
+  });
+
+  it("throws when transcription fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          json: async () => ({ error: "Failed to transcribe audio." }),
+        }),
+      ),
+    );
+
+    await expect(
+      transcribeChatAudio(new Blob(["fake-audio"], { type: "audio/webm" })),
+    ).rejects.toThrow("Failed to transcribe audio.");
   });
 
   it("clears chat history", async () => {

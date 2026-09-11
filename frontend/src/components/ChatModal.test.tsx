@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatModal from "./ChatModal";
 import type { ChatCharacter } from "./ChatCharacterCard";
@@ -84,6 +84,60 @@ describe("ChatModal", () => {
         }),
       }),
     );
+  });
+
+  it("records voice input and fills the message field with the transcript", async () => {
+    const fakeStream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const getUserMediaMock = vi.fn().mockResolvedValue(fakeStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: getUserMediaMock },
+      configurable: true,
+    });
+
+    class FakeMediaRecorder {
+      ondataavailable: ((event: { data: Blob }) => void) | null = null;
+      onstop: (() => void) | null = null;
+      start() {
+        // no-op: the fake recorder emits its chunk on stop()
+      }
+      stop() {
+        this.ondataavailable?.({ data: new Blob(["chunk"]) });
+        this.onstop?.();
+      }
+    }
+    vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/conversation-logs/teacher-wang") && method === "GET") {
+          return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+        }
+
+        if (url.endsWith("/chat/stt") && method === "POST") {
+          return Promise.resolve({ ok: true, json: async () => ({ text: "你好" }) });
+        }
+
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
+    );
+
+    renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
+    await screen.findByText("Start a conversation with Teacher Wang.");
+
+    const recordButton = screen.getByRole("button", {
+      name: "Hold to record your voice",
+    });
+
+    fireEvent.mouseDown(recordButton);
+    await waitFor(() => expect(getUserMediaMock).toHaveBeenCalled());
+
+    fireEvent.mouseUp(recordButton);
+
+    await waitFor(() => expect(screen.getByLabelText("Message")).toHaveValue("你好"));
   });
 
   it("checks grammar point usage when the correction severity is none", async () => {

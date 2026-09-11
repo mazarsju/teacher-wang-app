@@ -248,6 +248,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/conversation-logs/<character_id>` | Replace the transcript (`{ "messages": [...] }`) |
 | `DELETE` | `/conversation-logs/<character_id>` | Delete the transcript, correction threads, challenge progress, and stored conversation summary |
 | `GET` | `/chat/history/<character_id>` | Legacy alias for `GET /conversation-logs/<character_id>` |
+| `POST` | `/chat/stt` | Given a multipart `audio` file recorded in the browser, transcribe it with OpenAI Whisper (`whisper-1`, `language: "zh"` since the learner is speaking Mandarin) and return `{ "text": "..." }`. The frontend fills the message input with this text for the learner to review before sending — it does not send the message itself |
 | `POST` | `/chat/tts` | Given `{ "text": "...", "voices": [{ "provider": "chatgpt" \| "elevenlabs", "name": "..." }, ...] }` (Chinese text; the frontend sends both of the chat character's fixed voice options, see `frontend/src/data/chatCharacters.ts`/`challenges.ts`), return an `audio/mpeg` clip. The server — never the client — picks which entry to use: OpenAI TTS (`tts-1`) normally, or ElevenLabs (`eleven_multilingual_v2`) when the caller is on the pro plan **and** has `realistic_voice_enabled` on (see `_resolve_tts_provider` in `backend/routes/chat.py`). Playback speed is not client-supplied either — it's derived server-side from the caller's chat-speaking HSK level (0.75 at HSK1 up to 1.1 at HSK6+, see `get_chat_tts_speed` in `backend/utils/knowledgeBase/hsk_level.py`), then adjusted by the caller's `listen_speed_adjustment` chat setup preference |
 | `GET` | `/characters` | List all characters |
 | `POST` | `/characters` | Create a new character |
@@ -487,7 +488,7 @@ Let learners hear Mandarin spoken aloud and practice speaking it back, not just 
   - [x] Reading first / Listening first preference — in "Listening first", the AI reply is blurred behind a reveal (eye) button and its audio autoplays as soon as it's ready; "Reading first" keeps today's behavior
   - [x] Realistic voice (pro-only toggle): switches TTS from OpenAI to ElevenLabs for a more natural, human-sounding voice, per character
 - [ ] STT (Speech to Text)
-  - [ ] Record the learner's voice and transcribe it to text (within conversations)
+  - [x] Record the learner's voice and transcribe it to text (within conversations)
   - [ ] Analyze the learner's pronunciation issues
 - [ ] Listening challenges
 

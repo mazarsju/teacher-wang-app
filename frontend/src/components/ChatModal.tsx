@@ -12,6 +12,7 @@ import {
   CloseIcon,
   EyeIcon,
   IncorrectIcon,
+  MicrophoneIcon,
   QuestionIcon,
   SpeakerIcon,
   TrashIcon,
@@ -31,6 +32,7 @@ import {
   fetchChatHistory,
   fetchChatTts,
   sendChatMessage,
+  transcribeChatAudio,
 } from "../utils/aiChat/chatApi";
 import { fetchChatSetupPreference } from "../utils/aiChat/chatSetupPreferenceApi";
 import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
@@ -161,12 +163,17 @@ export default function ChatModal({
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(
     () => new Set(),
   );
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const wasChallengeCompleteRef = useRef(false);
   const autoSentRef = useRef(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlsRef = useRef<Record<number, string>>({});
   const loadingAudioIndicesRef = useRef<Set<number>>(new Set());
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   const isChallengeComplete = Boolean(
     tasks &&
@@ -177,6 +184,12 @@ export default function ChatModal({
   useEffect(() => {
     return () => {
       Object.values(audioUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
@@ -504,6 +517,67 @@ export default function ChatModal({
     } finally {
       setIsSending(false);
     }
+  }
+
+  async function startRecording() {
+    if (isRecording || isTranscribing || isSending || isClearing) {
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setError(null);
+      setIsRecording(true);
+    } catch {
+      setError(t("chatModal.errors.microphoneUnavailable"));
+    }
+  }
+
+  function stopRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) {
+      return;
+    }
+
+    mediaRecorderRef.current = null;
+    setIsRecording(false);
+    setIsTranscribing(true);
+
+    recorder.onstop = () => {
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      audioChunksRef.current = [];
+
+      transcribeChatAudio(audioBlob)
+        .then((text) => {
+          setMessage(text);
+        })
+        .catch((transcribeError) => {
+          setError(
+            transcribeError instanceof Error
+              ? transcribeError.message
+              : t("chatModal.errors.transcribeAudio"),
+          );
+        })
+        .finally(() => {
+          setIsTranscribing(false);
+          focusMessageInput();
+        });
+    };
+    recorder.stop();
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -932,15 +1006,39 @@ export default function ChatModal({
                   id={`chat-message-input-${character.id}-${stacked ? "stacked" : "main"}`}
                   type="text"
                   value={message}
-                  placeholder={t("chatModal.messagePlaceholder")}
-                  disabled={isClearing}
+                  placeholder={
+                    isTranscribing
+                      ? t("chatModal.transcribing")
+                      : t("chatModal.messagePlaceholder")
+                  }
+                  disabled={isClearing || isTranscribing}
                   onChange={(event) => setMessage(event.target.value)}
                 />
+                <button
+                  type="button"
+                  className={`${styles.chatModalRecordButton} ${
+                    isRecording ? styles.chatModalRecordButtonActive : ""
+                  }`}
+                  aria-label={
+                    isRecording ? t("chatModal.recording") : t("chatModal.recordVoice")
+                  }
+                  title={
+                    isRecording ? t("chatModal.recording") : t("chatModal.recordVoice")
+                  }
+                  disabled={isSending || isClearing || isTranscribing}
+                  onMouseDown={() => void startRecording()}
+                  onMouseUp={stopRecording}
+                  onMouseLeave={stopRecording}
+                >
+                  <MicrophoneIcon className={styles.chatModalRecordIcon} />
+                </button>
                 <Button
                   kind="confirm"
                   htmlType="submit"
                   text={isSending ? t("chatModal.sending") : t("chatModal.send")}
-                  disabled={isSending || isClearing || message.trim() === ""}
+                  disabled={
+                    isSending || isClearing || isTranscribing || message.trim() === ""
+                  }
                 />
               </div>
             </form>

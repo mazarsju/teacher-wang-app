@@ -500,6 +500,24 @@ def tts():
     )
 
 
+@bp.post("/chat/stt")
+def stt():
+    audio_file = request.files.get("audio")
+    if audio_file is None:
+        return {"error": "No audio file provided"}, 400
+
+    try:
+        transcript = get_openai_client().audio.transcriptions.create(
+            model="whisper-1",
+            file=(audio_file.filename or "audio.webm", audio_file.read(), audio_file.mimetype),
+            language="zh",
+        )
+    except Exception:
+        return {"error": "Failed to transcribe audio"}, 500
+
+    return {"text": transcript.text}, 200
+
+
 @bp.get("/chat/history/<character_id>")
 def chat_history(character_id: str):
     if character_id not in VALID_CHARACTER_IDS:

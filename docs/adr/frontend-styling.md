@@ -60,7 +60,7 @@ This is the only sanctioned way to couple a component's CSS to `shared.css`; do 
 * `text`, `onClick`, `htmlType`, `disabled`, `icon`, `ariaLabel`, `title` — standard passthroughs.
 * `className` — escape hatch for the rare one-off visual tweak (e.g. `HomePage`'s pill-shaped "Missing characters" badge) layered on top of the `kind`/`variant` classes rather than duplicating them.
 
-Bespoke, non-repeated controls intentionally stay outside `Button` because forcing them in wouldn't reduce repetition and they don't fit the `kind`/`variant` shape: navbar tabs, `ProfileMenu`'s trigger and dropdown items, `HelpButton`'s bubble trigger, whole clickable cards (`ChatCharacterCard`, `ChallengeCard`), icon-only triggers (`home-hsk-info-button`, `ChatModal`'s close/severity-badge buttons), and `WelcomeAuthPage`'s branded submit/Google/switch buttons.
+Bespoke, non-repeated controls intentionally stay outside `Button` because forcing them in wouldn't reduce repetition and they don't fit the `kind`/`variant` shape: navbar tabs, `ProfileMenu`'s trigger and dropdown items, `HelpButton`'s bubble trigger, whole clickable cards (`ChatCharacterCard`, `ChallengeCard`), icon-only triggers (`home-hsk-info-button`, `ChatModal`'s close/severity-badge/listen/record buttons), and `WelcomeAuthPage`'s branded submit/Google/switch buttons.
 
 ### Tooling
 
