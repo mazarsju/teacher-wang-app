@@ -18,6 +18,7 @@
       "reloadHsk": "Failed to reload the HSK database.",
       "refreshArticles": "Failed to refresh articles.",
       "reloadGrammar": "Failed to reload grammar rules.",
+      "reloadListening": "Failed to reload listening practice.",
       "loadTranslation": "Failed to load HSK translations."
     },
     "hskSection": {
@@ -47,6 +48,12 @@
       "title": "Grammar rules",
       "description": "Reload the shared grammar points and prerequisites from the grammar-content S3 bucket.",
       "reloadButton": "Reload grammar rules",
+      "reloadingButton": "Reloading..."
+    },
+    "listeningSection": {
+      "title": "Listening practice",
+      "description": "Reload the shared listening-practice topics from the grammar-content S3 bucket. Run \"Reload grammar rules\" first if grammar content changed — listening topics validate their grammar rules against it.",
+      "reloadButton": "Reload listening practice",
       "reloadingButton": "Reloading..."
     },
     "deleteConfirm": {

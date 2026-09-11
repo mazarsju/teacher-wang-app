@@ -3,6 +3,7 @@ import {
   fetchUsers,
   generateArticles,
   reloadGrammarRules,
+  reloadListeningPractice,
   updateUserPlan,
 } from "./adminApi";
 
@@ -124,6 +125,46 @@ describe("adminApi", () => {
 
     await expect(reloadGrammarRules()).rejects.toThrow(
       "Failed to reload grammar rules.",
+    );
+  });
+
+  it("reloads listening practice", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(reloadListeningPractice()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/listening/reload",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("throws when reloading listening practice fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({ ok: false, json: async () => ({}) }),
+      ),
+    );
+
+    await expect(reloadListeningPractice()).rejects.toThrow(
+      "Failed to reload listening practice.",
+    );
+  });
+
+  it("surfaces the server's error message when reloading listening practice fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          json: async () => ({ error: "Unknown grammarId 'foo' for 'bar'" }),
+        }),
+      ),
+    );
+
+    await expect(reloadListeningPractice()).rejects.toThrow(
+      "Unknown grammarId 'foo' for 'bar'",
     );
   });
 });

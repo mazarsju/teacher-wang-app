@@ -33,10 +33,12 @@ _TRUNCATE_TABLES = (
     "token_count",
     "challenge_progress",
     "writing_progress",
+    "listening_progress",
     "conversation_summary",
     "weekly_articles",
     "user_grammar_progress",
     "writing_practice",
+    "listening_practice",
     "grammar_prerequisites",
     "grammar_points",
 )

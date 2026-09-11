@@ -146,6 +146,17 @@ def reload_grammar_content(client=None) -> dict[str, int]:
             client, bucket, WRITING_PRACTICE_MANIFEST_SUFFIX
         )
 
+    # _load_manifests matches by suffix across the whole bucket/checkout, not
+    # scoped to a folder prefix — the bucket also holds
+    # listening_practice/*/overview.yaml (same suffix, different schema), so
+    # this must be filtered to writing_practice/ or those would be picked up
+    # too and fail on the missing 'afterGrammarId' field.
+    writing_practice_manifests = {
+        folder_key: manifest
+        for folder_key, manifest in writing_practice_manifests.items()
+        if folder_key.startswith("writing_practice/")
+    }
+
     ids_by_folder: dict[str, str] = {}
     old_id_by_folder: dict[str, str] = {}
     for folder_key, manifest in manifests.items():

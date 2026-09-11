@@ -77,6 +77,7 @@ Example header:
 | Translations / `react-i18next` / UI text / `users.language` | [adr/frontend-localization.md](adr/frontend-localization.md), [architecture/schema-tenancy.md](architecture/schema-tenancy.md) |
 | Grammar lessons / exercises / mastery | [adr/grammar-content.md](adr/grammar-content.md) |
 | Writing topics / drafts / sentence correction / `writing_progress` | [adr/writing-practice.md](adr/writing-practice.md) |
+| Listening practice / `POST /admin/listening/reload` / `listening_practice` / `listening_progress` | [adr/grammar-content.md](adr/grammar-content.md), [architecture/schema-tenancy.md](architecture/schema-tenancy.md) |
 | `/chat/tts` / character voices / ElevenLabs / realistic voice / listening mode / `chat_listening_mode` / `chat_listen_speed_adjustment` / `chat_realistic_voice_enabled` | [adr/voice-interaction.md](adr/voice-interaction.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |
 | Product screenshots | [screenshots/](screenshots/) |

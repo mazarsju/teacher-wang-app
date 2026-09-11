@@ -295,6 +295,36 @@ class WritingPractice(db.Model):
     )
 
 
+class ListeningPractice(db.Model):
+    """A listening-practice topic: an audio dialog/text at a given HSK level."""
+
+    __tablename__ = "listening_practice"
+
+    # overview.yaml's own `id` field, e.g. "listening-family-size".
+    id = db.Column(String(128), primary_key=True)
+    title = db.Column(String, nullable=False)
+    hsk_level = db.Column(Integer, nullable=False)
+    # Comma-separated grammar_points.id values this listening topic covers.
+    grammar_rules = db.Column(String, nullable=False, default="")
+    # Every unique Chinese character in the listening text, concatenated.
+    unique_chars = db.Column(String, nullable=False, default="")
+
+
+class ListeningProgress(db.Model):
+    """A user's scores/status on a listening-practice topic."""
+
+    __tablename__ = "listening_progress"
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    user_id = db.Column(Numeric, ForeignKey("users.shortid"), primary_key=True)
+    listening_topic = db.Column(
+        String(128), ForeignKey("listening_practice.id"), nullable=False
+    )
+    vocabulary_score = db.Column(Integer, nullable=False, default=0)
+    grammar_score = db.Column(Integer, nullable=False, default=0)
+    status = db.Column(String, nullable=False, default="WIP")
+
+
 class ConversationSummary(db.Model):
     """Stored summary of an AI agent conversation.
 

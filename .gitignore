@@ -6,7 +6,7 @@ __pycache__/
 .config.txt
 .env
 conversation_logs/
-grammar_content/
+s3/
 .cursor/skills/update-app-screenshots/scripts/node_modules/
 build/
 avatar.svg

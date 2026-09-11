@@ -15,6 +15,7 @@ import {
   generateArticles,
   reloadGrammarRules,
   reloadHskContent,
+  reloadListeningPractice,
   updateUserPlan,
   uploadHskTranslation,
 } from "../utils/admin/adminApi";
@@ -46,6 +47,7 @@ export default function AdminPage() {
   const [isReloadHskConfirmOpen, setIsReloadHskConfirmOpen] = useState(false);
   const [isGeneratingArticles, setIsGeneratingArticles] = useState(false);
   const [isReloadingGrammar, setIsReloadingGrammar] = useState(false);
+  const [isReloadingListening, setIsReloadingListening] = useState(false);
   const [isLoadTranslationModalOpen, setIsLoadTranslationModalOpen] =
     useState(false);
   const [isLoadingTranslation, setIsLoadingTranslation] = useState(false);
@@ -179,6 +181,22 @@ export default function AdminPage() {
     }
   }
 
+  async function handleReloadListening() {
+    setIsReloadingListening(true);
+    setError(null);
+    try {
+      await reloadListeningPractice();
+    } catch (reloadError) {
+      setError(
+        reloadError instanceof Error
+          ? reloadError.message
+          : t("adminPage.errors.reloadListening"),
+      );
+    } finally {
+      setIsReloadingListening(false);
+    }
+  }
+
   return (
     <Page title={t("adminPage.title")}>
       {isLoading && <p>{t("adminPage.loadingUsers")}</p>}
@@ -284,6 +302,28 @@ export default function AdminPage() {
             icon={<SyncIcon />}
             disabled={isReloadingGrammar}
             onClick={() => void handleReloadGrammar()}
+          />
+        </section>
+      )}
+      {!isLoading && (
+        <section className={`admin-section ${styles.adminSectionListening}`}>
+          <h2 className={styles.adminSectionTitle}>
+            {t("adminPage.listeningSection.title")}
+          </h2>
+          <p className={styles.adminSectionDescription}>
+            {t("adminPage.listeningSection.description")}
+          </p>
+          <Button
+            kind="confirm"
+            variant="page"
+            text={
+              isReloadingListening
+                ? t("adminPage.listeningSection.reloadingButton")
+                : t("adminPage.listeningSection.reloadButton")
+            }
+            icon={<SyncIcon />}
+            disabled={isReloadingListening}
+            onClick={() => void handleReloadListening()}
           />
         </section>
       )}

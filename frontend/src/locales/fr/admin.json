@@ -18,6 +18,7 @@
       "reloadHsk": "Échec du rechargement de la base de données HSK.",
       "refreshArticles": "Échec de l'actualisation des articles.",
       "reloadGrammar": "Échec du rechargement des règles de grammaire.",
+      "reloadListening": "Échec du rechargement des exercices d'écoute.",
       "loadTranslation": "Échec du chargement des traductions HSK."
     },
     "hskSection": {
@@ -47,6 +48,12 @@
       "title": "Règles de grammaire",
       "description": "Recharger les points de grammaire et prérequis partagés depuis le bucket S3 grammar-content.",
       "reloadButton": "Recharger les règles de grammaire",
+      "reloadingButton": "Rechargement..."
+    },
+    "listeningSection": {
+      "title": "Exercices d'écoute",
+      "description": "Recharger les sujets d'écoute partagés depuis le bucket S3 grammar-content. Recharger d'abord les règles de grammaire si le contenu grammatical a changé — les sujets d'écoute valident leurs règles de grammaire par rapport à celui-ci.",
+      "reloadButton": "Recharger les exercices d'écoute",
       "reloadingButton": "Rechargement..."
     },
     "deleteConfirm": {

@@ -70,6 +70,19 @@ export async function reloadGrammarRules(): Promise<void> {
   }
 }
 
+export async function reloadListeningPractice(): Promise<void> {
+  const response = await apiFetch(`${API_BASE}/admin/listening/reload`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as
+      | { error?: string }
+      | null;
+    throw new Error(payload?.error || "Failed to reload listening practice.");
+  }
+}
+
 export async function uploadHskTranslation(
   file: File,
   language: string,

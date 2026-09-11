@@ -43,6 +43,8 @@ teacher-wang/
 │   │   │                   # hsk_source.py/hsk_content_loader.py/load_hsk_content.py (HSK vocabulary load)
 │   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml/overview.yaml files from S3
 │   │   │                   # into grammar_points/grammar_prerequisites/writing_practice)
+│   │   ├── listening/      # listening_content_loader.py (loads listening_practice/*/overview.yaml
+│   │   │                   # + text.txt from S3 into listening_practice)
 │   │   ├── writing/        # writing_drafts.py (S3-backed draft load/save, conversation-logs bucket)
 │   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
 │   └── requirements.txt
@@ -277,6 +279,7 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `PATCH` | `/admin/users/<id>` | Set a user's `plan` to `free`/`pro` (`403` unless the caller is the admin account); switching to `pro` grants 10,000,000 tokens, switching to `free` resets to 100,000 |
 | `POST` | `/admin/articles/generate` | Same as `python3 -m backend.jobs.generate_weekly_articles`: fetch latest China-related articles (Currents API or The Guardian, per the hardcoded `ARTICLE_SOURCE` flag); for each HSK level 1-6, pick/adapt/save to `weekly_articles` (`403` unless the caller is the admin account) |
 | `POST` | `/admin/grammar/reload` | Read every `grammar.yaml` and `writing_practice/*/overview.yaml` from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (see [teacher-wang-grammar](https://github.com/mazarsju/teacher-wang-grammar)), or from a local checkout at `GRAMMAR_CONTENT_S3_PATH` if set (local debugging, skips S3), and repopulate `grammar_points`/`grammar_prerequisites`/`writing_practice`, rewriting `user_grammar_progress` for ids that still exist (`403` unless the caller is the admin account) |
+| `POST` | `/admin/listening/reload` | Read every `listening_practice/<hskN>/<name>/overview.yaml` + sibling `text.txt` from the same `GRAMMAR_CONTENT_S3_BUCKET`/`GRAMMAR_CONTENT_S3_PATH`, and repopulate `listening_practice` (`grammar_rules` from each topic's `grammarIds`, validated against `grammar_points`; `unique_chars` from `text.txt`), rewriting `listening_progress` for ids that still exist (`403` unless the caller is the admin account) |
 | `POST` | `/admin/hsk/translation` | Multipart upload of a `file` (a zip containing one JSON file, `[{ "id", "definition" }, ...]`) plus a `language` (2-letter code); `en` updates `hsk_words.definition`, any other language upserts `hsk_words_translation` (`403` unless the caller is the admin account) |
 
 ### Frontend

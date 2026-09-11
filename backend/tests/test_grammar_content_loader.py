@@ -378,6 +378,30 @@ class TestReloadGrammarContent(PostgresTestCase):
         self.assertEqual(topic.title, "Present yourself")
         self.assertEqual(topic.after_grammar_point, "hsk1_basic_sentence_structure")
 
+    def test_ignores_listening_practice_overview_files_in_same_bucket(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "writing_practice/writing-present-yourself/overview.yaml": (
+                "id: writing-present-yourself\n"
+                "title: Present yourself\n"
+                "afterGrammarId: hsk1_basic_sentence_structure\n"
+            ),
+            "listening_practice/hsk1/listening-family-size/overview.yaml": (
+                "id: listening-family-size\ntitle: Family size\nhskLevel: 1\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            counts = reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(counts["writing_practice"], 1)
+        self.assertEqual(WritingPractice.query.one().id, "writing-present-yourself")
+
     def test_clears_existing_writing_practice_rows_before_reload(self):
         db.session.add(
             GrammarPoint(id="hsk1_stale", hsk_level=1, title="Stale point")

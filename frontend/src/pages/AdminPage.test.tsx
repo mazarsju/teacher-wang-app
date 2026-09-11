@@ -10,6 +10,7 @@ vi.mock("../utils/admin/adminApi", () => ({
   reloadHskContent: vi.fn(),
   generateArticles: vi.fn(),
   reloadGrammarRules: vi.fn(),
+  reloadListeningPractice: vi.fn(),
   uploadHskTranslation: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ const deleteUser = vi.mocked(adminApi.deleteUser);
 const reloadHskContent = vi.mocked(adminApi.reloadHskContent);
 const generateArticles = vi.mocked(adminApi.generateArticles);
 const reloadGrammarRules = vi.mocked(adminApi.reloadGrammarRules);
+const reloadListeningPractice = vi.mocked(adminApi.reloadListeningPractice);
 const uploadHskTranslation = vi.mocked(adminApi.uploadHskTranslation);
 
 describe("AdminPage", () => {
@@ -252,6 +254,42 @@ describe("AdminPage", () => {
 
     expect(
       await screen.findByText("Failed to reload grammar rules."),
+    ).toBeInTheDocument();
+  });
+
+  it("reloads listening practice", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    reloadListeningPractice.mockResolvedValue(undefined);
+
+    render(<AdminPage />);
+
+    await screen.findByText("Listening practice");
+    await user.click(
+      screen.getByRole("button", { name: "Reload listening practice" }),
+    );
+
+    await waitFor(() => {
+      expect(reloadListeningPractice).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("shows an error when reloading listening practice fails", async () => {
+    const user = userEvent.setup();
+    fetchUsers.mockResolvedValue([]);
+    reloadListeningPractice.mockRejectedValue(
+      new Error("Failed to reload listening practice."),
+    );
+
+    render(<AdminPage />);
+
+    await screen.findByText("Listening practice");
+    await user.click(
+      screen.getByRole("button", { name: "Reload listening practice" }),
+    );
+
+    expect(
+      await screen.findByText("Failed to reload listening practice."),
     ).toBeInTheDocument();
   });
 
