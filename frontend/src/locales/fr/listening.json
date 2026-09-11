@@ -1,0 +1,20 @@
+{
+  "listeningPage": {
+    "title": "Écoute et expression orale",
+    "loading": "Chargement des exercices d'écoute...",
+    "loadError": "Échec du chargement des exercices d'écoute.",
+    "empty": "Aucun exercice d'écoute disponible pour le moment.",
+    "table": {
+      "level": "Niveau",
+      "title": "Leçon",
+      "status": "Statut",
+      "vocabulary": "Vocabulaire",
+      "grammar": "Grammaire"
+    },
+    "status": {
+      "todo": "À faire",
+      "wip": "En cours",
+      "done": "Terminé"
+    }
+  }
+}

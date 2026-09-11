@@ -44,7 +44,8 @@ teacher-wang/
 │   │   ├── grammar/        # grammar_content_loader.py (loads grammar.yaml/overview.yaml files from S3
 │   │   │                   # into grammar_points/grammar_prerequisites/writing_practice)
 │   │   ├── listening/      # listening_content_loader.py (loads listening_practice/*/overview.yaml
-│   │   │                   # + text.txt from S3 into listening_practice)
+│   │   │                   # + text.txt from S3 into listening_practice); listening_progress.py
+│   │   │                   # (vocabulary_score/grammar_score computation, listening_progress upsert)
 │   │   ├── writing/        # writing_drafts.py (S3-backed draft load/save, conversation-logs bucket)
 │   │   └── generateArticle/ # service.py (fetch + run), weekly_article_generator.py (pipeline)
 │   └── requirements.txt
@@ -67,7 +68,7 @@ teacher-wang/
 │   │   ├── locales/en/     # Translation JSON, one file per feature namespace
 │   │   ├── styles/         # tokens.css (design tokens), globals.css (reset/base)
 │   │   ├── store/          # Redux Toolkit store (characters, words, HSK, grammar, Anki)
-│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Grammar, Chat, Preferences (each with a co-located .module.css)
+│   │   ├── pages/          # Welcome auth, Home, Knowledge base, Grammar, Listening, Chat, Preferences (each with a co-located .module.css)
 │   │   ├── components/     # Navbar, ProfileMenu (Synchro / Log out), modals, … (each with a co-located .module.css)
 │   │   │   ├── Button.tsx      # The app's only button; kind (cancel/confirm/danger) × variant (page/modal/banner/table/confirmation)
 │   │   │   └── shared.css      # Global (non-module) CSS for the modal chrome, toggle switch, and Button design system
@@ -273,6 +274,8 @@ Every route below except `/health` requires `Authorization: Bearer <cognito_acce
 | `GET` | `/writing-practice/<topic_id>` | Fetch everything for one writing-practice topic: `title` from `writing_practice`; `context` — its `context.md` content read from the `GRAMMAR_CONTENT_S3_BUCKET` bucket (or `GRAMMAR_CONTENT_S3_PATH` local checkout) at `writing_practice/<topic_id>/`; and the caller's `draft`/`archive` (see `POST` below) |
 | `POST` | `/writing-practice/<topic_id>` | Save the caller's current draft text for this topic (`{ "draft": "..." }`) to S3, preserving `archive` |
 | `POST` | `/writing-practice/<topic_id>/complete` | Save a fully-corrected draft and append it to `archive` with a timestamp (`{ "draft": "..." }`) |
+| `GET` | `/listening-practices` | List `listening_practice` topics with `hsk_level` at or below the caller's current HSK level + 1, each with the caller's `listening_progress` (`status`/`vocabulary_score`/`grammar_score`, defaulting to `TODO`/`0`/`0` for a topic never refreshed) |
+| `POST` | `/listening-practices/refresh` | Recompute `vocabulary_score`/`grammar_score` for every currently visible listening topic and upsert `listening_progress` (new rows start `TODO`; an existing row's `status` is left untouched). `vocabulary_score` is the percentage of the topic's `unique_chars` already in the caller's `character` rows; `grammar_score` is the percentage of its comma-separated `grammar_rules` already `DONE`/`MASTERED` in `user_grammar_progress`. Called once by the frontend on every login |
 | `GET` | `/hsk-characters/<character>/words` | List HSK words linked to a character |
 | `POST` | `/database/export` | Export the knowledge base to a `.txt` file |
 | `GET` | `/admin/users` | List all users' `email` and `plan` (`403` unless the caller is the admin account) |
@@ -494,6 +497,8 @@ Let learners hear Mandarin spoken aloud and practice speaking it back, not just 
   - [x] Record the learner's voice and transcribe it to text (within conversations)
   - [ ] Analyze the learner's pronunciation issues
 - [ ] Listening challenges
+  - [x] Listening-practice catalog and per-user progress ("Listening and Speaking" nav section; `GET /listening-practices`, `POST /listening-practices/refresh` computing `vocabulary_score`/`grammar_score`; admin S3 reload — see [grammar content](docs/adr/grammar-content.md), [schema tenancy](docs/architecture/schema-tenancy.md))
+  - [ ] Actual listening exercise flow (audio playback, comprehension checks, status transitions beyond TODO)
 
 ### 13. Gamification
 

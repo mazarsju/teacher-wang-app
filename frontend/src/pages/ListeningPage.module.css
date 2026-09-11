@@ -1,0 +1,67 @@
+.listening-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.listening-table th, .listening-table td {
+  padding: 0.6rem 1.25rem;
+  text-align: left;
+  border-top: 1px solid var(--app-border-light);
+}
+
+.listening-table th {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--app-ink);
+  border-top: none;
+}
+
+.listening-table th:first-child, .listening-table td:first-child {
+  width: 4rem;
+}
+
+.listening-table th:nth-child(3), .listening-table td:nth-child(3),
+.listening-table th:nth-child(4), .listening-table td:nth-child(4),
+.listening-table th:nth-child(5), .listening-table td:nth-child(5) {
+  width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.listening-row-title {
+  font-weight: 600;
+  color: #111827;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.listening-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.listening-status-todo {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.listening-status-wip {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.listening-status-done {
+  background: #dcfce7;
+  color: #166534;
+}

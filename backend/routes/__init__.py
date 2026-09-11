@@ -34,10 +34,12 @@ def register_routes(app: Flask) -> None:
         list_grammar_points,
         list_hsk_character_words,
         list_hsk_characters,
+        list_listening_practices,
         list_users,
         list_words,
         pick_hsk_word,
         record_grammar_usage,
+        refresh_listening_practices,
         reload_grammar_rules,
         reload_hsk_content,
         reload_listening_practice,
@@ -80,6 +82,8 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(list_grammar_points.bp)
     app.register_blueprint(get_grammar_point.bp)
     app.register_blueprint(writing_practice.bp)
+    app.register_blueprint(list_listening_practices.bp)
+    app.register_blueprint(refresh_listening_practices.bp)
     app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(complete_grammar_point.bp)
     app.register_blueprint(check_grammar_point.bp)

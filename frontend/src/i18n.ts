@@ -8,6 +8,7 @@ import common from "./locales/en/common.json";
 import grammar from "./locales/en/grammar.json";
 import home from "./locales/en/home.json";
 import knowledgeBase from "./locales/en/knowledge-base.json";
+import listening from "./locales/en/listening.json";
 import preferences from "./locales/en/preferences.json";
 import writing from "./locales/en/writing.json";
 import adminFr from "./locales/fr/admin.json";
@@ -18,6 +19,7 @@ import commonFr from "./locales/fr/common.json";
 import grammarFr from "./locales/fr/grammar.json";
 import homeFr from "./locales/fr/home.json";
 import knowledgeBaseFr from "./locales/fr/knowledge-base.json";
+import listeningFr from "./locales/fr/listening.json";
 import preferencesFr from "./locales/fr/preferences.json";
 import writingFr from "./locales/fr/writing.json";
 
@@ -34,6 +36,7 @@ export const resources = {
     challenge,
     "knowledge-base": knowledgeBase,
     grammar,
+    listening,
     writing,
     preferences,
     admin,
@@ -46,6 +49,7 @@ export const resources = {
     challenge: challengeFr,
     "knowledge-base": knowledgeBaseFr,
     grammar: grammarFr,
+    listening: listeningFr,
     writing: writingFr,
     preferences: preferencesFr,
     admin: adminFr,

@@ -131,6 +131,8 @@ class TestProtectedRoutes(unittest.TestCase):
             ("get", "/token-usage"),
             ("get", "/anki/status"),
             ("post", "/database/export"),
+            ("get", "/listening-practices"),
+            ("post", "/listening-practices/refresh"),
         ):
             with self.subTest(path=path):
                 response = getattr(self.client, method)(path)

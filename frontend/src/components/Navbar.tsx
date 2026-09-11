@@ -6,6 +6,7 @@ import {
   NotebookIcon,
   ProfileIcon,
   SettingsIcon,
+  SpeakerIcon,
 } from "./icons";
 import ProfileMenu from "./ProfileMenu";
 import logo from "../assets/logo.png";
@@ -15,6 +16,7 @@ export type PageId =
   | "home"
   | "knowledge-base"
   | "grammar"
+  | "listening"
   | "chat"
   | "preferences"
   | "admin";
@@ -29,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "home", labelKey: "navbar.nav.home", icon: HouseIcon },
   { id: "knowledge-base", labelKey: "navbar.nav.knowledgeBase", icon: NotebookIcon },
   { id: "grammar", labelKey: "navbar.nav.grammar", icon: BookOpenIcon },
+  { id: "listening", labelKey: "navbar.nav.listening", icon: SpeakerIcon },
   { id: "chat", labelKey: "navbar.nav.chat", icon: ChatBubbleIcon },
   { id: "preferences", labelKey: "navbar.nav.preferences", icon: SettingsIcon },
 ];

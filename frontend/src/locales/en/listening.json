@@ -1,0 +1,20 @@
+{
+  "listeningPage": {
+    "title": "Listening and Speaking",
+    "loading": "Loading listening practices...",
+    "loadError": "Failed to load listening practices.",
+    "empty": "No listening practices available yet.",
+    "table": {
+      "level": "Level",
+      "title": "Lesson",
+      "status": "Status",
+      "vocabulary": "Vocabulary",
+      "grammar": "Grammar"
+    },
+    "status": {
+      "todo": "To do",
+      "wip": "In progress",
+      "done": "Done"
+    }
+  }
+}

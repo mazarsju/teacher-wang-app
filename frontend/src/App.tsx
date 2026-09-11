@@ -12,6 +12,7 @@ import ChatPage from "./pages/ChatPage";
 import GrammarPage from "./pages/GrammarPage";
 import HomePage from "./pages/HomePage";
 import KnowledgeBasePage from "./pages/KnowledgeBasePage";
+import ListeningPage from "./pages/ListeningPage";
 import PreferencesPage from "./pages/PreferencesPage";
 import WelcomeAuthPage from "./pages/WelcomeAuthPage";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
@@ -22,6 +23,7 @@ import {
   clearCognitoTokens,
   hasStoredSession,
 } from "./utils/auth/tokenStorage";
+import { refreshListeningPractices } from "./utils/listening/listeningApi";
 
 type PageProps = { onNavigate?: (page: PageId) => void };
 
@@ -29,6 +31,7 @@ const PAGES: Record<PageId, ComponentType<PageProps>> = {
   home: HomePage,
   "knowledge-base": KnowledgeBasePage,
   grammar: GrammarPage,
+  listening: ListeningPage,
   chat: ChatPage,
   preferences: PreferencesPage,
   admin: AdminPage,
@@ -67,6 +70,7 @@ export default function App() {
         void i18n.changeLanguage(user.language);
       })
       .catch(() => setIsAdmin(false));
+    refreshListeningPractices().catch(() => {});
   }, [dispatch, i18n, isAuthenticated]);
 
   useEffect(() => {

@@ -18,6 +18,9 @@ describe("Navbar", () => {
       screen.getByRole("button", { name: "Knowledge base" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Grammar" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Listening and Speaking" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chat" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Preferences" }),

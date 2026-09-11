@@ -90,6 +90,20 @@ function stubAuthenticatedApis(options: { isAdmin?: boolean } = {}) {
         });
       }
 
+      if (url.includes("/listening-practices/refresh")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ message: "Listening progress refreshed", count: 0 }),
+        });
+      }
+
+      if (url.includes("/listening-practices")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ listening_practices: [] }),
+        });
+      }
+
       if (url.includes("/anki/status")) {
         return Promise.resolve({
           ok: true,
@@ -170,6 +184,45 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Chat" }));
 
     expect(screen.getByRole("heading", { name: "Chat" })).toBeInTheDocument();
+  });
+
+  it("navigates to the Listening and Speaking tab", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    await user.click(
+      screen.getByRole("button", { name: "Listening and Speaking" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Listening and Speaking" }),
+    ).toBeInTheDocument();
+  });
+
+  it("refreshes listening practices on login", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    await waitFor(() => {
+      const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+      expect(urls.some((url) => url.includes("/listening-practices/refresh"))).toBe(
+        true,
+      );
+    });
   });
 
   it("warns before leaving the Grammar tab while a quiz is in progress", async () => {

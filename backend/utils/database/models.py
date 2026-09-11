@@ -322,7 +322,7 @@ class ListeningProgress(db.Model):
     )
     vocabulary_score = db.Column(Integer, nullable=False, default=0)
     grammar_score = db.Column(Integer, nullable=False, default=0)
-    status = db.Column(String, nullable=False, default="WIP")
+    status = db.Column(String, nullable=False, default="TODO")
 
 
 class ConversationSummary(db.Model):
