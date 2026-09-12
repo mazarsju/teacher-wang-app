@@ -28,8 +28,8 @@
     }
   },
   "listeningScoreModal": {
-    "vocabularyKnown": "You already know {{percent}}% of this lesson's vocabulary.",
-    "grammarKnown": "You already know {{percent}}% of this lesson's grammar.",
+    "vocabularyKnown": "You already know <1>{{percent}}%</1> of this lesson's vocabulary.",
+    "grammarKnown": "You already know <1>{{percent}}%</1> of this lesson's grammar.",
     "close": "Close",
     "fit": {
       "excellent": "This listening practice is an excellent fit for your current level!",

@@ -1,12 +1,20 @@
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import Button from "./Button";
 import type { ListeningPractice } from "../types/listeningPractice";
-import { scoreTier } from "../utils/listening/overallScore";
+import { scoreTier, type ScoreTier } from "../utils/listening/overallScore";
+import styles from "./ListeningScoreModal.module.css";
 
 type ListeningScoreModalProps = {
   practice: ListeningPractice | null;
   onClose: () => void;
 };
+
+function percentTier(percent: number): ScoreTier {
+  if (percent === 100) return "excellent";
+  if (percent >= 80) return "good";
+  if (percent >= 60) return "fair";
+  return "poor";
+}
 
 export default function ListeningScoreModal({
   practice,
@@ -33,16 +41,40 @@ export default function ListeningScoreModal({
           {practice.title}
         </h2>
         <p className="modal-message">
-          {t("listeningScoreModal.vocabularyKnown", {
-            percent: practice.vocabulary_score,
-          })}
+          <Trans
+            i18nKey="listeningScoreModal.vocabularyKnown"
+            t={t}
+            values={{ percent: practice.vocabulary_score }}
+            components={{
+              1: (
+                <strong
+                  className={
+                    styles[`tier-${percentTier(practice.vocabulary_score)}`]
+                  }
+                />
+              ),
+            }}
+          />
         </p>
         <p className="modal-message">
-          {t("listeningScoreModal.grammarKnown", {
-            percent: practice.grammar_score,
-          })}
+          <Trans
+            i18nKey="listeningScoreModal.grammarKnown"
+            t={t}
+            values={{ percent: practice.grammar_score }}
+            components={{
+              1: (
+                <strong
+                  className={
+                    styles[`tier-${percentTier(practice.grammar_score)}`]
+                  }
+                />
+              ),
+            }}
+          />
         </p>
-        <p className="modal-message">{t(`listeningScoreModal.fit.${tier}`)}</p>
+        <p className={`modal-message ${styles[`tier-${tier}`]}`}>
+          {t(`listeningScoreModal.fit.${tier}`)}
+        </p>
         <div className="modal-actions">
           <Button
             kind="cancel"

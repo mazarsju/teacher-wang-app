@@ -29,7 +29,7 @@
 /* Background communicates the overall vocabulary+grammar fit, same 4 tiers as the score icon:
    a soft top-to-bottom fade from the tier color into the tile's normal surface color. */
 .listening-tile-excellent {
-  background: linear-gradient(to bottom, rgba(26, 92, 110, 0.28), var(--app-surface) 100%);
+  background: linear-gradient(to bottom, rgba(37, 99, 235, 0.28), var(--app-surface) 100%);
 }
 
 .listening-tile-good {
@@ -89,14 +89,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   border: none;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.65);
-  font-size: 1.15rem;
-  line-height: 1;
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -108,6 +106,28 @@
 .listening-score-icon:focus-visible {
   outline: 2px solid var(--app-focus);
   outline-offset: 2px;
+}
+
+.listening-score-icon-glyph {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* Same base colors as the tile gradients above, so each face icon matches its tile's tint. */
+.listening-score-icon-excellent {
+  color: rgb(37, 99, 235);
+}
+
+.listening-score-icon-good {
+  color: rgb(134, 239, 172);
+}
+
+.listening-score-icon-fair {
+  color: rgb(250, 204, 21);
+}
+
+.listening-score-icon-poor {
+  color: rgb(220, 38, 38);
 }
 
 .listening-completed-section {

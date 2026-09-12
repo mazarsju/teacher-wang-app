@@ -28,8 +28,8 @@
     }
   },
   "listeningScoreModal": {
-    "vocabularyKnown": "Vous connaissez déjà {{percent}}% du vocabulaire de cette leçon.",
-    "grammarKnown": "Vous connaissez déjà {{percent}}% de la grammaire de cette leçon.",
+    "vocabularyKnown": "Vous connaissez déjà <1>{{percent}}%</1> du vocabulaire de cette leçon.",
+    "grammarKnown": "Vous connaissez déjà <1>{{percent}}%</1> de la grammaire de cette leçon.",
     "close": "Fermer",
     "fit": {
       "excellent": "Cet exercice d'écoute correspond parfaitement à votre niveau actuel !",

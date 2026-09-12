@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  HappyFaceIcon,
+  NeutralFaceIcon,
+  UnhappyFaceIcon,
+  VeryHappyFaceIcon,
+} from "../components/icons";
 import ListeningScoreModal from "../components/ListeningScoreModal";
 import Page from "../components/Page";
 import type { ListeningPractice } from "../types/listeningPractice";
@@ -8,11 +14,11 @@ import { overallScore, scoreTier, type ScoreTier } from "../utils/listening/over
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import styles from "./ListeningPage.module.css";
 
-const TIER_EMOJI: Record<ScoreTier, string> = {
-  excellent: "😄",
-  good: "🙂",
-  fair: "😐",
-  poor: "🙁",
+const TIER_FACE_ICON: Record<ScoreTier, typeof VeryHappyFaceIcon> = {
+  excellent: VeryHappyFaceIcon,
+  good: HappyFaceIcon,
+  fair: NeutralFaceIcon,
+  poor: UnhappyFaceIcon,
 };
 
 const BADGE_PALETTE_SIZE = 8;
@@ -95,6 +101,7 @@ export default function ListeningPage() {
     const tier = scoreTier(
       overallScore(practice.vocabulary_score, practice.grammar_score),
     );
+    const FaceIcon = TIER_FACE_ICON[tier];
     return (
       <div
         key={practice.id}
@@ -134,7 +141,7 @@ export default function ListeningPage() {
         </div>
         <button
           type="button"
-          className={styles.listeningScoreIcon}
+          className={`${styles.listeningScoreIcon} ${styles[`listening-score-icon-${tier}`]}`}
           aria-label={t("listeningPage.scoreIconAriaLabel", {
             title: practice.title,
           })}
@@ -143,7 +150,7 @@ export default function ListeningPage() {
             setSelectedPractice(practice);
           }}
         >
-          {TIER_EMOJI[tier]}
+          <FaceIcon className={styles.listeningScoreIconGlyph} />
         </button>
       </div>
     );

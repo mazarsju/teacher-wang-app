@@ -1,0 +1,19 @@
+.tier-excellent {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.tier-good {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.tier-fair {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.tier-poor {
+  color: var(--app-danger);
+  font-weight: 700;
+}

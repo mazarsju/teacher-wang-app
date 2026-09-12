@@ -513,3 +513,77 @@ export function PauseIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * A tier-colored face badge (fill="currentColor", so the icon's color follows
+ * the tier it represents — see ListeningPage's score tiers), same
+ * filled-circle-plus-white-glyph style as CheckIcon/IncorrectIcon above.
+ * The four faces share eye/head shape and differ only in the mouth curve.
+ */
+export function VeryHappyFaceIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+      <circle cx="9" cy="10" r="1.3" fill="#fff" />
+      <circle cx="15" cy="10" r="1.3" fill="#fff" />
+      <path
+        d="M7.5 13.5c1 2.5 3 3.8 4.5 3.8s3.5-1.3 4.5-3.8"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function HappyFaceIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+      <circle cx="9" cy="10" r="1.3" fill="#fff" />
+      <circle cx="15" cy="10" r="1.3" fill="#fff" />
+      <path
+        d="M8 14.5c.9 1.2 2.3 2 4 2s3.1-.8 4-2"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function NeutralFaceIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+      <circle cx="9" cy="10" r="1.3" fill="#fff" />
+      <circle cx="15" cy="10" r="1.3" fill="#fff" />
+      <path
+        d="M8 15.5h8"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function UnhappyFaceIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+      <circle cx="9" cy="10" r="1.3" fill="#fff" />
+      <circle cx="15" cy="10" r="1.3" fill="#fff" />
+      <path
+        d="M8 17c.9-1.2 2.3-2 4-2s3.1.8 4 2"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

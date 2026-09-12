@@ -17,6 +17,14 @@ const fetchListeningPracticeDetail = vi.mocked(
   listeningApi.fetchListeningPracticeDetail,
 );
 
+// The percentage is wrapped in its own <strong>, so the sentence's text is
+// split across elements and a plain screen.getByText(fullString) won't match.
+function getByTextContent(text: string) {
+  return screen.getByText(
+    (_, element) => element?.textContent === text,
+  );
+}
+
 describe("ListeningPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -89,16 +97,18 @@ describe("ListeningPage", () => {
     );
 
     expect(
-      screen.getByText("You already know 100% of this lesson's vocabulary."),
+      getByTextContent("You already know 100% of this lesson's vocabulary."),
     ).toBeInTheDocument();
+    expect(screen.getByText("100%")).toHaveClass("tier-excellent");
     expect(
-      screen.getByText("You already know 90% of this lesson's grammar."),
+      getByTextContent("You already know 90% of this lesson's grammar."),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "This listening practice is an excellent fit for your current level!",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText("90%")).toHaveClass("tier-good");
+    const fitMessage = screen.getByText(
+      "This listening practice is an excellent fit for your current level!",
+    );
+    expect(fitMessage).toBeInTheDocument();
+    expect(fitMessage).toHaveClass("tier-excellent");
   });
 
   it("opens the practice detail when clicking a lesson card", async () => {
@@ -165,7 +175,7 @@ describe("ListeningPage", () => {
 
     expect(fetchListeningPracticeDetail).not.toHaveBeenCalled();
     expect(
-      screen.getByText("You already know 100% of this lesson's vocabulary."),
+      getByTextContent("You already know 100% of this lesson's vocabulary."),
     ).toBeInTheDocument();
   });
 
