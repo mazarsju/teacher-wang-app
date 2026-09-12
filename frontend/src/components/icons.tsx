@@ -527,11 +527,8 @@ export function VeryHappyFaceIcon({ className }: IconProps) {
       <circle cx="9" cy="10" r="1.3" fill="#fff" />
       <circle cx="15" cy="10" r="1.3" fill="#fff" />
       <path
-        d="M7.5 13.5c1 2.5 3 3.8 4.5 3.8s3.5-1.3 4.5-3.8"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2"
-        strokeLinecap="round"
+        d="M7 13.5C8 17.5 10 19.5 12 19.5C14 19.5 16 17.5 17 13.5C15.5 14.5 13.8 15 12 15C10.2 15 8.5 14.5 7 13.5Z"
+        fill="#fff"
       />
     </svg>
   );
