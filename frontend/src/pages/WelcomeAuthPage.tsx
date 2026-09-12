@@ -25,6 +25,8 @@ import ankiSyncImage from "../assets/screenshots/anki-sync.png";
 import ankiSyncImage2 from "../assets/screenshots/anki-sync2.png";
 import grammarListScreenshot from "../assets/screenshots/grammar-1.png";
 import grammarExerciseScreenshot from "../assets/screenshots/grammar-2.png";
+import listeningDetailScreenshot from "../assets/screenshots/06-listening-detail.png";
+import listeningShadowingScreenshot from "../assets/screenshots/07-listening-shadowing.png";
 import teacherAvatar from "../assets/avatars/teacher.svg";
 import styles from "./WelcomeAuthPage.module.css";
 
@@ -147,6 +149,7 @@ function buildFeatures(t: TFunction): Feature[] {
     },
     {
       tone: "amber",
+      images: [listeningDetailScreenshot, listeningShadowingScreenshot],
       icon: (
         <FeatureGlyph>
           <svg viewBox="0 0 24 24">
