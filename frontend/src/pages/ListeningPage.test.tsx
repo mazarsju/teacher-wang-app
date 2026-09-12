@@ -169,6 +169,64 @@ describe("ListeningPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("moves completed practices into a collapsed section, separate from the active mosaic", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue([
+      {
+        id: "active-one",
+        title: "Active lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+      {
+        id: "done-one",
+        title: "Done lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        status: "DONE",
+        vocabulary_score: 100,
+        grammar_score: 100,
+      },
+    ]);
+
+    render(<ListeningPage />);
+
+    await screen.findByText("Active lesson");
+
+    expect(screen.getByText("Completed practices (1)")).toBeInTheDocument();
+    expect(screen.getByText("Done lesson")).not.toBeVisible();
+
+    await user.click(screen.getByText("Completed practices (1)"));
+
+    expect(screen.getByText("Done lesson")).toBeVisible();
+  });
+
+  it("does not show the completed section when nothing is completed yet", async () => {
+    fetchListeningPractices.mockResolvedValue([
+      {
+        id: "active-one",
+        title: "Active lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+    ]);
+
+    render(<ListeningPage />);
+
+    await screen.findByText("Active lesson");
+
+    expect(screen.queryByText(/Completed practices/)).not.toBeInTheDocument();
+  });
+
   it("shows an empty message when there are no listening practices", async () => {
     fetchListeningPractices.mockResolvedValue([]);
 

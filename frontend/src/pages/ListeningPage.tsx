@@ -75,12 +75,77 @@ export default function ListeningPage() {
     [practices],
   );
 
+  const activePractices = sortedPractices.filter(
+    (practice) => practice.status !== "DONE",
+  );
+  const completedPractices = sortedPractices.filter(
+    (practice) => practice.status === "DONE",
+  );
+
   if (selectedTopicId !== null) {
     return (
       <ListeningPracticeDetailPage
         topicId={selectedTopicId}
         onBack={() => setSelectedTopicId(null)}
       />
+    );
+  }
+
+  function renderTile(practice: ListeningPractice) {
+    const tier = scoreTier(
+      overallScore(practice.vocabulary_score, practice.grammar_score),
+    );
+    return (
+      <div
+        key={practice.id}
+        className={`${styles.listeningTile} ${styles[`listening-tile-${tier}`]}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => setSelectedTopicId(practice.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setSelectedTopicId(practice.id);
+          }
+        }}
+      >
+        <div className={styles.listeningTileMain}>
+          <span className={styles.listeningTileTitle}>{practice.title}</span>
+          <div className={styles.listeningTileBadges}>
+            <span
+              className={`${styles.listeningBadge} ${
+                styles[`listening-badge-${badgePaletteIndex(practice.type)}`]
+              }`}
+            >
+              {t(`listeningPage.type.${practice.type}`, {
+                defaultValue: practice.type,
+              })}
+            </span>
+            <span
+              className={`${styles.listeningBadge} ${
+                styles[`listening-badge-${badgePaletteIndex(practice.topic)}`]
+              }`}
+            >
+              {t(`listeningPage.topic.${practice.topic}`, {
+                defaultValue: practice.topic,
+              })}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className={styles.listeningScoreIcon}
+          aria-label={t("listeningPage.scoreIconAriaLabel", {
+            title: practice.title,
+          })}
+          onClick={(event) => {
+            event.stopPropagation();
+            setSelectedPractice(practice);
+          }}
+        >
+          {TIER_EMOJI[tier]}
+        </button>
+      </div>
     );
   }
 
@@ -91,68 +156,22 @@ export default function ListeningPage() {
       {!isLoading && !error && sortedPractices.length === 0 && (
         <p>{t("listeningPage.empty")}</p>
       )}
-      {!isLoading && !error && sortedPractices.length > 0 && (
+      {!isLoading && !error && activePractices.length > 0 && (
         <div className={styles.listeningMosaic}>
-          {sortedPractices.map((practice) => {
-            const tier = scoreTier(
-              overallScore(practice.vocabulary_score, practice.grammar_score),
-            );
-            return (
-              <div
-                key={practice.id}
-                className={`${styles.listeningTile} ${styles[`listening-tile-${tier}`]}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedTopicId(practice.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setSelectedTopicId(practice.id);
-                  }
-                }}
-              >
-                <div className={styles.listeningTileMain}>
-                  <span className={styles.listeningTileTitle}>
-                    {practice.title}
-                  </span>
-                  <div className={styles.listeningTileBadges}>
-                    <span
-                      className={`${styles.listeningBadge} ${
-                        styles[`listening-badge-${badgePaletteIndex(practice.type)}`]
-                      }`}
-                    >
-                      {t(`listeningPage.type.${practice.type}`, {
-                        defaultValue: practice.type,
-                      })}
-                    </span>
-                    <span
-                      className={`${styles.listeningBadge} ${
-                        styles[`listening-badge-${badgePaletteIndex(practice.topic)}`]
-                      }`}
-                    >
-                      {t(`listeningPage.topic.${practice.topic}`, {
-                        defaultValue: practice.topic,
-                      })}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className={styles.listeningScoreIcon}
-                  aria-label={t("listeningPage.scoreIconAriaLabel", {
-                    title: practice.title,
-                  })}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setSelectedPractice(practice);
-                  }}
-                >
-                  {TIER_EMOJI[tier]}
-                </button>
-              </div>
-            );
-          })}
+          {activePractices.map(renderTile)}
         </div>
+      )}
+      {!isLoading && !error && completedPractices.length > 0 && (
+        <details className={styles.listeningCompletedSection}>
+          <summary className={styles.listeningCompletedSummary}>
+            {t("listeningPage.completedSection.summary", {
+              count: completedPractices.length,
+            })}
+          </summary>
+          <div className={styles.listeningMosaic}>
+            {completedPractices.map(renderTile)}
+          </div>
+        </details>
       )}
       <ListeningScoreModal
         practice={selectedPractice}

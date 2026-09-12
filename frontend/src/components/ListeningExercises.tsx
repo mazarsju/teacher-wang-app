@@ -10,12 +10,10 @@ const CONFETTI_DURATION_MS = 2000;
 
 type ListeningExercisesProps = {
   exercises: ListeningExercise[];
-  onVerified: (score: number) => void;
 };
 
 export default function ListeningExercises({
   exercises,
-  onVerified,
 }: ListeningExercisesProps) {
   const { t } = useTranslation("listening");
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -47,7 +45,6 @@ export default function ListeningExercises({
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), CONFETTI_DURATION_MS);
     }
-    onVerified(percentage);
   }
 
   return (

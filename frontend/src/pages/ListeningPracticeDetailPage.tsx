@@ -68,8 +68,11 @@ export default function ListeningPracticeDetailPage({
     ? detail.sentences.map((sentence) => sentence.translation).join("\n")
     : "";
 
-  function handleExercisesVerified(topicId: string, score: number) {
-    completeListeningPractice(topicId, score)
+  function handleCompletionChoice(completed: boolean) {
+    if (!detail) {
+      return;
+    }
+    completeListeningPractice(detail.id, completed)
       .then((result) => {
         setDetail((current) =>
           current
@@ -121,10 +124,7 @@ export default function ListeningPracticeDetailPage({
             <p className={styles.listeningDetailSectionInstruction}>
               {t("listeningPracticeDetailPage.questionsSection.instruction")}
             </p>
-            <ListeningExercises
-              exercises={detail.exercises}
-              onVerified={(score) => handleExercisesVerified(detail.id, score)}
-            />
+            <ListeningExercises exercises={detail.exercises} />
           </section>
 
           <section className={styles.listeningDetailSection}>
@@ -179,6 +179,41 @@ export default function ListeningPracticeDetailPage({
             {isTranslationShown && (
               <p className={styles.listeningDetailTranslation}>
                 {fullTranslation}
+              </p>
+            )}
+          </section>
+
+          <section className={styles.listeningDetailSection}>
+            <h2 className={styles.listeningDetailSectionTitle}>
+              {t("listeningPracticeDetailPage.completionSection.title")}
+            </h2>
+            <p className={styles.listeningDetailSectionInstruction}>
+              {t("listeningPracticeDetailPage.completionSection.question")}
+            </p>
+            <div className={styles.listeningDetailCompletionActions}>
+              <Button
+                kind="confirm"
+                variant="page"
+                text={t("listeningPracticeDetailPage.completionSection.yes")}
+                onClick={() => handleCompletionChoice(true)}
+              />
+              <Button
+                kind="cancel"
+                variant="page"
+                text={t("listeningPracticeDetailPage.completionSection.no")}
+                onClick={() => handleCompletionChoice(false)}
+              />
+            </div>
+            {detail.status === "DONE" && (
+              <p className={styles.listeningDetailSectionInstruction}>
+                {t("listeningPracticeDetailPage.completionSection.markedDone")}
+              </p>
+            )}
+            {detail.status === "WIP" && (
+              <p className={styles.listeningDetailSectionInstruction}>
+                {t(
+                  "listeningPracticeDetailPage.completionSection.markedNotDone",
+                )}
               </p>
             )}
           </section>

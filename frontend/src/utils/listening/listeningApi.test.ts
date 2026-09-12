@@ -191,7 +191,7 @@ describe("listeningApi", () => {
     ).rejects.toThrow("No audio file provided");
   });
 
-  it("saves the exercise result", async () => {
+  it("saves the learner's completion choice", async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve({
         ok: true,
@@ -205,7 +205,7 @@ describe("listeningApi", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      completeListeningPractice("listening-family-size", 90),
+      completeListeningPractice("listening-family-size", true),
     ).resolves.toEqual({
       status: "DONE",
       vocabulary_score: 40,
@@ -215,16 +215,16 @@ describe("listeningApi", () => {
       "/api/listening-practices/listening-family-size/complete",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ score: 90 }),
+        body: JSON.stringify({ completed: true }),
       }),
     );
   });
 
-  it("throws when saving the exercise result fails", async () => {
+  it("throws when saving the completion choice fails", async () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
 
     await expect(
-      completeListeningPractice("listening-family-size", 90),
-    ).rejects.toThrow("Failed to save the exercise result.");
+      completeListeningPractice("listening-family-size", true),
+    ).rejects.toThrow("Failed to save the completion status.");
   });
 });

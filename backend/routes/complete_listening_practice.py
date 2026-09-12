@@ -6,20 +6,24 @@ from backend.utils.database.models import ListeningPractice, ListeningProgress
 
 bp = Blueprint("complete_listening_practice", __name__)
 
-PASSING_SCORE = 80
-
 
 @bp.post("/listening-practices/<topic_id>/complete")
 def complete_listening_practice(topic_id: str):
+    """The learner's own yes/no call on whether they've mastered this topic.
+
+    There's no score threshold here — completion is a judgment call the
+    frontend asks the learner to make explicitly, not something inferred
+    from the comprehension exercises' score.
+    """
     user_id = current_user_id()
 
     if ListeningPractice.query.get(topic_id) is None:
         return {"error": "Listening practice not found"}, 404
 
     body = request.get_json(silent=True) or {}
-    score = body.get("score")
-    if not isinstance(score, int) or isinstance(score, bool) or not (0 <= score <= 100):
-        return {"error": "score must be an integer between 0 and 100"}, 400
+    completed = body.get("completed")
+    if not isinstance(completed, bool):
+        return {"error": "completed must be a boolean"}, 400
 
     progress = ListeningProgress.query.filter_by(
         user_id=user_id, listening_topic=topic_id
@@ -28,7 +32,7 @@ def complete_listening_practice(topic_id: str):
         progress = ListeningProgress(user_id=user_id, listening_topic=topic_id)
         db.session.add(progress)
 
-    status = "DONE" if score >= PASSING_SCORE else "WIP"
+    status = "DONE" if completed else "WIP"
     progress.status = status
     db.session.commit()
 

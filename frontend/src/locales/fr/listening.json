@@ -22,6 +22,9 @@
       "health": "Santé",
       "sport": "Sport",
       "friends": "Amis"
+    },
+    "completedSection": {
+      "summary": "Exercices terminés ({{count}})"
     }
   },
   "listeningScoreModal": {
@@ -54,7 +57,7 @@
     "questionNumber": "{{number}}.",
     "verify": "Vérifier",
     "scoreResult": "Votre score : {{score}}%.",
-    "passed": "Bravo ! Cet exercice d'écoute est maintenant marqué comme terminé.",
+    "passed": "Bravo ! Vous avez obtenu un score de réussite.",
     "failed": "Essayez de réécouter l'enregistrement pour mieux comprendre.",
     "empty": "Aucun exercice disponible pour cet exercice d'écoute pour le moment."
   },
@@ -80,6 +83,14 @@
       "instruction": "Consultez le texte complet et vérifiez si vous avez tout bien compris !",
       "reveal": "Afficher le texte",
       "showTranslation": "Afficher la traduction"
+    },
+    "completionSection": {
+      "title": "Complétion",
+      "question": "Considérez-vous cet exercice d'écoute comme terminé ?",
+      "yes": "Oui",
+      "no": "Non",
+      "markedDone": "Marqué comme terminé.",
+      "markedNotDone": "Marqué comme non terminé pour le moment."
     }
   }
 }

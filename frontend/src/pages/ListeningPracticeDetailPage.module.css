@@ -65,3 +65,8 @@
   white-space: pre-line;
   color: #111827;
 }
+
+.listening-detail-completion-actions {
+  display: flex;
+  gap: 0.75rem;
+}

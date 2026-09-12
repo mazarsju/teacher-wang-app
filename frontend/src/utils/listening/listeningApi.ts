@@ -77,19 +77,19 @@ export async function fetchListeningAudioSegmentBlob(
 
 export async function completeListeningPractice(
   id: string,
-  score: number,
+  completed: boolean,
 ): Promise<CompleteListeningPracticeResult> {
   const response = await apiFetch(
     `${API_BASE}/listening-practices/${encodeURIComponent(id)}/complete`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ score }),
+      body: JSON.stringify({ completed }),
     },
   );
 
   if (!response.ok) {
-    throw new Error("Failed to save the exercise result.");
+    throw new Error("Failed to save the completion status.");
   }
 
   return (await response.json()) as CompleteListeningPracticeResult;

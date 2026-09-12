@@ -22,6 +22,9 @@
       "health": "Health",
       "sport": "Sport",
       "friends": "Friends"
+    },
+    "completedSection": {
+      "summary": "Completed practices ({{count}})"
     }
   },
   "listeningScoreModal": {
@@ -54,7 +57,7 @@
     "questionNumber": "{{number}}.",
     "verify": "Verify",
     "scoreResult": "You scored {{score}}%.",
-    "passed": "Great job! This listening practice is now marked as completed.",
+    "passed": "Great job! You got a passing score.",
     "failed": "Try listening to the recording again to improve your understanding.",
     "empty": "No exercises available for this listening practice yet."
   },
@@ -80,6 +83,14 @@
       "instruction": "Check the full text and see if you understood everything correctly!",
       "reveal": "Show the text",
       "showTranslation": "Show translation"
+    },
+    "completionSection": {
+      "title": "Completion",
+      "question": "Do you consider this listening practice completed?",
+      "yes": "Yes",
+      "no": "No",
+      "markedDone": "Marked as completed.",
+      "markedNotDone": "Marked as not completed yet."
     }
   }
 }

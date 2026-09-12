@@ -43,7 +43,7 @@ class TestCompleteListeningPracticeEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/listening-practices/listening-family-size/complete",
-            json={"score": 90},
+            json={"completed": True},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -65,7 +65,7 @@ class TestCompleteListeningPracticeEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/listening-practices/listening-family-size/complete",
-            json={"score": 90},
+            json={"completed": True},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -76,9 +76,9 @@ class TestCompleteListeningPracticeEndpoint(unittest.TestCase):
             {"status": "DONE", "vocabulary_score": 70, "grammar_score": 60},
         )
 
-    def test_marks_wip_instead_of_done_below_the_passing_score(self):
+    def test_marks_wip_when_the_learner_says_not_completed(self):
         existing_progress = MagicMock(
-            status="TODO", vocabulary_score=0, grammar_score=0
+            status="DONE", vocabulary_score=0, grammar_score=0
         )
         self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
             existing_progress
@@ -86,49 +86,23 @@ class TestCompleteListeningPracticeEndpoint(unittest.TestCase):
 
         response = self.client.post(
             "/listening-practices/listening-family-size/complete",
-            json={"score": 60},
+            json={"completed": False},
         )
 
         self.assertEqual(response.get_json()["status"], "WIP")
         self.assertEqual(existing_progress.status, "WIP")
 
-    def test_treats_a_score_of_exactly_80_as_passing(self):
-        self.mock_progress_cls.query.filter_by.return_value.first.return_value = None
-        self.mock_progress_cls.return_value = MagicMock(
-            vocabulary_score=0, grammar_score=0
-        )
-
-        response = self.client.post(
-            "/listening-practices/listening-family-size/complete",
-            json={"score": 80},
-        )
-
-        self.assertEqual(response.get_json()["status"], "DONE")
-
-    def test_treats_a_score_of_79_as_wip(self):
-        self.mock_progress_cls.query.filter_by.return_value.first.return_value = None
-        self.mock_progress_cls.return_value = MagicMock(
-            vocabulary_score=0, grammar_score=0
-        )
-
-        response = self.client.post(
-            "/listening-practices/listening-family-size/complete",
-            json={"score": 79},
-        )
-
-        self.assertEqual(response.get_json()["status"], "WIP")
-
     def test_returns_404_when_topic_does_not_exist(self):
         self.mock_practice_cls.query.get.return_value = None
 
         response = self.client.post(
-            "/listening-practices/does-not-exist/complete", json={"score": 90}
+            "/listening-practices/does-not-exist/complete", json={"completed": True}
         )
 
         self.assertEqual(response.status_code, 404)
         self.mock_db.session.commit.assert_not_called()
 
-    def test_rejects_missing_score(self):
+    def test_rejects_missing_completed_flag(self):
         response = self.client.post(
             "/listening-practices/listening-family-size/complete", json={}
         )
@@ -136,10 +110,10 @@ class TestCompleteListeningPracticeEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.mock_db.session.commit.assert_not_called()
 
-    def test_rejects_out_of_range_score(self):
+    def test_rejects_non_boolean_completed_flag(self):
         response = self.client.post(
             "/listening-practices/listening-family-size/complete",
-            json={"score": 150},
+            json={"completed": "yes"},
         )
 
         self.assertEqual(response.status_code, 400)

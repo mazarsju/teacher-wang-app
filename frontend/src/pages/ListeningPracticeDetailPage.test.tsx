@@ -127,16 +127,11 @@ describe("ListeningPracticeDetailPage", () => {
     expect(translation.textContent).toBe("How many people?\nFive people.");
   });
 
-  it("verifies exercises and persists the resulting score", async () => {
+  it("verifying exercises shows the score without persisting anything", async () => {
     const user = userEvent.setup();
     const completeListeningPractice = vi.mocked(
       listeningApi.completeListeningPractice,
     );
-    completeListeningPractice.mockResolvedValue({
-      status: "DONE",
-      vocabulary_score: 40,
-      grammar_score: 60,
-    });
     fetchListeningPracticeDetail.mockResolvedValue({
       ...detail,
       exercises: [
@@ -163,10 +158,73 @@ describe("ListeningPracticeDetailPage", () => {
     expect(
       await screen.findByText("You scored 100%."),
     ).toBeInTheDocument();
+    expect(completeListeningPractice).not.toHaveBeenCalled();
+  });
+
+  it("asks the learner to decide completion at the bottom of the page and persists their choice", async () => {
+    const user = userEvent.setup();
+    const completeListeningPractice = vi.mocked(
+      listeningApi.completeListeningPractice,
+    );
+    completeListeningPractice.mockResolvedValue({
+      status: "DONE",
+      vocabulary_score: 40,
+      grammar_score: 60,
+    });
+    fetchListeningPracticeDetail.mockResolvedValue(detail);
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        "Do you consider this listening practice completed?",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Yes" }));
+
     expect(completeListeningPractice).toHaveBeenCalledWith(
       "listening-family-size",
-      100,
+      true,
     );
+    expect(
+      await screen.findByText("Marked as completed."),
+    ).toBeInTheDocument();
+  });
+
+  it("lets the learner mark a practice as not completed", async () => {
+    const user = userEvent.setup();
+    const completeListeningPractice = vi.mocked(
+      listeningApi.completeListeningPractice,
+    );
+    completeListeningPractice.mockResolvedValue({
+      status: "WIP",
+      vocabulary_score: 40,
+      grammar_score: 60,
+    });
+    fetchListeningPracticeDetail.mockResolvedValue(detail);
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "No" }));
+
+    expect(completeListeningPractice).toHaveBeenCalledWith(
+      "listening-family-size",
+      false,
+    );
+    expect(
+      await screen.findByText("Marked as not completed yet."),
+    ).toBeInTheDocument();
   });
 
   it("calls onBack when the back button is clicked", async () => {
