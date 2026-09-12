@@ -4,9 +4,16 @@ import ListeningScoreModal from "../components/ListeningScoreModal";
 import Page from "../components/Page";
 import type { ListeningPractice } from "../types/listeningPractice";
 import { fetchListeningPractices } from "../utils/listening/listeningApi";
-import { overallScore, scoreTier } from "../utils/listening/overallScore";
+import { overallScore, scoreTier, type ScoreTier } from "../utils/listening/overallScore";
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import styles from "./ListeningPage.module.css";
+
+const TIER_EMOJI: Record<ScoreTier, string> = {
+  excellent: "😄",
+  good: "🙂",
+  fair: "😐",
+  poor: "🙁",
+};
 
 const BADGE_PALETTE_SIZE = 8;
 
@@ -93,7 +100,7 @@ export default function ListeningPage() {
             return (
               <div
                 key={practice.id}
-                className={styles.listeningTile}
+                className={`${styles.listeningTile} ${styles[`listening-tile-${tier}`]}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelectedTopicId(practice.id)}
@@ -131,7 +138,7 @@ export default function ListeningPage() {
                 </div>
                 <button
                   type="button"
-                  className={`${styles.listeningScoreIcon} ${styles[`listening-score-icon-${tier}`]}`}
+                  className={styles.listeningScoreIcon}
                   aria-label={t("listeningPage.scoreIconAriaLabel", {
                     title: practice.title,
                   })}
@@ -139,7 +146,9 @@ export default function ListeningPage() {
                     event.stopPropagation();
                     setSelectedPractice(practice);
                   }}
-                />
+                >
+                  {TIER_EMOJI[tier]}
+                </button>
               </div>
             );
           })}

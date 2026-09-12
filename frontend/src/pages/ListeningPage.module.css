@@ -14,15 +14,34 @@
   border-radius: 0.75rem;
   background: var(--app-surface);
   cursor: pointer;
+  transition: filter 0.15s ease;
 }
 
 .listening-tile:hover {
-  background: var(--app-bg);
+  filter: brightness(0.97);
 }
 
 .listening-tile:focus-visible {
   outline: 2px solid var(--app-focus);
   outline-offset: -2px;
+}
+
+/* Background communicates the overall vocabulary+grammar fit, same 4 tiers as the score icon:
+   a soft top-to-bottom fade from the tier color into the tile's normal surface color. */
+.listening-tile-excellent {
+  background: linear-gradient(to bottom, rgba(21, 128, 61, 0.28), var(--app-surface) 100%);
+}
+
+.listening-tile-good {
+  background: linear-gradient(to bottom, rgba(134, 239, 172, 0.55), var(--app-surface) 100%);
+}
+
+.listening-tile-fair {
+  background: linear-gradient(to bottom, rgba(250, 204, 21, 0.4), var(--app-surface) 100%);
+}
+
+.listening-tile-poor {
+  background: linear-gradient(to bottom, rgba(220, 38, 38, 0.28), var(--app-surface) 100%);
 }
 
 .listening-tile-main {
@@ -67,11 +86,17 @@
 
 .listening-score-icon {
   flex-shrink: 0;
-  width: 1.1rem;
-  height: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
   padding: 0;
   border: none;
   border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.65);
+  font-size: 1.15rem;
+  line-height: 1;
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -83,20 +108,4 @@
 .listening-score-icon:focus-visible {
   outline: 2px solid var(--app-focus);
   outline-offset: 2px;
-}
-
-.listening-score-icon-excellent {
-  background: #15803d;
-}
-
-.listening-score-icon-good {
-  background: #86efac;
-}
-
-.listening-score-icon-fair {
-  background: #facc15;
-}
-
-.listening-score-icon-poor {
-  background: #dc2626;
 }
