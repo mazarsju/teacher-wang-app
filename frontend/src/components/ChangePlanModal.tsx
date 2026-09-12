@@ -77,6 +77,11 @@ export default function ChangePlanModal({
       free: { text: t("changePlanModal.features.grammar.free"), icon: "warning" },
       pro: { text: t("changePlanModal.features.grammar.pro"), icon: "check" },
     },
+    {
+      label: t("changePlanModal.features.listening.label"),
+      free: { text: t("changePlanModal.features.listening.free"), icon: "warning" },
+      pro: { text: t("changePlanModal.features.listening.pro"), icon: "check" },
+    },
   ];
 
   return (

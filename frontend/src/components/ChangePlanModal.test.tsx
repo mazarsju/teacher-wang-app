@@ -34,9 +34,9 @@ describe("ChangePlanModal", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Current plan")).toBeInTheDocument();
     expect(screen.getAllByText("Included")).toHaveLength(4);
-    expect(screen.getAllByText("Limited")).toHaveLength(2);
+    expect(screen.getAllByText("Limited")).toHaveLength(3);
     expect(screen.getByText("Generous fair use")).toBeInTheDocument();
-    expect(screen.getByText("Full access")).toBeInTheDocument();
+    expect(screen.getAllByText("Full access")).toHaveLength(2);
     expect(screen.queryByText(/tokens/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Switch to Pro" }));

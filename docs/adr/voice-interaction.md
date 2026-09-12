@@ -2,9 +2,9 @@
 
 ## Status
 
-Draft / partially accepted — text-to-speech (playback, per-character voices on two providers, reading/listening mode, speed control, a pro-only "realistic voice" provider switch) is implemented. Speech-to-text recording and transcription (press-and-hold record button → `POST /chat/stt` → learner reviews the transcript in the message input before sending) is implemented; pronunciation feedback and listening challenges are not started (README roadmap §12).
+Draft / partially accepted — text-to-speech (playback, per-character voices on two providers, reading/listening mode, speed control, a pro-only "realistic voice" provider switch) is implemented. Speech-to-text recording and transcription (press-and-hold record button → `POST /chat/stt` → learner reviews the transcript in the message input before sending) is implemented; listening challenges (a dedicated exercise type reusing this same `/chat/stt` endpoint for shadowing) are also implemented — see [listening-practice.md](./listening-practice.md). Pronunciation-quality feedback is not started (README roadmap §12).
 
-Related: [plan-management.md](./plan-management.md) (`/chat/tts` and `/chat/stt` are gated and deducted against the same free-plan `available_token` budget as chat, via an estimated token count — see Decision below; `realistic_voice_enabled` is a separate, plan-based gate), [frontend-localization.md](./frontend-localization.md) (per-character description strings), [schema tenancy](../architecture/schema-tenancy.md) (generic `settings` key/value store used for the new preferences).
+Related: [plan-management.md](./plan-management.md) (`/chat/tts` and `/chat/stt` are gated and deducted against the same free-plan `available_token` budget as chat, via an estimated token count — see Decision below; `realistic_voice_enabled` is a separate, plan-based gate), [frontend-localization.md](./frontend-localization.md) (per-character description strings), [schema tenancy](../architecture/schema-tenancy.md) (generic `settings` key/value store used for the new preferences), [listening-practice.md](./listening-practice.md) (the shadowing exercise that reuses `POST /chat/stt`).
 
 ## Context
 
@@ -115,7 +115,6 @@ A small icon-only "record" button (mic icon, an icon-only-trigger exception to t
 
 - STT: analyzing pronunciation quality/mistakes from the recording (recording + transcription itself is done — see above).
 - Touch/pointer support for the record button (mouse-only today) and a click-to-toggle alternative to press-and-hold.
-- Listening challenges (a dedicated exercise type).
 - A real per-provider dollar cost for TTS/STT accounting — `record_token_usage` prices these estimated-token events at the configured chat model's per-token rate (see [plan-management.md](./plan-management.md)), not tts-1/whisper-1/ElevenLabs' actual per-character/per-minute billing.
 - User-selectable voice (voice is fixed per character/provider, not a learner preference) — "realistic voice" switches provider, not which voice.
 - Playback controls beyond a single restart-on-click — no stop button, no queue; a second click restarts from the top.

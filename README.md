@@ -120,6 +120,7 @@ Full map: [docs/README.md](docs/README.md). ADRs:
 - [Frontend localization](docs/adr/frontend-localization.md) — react-i18next, synchronous init, one translation namespace per feature area
 - [Grammar content architecture](docs/adr/grammar-content.md) — content in Git/S3 vs. metadata and learner progress in Postgres, prerequisite resolution
 - [Writing practice](docs/adr/writing-practice.md) — topics anchored to grammar lessons, sentence-level checks reusing chat's grammar correction, S3 drafts, deferred grammar-usage recording
+- [Listening practice](docs/adr/listening-practice.md) — HSK-scoped audio topics reusing the grammar-content pipeline, readiness scores derived from existing vocab/grammar mastery, shadowing reusing `/chat/stt`, self-reported completion
 - [Voice interaction (TTS)](docs/adr/voice-interaction.md) — per-character OpenAI/ElevenLabs voices (server-resolved provider, pro-gated), HSK-derived speed + learner adjustment, reading-first vs. listening-first mode
 
 Obsolete decisions: [`docs/adr/archived/`](docs/adr/archived/), for example [SQLite → PostgreSQL](docs/adr/archived/sqlite-to-postgres.md).
@@ -504,7 +505,7 @@ Let learners hear Mandarin spoken aloud and practice speaking it back, not just 
 - [x] STT (Speech to Text)
   - [x] Record the learner's voice and transcribe it to text (within conversations)
 - [x] Listening challenges
-  - [x] Listening-practice catalog and per-user progress ("Listening and Speaking" nav section, a mosaic ordered by overall score with a per-lesson fit dialog; `GET /listening-practices`, `POST /listening-practices/refresh` computing `vocabulary_score`/`grammar_score`; admin S3 reload — see [grammar content](docs/adr/grammar-content.md), [schema tenancy](docs/architecture/schema-tenancy.md))
+  - [x] Listening-practice catalog and per-user progress ("Listening and Speaking" nav section, a mosaic ordered by overall score with a per-lesson fit dialog; `GET /listening-practices`, `POST /listening-practices/refresh` computing `vocabulary_score`/`grammar_score`; admin S3 reload — see [listening practice](docs/adr/listening-practice.md), [schema tenancy](docs/architecture/schema-tenancy.md))
   - [x] Practice detail page (`GET /listening-practices/<id>`): full-audio player with ±5s skip, shadowing (per-sentence audio + blurred transcript + type-or-speak-and-check input reusing `/chat/stt`), and a blurred full transcript with an on-demand translation reveal
   - [x] Comprehension questions: multiple-choice exercises (`exercises.json`/`exercises_<language>.json`, same shape as the grammar content pipeline's) answered all at once, a "Verify" button scoring the attempt, success confetti at 80%+, and `POST /listening-practices/<id>/complete` persisting `DONE`/`WIP` on `listening_progress.status`
 

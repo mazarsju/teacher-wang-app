@@ -38,7 +38,7 @@ type FeatureTone = "teal" | "sand" | "lilac" | "amber" | "sage";
 
 type Feature = {
   tone: FeatureTone;
-  images: string[];
+  images?: string[];
   icon: ReactNode;
   title: string;
   description: string;
@@ -142,6 +142,24 @@ function buildFeatures(t: TFunction): Feature[] {
       title: t("welcomeAuthPage.features.grammar.title"),
       description: t("welcomeAuthPage.features.grammar.description"),
       capabilities: t("welcomeAuthPage.features.grammar.capabilities", {
+        returnObjects: true,
+      }) as string[],
+    },
+    {
+      tone: "amber",
+      icon: (
+        <FeatureGlyph>
+          <svg viewBox="0 0 24 24">
+            <path d="M4 13.5v-2a8 8 0 0 1 16 0v2" />
+            <path d="M4 13.5a2.2 2.2 0 0 1 2.2-2.2h.3a1.5 1.5 0 0 1 1.5 1.5v3.4a1.5 1.5 0 0 1-1.5 1.5h-.3A2.2 2.2 0 0 1 4 15.2Z" />
+            <path d="M20 13.5a2.2 2.2 0 0 0-2.2-2.2h-.3a1.5 1.5 0 0 0-1.5 1.5v3.4a1.5 1.5 0 0 0 1.5 1.5h.3A2.2 2.2 0 0 0 20 15.2Z" />
+            <path d="M18 17.2v1a2.8 2.8 0 0 1-2.8 2.8H13" />
+          </svg>
+        </FeatureGlyph>
+      ),
+      title: t("welcomeAuthPage.features.listening.title"),
+      description: t("welcomeAuthPage.features.listening.description"),
+      capabilities: t("welcomeAuthPage.features.listening.capabilities", {
         returnObjects: true,
       }) as string[],
     },
@@ -642,7 +660,9 @@ export default function WelcomeAuthPage({
           <div className={styles.featureShowcaseList}>
             {features.map((feature) => (
               <article
-                className={`${styles.featurePanel} ${styles[`feature-panel--${feature.tone}`]}`}
+                className={`${styles.featurePanel} ${styles[`feature-panel--${feature.tone}`]}${
+                  feature.images?.length ? "" : ` ${styles.featurePanelNoMedia}`
+                }`}
                 key={feature.title}
               >
                 <div className={styles.featurePanelBody}>
@@ -662,7 +682,9 @@ export default function WelcomeAuthPage({
                     ))}
                   </ul>
                 </div>
-                <FeaturePanelImages images={feature.images} />
+                {feature.images?.length ? (
+                  <FeaturePanelImages images={feature.images} />
+                ) : null}
               </article>
             ))}
             <section className={styles.featureCompanion} aria-labelledby="feature-companion-title">

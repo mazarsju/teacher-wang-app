@@ -125,7 +125,8 @@
       "knowledgeBase": { "label": "Gestion de la base de connaissances", "free": "Inclus", "pro": "Inclus" },
       "anki": { "label": "Synchronisation Anki", "free": "Inclus", "pro": "Inclus" },
       "aiChat": { "label": "Discussion IA", "free": "Limité", "pro": "Usage généreux et raisonnable" },
-      "grammar": { "label": "Exercices de grammaire", "free": "Limité", "pro": "Accès complet" }
+      "grammar": { "label": "Exercices de grammaire", "free": "Limité", "pro": "Accès complet" },
+      "listening": { "label": "Exercices d'écoute", "free": "Limité", "pro": "Accès complet" }
     },
     "currentPlanLabel": "Offre actuelle",
     "switchTo": "Passer à {{plan}}"

@@ -125,7 +125,8 @@
       "knowledgeBase": { "label": "Knowledge base management", "free": "Included", "pro": "Included" },
       "anki": { "label": "Anki synchronization", "free": "Included", "pro": "Included" },
       "aiChat": { "label": "AI chat", "free": "Limited", "pro": "Generous fair use" },
-      "grammar": { "label": "Grammar exercises", "free": "Limited", "pro": "Full access" }
+      "grammar": { "label": "Grammar exercises", "free": "Limited", "pro": "Full access" },
+      "listening": { "label": "Listening exercises", "free": "Limited", "pro": "Full access" }
     },
     "currentPlanLabel": "Current plan",
     "switchTo": "Switch to {{plan}}"

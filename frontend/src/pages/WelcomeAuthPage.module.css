@@ -403,6 +403,10 @@
   border-color: #c5dcc8;
 }
 
+.feature-panel-no-media {
+  grid-template-columns: 1fr;
+}
+
 .feature-panel-media {
   display: flex;
   flex-direction: column;
