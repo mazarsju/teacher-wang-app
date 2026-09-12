@@ -2,11 +2,19 @@
 
 Layout: ``listening_practice/hsk<level>/<name>/overview.yaml`` plus a
 sibling ``text.txt`` (the transcript ``audio.mp3`` was recorded from). Each
-``overview.yaml`` has ``id``, ``title``, ``hskLevel``, and ``grammarIds`` (a
-list of ``grammar_points.id`` values this topic covers). This reuses the same
+``overview.yaml`` has ``id``, ``title``, ``hskLevel``, ``type`` (e.g.
+"dialog", "fiction_story"), ``topic`` (a short content slug, e.g. "family"),
+and ``grammarIds`` (a list of ``grammar_points.id`` values this topic
+covers). This reuses the same
 ``GRAMMAR_CONTENT_S3_BUCKET``/``GRAMMAR_CONTENT_S3_PATH`` selection as
 ``grammar_content_loader.py`` — listening content lives in the same bucket,
 under its own prefix, rather than a dedicated bucket.
+
+Non-English ``title``/``type``/``topic`` live in an ``overview_<language>.yaml``
+sibling (e.g. ``overview_fr.yaml``), same convention as
+``grammar_content_loader.py``'s ``overview_<language>.yaml`` for writing
+practice. A missing translation, or a missing field within one, falls back
+to the English row.
 
 Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout (e.g. this repo's own
 ``s3/`` fixture tree) to reload from disk instead of S3, for local debugging.
@@ -118,6 +126,14 @@ def reload_listening_content(client=None) -> dict[str, int]:
         if not hsk_level:
             raise ValueError(f"Missing 'hskLevel' in overview.yaml for {folder_key!r}")
 
+        practice_type = manifest.get("type")
+        if not practice_type:
+            raise ValueError(f"Missing 'type' in overview.yaml for {folder_key!r}")
+
+        topic = manifest.get("topic")
+        if not topic:
+            raise ValueError(f"Missing 'topic' in overview.yaml for {folder_key!r}")
+
         grammar_ids = manifest.get("grammarIds") or []
         for grammar_id in grammar_ids:
             if grammar_id not in valid_grammar_ids:
@@ -130,6 +146,8 @@ def reload_listening_content(client=None) -> dict[str, int]:
                 "id": topic_id,
                 "title": title,
                 "hsk_level": hsk_level,
+                "type": practice_type,
+                "topic": topic,
                 "grammar_rules": ",".join(grammar_ids),
                 "unique_chars": _unique_chars(_read_text(folder_key)),
             }
@@ -157,6 +175,42 @@ def reload_listening_content(client=None) -> dict[str, int]:
 
     db.session.commit()
     return {"listening_practice": len(topics)}
+
+
+def fetch_listening_practice_translations(
+    language: str, client=None
+) -> dict[str, dict]:
+    """Maps ``listening_practice.id`` -> translated ``{title, type, topic}``.
+
+    Read from ``overview_<language>.yaml`` siblings, same fallback contract
+    as ``fetch_writing_practice_titles``: ``{}`` for English, and a topic
+    without a translated manifest (or missing a given field in it) simply
+    omits that key — callers fall back to the English row.
+    """
+    if language == "en":
+        return {}
+    filename = f"overview_{language}.yaml"
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        all_manifests = _load_manifests_from_local(Path(local_path), filename)
+    else:
+        bucket = _bucket()
+        client = client or _s3_client()
+        all_manifests = _load_manifests(client, bucket, f"/{filename}")
+
+    manifests = {
+        folder_key: manifest
+        for folder_key, manifest in all_manifests.items()
+        if folder_key.startswith(LISTENING_PRACTICE_PREFIX)
+    }
+    return {
+        folder_key.rsplit("/", 1)[-1]: {
+            field: manifest[field]
+            for field in ("title", "type", "topic")
+            if manifest.get(field)
+        }
+        for folder_key, manifest in manifests.items()
+    }
 
 
 def _topic_folder(hsk_level: int, topic_id: str) -> str:

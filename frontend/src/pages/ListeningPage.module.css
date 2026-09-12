@@ -25,6 +25,13 @@
   outline-offset: -2px;
 }
 
+.listening-tile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
 .listening-tile-title {
   overflow: hidden;
   white-space: nowrap;
@@ -32,6 +39,31 @@
   font-weight: 600;
   color: #111827;
 }
+
+.listening-tile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.listening-badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  color: #111827;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Assigned by hashing the badge text, so the same type/topic always gets the same color. */
+.listening-badge-1 { background: #eef5ff; }
+.listening-badge-2 { background: #eefbf3; }
+.listening-badge-3 { background: #fff8e8; }
+.listening-badge-4 { background: #fdf0f6; }
+.listening-badge-5 { background: #f3f0fd; }
+.listening-badge-6 { background: #eafbfa; }
+.listening-badge-7 { background: #fdece6; }
+.listening-badge-8 { background: #f4f4e6; }
 
 .listening-score-icon {
   flex-shrink: 0;

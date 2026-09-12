@@ -4,7 +4,25 @@
     "loading": "Chargement des exercices d'écoute...",
     "loadError": "Échec du chargement des exercices d'écoute.",
     "empty": "Aucun exercice d'écoute disponible pour le moment.",
-    "scoreIconAriaLabel": "Voir votre niveau pour « {{title}} »"
+    "scoreIconAriaLabel": "Voir votre niveau pour « {{title}} »",
+    "type": {
+      "dialog": "Dialogue",
+      "fiction_story": "Histoire",
+      "personal_story": "Récit personnel",
+      "explanatory_text": "Explication"
+    },
+    "topic": {
+      "family": "Famille",
+      "pets": "Animaux de compagnie",
+      "animals": "Animaux",
+      "food": "Nourriture",
+      "shopping": "Achats",
+      "travel": "Voyage",
+      "study": "Études",
+      "health": "Santé",
+      "sport": "Sport",
+      "friends": "Amis"
+    }
   },
   "listeningScoreModal": {
     "vocabularyKnown": "Vous connaissez déjà {{percent}}% du vocabulaire de cette leçon.",

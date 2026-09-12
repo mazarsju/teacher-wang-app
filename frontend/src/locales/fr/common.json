@@ -92,6 +92,14 @@
       "transcribeAudio": "Échec de la transcription de votre enregistrement."
     }
   },
+  "voiceInput": {
+    "recordVoice": "Maintenir pour enregistrer votre voix",
+    "recording": "Enregistrement… relâchez pour transcrire",
+    "errors": {
+      "microphoneUnavailable": "Impossible d'accéder à votre microphone.",
+      "transcribeAudio": "Échec de la transcription de votre enregistrement."
+    }
+  },
   "challengeVocabularyModal": {
     "title": "Vocabulaire pour {{challengeTitle}}"
   },

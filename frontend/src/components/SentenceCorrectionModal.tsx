@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "./Button";
+import VoiceInputButton from "./VoiceInputButton";
 import styles from "./SentenceCorrectionModal.module.css";
 
 type SentenceCorrectionModalProps = {
@@ -16,6 +17,7 @@ export default function SentenceCorrectionModal({
 }: SentenceCorrectionModalProps) {
   const { t } = useTranslation("writing");
   const [text, setText] = useState(originalText);
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -39,12 +41,21 @@ export default function SentenceCorrectionModal({
         <form className="modal-form" onSubmit={handleSubmit}>
           <label className="modal-field">
             <span className="modal-field-label">{t("sentenceCorrectionModal.fieldLabel")}</span>
-            <textarea
-              className={styles.sentenceCorrectionModalTextarea}
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              autoFocus
-            />
+            <div className={styles.sentenceCorrectionModalTextareaWrapper}>
+              <textarea
+                ref={textRef}
+                className={styles.sentenceCorrectionModalTextarea}
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                autoFocus
+              />
+              <VoiceInputButton
+                fieldRef={textRef}
+                value={text}
+                onChange={setText}
+                className={styles.sentenceCorrectionModalVoiceButton}
+              />
+            </div>
           </label>
           <div className="modal-actions">
             <Button kind="cancel" text={t("sentenceCorrectionModal.cancel")} onClick={onCancel} />

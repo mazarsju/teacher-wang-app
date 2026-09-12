@@ -304,6 +304,10 @@ class ListeningPractice(db.Model):
     id = db.Column(String(128), primary_key=True)
     title = db.Column(String, nullable=False)
     hsk_level = db.Column(Integer, nullable=False)
+    # e.g. "dialog", "fiction_story", "personal_story", "explanatory_text".
+    type = db.Column(String, nullable=False)
+    # e.g. "family", "travel", "food" — a short content topic slug.
+    topic = db.Column(String, nullable=False)
     # Comma-separated grammar_points.id values this listening topic covers.
     grammar_rules = db.Column(String, nullable=False, default="")
     # Every unique Chinese character in the listening text, concatenated.

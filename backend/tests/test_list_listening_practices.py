@@ -41,7 +41,7 @@ class TestListListeningPracticesEndpoint(unittest.TestCase):
             response.get_json(),
             {"listening_practices": self.mock_list.return_value},
         )
-        self.mock_list.assert_called_once_with(TEST_USER_ID)
+        self.mock_list.assert_called_once_with(TEST_USER_ID, "en")
 
 
 if __name__ == "__main__":

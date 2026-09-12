@@ -1,3 +1,7 @@
+.sentence-correction-modal-textarea-wrapper {
+  position: relative;
+}
+
 .sentence-correction-modal-textarea {
   width: 100%;
   min-height: 6rem;
@@ -17,4 +21,10 @@
 .sentence-correction-modal-textarea:focus {
   outline: 2px solid var(--app-focus);
   border-color: var(--app-sea);
+}
+
+.sentence-correction-modal-voice-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
 }

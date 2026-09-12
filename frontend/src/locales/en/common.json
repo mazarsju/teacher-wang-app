@@ -92,6 +92,14 @@
       "transcribeAudio": "Failed to transcribe your recording."
     }
   },
+  "voiceInput": {
+    "recordVoice": "Hold to record your voice",
+    "recording": "Recording… release to transcribe",
+    "errors": {
+      "microphoneUnavailable": "Couldn’t access your microphone.",
+      "transcribeAudio": "Failed to transcribe your recording."
+    }
+  },
   "challengeVocabularyModal": {
     "title": "Vocabulary for {{challengeTitle}}"
   },

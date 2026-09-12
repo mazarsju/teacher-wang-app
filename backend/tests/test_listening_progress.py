@@ -1,4 +1,6 @@
 import bootstrap  # noqa: F401
+from unittest.mock import patch
+
 from backend.utils.database.extensions import db
 from backend.utils.database.models import (
     Character,
@@ -20,9 +22,9 @@ class TestListListeningPracticesForUser(PostgresTestCase):
         set_level(self.user_id, 1)
         db.session.add_all(
             [
-                ListeningPractice(id="l1", title="Level 1", hsk_level=1),
-                ListeningPractice(id="l2", title="Level 2", hsk_level=2),
-                ListeningPractice(id="l3", title="Level 3", hsk_level=3),
+                ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test"),
+                ListeningPractice(id="l2", title="Level 2", hsk_level=2, type="dialog", topic="test"),
+                ListeningPractice(id="l3", title="Level 3", hsk_level=3, type="dialog", topic="test"),
             ]
         )
         db.session.commit()
@@ -34,8 +36,8 @@ class TestListListeningPracticesForUser(PostgresTestCase):
     def test_no_stored_level_only_shows_level_one(self):
         db.session.add_all(
             [
-                ListeningPractice(id="l1", title="Level 1", hsk_level=1),
-                ListeningPractice(id="l2", title="Level 2", hsk_level=2),
+                ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test"),
+                ListeningPractice(id="l2", title="Level 2", hsk_level=2, type="dialog", topic="test"),
             ]
         )
         db.session.commit()
@@ -45,7 +47,9 @@ class TestListListeningPracticesForUser(PostgresTestCase):
         self.assertEqual([row["id"] for row in result], ["l1"])
 
     def test_defaults_to_todo_and_zero_scores_without_a_progress_row(self):
-        db.session.add(ListeningPractice(id="l1", title="Level 1", hsk_level=1))
+        db.session.add(
+            ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test")
+        )
         db.session.commit()
 
         result = list_listening_practices_for_user(self.user_id)
@@ -57,6 +61,8 @@ class TestListListeningPracticesForUser(PostgresTestCase):
                     "id": "l1",
                     "title": "Level 1",
                     "hsk_level": 1,
+                    "type": "dialog",
+                    "topic": "test",
                     "status": "TODO",
                     "vocabulary_score": 0,
                     "grammar_score": 0,
@@ -65,7 +71,9 @@ class TestListListeningPracticesForUser(PostgresTestCase):
         )
 
     def test_reads_existing_progress_row(self):
-        db.session.add(ListeningPractice(id="l1", title="Level 1", hsk_level=1))
+        db.session.add(
+            ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test")
+        )
         db.session.commit()
         db.session.add(
             ListeningProgress(
@@ -86,17 +94,47 @@ class TestListListeningPracticesForUser(PostgresTestCase):
                 "id": "l1",
                 "title": "Level 1",
                 "hsk_level": 1,
+                "type": "dialog",
+                "topic": "test",
                 "status": "DONE",
                 "vocabulary_score": 80,
                 "grammar_score": 50,
             },
         )
 
+    def test_uses_translated_fields_with_english_fallback(self):
+        db.session.add_all(
+            [
+                ListeningPractice(
+                    id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test"
+                ),
+                ListeningPractice(
+                    id="l2", title="Level 2", hsk_level=1, type="dialog", topic="test"
+                ),
+            ]
+        )
+        db.session.commit()
+
+        with patch(
+            "backend.utils.listening.listening_progress.fetch_listening_practice_translations",
+            return_value={
+                "l1": {"title": "Niveau 1", "type": "dialogue", "topic": "essai"}
+            },
+        ) as mock_fetch_translations:
+            result = list_listening_practices_for_user(self.user_id, "fr")
+
+        mock_fetch_translations.assert_called_once_with("fr")
+        self.assertEqual(
+            [row["title"] for row in result], ["Niveau 1", "Level 2"]
+        )
+        self.assertEqual([row["type"] for row in result], ["dialogue", "dialog"])
+        self.assertEqual([row["topic"] for row in result], ["essai", "test"])
+
 
 class TestRefreshListeningProgress(PostgresTestCase):
     def test_creates_todo_row_for_a_never_opened_topic(self):
         db.session.add(
-            ListeningPractice(id="l1", title="Level 1", hsk_level=1, unique_chars="")
+            ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test", unique_chars="")
         )
         db.session.commit()
 
@@ -110,7 +148,7 @@ class TestRefreshListeningProgress(PostgresTestCase):
 
     def test_keeps_existing_status_but_updates_scores(self):
         db.session.add(
-            ListeningPractice(id="l1", title="Level 1", hsk_level=1, unique_chars="你好")
+            ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test", unique_chars="你好")
         )
         db.session.commit()
         db.session.add(
@@ -138,7 +176,12 @@ class TestRefreshListeningProgress(PostgresTestCase):
     def test_computes_vocabulary_score_from_known_characters(self):
         db.session.add(
             ListeningPractice(
-                id="l1", title="Level 1", hsk_level=1, unique_chars="你好吗"
+                id="l1",
+                title="Level 1",
+                hsk_level=1,
+                type="dialog",
+                topic="test",
+                unique_chars="你好吗",
             )
         )
         db.session.commit()
@@ -155,7 +198,7 @@ class TestRefreshListeningProgress(PostgresTestCase):
 
     def test_topic_with_no_characters_scores_full_vocabulary(self):
         db.session.add(
-            ListeningPractice(id="l1", title="Level 1", hsk_level=1, unique_chars="")
+            ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test", unique_chars="")
         )
         db.session.commit()
 
@@ -172,6 +215,8 @@ class TestRefreshListeningProgress(PostgresTestCase):
                 id="l1",
                 title="Level 1",
                 hsk_level=1,
+                type="dialog",
+                topic="test",
                 grammar_rules="g1,g2,g3,g4",
             )
         )
@@ -201,7 +246,7 @@ class TestRefreshListeningProgress(PostgresTestCase):
 
     def test_topic_with_no_grammar_rules_scores_full_grammar(self):
         db.session.add(
-            ListeningPractice(id="l1", title="Level 1", hsk_level=1, grammar_rules="")
+            ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test", grammar_rules="")
         )
         db.session.commit()
 
@@ -216,8 +261,8 @@ class TestRefreshListeningProgress(PostgresTestCase):
         set_level(self.user_id, 1)
         db.session.add_all(
             [
-                ListeningPractice(id="l1", title="Level 1", hsk_level=1),
-                ListeningPractice(id="l3", title="Level 3", hsk_level=3),
+                ListeningPractice(id="l1", title="Level 1", hsk_level=1, type="dialog", topic="test"),
+                ListeningPractice(id="l3", title="Level 3", hsk_level=3, type="dialog", topic="test"),
             ]
         )
         db.session.commit()

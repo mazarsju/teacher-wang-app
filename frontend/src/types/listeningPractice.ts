@@ -2,6 +2,8 @@ export type ListeningPractice = {
   id: string;
   title: string;
   hsk_level: number;
+  type: string;
+  topic: string;
   status: string;
   vocabulary_score: number;
   grammar_score: number;

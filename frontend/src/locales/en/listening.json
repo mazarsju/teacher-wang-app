@@ -4,7 +4,25 @@
     "loading": "Loading listening practices...",
     "loadError": "Failed to load listening practices.",
     "empty": "No listening practices available yet.",
-    "scoreIconAriaLabel": "See your level for \"{{title}}\""
+    "scoreIconAriaLabel": "See your level for \"{{title}}\"",
+    "type": {
+      "dialog": "Dialog",
+      "fiction_story": "Story",
+      "personal_story": "Personal story",
+      "explanatory_text": "Explanation"
+    },
+    "topic": {
+      "family": "Family",
+      "pets": "Pets",
+      "animals": "Animals",
+      "food": "Food",
+      "shopping": "Shopping",
+      "travel": "Travel",
+      "study": "Study",
+      "health": "Health",
+      "sport": "Sport",
+      "friends": "Friends"
+    }
   },
   "listeningScoreModal": {
     "vocabularyKnown": "You already know {{percent}}% of this lesson's vocabulary.",

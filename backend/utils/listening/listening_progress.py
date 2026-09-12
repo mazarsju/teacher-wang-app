@@ -8,6 +8,11 @@ knowledge base (``character`` rows); ``grammar_score`` is the percentage of
 its comma-separated ``grammar_rules`` already ``DONE``/``MASTERED`` in
 ``user_grammar_progress``. Both are recomputed by ``refresh_listening_progress``
 (called on login) and read back as-is by ``list_listening_practices_for_user``.
+
+``title``/``type``/``topic`` are translated via
+``fetch_listening_practice_translations`` for any non-English ``language``,
+falling back to the English DB row for a topic (or field) without a
+translation — see that function's docstring.
 """
 
 from __future__ import annotations
@@ -22,6 +27,9 @@ from backend.utils.database.models import (
 from backend.utils.knowledgeBase.hsk_level import (
     get_stored_current_hsk_level,
     speaking_hsk_level_from_current,
+)
+from backend.utils.listening.listening_content_loader import (
+    fetch_listening_practice_translations,
 )
 
 COMPLETED_GRAMMAR_STATUSES = {"DONE", "MASTERED"}
@@ -42,8 +50,9 @@ def _visible_topics(user_id: str) -> list[ListeningPractice]:
     )
 
 
-def list_listening_practices_for_user(user_id: str) -> list[dict]:
+def list_listening_practices_for_user(user_id: str, language: str = "en") -> list[dict]:
     topics = _visible_topics(user_id)
+    translations = fetch_listening_practice_translations(language)
     progress_by_topic = {
         row.listening_topic: row
         for row in ListeningProgress.query.filter_by(user_id=user_id).all()
@@ -52,8 +61,10 @@ def list_listening_practices_for_user(user_id: str) -> list[dict]:
     return [
         {
             "id": topic.id,
-            "title": topic.title,
+            "title": translations.get(topic.id, {}).get("title", topic.title),
             "hsk_level": topic.hsk_level,
+            "type": translations.get(topic.id, {}).get("type", topic.type),
+            "topic": translations.get(topic.id, {}).get("topic", topic.topic),
             "status": (
                 progress_by_topic[topic.id].status
                 if topic.id in progress_by_topic

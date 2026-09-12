@@ -1,0 +1,40 @@
+.voice-input-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 0.55rem;
+  background: #ffffff;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.voice-input-button:hover:not(:disabled) {
+  background: var(--app-mist);
+}
+
+.voice-input-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.voice-input-button-active {
+  border-color: #dc2626;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.voice-input-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.voice-input-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.85rem;
+}

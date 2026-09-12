@@ -19,6 +19,8 @@ const detail = {
   id: "listening-family-size",
   title: "How many are in your family?",
   hsk_level: 1,
+  type: "dialog",
+  topic: "family",
   status: "TODO",
   vocabulary_score: 40,
   grammar_score: 60,

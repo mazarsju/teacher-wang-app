@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TEACHER_WANG_ID, getTeacherWang } from "../data/chatCharacters";
 import type { ChatMessage } from "../types/chat";
@@ -13,6 +13,7 @@ import { sendChatMessage } from "../utils/aiChat/chatApi";
 import Button from "./Button";
 import ChallengeConfetti from "./ChallengeConfetti";
 import ChatModal from "./ChatModal";
+import VoiceInputButton from "./VoiceInputButton";
 import styles from "./GrammarExercises.module.css";
 
 const GAUGE_RADIUS = 52;
@@ -202,6 +203,7 @@ export default function GrammarExercises({
   );
   const [orderedIndices, setOrderedIndices] = useState<number[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
+  const textAnswerRef = useRef<HTMLInputElement>(null);
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const [scoreRevealed, setScoreRevealed] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -538,14 +540,23 @@ export default function GrammarExercises({
           <p className={styles.exercisesSource}>
             {exercise.type === "translation" ? exercise.prompt : exercise.source}
           </p>
-          <input
-            type="text"
-            className={styles.exercisesInput}
-            value={textAnswer}
-            disabled={validated || isCheckingWithAi}
-            onChange={(event) => setTextAnswer(event.target.value)}
-            placeholder={t("grammarExercises.answerPlaceholder")}
-          />
+          <div className={styles.exercisesInputRow}>
+            <input
+              ref={textAnswerRef}
+              type="text"
+              className={styles.exercisesInput}
+              value={textAnswer}
+              disabled={validated || isCheckingWithAi}
+              onChange={(event) => setTextAnswer(event.target.value)}
+              placeholder={t("grammarExercises.answerPlaceholder")}
+            />
+            <VoiceInputButton
+              fieldRef={textAnswerRef}
+              value={textAnswer}
+              onChange={setTextAnswer}
+              disabled={validated || isCheckingWithAi}
+            />
+          </div>
           {validated && !isCorrect && (
             <p className={styles.exercisesCorrectAnswer}>
               {t("grammarExercises.accepted", {

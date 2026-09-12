@@ -22,12 +22,14 @@ describe("ListeningPage", () => {
     vi.clearAllMocks();
   });
 
-  it("shows only the title and score icon for each practice, ordered by overall score", async () => {
+  it("shows the title, type/topic badges, and score icon for each practice, ordered by overall score", async () => {
     fetchListeningPractices.mockResolvedValue([
       {
         id: "weak-fit",
         title: "Weak fit lesson",
         hsk_level: 3,
+        type: "dialog",
+        topic: "travel",
         status: "TODO",
         vocabulary_score: 20,
         grammar_score: 10,
@@ -36,6 +38,8 @@ describe("ListeningPage", () => {
         id: "best-fit",
         title: "Best fit lesson",
         hsk_level: 1,
+        type: "fiction_story",
+        topic: "animals",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -50,7 +54,12 @@ describe("ListeningPage", () => {
       .map((element) => element.textContent);
     expect(titles).toEqual(["Best fit lesson", "Weak fit lesson"]);
 
-    // Only name + icon are shown - no level, status, or raw score numbers.
+    expect(screen.getByText("Story")).toBeInTheDocument();
+    expect(screen.getByText("Animals")).toBeInTheDocument();
+    expect(screen.getByText("Dialog")).toBeInTheDocument();
+    expect(screen.getByText("Travel")).toBeInTheDocument();
+
+    // No level, status, or raw score numbers.
     expect(screen.queryByText("3")).not.toBeInTheDocument();
     expect(screen.queryByText("TODO")).not.toBeInTheDocument();
     expect(screen.queryByText("20%")).not.toBeInTheDocument();
@@ -63,6 +72,8 @@ describe("ListeningPage", () => {
         id: "best-fit",
         title: "Best fit lesson",
         hsk_level: 1,
+        type: "dialog",
+        topic: "family",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -97,6 +108,8 @@ describe("ListeningPage", () => {
         id: "best-fit",
         title: "Best fit lesson",
         hsk_level: 1,
+        type: "dialog",
+        topic: "family",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -106,6 +119,8 @@ describe("ListeningPage", () => {
       id: "best-fit",
       title: "Best fit lesson",
       hsk_level: 1,
+      type: "dialog",
+      topic: "family",
       status: "TODO",
       vocabulary_score: 100,
       grammar_score: 90,
@@ -132,6 +147,8 @@ describe("ListeningPage", () => {
         id: "best-fit",
         title: "Best fit lesson",
         hsk_level: 1,
+        type: "dialog",
+        topic: "family",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,

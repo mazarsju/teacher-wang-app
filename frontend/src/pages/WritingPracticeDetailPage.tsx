@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
@@ -6,6 +6,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { PenIcon } from "../components/icons";
 import Page from "../components/Page";
 import SentenceCorrectionModal from "../components/SentenceCorrectionModal";
+import VoiceInputButton from "../components/VoiceInputButton";
 import WarningModal from "../components/WarningModal";
 import WritingReviewModal from "../components/WritingReviewModal";
 import { getTeacherWang } from "../data/chatCharacters";
@@ -121,6 +122,7 @@ export default function WritingPracticeDetailPage({
   const [loadTopicError, setLoadTopicError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WritingDetailTab>("context");
   const [draft, setDraft] = useState("");
+const draftRef = useRef<HTMLTextAreaElement>(null);
   const [sentenceChecks, setSentenceChecks] = useState<WritingSentenceCheck[] | null>(
     null,
   );
@@ -412,13 +414,22 @@ export default function WritingPracticeDetailPage({
       >
         {sentenceChecks === null ? (
           <>
-            <textarea
-              className={styles.writingDetailTextarea}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={t("writingPracticeDetailPage.textareaPlaceholder")}
-              aria-label={t("writingPracticeDetailPage.textareaAriaLabel")}
-            />
+            <div className={styles.writingDetailTextareaWrapper}>
+              <textarea
+                ref={draftRef}
+                className={styles.writingDetailTextarea}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder={t("writingPracticeDetailPage.textareaPlaceholder")}
+                aria-label={t("writingPracticeDetailPage.textareaAriaLabel")}
+              />
+              <VoiceInputButton
+                fieldRef={draftRef}
+                value={draft}
+                onChange={setDraft}
+                className={styles.writingDetailVoiceButton}
+              />
+            </div>
             {draftSaveError && <p className="table-error">{draftSaveError}</p>}
             <div className={styles.writingDetailSubmitRow}>
               <Button

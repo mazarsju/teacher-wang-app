@@ -76,6 +76,7 @@ teacher-wang/
 │   │   │   ├── Button.tsx      # The app's only button; kind (cancel/confirm/danger) × variant (page/modal/banner/table/confirmation)
 │   │   │   └── shared.css      # Global (non-module) CSS for the modal chrome, toggle switch, and Button design system
 │   │   ├── types/
+│   │   ├── hooks/          # Cross-feature React hooks (e.g. useVoiceInput — mic recording + STT insertion)
 │   │   └── utils/
 │   │       ├── apiBase.ts      # API_BASE = "/api" for Flask calls
 │   │       ├── formatMarkdownText.tsx  # Shared chat/grammar Markdown-ish renderer

@@ -8,6 +8,16 @@ import { overallScore, scoreTier } from "../utils/listening/overallScore";
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import styles from "./ListeningPage.module.css";
 
+const BADGE_PALETTE_SIZE = 8;
+
+function badgePaletteIndex(text: string): number {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash * 31 + text.charCodeAt(i)) | 0;
+  }
+  return (Math.abs(hash) % BADGE_PALETTE_SIZE) + 1;
+}
+
 export default function ListeningPage() {
   const { t } = useTranslation("listening");
   const [practices, setPractices] = useState<ListeningPractice[]>([]);
@@ -94,9 +104,31 @@ export default function ListeningPage() {
                   }
                 }}
               >
-                <span className={styles.listeningTileTitle}>
-                  {practice.title}
-                </span>
+                <div className={styles.listeningTileMain}>
+                  <span className={styles.listeningTileTitle}>
+                    {practice.title}
+                  </span>
+                  <div className={styles.listeningTileBadges}>
+                    <span
+                      className={`${styles.listeningBadge} ${
+                        styles[`listening-badge-${badgePaletteIndex(practice.type)}`]
+                      }`}
+                    >
+                      {t(`listeningPage.type.${practice.type}`, {
+                        defaultValue: practice.type,
+                      })}
+                    </span>
+                    <span
+                      className={`${styles.listeningBadge} ${
+                        styles[`listening-badge-${badgePaletteIndex(practice.topic)}`]
+                      }`}
+                    >
+                      {t(`listeningPage.topic.${practice.topic}`, {
+                        defaultValue: practice.topic,
+                      })}
+                    </span>
+                  </div>
+                </div>
                 <button
                   type="button"
                   className={`${styles.listeningScoreIcon} ${styles[`listening-score-icon-${tier}`]}`}
