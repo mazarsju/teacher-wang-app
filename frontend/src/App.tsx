@@ -23,7 +23,6 @@ import {
   clearCognitoTokens,
   hasStoredSession,
 } from "./utils/auth/tokenStorage";
-import { refreshListeningPractices } from "./utils/listening/listeningApi";
 
 type PageProps = { onNavigate?: (page: PageId) => void };
 
@@ -70,7 +69,6 @@ export default function App() {
         void i18n.changeLanguage(user.language);
       })
       .catch(() => setIsAdmin(false));
-    refreshListeningPractices().catch(() => {});
   }, [dispatch, i18n, isAuthenticated]);
 
   useEffect(() => {

@@ -8,8 +8,13 @@ import {
 } from "../components/icons";
 import ListeningScoreModal from "../components/ListeningScoreModal";
 import Page from "../components/Page";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setListeningPractices } from "../store/slices/listeningSlice";
 import type { ListeningPractice } from "../types/listeningPractice";
-import { fetchListeningPractices } from "../utils/listening/listeningApi";
+import {
+  fetchListeningPractices,
+  refreshListeningPractices,
+} from "../utils/listening/listeningApi";
 import { overallScore, scoreTier, type ScoreTier } from "../utils/listening/overallScore";
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import styles from "./ListeningPage.module.css";
@@ -33,20 +38,24 @@ function badgePaletteIndex(text: string): number {
 
 export default function ListeningPage() {
   const { t } = useTranslation("listening");
-  const [practices, setPractices] = useState<ListeningPractice[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const practices = useAppSelector((state) => state.listening.items);
+  const listeningLoaded = useAppSelector((state) => state.listening.loaded);
+  const [isLoading, setIsLoading] = useState(!listeningLoaded);
   const [error, setError] = useState<string | null>(null);
   const [selectedPractice, setSelectedPractice] =
     useState<ListeningPractice | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (listeningLoaded) return;
     let cancelled = false;
 
-    fetchListeningPractices()
+    refreshListeningPractices()
+      .then(() => fetchListeningPractices())
       .then((result) => {
         if (!cancelled) {
-          setPractices(result);
+          dispatch(setListeningPractices(result));
         }
       })
       .catch((fetchError) => {
@@ -67,7 +76,12 @@ export default function ListeningPage() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+    // listeningLoaded is intentionally excluded: this dispatches
+    // setListeningPractices, which flips listeningLoaded itself, and
+    // re-running on that flip would cancel this same in-flight fetch before
+    // its `finally` clears isLoading.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, t]);
 
   const sortedPractices = useMemo(
     () =>

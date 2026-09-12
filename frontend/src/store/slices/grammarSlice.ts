@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { GrammarPoint } from "../../types/grammarPoint";
 import type { WritingTopic } from "../../types/writingTopic";
-import { resetAppData } from "../thunks/syncAppData";
+import { resetAppData, syncAppData } from "../thunks/syncAppData";
 
 export type GrammarState = {
   items: GrammarPoint[];
@@ -68,7 +68,13 @@ const grammarSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(resetAppData, () => initialState);
+    builder
+      .addCase(syncAppData.fulfilled, (state, action) => {
+        state.items = action.payload.grammarPoints;
+        state.writingPractices = action.payload.writingPractices;
+        state.loaded = true;
+      })
+      .addCase(resetAppData, () => initialState);
   },
 });
 

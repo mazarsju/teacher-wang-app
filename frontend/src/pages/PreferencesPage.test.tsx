@@ -3,10 +3,12 @@ import userEvent from "@testing-library/user-event";
 import PreferencesPage from "./PreferencesPage";
 import i18n from "../i18n";
 import * as ankiApi from "../utils/anki/ankiApi";
+import * as grammarPointsApi from "../utils/grammar/grammarPointsApi";
 import * as charactersApi from "../utils/knowledgeBase/charactersApi";
 import * as hskCharactersApi from "../utils/knowledgeBase/hskCharactersApi";
 import * as hskLevelApi from "../utils/knowledgeBase/hskLevelApi";
 import * as wordsApi from "../utils/knowledgeBase/wordsApi";
+import * as listeningApi from "../utils/listening/listeningApi";
 import type { AnkiStatus } from "../types/anki";
 import { renderWithStore } from "../test/renderWithStore";
 
@@ -38,6 +40,15 @@ vi.mock("../utils/knowledgeBase/hskCharactersApi", () => ({
   fetchHskCharacters: vi.fn(),
 }));
 
+vi.mock("../utils/grammar/grammarPointsApi", () => ({
+  fetchGrammarPoints: vi.fn(),
+}));
+
+vi.mock("../utils/listening/listeningApi", () => ({
+  fetchListeningPractices: vi.fn(),
+  refreshListeningPractices: vi.fn(),
+}));
+
 const fetchAnkiStatus = vi.mocked(ankiApi.fetchAnkiStatus);
 const fetchAnkiDecks = vi.mocked(ankiApi.fetchAnkiDecks);
 const fetchAnkiModels = vi.mocked(ankiApi.fetchAnkiModels);
@@ -49,6 +60,9 @@ const fetchCharacters = vi.mocked(charactersApi.fetchCharacters);
 const fetchWords = vi.mocked(wordsApi.fetchWords);
 const fetchHskLevelStatus = vi.mocked(hskLevelApi.fetchHskLevelStatus);
 const fetchHskCharacters = vi.mocked(hskCharactersApi.fetchHskCharacters);
+const fetchGrammarPoints = vi.mocked(grammarPointsApi.fetchGrammarPoints);
+const fetchListeningPractices = vi.mocked(listeningApi.fetchListeningPractices);
+const refreshListeningPractices = vi.mocked(listeningApi.refreshListeningPractices);
 
 const disconnectedStatus: AnkiStatus = {
   connected: false,
@@ -91,6 +105,9 @@ describe("PreferencesPage", () => {
       remaining_characters: 300,
     });
     fetchHskCharacters.mockResolvedValue([]);
+    fetchGrammarPoints.mockResolvedValue({ grammarPoints: [], writingPractices: [] });
+    fetchListeningPractices.mockResolvedValue([]);
+    refreshListeningPractices.mockResolvedValue(undefined);
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo) => {

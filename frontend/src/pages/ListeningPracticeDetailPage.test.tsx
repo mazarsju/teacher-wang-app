@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
+import { renderWithStore as render } from "../test/renderWithStore";
 import * as listeningApi from "../utils/listening/listeningApi";
 
 vi.mock("../utils/listening/listeningApi", () => ({

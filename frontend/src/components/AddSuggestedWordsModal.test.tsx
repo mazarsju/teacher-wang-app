@@ -100,6 +100,21 @@ function setupFetch(overrides: Record<string, () => Promise<unknown>> = {}) {
       if (matchesApiPath(url.pathname, "/anki/status")) {
         return Promise.resolve({ ok: false, json: async () => ({}) });
       }
+      if (matchesApiPath(url.pathname, "/grammar-points")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ grammar_points: [], writing_practices: [] }),
+        });
+      }
+      if (matchesApiPath(url.pathname, "/listening-practices/refresh")) {
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }
+      if (matchesApiPath(url.pathname, "/listening-practices")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ listening_practices: [] }),
+        });
+      }
 
       return Promise.resolve({ ok: false, json: async () => ({}) });
     }),

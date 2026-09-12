@@ -5,6 +5,7 @@ import charactersReducer from "./slices/charactersSlice";
 import grammarReducer from "./slices/grammarSlice";
 import hskReducer from "./slices/hskSlice";
 import hskCharactersReducer from "./slices/hskCharactersSlice";
+import listeningReducer from "./slices/listeningSlice";
 import syncReducer from "./slices/syncSlice";
 import weeklyArticleReducer from "./slices/weeklyArticleSlice";
 import wordsReducer from "./slices/wordsSlice";
@@ -15,6 +16,7 @@ const rootReducer = combineReducers({
   hsk: hskReducer,
   hskCharacters: hskCharactersReducer,
   grammar: grammarReducer,
+  listening: listeningReducer,
   anki: ankiReducer,
   sync: syncReducer,
   challengeProgress: challengeProgressReducer,

@@ -104,6 +104,21 @@ function defaultFetchResponse(url: URL, init?: RequestInit) {
   if (matchesApiPath(url.pathname, "/hsk-characters")) {
     return Promise.resolve({ ok: true, json: async () => [] });
   }
+  if (matchesApiPath(url.pathname, "/grammar-points")) {
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({ grammar_points: [], writing_practices: [] }),
+    });
+  }
+  if (matchesApiPath(url.pathname, "/listening-practices/refresh")) {
+    return Promise.resolve({ ok: true, json: async () => ({}) });
+  }
+  if (matchesApiPath(url.pathname, "/listening-practices")) {
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({ listening_practices: [] }),
+    });
+  }
 
   return Promise.resolve({ ok: false, json: async () => ({}) });
 }
@@ -140,6 +155,21 @@ describe("KnowledgeBaseInitWizardModal", () => {
         }
         if (matchesApiPath(url, "/anki/status")) {
           return Promise.resolve({ ok: false, json: async () => ({}) });
+        }
+        if (matchesApiPath(url, "/grammar-points")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ grammar_points: [], writing_practices: [] }),
+          });
+        }
+        if (matchesApiPath(url, "/listening-practices/refresh")) {
+          return Promise.resolve({ ok: true, json: async () => ({}) });
+        }
+        if (matchesApiPath(url, "/listening-practices")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ listening_practices: [] }),
+          });
         }
 
         return Promise.resolve({ ok: false, json: async () => ({}) });
@@ -319,6 +349,21 @@ describe("KnowledgeBaseInitWizardModal", () => {
       }
       if (matchesApiPath(url, "/hsk-characters")) {
         return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (matchesApiPath(url, "/grammar-points")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ grammar_points: [], writing_practices: [] }),
+        });
+      }
+      if (url.includes("/listening-practices/refresh")) {
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }
+      if (matchesApiPath(url, "/listening-practices")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ listening_practices: [] }),
+        });
       }
 
       return Promise.resolve({ ok: false, json: async () => ({}) });

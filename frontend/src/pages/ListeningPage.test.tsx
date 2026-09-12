@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ListeningPage from "./ListeningPage";
+import { renderWithStore } from "../test/renderWithStore";
 import * as listeningApi from "../utils/listening/listeningApi";
 
 vi.mock("../utils/listening/listeningApi", () => ({
   fetchListeningPractices: vi.fn(),
+  refreshListeningPractices: vi.fn(),
   fetchListeningPracticeDetail: vi.fn(),
   fetchListeningAudioBlob: vi.fn(),
   fetchListeningAudioSegmentBlob: vi.fn(),
@@ -13,9 +15,14 @@ vi.mock("../utils/listening/listeningApi", () => ({
 }));
 
 const fetchListeningPractices = vi.mocked(listeningApi.fetchListeningPractices);
+const refreshListeningPractices = vi.mocked(listeningApi.refreshListeningPractices);
 const fetchListeningPracticeDetail = vi.mocked(
   listeningApi.fetchListeningPracticeDetail,
 );
+
+function render(ui: Parameters<typeof renderWithStore>[0]) {
+  return renderWithStore(ui);
+}
 
 // The percentage is wrapped in its own <strong>, so the sentence's text is
 // split across elements and a plain screen.getByText(fullString) won't match.
@@ -28,6 +35,7 @@ function getByTextContent(text: string) {
 describe("ListeningPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    refreshListeningPractices.mockResolvedValue(undefined);
   });
 
   it("shows the title, type/topic badges, and score icon for each practice, ordered by overall score", async () => {

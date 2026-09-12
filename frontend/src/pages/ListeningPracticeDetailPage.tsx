@@ -6,6 +6,8 @@ import { EyeIcon } from "../components/icons";
 import ListeningExercises from "../components/ListeningExercises";
 import ShadowingSentence from "../components/ShadowingSentence";
 import Page from "../components/Page";
+import { useAppDispatch } from "../store/hooks";
+import { setListeningPracticeResult } from "../store/slices/listeningSlice";
 import type { ListeningPracticeDetail } from "../types/listeningPractice";
 import {
   completeListeningPractice,
@@ -24,6 +26,7 @@ export default function ListeningPracticeDetailPage({
   onBack,
 }: ListeningPracticeDetailPageProps) {
   const { t } = useTranslation("listening");
+  const dispatch = useAppDispatch();
   const [detail, setDetail] = useState<ListeningPracticeDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +86,14 @@ export default function ListeningPracticeDetailPage({
                 grammar_score: result.grammar_score,
               }
             : current,
+        );
+        dispatch(
+          setListeningPracticeResult({
+            id: detail.id,
+            status: result.status,
+            vocabulary_score: result.vocabulary_score,
+            grammar_score: result.grammar_score,
+          }),
         );
       })
       .catch(() => {});
