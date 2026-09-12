@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TEACHER_WANG_ID, getTeacherWang } from "../data/chatCharacters";
 import type { ChatMessage } from "../types/chat";
@@ -203,7 +203,6 @@ export default function GrammarExercises({
   );
   const [orderedIndices, setOrderedIndices] = useState<number[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
-  const textAnswerRef = useRef<HTMLInputElement>(null);
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const [scoreRevealed, setScoreRevealed] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -542,7 +541,6 @@ export default function GrammarExercises({
           </p>
           <div className={styles.exercisesInputRow}>
             <input
-              ref={textAnswerRef}
               type="text"
               className={styles.exercisesInput}
               value={textAnswer}
@@ -551,7 +549,6 @@ export default function GrammarExercises({
               placeholder={t("grammarExercises.answerPlaceholder")}
             />
             <VoiceInputButton
-              fieldRef={textAnswerRef}
               value={textAnswer}
               onChange={setTextAnswer}
               disabled={validated || isCheckingWithAi}

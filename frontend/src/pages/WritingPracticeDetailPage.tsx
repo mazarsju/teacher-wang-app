@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../components/Button";
 import ChatModal from "../components/ChatModal";
@@ -122,7 +122,6 @@ export default function WritingPracticeDetailPage({
   const [loadTopicError, setLoadTopicError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WritingDetailTab>("context");
   const [draft, setDraft] = useState("");
-const draftRef = useRef<HTMLTextAreaElement>(null);
   const [sentenceChecks, setSentenceChecks] = useState<WritingSentenceCheck[] | null>(
     null,
   );
@@ -416,7 +415,6 @@ const draftRef = useRef<HTMLTextAreaElement>(null);
           <>
             <div className={styles.writingDetailTextareaWrapper}>
               <textarea
-                ref={draftRef}
                 className={styles.writingDetailTextarea}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
@@ -424,7 +422,6 @@ const draftRef = useRef<HTMLTextAreaElement>(null);
                 aria-label={t("writingPracticeDetailPage.textareaAriaLabel")}
               />
               <VoiceInputButton
-                fieldRef={draftRef}
                 value={draft}
                 onChange={setDraft}
                 className={styles.writingDetailVoiceButton}

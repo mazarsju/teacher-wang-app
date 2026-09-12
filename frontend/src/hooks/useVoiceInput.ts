@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { transcribeChatAudio } from "../utils/aiChat/chatApi";
 
-type VoiceInputElement = HTMLInputElement | HTMLTextAreaElement;
-
-export function useVoiceInput<T extends VoiceInputElement>(
-  fieldRef: RefObject<T | null>,
-  value: string,
-  setValue: (value: string) => void,
-) {
+export function useVoiceInput(value: string, setValue: (value: string) => void) {
   const { t } = useTranslation("common");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -16,29 +10,11 @@ export function useVoiceInput<T extends VoiceInputElement>(
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const cursorRef = useRef<number | null>(null);
-  const hasFocusedRef = useRef(false);
-
-  useEffect(() => {
-    const field = fieldRef.current;
-    if (!field) {
-      return;
-    }
-    const markFocused = () => {
-      hasFocusedRef.current = true;
-    };
-    field.addEventListener("focus", markFocused);
-    return () => field.removeEventListener("focus", markFocused);
-  }, [fieldRef]);
 
   async function startRecording() {
     if (isRecording || isTranscribing) {
       return;
     }
-
-    const field = fieldRef.current;
-    cursorRef.current =
-      hasFocusedRef.current && field?.selectionStart != null ? field.selectionStart : null;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -79,18 +55,7 @@ export function useVoiceInput<T extends VoiceInputElement>(
 
       transcribeChatAudio(audioBlob)
         .then((text) => {
-          const field = fieldRef.current;
-          const currentValue = field ? field.value : value;
-          const insertAt = cursorRef.current ?? currentValue.length;
-          const nextValue =
-            currentValue.slice(0, insertAt) + text + currentValue.slice(insertAt);
-          setValue(nextValue);
-
-          const caret = insertAt + text.length;
-          requestAnimationFrame(() => {
-            field?.focus();
-            field?.setSelectionRange(caret, caret);
-          });
+          setValue(value + text);
         })
         .catch(() => {
           setError(t("voiceInput.errors.transcribeAudio"));

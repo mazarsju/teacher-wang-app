@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "./Button";
 import VoiceInputButton from "./VoiceInputButton";
@@ -17,7 +17,6 @@ export default function SentenceCorrectionModal({
 }: SentenceCorrectionModalProps) {
   const { t } = useTranslation("writing");
   const [text, setText] = useState(originalText);
-  const textRef = useRef<HTMLTextAreaElement>(null);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -43,14 +42,12 @@ export default function SentenceCorrectionModal({
             <span className="modal-field-label">{t("sentenceCorrectionModal.fieldLabel")}</span>
             <div className={styles.sentenceCorrectionModalTextareaWrapper}>
               <textarea
-                ref={textRef}
                 className={styles.sentenceCorrectionModalTextarea}
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 autoFocus
               />
               <VoiceInputButton
-                fieldRef={textRef}
                 value={text}
                 onChange={setText}
                 className={styles.sentenceCorrectionModalVoiceButton}
