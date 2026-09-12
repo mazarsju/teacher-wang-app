@@ -29,7 +29,7 @@
 /* Background communicates the overall vocabulary+grammar fit, same 4 tiers as the score icon:
    a soft top-to-bottom fade from the tier color into the tile's normal surface color. */
 .listening-tile-excellent {
-  background: linear-gradient(to bottom, rgba(21, 128, 61, 0.28), var(--app-surface) 100%);
+  background: linear-gradient(to bottom, rgba(26, 92, 110, 0.28), var(--app-surface) 100%);
 }
 
 .listening-tile-good {
