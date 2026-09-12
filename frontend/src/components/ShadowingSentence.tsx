@@ -8,7 +8,10 @@ import {
   fetchListeningAudioSegmentBlob,
   transcribeListeningAudio,
 } from "../utils/listening/listeningApi";
-import { matchesSentence } from "../utils/listening/matchesSentence";
+import {
+  diffSentenceChars,
+  matchesSentence,
+} from "../utils/listening/matchesSentence";
 import styles from "./ShadowingSentence.module.css";
 
 type ShadowingSentenceProps = {
@@ -91,7 +94,30 @@ export default function ShadowingSentence({
               : `${styles.shadowingSentenceText} ${styles.shadowingSentenceTextBlurred}`
           }
         >
-          {sentence.mandarin}
+          {checkResult === "correct" ? (
+            <span className={styles.shadowingSentenceCharCorrect}>
+              {sentence.mandarin}
+            </span>
+          ) : checkResult === "incorrect" ? (
+            diffSentenceChars(inputValue, sentence.mandarin).map(
+              (entry, index) => (
+                <span
+                  key={index}
+                  className={
+                    entry.matched === null
+                      ? undefined
+                      : entry.matched
+                        ? styles.shadowingSentenceCharCorrect
+                        : styles.shadowingSentenceCharIncorrect
+                  }
+                >
+                  {entry.char}
+                </span>
+              ),
+            )
+          ) : (
+            sentence.mandarin
+          )}
         </span>
         <button
           type="button"
@@ -146,10 +172,14 @@ export default function ShadowingSentence({
           }
         />
         {checkResult === "correct" && (
-          <CheckIcon className={styles.shadowingSentenceResultIcon} />
+          <CheckIcon
+            className={`${styles.shadowingSentenceResultIcon} ${styles.shadowingSentenceResultIconCorrect}`}
+          />
         )}
         {checkResult === "incorrect" && (
-          <IncorrectIcon className={styles.shadowingSentenceResultIcon} />
+          <IncorrectIcon
+            className={`${styles.shadowingSentenceResultIcon} ${styles.shadowingSentenceResultIconIncorrect}`}
+          />
         )}
       </div>
     </div>

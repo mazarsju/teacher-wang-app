@@ -92,3 +92,19 @@
   width: 1.4rem;
   height: 1.4rem;
 }
+
+.shadowing-sentence-result-icon-correct {
+  color: #16a34a;
+}
+
+.shadowing-sentence-result-icon-incorrect {
+  color: var(--app-danger);
+}
+
+.shadowing-sentence-char-correct {
+  color: #16a34a;
+}
+
+.shadowing-sentence-char-incorrect {
+  color: var(--app-danger);
+}
