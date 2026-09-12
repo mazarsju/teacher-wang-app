@@ -13,6 +13,7 @@ import {
   EyeIcon,
   IncorrectIcon,
   MicrophoneIcon,
+  MoreIcon,
   QuestionIcon,
   SpeakerIcon,
   TrashIcon,
@@ -34,7 +35,10 @@ import {
   sendChatMessage,
   transcribeChatAudio,
 } from "../utils/aiChat/chatApi";
-import { fetchChatSetupPreference } from "../utils/aiChat/chatSetupPreferenceApi";
+import {
+  fetchChatSetupPreference,
+  updateChatSetupPreference,
+} from "../utils/aiChat/chatSetupPreferenceApi";
 import { trimMessagesForContext } from "../utils/aiChat/chatContextWindow";
 import { isChineseOnlyText } from "../utils/aiChat/chineseText";
 import { parseMessageSegments } from "../utils/aiChat/stageDirection";
@@ -95,8 +99,25 @@ function hasCorrectionThread(message: ChatMessage): boolean {
   );
 }
 
+/**
+ * The part of an assistant message that's actually spoken: the whole
+ * content, or just the dialogue segments when stage directions (``[[...]]``)
+ * are mixed in — those are narration, not something Teacher Wang says aloud.
+ */
+function getSpokenText(message: ChatMessage): string {
+  const segments = parseMessageSegments(message.content);
+  if (!segments.some((segment) => segment.type === "stage")) {
+    return message.content;
+  }
+
+  return segments
+    .filter((segment) => segment.type === "text")
+    .map((segment) => segment.text)
+    .join("");
+}
+
 function isTtsEligibleMessage(message: ChatMessage): boolean {
-  return message.role === "assistant" && isChineseOnlyText(message.content);
+  return message.role === "assistant" && isChineseOnlyText(getSpokenText(message));
 }
 
 function getCorrectionThreadMessages(message: ChatMessage): ChatMessage[] {
@@ -165,9 +186,11 @@ export default function ChatModal({
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const wasChallengeCompleteRef = useRef(false);
   const autoSentRef = useRef(false);
   const messageInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlsRef = useRef<Record<number, string>>({});
   const loadingAudioIndicesRef = useRef<Set<number>>(new Set());
@@ -180,6 +203,8 @@ export default function ChatModal({
       tasks.length > 0 &&
       tasks.every((task) => completedTaskIds.has(task.id)),
   );
+  const completedTaskCount =
+    tasks?.filter((task) => completedTaskIds.has(task.id)).length ?? 0;
 
   useEffect(() => {
     return () => {
@@ -200,6 +225,31 @@ export default function ChatModal({
         // Best-effort; falls back to the reading-first default.
       });
   }, []);
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (menuRef.current !== null && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isMenuOpen]);
 
   useEffect(() => {
     if (isChallengeComplete && !wasChallengeCompleteRef.current) {
@@ -359,7 +409,7 @@ export default function ChatModal({
     );
     setLoadingAudioIndices(new Set(loadingAudioIndicesRef.current));
 
-    fetchChatTts(chatMessage.content, activeCharacter.voice)
+    fetchChatTts(getSpokenText(chatMessage), activeCharacter.voice)
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         audioUrlsRef.current = { ...audioUrlsRef.current, [index]: url };
@@ -631,6 +681,24 @@ export default function ChatModal({
     }
   }
 
+  async function toggleListeningMode() {
+    const previousMode = listeningMode;
+    const nextMode: ChatListeningMode =
+      previousMode === "listening_first" ? "reading_first" : "listening_first";
+    setListeningMode(nextMode);
+
+    try {
+      await updateChatSetupPreference({ listening_mode: nextMode });
+    } catch (updateError) {
+      setListeningMode(previousMode);
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : t("chatModal.errors.updateListeningMode"),
+      );
+    }
+  }
+
   function openCorrectionThread(messageIndex: number, chatMessage: ChatMessage) {
     const severity = resolveCorrectionSeverity(chatMessage);
     if (severity === null || severity === "none") {
@@ -742,35 +810,87 @@ export default function ChatModal({
               </div>
             </div>
             <div className={styles.chatModalHeaderActions}>
-              {allowClearHistory && (
+              {allowClearHistory ? (
+                <div className={styles.chatModalMenu} ref={menuRef}>
+                  <button
+                    type="button"
+                    className={styles.chatModalMenuTrigger}
+                    aria-label={t("chatModal.moreOptions")}
+                    aria-haspopup="menu"
+                    aria-expanded={isMenuOpen}
+                    onClick={() => setIsMenuOpen((open) => !open)}
+                  >
+                    <MoreIcon className={styles.chatModalMenuTriggerIcon} />
+                  </button>
+                  {isMenuOpen && (
+                    <div
+                      className={styles.chatModalMenuDropdown}
+                      role="menu"
+                      aria-label={t("chatModal.moreOptions")}
+                    >
+                      <button
+                        type="button"
+                        className={styles.chatModalMenuItem}
+                        role="menuitem"
+                        disabled={
+                          isLoadingHistory ||
+                          isSending ||
+                          isClearing ||
+                          messages.length === 0
+                        }
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setIsClearConfirmOpen(true);
+                        }}
+                      >
+                        <TrashIcon className={styles.chatModalMenuItemIcon} />
+                        <span>{t("chatModal.clearHistory")}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.chatModalMenuItem}
+                        role="menuitem"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          void toggleListeningMode();
+                        }}
+                      >
+                        {listeningMode === "listening_first" ? (
+                          <EyeIcon className={styles.chatModalMenuItemIcon} />
+                        ) : (
+                          <SpeakerIcon className={styles.chatModalMenuItemIcon} />
+                        )}
+                        <span>
+                          {listeningMode === "listening_first"
+                            ? t("chatModal.switchToReadingFirst")
+                            : t("chatModal.switchToListeningFirst")}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.chatModalMenuItem}
+                        role="menuitem"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onClose();
+                        }}
+                      >
+                        <CloseIcon className={styles.chatModalMenuItemIcon} />
+                        <span>{t("chatModal.backToMenu")}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
                 <button
                   type="button"
-                  className={styles.chatModalClearButton}
-                  aria-label={
-                    isClearing ? t("chatModal.clearing") : t("chatModal.clearHistory")
-                  }
-                  disabled={
-                    isLoadingHistory ||
-                    isSending ||
-                    isClearing ||
-                    messages.length === 0
-                  }
-                  onClick={() => setIsClearConfirmOpen(true)}
+                  className={styles.chatModalCloseButton}
+                  aria-label={t("chatModal.closeChat")}
+                  onClick={onClose}
                 >
-                  <TrashIcon className={styles.chatModalClearIcon} />
-                  <span>
-                    {isClearing ? t("chatModal.clearing") : t("chatModal.clearHistory")}
-                  </span>
+                  <CloseIcon className={styles.chatModalCloseIcon} />
                 </button>
               )}
-              <button
-                type="button"
-                className={styles.chatModalCloseButton}
-                aria-label={t("chatModal.closeChat")}
-                onClick={onClose}
-              >
-                <CloseIcon className={styles.chatModalCloseIcon} />
-              </button>
             </div>
           </header>
 
@@ -779,11 +899,19 @@ export default function ChatModal({
               className={styles.chatModalTasks}
               aria-labelledby="chat-modal-tasks-title"
             >
-              <h3 id="chat-modal-tasks-title" className={styles.chatModalTasksTitle}>
-                {challengeTitle
-                  ? t("chatModal.tasksTitleWithChallenge", { challengeTitle })
-                  : t("chatModal.tasksTitle")}
-              </h3>
+              <div className={styles.chatModalTasksHeader}>
+                <h3 id="chat-modal-tasks-title" className={styles.chatModalTasksTitle}>
+                  {challengeTitle
+                    ? t("chatModal.tasksTitleWithChallenge", { challengeTitle })
+                    : t("chatModal.tasksTitle")}
+                </h3>
+                <span className={styles.chatModalTasksProgress}>
+                  {t("chatModal.tasksProgress", {
+                    completed: completedTaskCount,
+                    total: tasks.length,
+                  })}
+                </span>
+              </div>
               <ul className={styles.chatModalTaskList}>
                 {tasks.map((task) => {
                   const isCompleted = completedTaskIds.has(task.id);
@@ -792,6 +920,7 @@ export default function ChatModal({
                       <label className={styles.chatModalTaskLabel}>
                         <input
                           type="checkbox"
+                          className={styles.chatModalTaskCheckbox}
                           checked={isCompleted}
                           disabled
                           readOnly
@@ -862,6 +991,13 @@ export default function ChatModal({
                     );
 
                     if (hasStage) {
+                      const isTtsEligible = isTtsEligibleMessage(chatMessage);
+                      const isMasked =
+                        listeningMode === "listening_first" &&
+                        isTtsEligible &&
+                        !revealedIndices.has(index);
+                      const isAudioLoading = loadingAudioIndices.has(index);
+
                       return (
                         <li
                           key={`${chatMessage.role}-${index}-${chatMessage.content}`}
@@ -879,12 +1015,62 @@ export default function ChatModal({
                               ) : (
                                 <div
                                   key={`${segmentIndex}-${segment.text}`}
-                                  className={`${styles.chatMessage} ${styles.chatMessageAssistant}`}
+                                  className={styles.chatMessageShell}
                                 >
-                                  {renderFormattedText(
-                                    segment.text,
-                                    styles.chatMessageHeading,
-                                  )}
+                                  <ChatCharacterAvatar
+                                    variant={character.avatarVariant}
+                                    className={styles.chatMessageAvatar}
+                                  />
+                                  <div
+                                    className={`${styles.chatMessage} ${styles.chatMessageAssistant}`}
+                                  >
+                                    {isMasked ? (
+                                      <div className={styles.chatMessageMaskedWrap}>
+                                        <div
+                                          className={styles.chatMessageMaskedText}
+                                          aria-hidden="true"
+                                        >
+                                          {renderFormattedText(
+                                            segment.text,
+                                            styles.chatMessageHeading,
+                                          )}
+                                        </div>
+                                        {renderListenButton(
+                                          index,
+                                          chatMessage,
+                                          isAudioLoading,
+                                        )}
+                                        <button
+                                          type="button"
+                                          className={styles.chatMessageRevealButton}
+                                          aria-label={t("chatModal.revealText")}
+                                          title={t("chatModal.revealText")}
+                                          onClick={() => revealMessage(index)}
+                                        >
+                                          <EyeIcon
+                                            className={styles.chatMessageRevealIcon}
+                                          />
+                                        </button>
+                                      </div>
+                                    ) : isTtsEligible ? (
+                                      <div className={styles.chatMessageTextWithListen}>
+                                        {renderFormattedText(
+                                          segment.text,
+                                          styles.chatMessageHeading,
+                                        )}
+                                        {renderListenButton(
+                                          index,
+                                          chatMessage,
+                                          isAudioLoading,
+                                        )}
+                                      </div>
+                                    ) : (
+                                      renderFormattedText(
+                                        segment.text,
+                                        styles.chatMessageHeading,
+                                      )
+                                    )}
+                                  </div>
                                 </div>
                               ),
                             )}
@@ -919,6 +1105,12 @@ export default function ChatModal({
                       >
                         {chatMessage.role === "user" &&
                           renderGrammarSeverityBadge(index, chatMessage)}
+                        {chatMessage.role === "assistant" && (
+                          <ChatCharacterAvatar
+                            variant={character.avatarVariant}
+                            className={styles.chatMessageAvatar}
+                          />
+                        )}
                         <div
                           className={
                             chatMessage.role === "user"

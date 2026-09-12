@@ -63,8 +63,13 @@
     "clearing": "Clearing...",
     "clearHistory": "Clear chat history",
     "closeChat": "Close chat",
+    "moreOptions": "More options",
+    "switchToReadingFirst": "Switch to reading first",
+    "switchToListeningFirst": "Switch to listening first",
+    "backToMenu": "Back to menu",
     "tasksTitle": "Tasks",
     "tasksTitleWithChallenge": "{{challengeTitle}} — tasks",
+    "tasksProgress": "{{completed}} / {{total}} completed",
     "vocabularyHelpButton": "Vocabulary",
     "loadingConversation": "Loading conversation...",
     "emptyState": "Start a conversation with {{name}}.",
@@ -89,7 +94,8 @@
       "clearHistory": "Failed to clear chat history.",
       "correctionThreadUnavailable": "This grammar note can’t continue as a saved thread. Send a new message to create one.",
       "microphoneUnavailable": "Couldn’t access your microphone.",
-      "transcribeAudio": "Failed to transcribe your recording."
+      "transcribeAudio": "Failed to transcribe your recording.",
+      "updateListeningMode": "Failed to update the listening preference."
     }
   },
   "voiceInput": {

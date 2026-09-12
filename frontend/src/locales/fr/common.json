@@ -63,8 +63,13 @@
     "clearing": "Effacement...",
     "clearHistory": "Effacer l'historique de discussion",
     "closeChat": "Fermer la discussion",
+    "moreOptions": "Plus d'options",
+    "switchToReadingFirst": "Passer en mode lecture d'abord",
+    "switchToListeningFirst": "Passer en mode écoute d'abord",
+    "backToMenu": "Retour au menu",
     "tasksTitle": "Tâches",
     "tasksTitleWithChallenge": "{{challengeTitle}} — tâches",
+    "tasksProgress": "{{completed}} / {{total}} terminées",
     "vocabularyHelpButton": "Vocabulaire",
     "loadingConversation": "Chargement de la conversation...",
     "emptyState": "Démarrez une conversation avec {{name}}.",
@@ -89,7 +94,8 @@
       "clearHistory": "Échec de l'effacement de l'historique de discussion.",
       "correctionThreadUnavailable": "Cette note de grammaire ne peut pas continuer en tant que fil enregistré. Envoyez un nouveau message pour en créer un.",
       "microphoneUnavailable": "Impossible d'accéder à votre microphone.",
-      "transcribeAudio": "Échec de la transcription de votre enregistrement."
+      "transcribeAudio": "Échec de la transcription de votre enregistrement.",
+      "updateListeningMode": "Échec de la mise à jour de la préférence d'écoute."
     }
   },
   "voiceInput": {

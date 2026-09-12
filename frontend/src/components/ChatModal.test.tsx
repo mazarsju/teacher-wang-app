@@ -465,7 +465,8 @@ describe("ChatModal", () => {
     renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     expect(await screen.findByText("Earlier message")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Clear chat history" }));
+    await user.click(screen.getByRole("button", { name: "More options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Clear chat history" }));
 
     expect(
       screen.getByText(
@@ -518,7 +519,8 @@ describe("ChatModal", () => {
     renderWithStore(<ChatModal character={teacherWang} onClose={() => undefined} />);
 
     expect(await screen.findByText("Earlier message")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Clear chat history" }));
+    await user.click(screen.getByRole("button", { name: "More options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Clear chat history" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.getByText("Earlier message")).toBeInTheDocument();
@@ -965,9 +967,111 @@ describe("ChatModal", () => {
     expect(
       screen.getByText("The waiter comes back with the ordered meal"),
     ).toHaveClass("chat-message-stage");
-    expect(screen.getByText("您的菜来了。")).toHaveClass(
-      "chat-message--assistant",
+
+    const dialogue = screen.getByText("您的菜来了。");
+    expect(dialogue.closest(".chat-message--assistant")).toBeInTheDocument();
+    // The Chinese dialogue is TTS-eligible even though the message also
+    // carries (non-spoken) stage directions.
+    expect(
+      screen.getByRole("button", { name: "Play audio" }),
+    ).toBeInTheDocument();
+  });
+
+  it("masks only the Chinese dialogue (not the stage direction) in listening-first mode, and synthesizes just the dialogue", async () => {
+    const user = userEvent.setup();
+    const waiter: ChatCharacter = {
+      id: "challenge-restaurant",
+      name: "Waiter",
+      chineseName: "服务员",
+      description: "Talk with the waiter and order a meal",
+      avatarVariant: "waiter",
+      gender: "female",
+      voice: "nova",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (
+          url.endsWith("/conversation-logs/challenge-restaurant") &&
+          method === "GET"
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ messages: [], completed_task_ids: [] }),
+          });
+        }
+        if (url.endsWith("/preferences/chat-setup") && method === "GET") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              listening_mode: "listening_first",
+              listen_speed_adjustment: 0,
+            }),
+          });
+        }
+        if (url.endsWith("/chat") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              message: {
+                role: "assistant",
+                content: "[[The waiter comes back with the ordered meal]]您的素炒菜来了，请慢用。",
+              },
+            }),
+          });
+        }
+        if (url.endsWith("/chat/tts") && method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            blob: async () => new Blob(["fake-audio"], { type: "audio/mpeg" }),
+          });
+        }
+
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }),
     );
+
+    renderWithStore(<ChatModal character={waiter} onClose={() => undefined} />);
+
+    await user.type(screen.getByLabelText("Message"), "买单");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    // The stage direction stays plain text, never blurred.
+    expect(
+      await screen.findByText("The waiter comes back with the ordered meal"),
+    ).toHaveClass("chat-message-stage");
+    // The Chinese dialogue is blurred behind the masked wrapper until revealed.
+    expect(
+      screen.getByText("您的素炒菜来了，请慢用。").closest(".chat-message-masked-text"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Play audio" }),
+    ).toBeInTheDocument();
+    const revealButton = screen.getByRole("button", { name: "Reveal text" });
+
+    await user.click(revealButton);
+
+    expect(
+      screen.getByText("您的素炒菜来了，请慢用。").closest(".chat-message-masked-text"),
+    ).not.toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/chat/tts",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    const [, ttsInit] = (fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([callInput]: [RequestInfo]) => String(callInput).endsWith("/chat/tts"),
+    )!;
+    const ttsBody = JSON.parse((ttsInit as RequestInit).body as string);
+    // Only the Chinese dialogue is sent to TTS, not the stage direction.
+    expect(ttsBody.text).toBe("您的素炒菜来了，请慢用。");
   });
 
   it("shows a challenge completed banner when all tasks are done", async () => {

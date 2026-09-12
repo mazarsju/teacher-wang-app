@@ -298,7 +298,8 @@ describe("ChatPage", () => {
     render(<ChatPage />);
 
     await user.click(screen.getByRole("button", { name: /Teacher Wang/ }));
-    await user.click(screen.getByRole("button", { name: "Close chat" }));
+    await user.click(screen.getByRole("button", { name: "More options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Back to menu" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -338,7 +339,8 @@ describe("ChatPage", () => {
 
     render(<ChatPage />);
     await user.click(screen.getByRole("button", { name: /Waitress/ }));
-    await user.click(screen.getByRole("button", { name: "Close chat" }));
+    await user.click(screen.getByRole("button", { name: "More options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Back to menu" }));
 
     await waitFor(() => {
       expect(

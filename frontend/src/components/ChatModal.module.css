@@ -52,47 +52,87 @@
   flex-shrink: 0;
 }
 
-.chat-modal-clear-button {
+.chat-modal-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.chat-modal-menu-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.7rem;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   background: #ffffff;
   color: #4b5563;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1.2;
-  white-space: nowrap;
   cursor: pointer;
 }
 
-.chat-modal-clear-button:hover:not(:disabled) {
-  border-color: #fca5a5;
-  background: #fef2f2;
-  color: #b91c1c;
+.chat-modal-menu-trigger:hover {
+  border-color: #9ca3af;
+  background: #f3f4f6;
+  color: #111827;
 }
 
-.chat-modal-clear-button:disabled {
-  opacity: 0.45;
+.chat-modal-menu-trigger[aria-expanded="true"] {
+  background: var(--app-mist);
+  color: var(--app-sea);
+  border-color: var(--app-border);
+}
+
+.chat-modal-menu-trigger-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.chat-modal-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 40;
+  min-width: 12rem;
+  padding: 0.35rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.chat-modal-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.7rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-modal-menu-item:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.chat-modal-menu-item:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.chat-modal-clear-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+.chat-modal-menu-item-icon {
+  width: 1.05rem;
+  height: 1.05rem;
   flex-shrink: 0;
-}
-
-@media (max-width: 640px) {
-  .chat-modal-clear-button {
-    padding: 0.4rem;
-  }
-
-  .chat-modal-clear-button span {
-    display: none;
-  }
 }
 
 .chat-modal-close-button {
@@ -130,11 +170,27 @@
   background: #fffbeb;
 }
 
+.chat-modal-tasks-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
 .chat-modal-tasks-title {
-  margin: 0 0 0.65rem;
+  margin: 0;
   font-size: 0.95rem;
   font-weight: 650;
   color: #92400e;
+}
+
+.chat-modal-tasks-progress {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: #92400e;
+  white-space: nowrap;
 }
 
 .chat-modal-task-list {
@@ -160,13 +216,38 @@
   cursor: default;
 }
 
-.chat-modal-task-label input {
-  margin-top: 0.15rem;
-  accent-color: #ea580c;
+.chat-modal-task-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0.15rem 0 0;
+  flex-shrink: 0;
+  border: 1.5px solid #9ca3af;
+  border-radius: 9999px;
+  background: #ffffff;
   cursor: default;
 }
 
-.chat-modal-task-label input:disabled {
+.chat-modal-task-checkbox:checked {
+  border-color: #16a34a;
+  background: #16a34a;
+}
+
+.chat-modal-task-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 0.3rem;
+  height: 0.55rem;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.chat-modal-task-checkbox:disabled {
   opacity: 1;
 }
 
@@ -272,6 +353,11 @@
 }
 
 .chat-message-segments .chat-message--assistant {
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+.chat-message-segments .chat-message-shell {
   align-self: flex-start;
   max-width: 85%;
 }
@@ -478,6 +564,19 @@ button.chat-message-severity-badge {
   background: #fee2e2;
   border-color: #dc2626;
   color: #b91c1c;
+}
+
+img.chat-message-avatar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transform: translate(-50%, -50%);
 }
 
 .chat-message-severity-icon {
