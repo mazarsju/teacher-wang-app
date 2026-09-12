@@ -8,6 +8,7 @@ vi.mock("../utils/listening/listeningApi", () => ({
   fetchListeningAudioBlob: vi.fn(),
   fetchListeningAudioSegmentBlob: vi.fn(),
   transcribeListeningAudio: vi.fn(),
+  completeListeningPractice: vi.fn(),
 }));
 
 const fetchListeningPracticeDetail = vi.mocked(
@@ -26,6 +27,7 @@ const detail = {
     { id: 1, mandarin: "你家有几个人？", translation: "How many people?" },
     { id: 2, mandarin: "我家有五个人。", translation: "Five people." },
   ],
+  exercises: [],
   segment_count: 2,
 };
 
@@ -49,12 +51,28 @@ describe("ListeningPracticeDetailPage", () => {
     });
 
     expect(screen.getByText("Listen")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Listen to the recording and try to understand what it's about.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Questions")).toBeInTheDocument();
     expect(
-      screen.getByText("Comprehension questions are coming soon."),
+      screen.getByText("Test what you understood from the recording."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("No exercises available for this listening practice yet."),
     ).toBeInTheDocument();
     expect(screen.getByText("Shadowing")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Listen to each sentence of the recording separately/),
+    ).toBeInTheDocument();
     expect(screen.getByText("Full text")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Check the full text and see if you understood everything correctly!",
+      ),
+    ).toBeInTheDocument();
     // One shadowing row per sentence.
     expect(screen.getAllByRole("button", { name: "Show the sentence" })).toHaveLength(2);
   });
@@ -105,6 +123,48 @@ describe("ListeningPracticeDetailPage", () => {
 
     const translation = screen.getByText(/How many people\?/);
     expect(translation.textContent).toBe("How many people?\nFive people.");
+  });
+
+  it("verifies exercises and persists the resulting score", async () => {
+    const user = userEvent.setup();
+    const completeListeningPractice = vi.mocked(
+      listeningApi.completeListeningPractice,
+    );
+    completeListeningPractice.mockResolvedValue({
+      status: "DONE",
+      vocabulary_score: 40,
+      grammar_score: 60,
+    });
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      exercises: [
+        {
+          id: "mcq_001",
+          type: "multiple_choice",
+          question: "How many people?",
+          choices: ["3", "5"],
+          answer: 1,
+        },
+      ],
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "5" }));
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+
+    expect(
+      await screen.findByText("You scored 100%."),
+    ).toBeInTheDocument();
+    expect(completeListeningPractice).toHaveBeenCalledWith(
+      "listening-family-size",
+      100,
+    );
   });
 
   it("calls onBack when the back button is clicked", async () => {

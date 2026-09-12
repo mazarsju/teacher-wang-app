@@ -291,3 +291,42 @@ def fetch_listening_breakdown(
         }
         for sentence in base.get("sentences", [])
     ]
+
+
+def fetch_listening_exercises(
+    hsk_level: int, topic_id: str, language: str = "en", client=None
+) -> list[dict]:
+    """Multiple-choice comprehension exercises for a listening topic.
+
+    ``[{id, type: "multiple_choice", question, choices, answer}, ...]`` —
+    same shape as the grammar content pipeline's ``exercises.json``, but
+    listening topics only ever use ``multiple_choice``. English reads
+    ``exercises.json``; any other language reads the fully translated
+    ``exercises_<language>.json`` sibling, falling back to the English file
+    if that translation hasn't been authored yet.
+    """
+    folder = _topic_folder(hsk_level, topic_id)
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        root: Path | None = Path(local_path)
+        bucket = None
+    else:
+        root = None
+        bucket = _bucket()
+        client = client or _s3_client()
+
+    def _read(filename: str) -> str | None:
+        relative_path = f"{folder}/{filename}"
+        return (
+            _read_local_file(root, relative_path)
+            if root is not None
+            else _read_s3_object(client, bucket, relative_path)
+        )
+
+    filename = (
+        "exercises.json" if language == "en" else f"exercises_{language}.json"
+    )
+    raw = _read(filename)
+    if raw is None and language != "en":
+        raw = _read("exercises.json")
+    return json.loads(raw) if raw else []

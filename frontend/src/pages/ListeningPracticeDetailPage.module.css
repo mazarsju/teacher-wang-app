@@ -9,6 +9,12 @@
   color: #111827;
 }
 
+.listening-detail-section-instruction {
+  margin: 0 0 0.9rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
 .listening-detail-text-wrap {
   display: flex;
   align-items: flex-start;

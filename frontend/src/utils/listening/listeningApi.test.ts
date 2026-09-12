@@ -1,4 +1,5 @@
 import {
+  completeListeningPractice,
   fetchListeningAudioBlob,
   fetchListeningAudioSegmentBlob,
   fetchListeningPracticeDetail,
@@ -182,5 +183,42 @@ describe("listeningApi", () => {
     await expect(
       transcribeListeningAudio(new Blob(["voice"], { type: "audio/webm" })),
     ).rejects.toThrow("No audio file provided");
+  });
+
+  it("saves the exercise result", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          status: "DONE",
+          vocabulary_score: 40,
+          grammar_score: 60,
+        }),
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      completeListeningPractice("listening-family-size", 90),
+    ).resolves.toEqual({
+      status: "DONE",
+      vocabulary_score: 40,
+      grammar_score: 60,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/listening-practices/listening-family-size/complete",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ score: 90 }),
+      }),
+    );
+  });
+
+  it("throws when saving the exercise result fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+
+    await expect(
+      completeListeningPractice("listening-family-size", 90),
+    ).rejects.toThrow("Failed to save the exercise result.");
   });
 });

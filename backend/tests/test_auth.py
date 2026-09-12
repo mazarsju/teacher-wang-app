@@ -136,6 +136,7 @@ class TestProtectedRoutes(unittest.TestCase):
             ("get", "/listening-practices/listening-family-size"),
             ("get", "/listening-practices/listening-family-size/audio"),
             ("get", "/listening-practices/listening-family-size/audio/1"),
+            ("post", "/listening-practices/listening-family-size/complete"),
         ):
             with self.subTest(path=path):
                 response = getattr(self.client, method)(path)

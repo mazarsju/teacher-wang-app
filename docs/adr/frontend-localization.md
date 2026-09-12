@@ -36,7 +36,7 @@ One JSON resource file per namespace, under `frontend/src/locales/en/<namespace>
 | `knowledge-base` | `KnowledgeBasePage`, `AddSuggestedWordsModal`, `CharacterWordsModal`, `PinyinGridView` |
 | `grammar` | `GrammarPage`, `GrammarPointDetailPage`, `GrammarExercises`, `GrammarVocabularyTab`, `GrammarMasteryModal` |
 | `writing` | `WritingPracticeDetailPage`, `SentenceCorrectionModal`, `WritingReviewModal` |
-| `listening` | `ListeningPage`, `ListeningScoreModal`, `ListeningPracticeDetailPage`, `AudioPlayer`, `ShadowingSentence` |
+| `listening` | `ListeningPage`, `ListeningScoreModal`, `ListeningPracticeDetailPage`, `AudioPlayer`, `ShadowingSentence`, `ListeningExercises` |
 | `preferences` | `PreferencesPage`, `ChangePlanModal`, `UpdatePlanModal`, and all Anki setup/sync modals (`AnkiConnectGuideModal`, `AnkiCustomFieldModal`, `AnkiDeckSetupModal`, `AnkiSyncHelpModal`, `AnkiSyncModal`, `VocabularyNoteTypeInfoModal`, `VocabularyThreeDirectionSetupModal`, `WritingDeckTypeInfoModal`) — grouped here because they're all reached from the Preferences page, not the Writing page |
 | `admin` | `AdminPage` |
 | `auth` | `WelcomeAuthPage` |

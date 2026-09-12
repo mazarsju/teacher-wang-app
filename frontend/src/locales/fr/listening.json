@@ -32,23 +32,34 @@
     "record": "Maintenir pour enregistrer",
     "check": "Vérifier"
   },
+  "listeningExercises": {
+    "questionNumber": "{{number}}.",
+    "verify": "Vérifier",
+    "scoreResult": "Votre score : {{score}}%.",
+    "passed": "Bravo ! Cet exercice d'écoute est maintenant marqué comme terminé.",
+    "failed": "Essayez de réécouter l'enregistrement pour mieux comprendre.",
+    "empty": "Aucun exercice disponible pour cet exercice d'écoute pour le moment."
+  },
   "listeningPracticeDetailPage": {
     "title": "Exercice d'écoute",
     "back": "Retour",
     "loading": "Chargement...",
     "loadError": "Échec du chargement de l'exercice d'écoute.",
     "audioSection": {
-      "title": "Écouter"
+      "title": "Écouter",
+      "instruction": "Écoutez l'enregistrement et essayez de comprendre de quoi il s'agit."
     },
     "questionsSection": {
       "title": "Questions",
-      "comingSoon": "Les questions de compréhension arrivent bientôt."
+      "instruction": "Testez ce que vous avez compris de l'enregistrement."
     },
     "shadowingSection": {
-      "title": "Répétition (shadowing)"
+      "title": "Répétition (shadowing)",
+      "instruction": "Écoutez chaque phrase de l'enregistrement séparément et essayez de la répéter. C'est aussi une bonne idée de prendre une feuille et un stylo pour essayer d'écrire les caractères après avoir écouté la phrase, comme une dictée."
     },
     "textSection": {
       "title": "Texte complet",
+      "instruction": "Consultez le texte complet et vérifiez si vous avez tout bien compris !",
       "reveal": "Afficher le texte",
       "showTranslation": "Afficher la traduction"
     }

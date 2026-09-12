@@ -4,6 +4,7 @@ from backend.utils.auth.user_context import current_user, current_user_id
 from backend.utils.database.models import ListeningPractice, ListeningProgress
 from backend.utils.listening.listening_content_loader import (
     fetch_listening_breakdown,
+    fetch_listening_exercises,
     fetch_listening_text,
     list_listening_audio_segments,
     read_listening_audio,
@@ -22,6 +23,7 @@ def get_listening_practice(topic_id: str):
     progress = ListeningProgress.query.filter_by(
         user_id=current_user_id(), listening_topic=topic_id
     ).first()
+    language = current_user().language
 
     return {
         "id": topic.id,
@@ -31,9 +33,8 @@ def get_listening_practice(topic_id: str):
         "vocabulary_score": progress.vocabulary_score if progress else 0,
         "grammar_score": progress.grammar_score if progress else 0,
         "text": fetch_listening_text(topic.hsk_level, topic.id) or "",
-        "sentences": fetch_listening_breakdown(
-            topic.hsk_level, topic.id, current_user().language
-        ),
+        "sentences": fetch_listening_breakdown(topic.hsk_level, topic.id, language),
+        "exercises": fetch_listening_exercises(topic.hsk_level, topic.id, language),
         "segment_count": len(
             list_listening_audio_segments(topic.hsk_level, topic.id)
         ),

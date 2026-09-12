@@ -1,4 +1,5 @@
 import type {
+  CompleteListeningPracticeResult,
   ListeningPractice,
   ListeningPracticeDetail,
 } from "../../types/listeningPractice";
@@ -72,6 +73,26 @@ export async function fetchListeningAudioSegmentBlob(
   }
 
   return response.blob();
+}
+
+export async function completeListeningPractice(
+  id: string,
+  score: number,
+): Promise<CompleteListeningPracticeResult> {
+  const response = await apiFetch(
+    `${API_BASE}/listening-practices/${encodeURIComponent(id)}/complete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to save the exercise result.");
+  }
+
+  return (await response.json()) as CompleteListeningPracticeResult;
 }
 
 export async function transcribeListeningAudio(audio: Blob): Promise<string> {

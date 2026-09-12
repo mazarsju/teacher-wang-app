@@ -16,6 +16,7 @@ def register_routes(app: Flask) -> None:
         check_writing_sentence,
         check_writing_topic_relevance,
         complete_grammar_point,
+        complete_listening_practice,
         conversation_logs,
         create_character,
         create_word,
@@ -85,6 +86,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(writing_practice.bp)
     app.register_blueprint(list_listening_practices.bp)
     app.register_blueprint(get_listening_practice.bp)
+    app.register_blueprint(complete_listening_practice.bp)
     app.register_blueprint(refresh_listening_practices.bp)
     app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(complete_grammar_point.bp)

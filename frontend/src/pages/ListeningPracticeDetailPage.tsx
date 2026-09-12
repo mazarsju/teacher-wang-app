@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import AudioPlayer from "../components/AudioPlayer";
 import Button from "../components/Button";
 import { EyeIcon } from "../components/icons";
+import ListeningExercises from "../components/ListeningExercises";
 import ShadowingSentence from "../components/ShadowingSentence";
 import Page from "../components/Page";
 import type { ListeningPracticeDetail } from "../types/listeningPractice";
 import {
+  completeListeningPractice,
   fetchListeningAudioBlob,
   fetchListeningPracticeDetail,
 } from "../utils/listening/listeningApi";
@@ -66,6 +68,23 @@ export default function ListeningPracticeDetailPage({
     ? detail.sentences.map((sentence) => sentence.translation).join("\n")
     : "";
 
+  function handleExercisesVerified(topicId: string, score: number) {
+    completeListeningPractice(topicId, score)
+      .then((result) => {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                status: result.status,
+                vocabulary_score: result.vocabulary_score,
+                grammar_score: result.grammar_score,
+              }
+            : current,
+        );
+      })
+      .catch(() => {});
+  }
+
   return (
     <Page
       title={detail?.title ?? t("listeningPracticeDetailPage.title")}
@@ -86,6 +105,9 @@ export default function ListeningPracticeDetailPage({
             <h2 className={styles.listeningDetailSectionTitle}>
               {t("listeningPracticeDetailPage.audioSection.title")}
             </h2>
+            <p className={styles.listeningDetailSectionInstruction}>
+              {t("listeningPracticeDetailPage.audioSection.instruction")}
+            </p>
             <AudioPlayer
               loadAudio={() => fetchListeningAudioBlob(detail.id)}
               showSkipButtons
@@ -96,13 +118,22 @@ export default function ListeningPracticeDetailPage({
             <h2 className={styles.listeningDetailSectionTitle}>
               {t("listeningPracticeDetailPage.questionsSection.title")}
             </h2>
-            <p>{t("listeningPracticeDetailPage.questionsSection.comingSoon")}</p>
+            <p className={styles.listeningDetailSectionInstruction}>
+              {t("listeningPracticeDetailPage.questionsSection.instruction")}
+            </p>
+            <ListeningExercises
+              exercises={detail.exercises}
+              onVerified={(score) => handleExercisesVerified(detail.id, score)}
+            />
           </section>
 
           <section className={styles.listeningDetailSection}>
             <h2 className={styles.listeningDetailSectionTitle}>
               {t("listeningPracticeDetailPage.shadowingSection.title")}
             </h2>
+            <p className={styles.listeningDetailSectionInstruction}>
+              {t("listeningPracticeDetailPage.shadowingSection.instruction")}
+            </p>
             {Array.from({ length: shadowingCount }, (_, index) => (
               <ShadowingSentence
                 key={detail.sentences[index].id}
@@ -117,6 +148,9 @@ export default function ListeningPracticeDetailPage({
             <h2 className={styles.listeningDetailSectionTitle}>
               {t("listeningPracticeDetailPage.textSection.title")}
             </h2>
+            <p className={styles.listeningDetailSectionInstruction}>
+              {t("listeningPracticeDetailPage.textSection.instruction")}
+            </p>
             <div className={styles.listeningDetailTextWrap}>
               <span
                 className={

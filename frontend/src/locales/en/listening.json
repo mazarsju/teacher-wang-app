@@ -32,23 +32,34 @@
     "record": "Hold to record",
     "check": "Check"
   },
+  "listeningExercises": {
+    "questionNumber": "{{number}}.",
+    "verify": "Verify",
+    "scoreResult": "You scored {{score}}%.",
+    "passed": "Great job! This listening practice is now marked as completed.",
+    "failed": "Try listening to the recording again to improve your understanding.",
+    "empty": "No exercises available for this listening practice yet."
+  },
   "listeningPracticeDetailPage": {
     "title": "Listening practice",
     "back": "Back",
     "loading": "Loading...",
     "loadError": "Failed to load the listening practice.",
     "audioSection": {
-      "title": "Listen"
+      "title": "Listen",
+      "instruction": "Listen to the recording and try to understand what it's about."
     },
     "questionsSection": {
       "title": "Questions",
-      "comingSoon": "Comprehension questions are coming soon."
+      "instruction": "Test what you understood from the recording."
     },
     "shadowingSection": {
-      "title": "Shadowing"
+      "title": "Shadowing",
+      "instruction": "Listen to each sentence of the recording separately and try to repeat it. It's also a good idea to grab a piece of paper and a pen and try writing the characters after listening to the sentence, like a dictation."
     },
     "textSection": {
       "title": "Full text",
+      "instruction": "Check the full text and see if you understood everything correctly!",
       "reveal": "Show the text",
       "showTranslation": "Show translation"
     }

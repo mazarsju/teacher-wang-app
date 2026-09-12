@@ -16,6 +16,7 @@ from backend.utils.database.models import (
 from backend.utils.listening.listening_content_loader import (
     _unique_chars,
     fetch_listening_breakdown,
+    fetch_listening_exercises,
     fetch_listening_text,
     list_listening_audio_segments,
     read_listening_audio,
@@ -561,6 +562,114 @@ class TestFetchListeningBreakdown(unittest.TestCase):
         self.assertEqual(
             sentences, [{"id": 1, "mandarin": "你好", "translation": "Hello"}]
         )
+
+
+class TestFetchListeningExercises(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    _EXERCISES_JSON = (
+        '[{"id": "mcq_001", "type": "multiple_choice", '
+        '"question": "How many?", "choices": ["3", "5"], "answer": 1}]'
+    )
+    _EXERCISES_FR_JSON = (
+        '[{"id": "mcq_001", "type": "multiple_choice", '
+        '"question": "Combien ?", "choices": ["3", "5"], "answer": 1}]'
+    )
+
+    def test_reads_english_exercises_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "exercises.json").write_text(self._EXERCISES_JSON)
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                exercises = fetch_listening_exercises(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(
+            exercises,
+            [
+                {
+                    "id": "mcq_001",
+                    "type": "multiple_choice",
+                    "question": "How many?",
+                    "choices": ["3", "5"],
+                    "answer": 1,
+                }
+            ],
+        )
+
+    def test_reads_translated_exercises_when_available(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "exercises.json").write_text(self._EXERCISES_JSON)
+            (topic_dir / "exercises_fr.json").write_text(self._EXERCISES_FR_JSON)
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                exercises = fetch_listening_exercises(
+                    1, "listening-family-size", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(exercises[0]["question"], "Combien ?")
+
+    def test_falls_back_to_english_when_translation_missing(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "exercises.json").write_text(self._EXERCISES_JSON)
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                exercises = fetch_listening_exercises(
+                    1, "listening-family-size", "fr"
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(exercises[0]["question"], "How many?")
+
+    def test_missing_exercises_file_returns_empty_list(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                exercises = fetch_listening_exercises(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(exercises, [])
+
+    def test_reads_from_s3(self):
+        client = _make_client(
+            {
+                "listening_practice/hsk1/listening-family-size/exercises.json": (
+                    self._EXERCISES_JSON
+                ),
+            }
+        )
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            exercises = fetch_listening_exercises(
+                1, "listening-family-size", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(exercises[0]["question"], "How many?")
 
 
 if __name__ == "__main__":

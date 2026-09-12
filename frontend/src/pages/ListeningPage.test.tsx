@@ -9,6 +9,7 @@ vi.mock("../utils/listening/listeningApi", () => ({
   fetchListeningAudioBlob: vi.fn(),
   fetchListeningAudioSegmentBlob: vi.fn(),
   transcribeListeningAudio: vi.fn(),
+  completeListeningPractice: vi.fn(),
 }));
 
 const fetchListeningPractices = vi.mocked(listeningApi.fetchListeningPractices);
@@ -110,6 +111,7 @@ describe("ListeningPage", () => {
       grammar_score: 90,
       text: "你好",
       sentences: [],
+      exercises: [],
       segment_count: 0,
     });
 

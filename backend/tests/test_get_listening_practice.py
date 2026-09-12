@@ -57,6 +57,21 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         self.mock_segments = self.segments_patcher.start()
         self.addCleanup(self.segments_patcher.stop)
 
+        self.exercises_patcher = patch(
+            "backend.routes.get_listening_practice.fetch_listening_exercises",
+            return_value=[
+                {
+                    "id": "mcq_001",
+                    "type": "multiple_choice",
+                    "question": "How many?",
+                    "choices": ["3", "5"],
+                    "answer": 1,
+                }
+            ],
+        )
+        self.mock_exercises = self.exercises_patcher.start()
+        self.addCleanup(self.exercises_patcher.stop)
+
     def _stub_topic(self):
         self.mock_practice_cls.query.get.return_value = MagicMock(
             id="listening-family-size", title="Family size", hsk_level=1
@@ -81,10 +96,22 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
                 "sentences": [
                     {"id": 1, "mandarin": "你家有几个人？", "translation": "..."}
                 ],
+                "exercises": [
+                    {
+                        "id": "mcq_001",
+                        "type": "multiple_choice",
+                        "question": "How many?",
+                        "choices": ["3", "5"],
+                        "answer": 1,
+                    }
+                ],
                 "segment_count": 3,
             },
         )
         self.mock_breakdown.assert_called_once_with(
+            1, "listening-family-size", "en"
+        )
+        self.mock_exercises.assert_called_once_with(
             1, "listening-family-size", "en"
         )
 

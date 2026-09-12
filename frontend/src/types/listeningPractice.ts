@@ -13,8 +13,23 @@ export type ListeningSentence = {
   translation: string;
 };
 
+export type ListeningExercise = {
+  id: string;
+  type: "multiple_choice";
+  question: string;
+  choices: string[];
+  answer: number;
+};
+
 export type ListeningPracticeDetail = ListeningPractice & {
   text: string;
   sentences: ListeningSentence[];
+  exercises: ListeningExercise[];
   segment_count: number;
+};
+
+export type CompleteListeningPracticeResult = {
+  status: string;
+  vocabulary_score: number;
+  grammar_score: number;
 };
