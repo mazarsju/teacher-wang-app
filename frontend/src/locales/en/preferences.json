@@ -42,11 +42,6 @@
         "description": "Speed up or slow down the AI voice, on top of the pace already set for your HSK level.",
         "ariaLabel": "Listening speed adjustment",
         "normal": "Normal"
-      },
-      "realisticVoice": {
-        "title": "Realistic voice (pro)",
-        "description": "Use ElevenLabs' more natural, human-sounding voices instead of the standard ones for every character's speech.",
-        "ariaLabel": "Realistic voice"
       }
     },
     "currentPlan": {

@@ -11,7 +11,7 @@ const teacherWang: ChatCharacter = {
   description: "The native Chinese teacher who can also speak English",
   avatarVariant: "teacher",
   gender: "male",
-  voice: [{ provider: "chatgpt", name: "alloy" }, { provider: "elevenlabs", name: "roger" }],
+  voice: "alloy",
 };
 
 describe("ChatModal", () => {
@@ -372,7 +372,7 @@ describe("ChatModal", () => {
       description: "Your native Chinese friend",
       avatarVariant: "friend",
       gender: "male",
-      voice: [{ provider: "chatgpt", name: "echo" }, { provider: "elevenlabs", name: "roger" }],
+      voice: "echo",
     };
 
     vi.stubGlobal(
@@ -605,7 +605,7 @@ describe("ChatModal", () => {
       description: "Your native Chinese friend",
       avatarVariant: "friend",
       gender: "male",
-      voice: [{ provider: "chatgpt", name: "echo" }, { provider: "elevenlabs", name: "roger" }],
+      voice: "echo",
     };
 
     vi.stubGlobal(
@@ -685,7 +685,7 @@ describe("ChatModal", () => {
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
       gender: "female",
-      voice: [{ provider: "chatgpt", name: "nova" }, { provider: "elevenlabs", name: "sarah" }],
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -759,7 +759,7 @@ describe("ChatModal", () => {
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
       gender: "female",
-      voice: [{ provider: "chatgpt", name: "nova" }, { provider: "elevenlabs", name: "sarah" }],
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -915,7 +915,7 @@ describe("ChatModal", () => {
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
       gender: "female",
-      voice: [{ provider: "chatgpt", name: "nova" }, { provider: "elevenlabs", name: "sarah" }],
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -978,7 +978,7 @@ describe("ChatModal", () => {
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
       gender: "female",
-      voice: [{ provider: "chatgpt", name: "nova" }, { provider: "elevenlabs", name: "sarah" }],
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -1157,7 +1157,7 @@ describe("ChatModal", () => {
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
       gender: "female",
-      voice: [{ provider: "chatgpt", name: "nova" }, { provider: "elevenlabs", name: "sarah" }],
+      voice: "nova",
     };
 
     vi.stubGlobal(
@@ -1209,7 +1209,7 @@ describe("ChatModal", () => {
       description: "Talk with the waiter and order a meal",
       avatarVariant: "waiter",
       gender: "female",
-      voice: [{ provider: "chatgpt", name: "nova" }, { provider: "elevenlabs", name: "sarah" }],
+      voice: "nova",
     };
 
     vi.stubGlobal(

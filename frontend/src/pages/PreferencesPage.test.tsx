@@ -148,7 +148,6 @@ describe("PreferencesPage", () => {
             json: async () => ({
               listening_mode: "reading_first",
               listen_speed_adjustment: 0,
-              realistic_voice_enabled: false,
             }),
           });
         }
@@ -474,90 +473,6 @@ describe("PreferencesPage", () => {
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ listen_speed_adjustment: 10 }),
-      }),
-    );
-  });
-
-  it("hides the realistic voice toggle for a free-plan user", async () => {
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
-
-    await screen.findByRole("heading", { name: "Chat setup" });
-    expect(
-      screen.queryByRole("checkbox", { name: "Realistic voice" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("shows and persists the realistic voice toggle for a pro-plan user", async () => {
-    const user = userEvent.setup();
-    const fetchMock = vi.mocked(fetch);
-    fetchMock.mockImplementation((input: RequestInfo, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? "GET";
-
-      if (url.endsWith("/token-usage")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            total_tokens: 1250,
-            total_cost_usd: 0.000435,
-            plan: "pro",
-            available_token: 9998750,
-            max_allowed_token: null,
-            days: [{ date: "2026-07-24", tokens: 1250 }],
-          }),
-        }) as unknown as ReturnType<typeof fetch>;
-      }
-
-      if (url.endsWith("/preferences/smart-ai")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ enabled: true }),
-        }) as unknown as ReturnType<typeof fetch>;
-      }
-
-      if (url.endsWith("/preferences/chat-setup") && method === "PATCH") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            listening_mode: "reading_first",
-            listen_speed_adjustment: 0,
-            realistic_voice_enabled: true,
-          }),
-        }) as unknown as ReturnType<typeof fetch>;
-      }
-
-      if (url.endsWith("/preferences/chat-setup")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            listening_mode: "reading_first",
-            listen_speed_adjustment: 0,
-            realistic_voice_enabled: false,
-          }),
-        }) as unknown as ReturnType<typeof fetch>;
-      }
-
-      return Promise.resolve({
-        ok: false,
-        json: async () => ({}),
-      }) as unknown as ReturnType<typeof fetch>;
-    });
-
-    renderWithStore(<PreferencesPage />, { preloadedState: syncedState });
-
-    const toggle = await screen.findByRole("checkbox", {
-      name: "Realistic voice",
-    });
-    expect(toggle).not.toBeChecked();
-
-    await user.click(toggle);
-
-    await waitFor(() => expect(toggle).toBeChecked());
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/preferences/chat-setup"),
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ realistic_voice_enabled: true }),
       }),
     );
   });

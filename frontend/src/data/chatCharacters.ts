@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import type { ChatCharacter } from "../components/ChatCharacterCard";
-import type { CharacterVoiceOption } from "../types/chat";
+import type { OpenAiTtsVoiceName } from "../types/chat";
 
 export const TEACHER_WANG_ID = "teacher-wang";
 export const XIAO_MING_ID = "xiao-ming";
@@ -12,7 +12,7 @@ type ChatCharacterTemplate = {
   translationKey: string;
   avatarVariant: ChatCharacter["avatarVariant"];
   gender: ChatCharacter["gender"];
-  voice: CharacterVoiceOption[];
+  voice: OpenAiTtsVoiceName;
 };
 
 // `name`/`chineseName`/`avatarVariant`/`gender`/`voice` are stable,
@@ -27,10 +27,7 @@ const TEACHER_WANG_TEMPLATE: ChatCharacterTemplate = {
   translationKey: "teacherWang",
   avatarVariant: "teacher",
   gender: "male",
-  voice: [
-    { provider: "chatgpt", name: "alloy" },
-    { provider: "elevenlabs", name: "antoni" },
-  ],
+  voice: "alloy",
 };
 
 const XIAO_MING_TEMPLATE: ChatCharacterTemplate = {
@@ -40,10 +37,7 @@ const XIAO_MING_TEMPLATE: ChatCharacterTemplate = {
   translationKey: "xiaoMing",
   avatarVariant: "friend",
   gender: "male",
-  voice: [
-    { provider: "chatgpt", name: "echo" },
-    { provider: "elevenlabs", name: "chris" },
-  ],
+  voice: "echo",
 };
 
 function renderChatCharacter(

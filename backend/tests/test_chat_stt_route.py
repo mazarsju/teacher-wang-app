@@ -28,7 +28,7 @@ class TestChatSttEndpoint(unittest.TestCase):
         )
 
         self.assert_tokens_patcher = patch(
-            "backend.routes.chat.assert_free_plan_has_tokens"
+            "backend.routes.chat.assert_plan_has_tokens"
         )
         self.mock_assert_tokens = self.assert_tokens_patcher.start()
         self.addCleanup(self.assert_tokens_patcher.stop)

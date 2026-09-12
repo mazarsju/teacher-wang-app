@@ -29,7 +29,6 @@ SETTING_AVAILABLE_TOKEN = "available_token"
 SETTING_SMART_AI_ENABLED = "smart_ai_enabled"
 SETTING_CHAT_LISTENING_MODE = "chat_listening_mode"
 SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT = "chat_listen_speed_adjustment"
-SETTING_CHAT_REALISTIC_VOICE_ENABLED = "chat_realistic_voice_enabled"
 
 CHAT_LISTENING_MODE_READING_FIRST = "reading_first"
 CHAT_LISTENING_MODE_LISTENING_FIRST = "listening_first"
@@ -44,6 +43,10 @@ PRO_PLAN_TOKEN_GRANT = 10_000_000
 FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE = (
     "Sorry, you've used up the tokens included with your free plan. "
     "If you're enjoying chat, consider upgrading to a paid account!"
+)
+PRO_PLAN_TOKEN_EXHAUSTED_MESSAGE = (
+    "Sorry, you've used up your plan's token allowance for now. "
+    "It will refill at the start of next month."
 )
 
 ADMIN_EMAIL = "mazarsju@gmail.com"
@@ -81,7 +84,6 @@ DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_SMART_AI_ENABLED: "true",
     SETTING_CHAT_LISTENING_MODE: CHAT_LISTENING_MODE_READING_FIRST,
     SETTING_CHAT_LISTEN_SPEED_ADJUSTMENT: "0",
-    SETTING_CHAT_REALISTIC_VOICE_ENABLED: "false",
 }
 
 def get_setting(user_id: str, key: str, default: str = "") -> str:
@@ -192,22 +194,6 @@ def set_chat_listen_speed_adjustment(
     )
 
 
-def get_chat_realistic_voice_enabled(user_id: str) -> bool:
-    return get_setting(user_id, SETTING_CHAT_REALISTIC_VOICE_ENABLED, "false") == "true"
-
-
-def set_chat_realistic_voice_enabled(
-    user_id: str, enabled: bool, *, commit: bool = True
-) -> None:
-    ensure_default_settings(user_id, commit=False)
-    set_setting(
-        user_id,
-        SETTING_CHAT_REALISTIC_VOICE_ENABLED,
-        "true" if enabled else "false",
-        commit=commit,
-    )
-
-
 def delete_setting(user_id: str, key: str, *, commit: bool = False) -> None:
     row = db.session.get(Setting, (user_id, key))
     if row is not None:
@@ -231,14 +217,24 @@ def get_available_token(user_id: str) -> int:
         return 0
 
 
-def assert_free_plan_has_tokens(user) -> None:
-    """Raise if a free-plan user has no tokens left for another LLM call."""
+def assert_plan_has_tokens(user) -> None:
+    """Raise if the user has no tokens left for another LLM call.
+
+    Every plan is capped (free at ``FREE_PLAN_MAX_ALLOWED_TOKEN``, everything
+    else at the higher ``PRO_PLAN_TOKEN_GRANT``, both via
+    ``reset_available_token``) — only the admin account is unmetered.
+    """
     from backend.utils.database.models import DEFAULT_USER_PLAN
 
-    if user.plan != DEFAULT_USER_PLAN:
+    if user.email == ADMIN_EMAIL:
         return
-    if user.email != ADMIN_EMAIL and get_available_token(user.shortid) <= 0:
-        raise ValueError(FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE)
+    if get_available_token(user.shortid) <= 0:
+        message = (
+            FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
+            if user.plan == DEFAULT_USER_PLAN
+            else PRO_PLAN_TOKEN_EXHAUSTED_MESSAGE
+        )
+        raise ValueError(message)
 
 
 def reset_available_token(user_id: str, plan: str, *, commit: bool = True) -> None:

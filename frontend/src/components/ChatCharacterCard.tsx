@@ -1,5 +1,5 @@
 import ChatCharacterAvatar from "./ChatCharacterAvatar";
-import type { CharacterVoiceOption } from "../types/chat";
+import type { OpenAiTtsVoiceName } from "../types/chat";
 import styles from "./ChatCharacterCard.module.css";
 
 export type ChatCharacter = {
@@ -23,8 +23,7 @@ export type ChatCharacter = {
     | "hairdresser"
     | "landlord";
   gender: "male" | "female";
-  /** One entry per TTS provider (chatgpt + elevenlabs) — see CharacterVoiceOption. */
-  voice: CharacterVoiceOption[];
+  voice: OpenAiTtsVoiceName;
 };
 
 type ChatCharacterCardProps = {

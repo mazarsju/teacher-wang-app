@@ -32,42 +32,6 @@ export type OpenAiTtsVoiceName =
   | "nova"
   | "shimmer";
 
-// ElevenLabs voices for the "realistic voice" pro feature. Most of ElevenLabs'
-// voice library requires a paid ElevenLabs plan to use via the API — these
-// are every default voice confirmed (by a real API call) to work on a
-// free-tier key, randomly distributed one-per-character by gender. Keep in
-// sync with ELEVENLABS_VOICE_IDS in backend/utils/aiChat/elevenlabs_client.py.
-export type ElevenLabsVoiceName =
-  | "sarah"
-  | "laura"
-  | "alice"
-  | "matilda"
-  | "jessica"
-  | "lily"
-  | "roger"
-  | "charlie"
-  | "george"
-  | "callum"
-  | "liam"
-  | "will"
-  | "eric"
-  | "chris"
-  | "brian"
-  | "daniel"
-  | "antoni"
-  | "arnold"
-  | "adam";
-
-/**
- * A character speaks with one voice per TTS provider. `/chat/tts` receives
- * both options and picks the one matching the caller's resolved provider
- * (plan + realistic-voice preference) — the client never decides which
- * provider is used.
- */
-export type CharacterVoiceOption =
-  | { provider: "chatgpt"; name: OpenAiTtsVoiceName }
-  | { provider: "elevenlabs"; name: ElevenLabsVoiceName };
-
 export type GrammarCorrection = {
   severity: GrammarSeverity;
   answer?: string;

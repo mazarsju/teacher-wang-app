@@ -10,9 +10,6 @@ database_module.configure_database = MagicMock()
 from backend.app import app  # noqa: E402
 from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
 
-CHATGPT_VOICE = {"provider": "chatgpt", "name": "nova"}
-ELEVENLABS_VOICE = {"provider": "elevenlabs", "name": "sarah"}
-
 
 class TestChatTtsEndpoint(unittest.TestCase):
     def setUp(self):
@@ -29,13 +26,6 @@ class TestChatTtsEndpoint(unittest.TestCase):
             content=b"fake-mp3-bytes"
         )
 
-        self.elevenlabs_patcher = patch(
-            "backend.routes.chat.generate_elevenlabs_speech"
-        )
-        self.mock_elevenlabs = self.elevenlabs_patcher.start()
-        self.addCleanup(self.elevenlabs_patcher.stop)
-        self.mock_elevenlabs.return_value = b"fake-elevenlabs-bytes"
-
         self.speed_patcher = patch("backend.routes.chat.get_chat_tts_speed")
         self.mock_get_speed = self.speed_patcher.start()
         self.addCleanup(self.speed_patcher.stop)
@@ -48,18 +38,8 @@ class TestChatTtsEndpoint(unittest.TestCase):
         self.addCleanup(self.adjustment_patcher.stop)
         self.mock_get_adjustment.return_value = 0
 
-        # g.current_user is a MagicMock with no .plan set by the shared auth
-        # stub, so `plan == "pro"` is false by default — realistic voice is
-        # off unless a test opts in via _make_pro().
-        self.realistic_voice_patcher = patch(
-            "backend.routes.chat.get_chat_realistic_voice_enabled"
-        )
-        self.mock_realistic_voice = self.realistic_voice_patcher.start()
-        self.addCleanup(self.realistic_voice_patcher.stop)
-        self.mock_realistic_voice.return_value = False
-
         self.assert_tokens_patcher = patch(
-            "backend.routes.chat.assert_free_plan_has_tokens"
+            "backend.routes.chat.assert_plan_has_tokens"
         )
         self.mock_assert_tokens = self.assert_tokens_patcher.start()
         self.addCleanup(self.assert_tokens_patcher.stop)
@@ -72,15 +52,9 @@ class TestChatTtsEndpoint(unittest.TestCase):
         self.mock_record_tokens = self.record_tokens_patcher.start()
         self.addCleanup(self.record_tokens_patcher.stop)
 
-    def _make_pro(self):
-        patcher = patch("backend.routes.chat.current_user")
-        mock_current_user = patcher.start()
-        self.addCleanup(patcher.stop)
-        mock_current_user.return_value = MagicMock(plan="pro")
-
     def test_returns_mp3_using_hsk_level_speed_and_requested_voice(self):
         response = self.client.post(
-            "/chat/tts", json={"text": "你好", "voices": [CHATGPT_VOICE]}
+            "/chat/tts", json={"text": "你好", "voice": "nova"}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -99,7 +73,7 @@ class TestChatTtsEndpoint(unittest.TestCase):
         self.assertGreater(kwargs["input_tokens"], 0)
         self.assertEqual(kwargs["output_tokens"], 0)
 
-    def test_rejects_request_when_free_plan_token_quota_is_exhausted(self):
+    def test_rejects_request_when_token_quota_is_exhausted(self):
         from backend.utils.database.settings import FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE
 
         self.mock_assert_tokens.side_effect = ValueError(
@@ -107,7 +81,7 @@ class TestChatTtsEndpoint(unittest.TestCase):
         )
 
         response = self.client.post(
-            "/chat/tts", json={"text": "你好", "voices": [CHATGPT_VOICE]}
+            "/chat/tts", json={"text": "你好", "voice": "nova"}
         )
 
         self.assertEqual(response.status_code, 400)
@@ -121,7 +95,7 @@ class TestChatTtsEndpoint(unittest.TestCase):
         self.mock_get_adjustment.return_value = 10
 
         response = self.client.post(
-            "/chat/tts", json={"text": "你好", "voices": [CHATGPT_VOICE]}
+            "/chat/tts", json={"text": "你好", "voice": "nova"}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -133,82 +107,26 @@ class TestChatTtsEndpoint(unittest.TestCase):
             response_format="mp3",
         )
 
-    def test_uses_elevenlabs_when_pro_and_realistic_voice_enabled(self):
-        self._make_pro()
-        self.mock_realistic_voice.return_value = True
-
-        response = self.client.post(
-            "/chat/tts",
-            json={"text": "你好", "voices": [CHATGPT_VOICE, ELEVENLABS_VOICE]},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, b"fake-elevenlabs-bytes")
-        self.mock_elevenlabs.assert_called_once_with("sarah", "你好", 0.95)
-        self.mock_openai_client.audio.speech.create.assert_not_called()
-
-    def test_ignores_realistic_voice_setting_when_not_pro(self):
-        self.mock_realistic_voice.return_value = True
-
-        response = self.client.post(
-            "/chat/tts",
-            json={"text": "你好", "voices": [CHATGPT_VOICE, ELEVENLABS_VOICE]},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, b"fake-mp3-bytes")
-        self.mock_elevenlabs.assert_not_called()
-
-    def test_returns_error_when_provider_voice_missing(self):
-        self._make_pro()
-        self.mock_realistic_voice.return_value = True
-
-        response = self.client.post(
-            "/chat/tts", json={"text": "你好", "voices": [CHATGPT_VOICE]}
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.mock_elevenlabs.assert_not_called()
-
     def test_rejects_empty_text(self):
         response = self.client.post(
-            "/chat/tts", json={"text": "  ", "voices": [CHATGPT_VOICE]}
+            "/chat/tts", json={"text": "  ", "voice": "nova"}
         )
         self.assertEqual(response.status_code, 400)
 
-    def test_rejects_missing_voices(self):
+    def test_rejects_missing_voice(self):
         response = self.client.post("/chat/tts", json={"text": "你好"})
         self.assertEqual(response.status_code, 400)
 
-    def test_rejects_invalid_chatgpt_voice_name(self):
+    def test_rejects_invalid_voice_name(self):
         response = self.client.post(
-            "/chat/tts",
-            json={"text": "你好", "voices": [{"provider": "chatgpt", "name": "robot"}]},
-        )
-        self.assertEqual(response.status_code, 400)
-
-    def test_rejects_invalid_provider(self):
-        response = self.client.post(
-            "/chat/tts",
-            json={"text": "你好", "voices": [{"provider": "amazon", "name": "x"}]},
+            "/chat/tts", json={"text": "你好", "voice": "robot"}
         )
         self.assertEqual(response.status_code, 400)
 
     def test_returns_500_on_openai_failure(self):
         self.mock_openai_client.audio.speech.create.side_effect = Exception("boom")
         response = self.client.post(
-            "/chat/tts", json={"text": "你好", "voices": [CHATGPT_VOICE]}
-        )
-        self.assertEqual(response.status_code, 500)
-
-    def test_returns_500_on_elevenlabs_failure(self):
-        self._make_pro()
-        self.mock_realistic_voice.return_value = True
-        self.mock_elevenlabs.side_effect = Exception("boom")
-
-        response = self.client.post(
-            "/chat/tts",
-            json={"text": "你好", "voices": [CHATGPT_VOICE, ELEVENLABS_VOICE]},
+            "/chat/tts", json={"text": "你好", "voice": "nova"}
         )
         self.assertEqual(response.status_code, 500)
 

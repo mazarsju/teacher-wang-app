@@ -73,13 +73,13 @@ Example header:
 | Weekly articles / `POST /admin/articles/generate` / `python3 -m backend.jobs.generate_weekly_articles` / `weekly_articles` | [adr/weekly-articles.md](adr/weekly-articles.md) |
 | Teacher Wang teaching behaviors (for planner/generator/validator) | [architecture/teacher-wang-behaviors.md](architecture/teacher-wang-behaviors.md) |
 | Teacher Wang teaching strategy (HSK-level adaptation) | [architecture/teacher-wang-teaching-strategy.md](architecture/teacher-wang-teaching-strategy.md) |
-| Free-plan tokens | [adr/plan-management.md](adr/plan-management.md) |
+| Token budget / quota (free and pro) | [adr/plan-management.md](adr/plan-management.md) |
 | Component CSS / `Button` design system | [adr/frontend-styling.md](adr/frontend-styling.md) |
 | Translations / `react-i18next` / UI text / `users.language` | [adr/frontend-localization.md](adr/frontend-localization.md), [architecture/schema-tenancy.md](architecture/schema-tenancy.md) |
 | Grammar lessons / exercises / mastery | [adr/grammar-content.md](adr/grammar-content.md) |
 | Writing topics / drafts / sentence correction / `writing_progress` | [adr/writing-practice.md](adr/writing-practice.md) |
 | Listening practice / `POST /admin/listening/reload` / `listening_practice` / `listening_progress` / shadowing | [adr/listening-practice.md](adr/listening-practice.md), [architecture/schema-tenancy.md](architecture/schema-tenancy.md) |
-| `/chat/tts` / character voices / ElevenLabs / realistic voice / listening mode / `chat_listening_mode` / `chat_listen_speed_adjustment` / `chat_realistic_voice_enabled` | [adr/voice-interaction.md](adr/voice-interaction.md) |
+| `/chat/tts` / `/chat/stt` / character voices / listening mode / `chat_listening_mode` / `chat_listen_speed_adjustment` | [adr/voice-interaction.md](adr/voice-interaction.md) |
 | ECS ports / `/api` proxy / ECR | [deployment/ecs-containers.md](deployment/ecs-containers.md) |
 | Product screenshots | [screenshots/](screenshots/) |
 | AnkiConnect install UI | [anki/setup/](anki/setup/) |

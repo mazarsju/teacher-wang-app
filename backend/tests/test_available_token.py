@@ -7,8 +7,9 @@ from backend.utils.database.extensions import db
 from backend.utils.database.settings import (
     FREE_PLAN_MAX_ALLOWED_TOKEN,
     FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE,
+    PRO_PLAN_TOKEN_EXHAUSTED_MESSAGE,
     SETTING_AVAILABLE_TOKEN,
-    assert_free_plan_has_tokens,
+    assert_plan_has_tokens,
     deduct_available_token,
     ensure_default_settings,
     get_available_token,
@@ -27,17 +28,30 @@ class TestAvailableTokenHelpers(PostgresTestCase):
         set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
 
         with self.assertRaises(ValueError) as ctx:
-            assert_free_plan_has_tokens(self.user)
+            assert_plan_has_tokens(self.user)
 
         self.assertEqual(str(ctx.exception), FREE_PLAN_TOKEN_EXHAUSTED_MESSAGE)
 
-    def test_assert_allows_paid_plan_with_zero_tokens(self):
+    def test_assert_blocks_paid_plan_with_zero_tokens_too(self):
         ensure_default_settings(self.user_id)
         set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
-        self.user.plan = "paid"
+        self.user.plan = "pro"
         db.session.commit()
 
-        assert_free_plan_has_tokens(self.user)
+        with self.assertRaises(ValueError) as ctx:
+            assert_plan_has_tokens(self.user)
+
+        self.assertEqual(str(ctx.exception), PRO_PLAN_TOKEN_EXHAUSTED_MESSAGE)
+
+    def test_assert_allows_admin_with_zero_tokens(self):
+        from backend.utils.database.settings import ADMIN_EMAIL
+
+        ensure_default_settings(self.user_id)
+        set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
+        self.user.email = ADMIN_EMAIL
+        db.session.commit()
+
+        assert_plan_has_tokens(self.user)
 
     def test_deduct_available_token_can_go_negative(self):
         ensure_default_settings(self.user_id)
@@ -77,6 +91,52 @@ class TestInvokeLlmTokenGate(PostgresTestCase):
             get_available_token(self.user_id),
             FREE_PLAN_MAX_ALLOWED_TOKEN - 25,
         )
+
+    def test_invoke_llm_deducts_for_pro_plan(self):
+        from backend.utils.database.settings import PRO_PLAN_TOKEN_GRANT
+
+        ensure_default_settings(self.user_id)
+        set_setting(
+            self.user_id,
+            SETTING_AVAILABLE_TOKEN,
+            str(PRO_PLAN_TOKEN_GRANT),
+            commit=True,
+        )
+        self.user.plan = "pro"
+        db.session.commit()
+
+        mock_response = MagicMock()
+        mock_response.content = "你好"
+        mock_response.usage_metadata = {"input_tokens": 20, "output_tokens": 5}
+        mock_response.response_metadata = {}
+
+        with patch(
+            "backend.utils.auth.user_context.current_user",
+            return_value=self.user,
+        ), patch("backend.utils.aiChat.chat_service.get_llm") as mock_get_llm:
+            mock_get_llm.return_value.invoke.return_value = mock_response
+            _invoke_llm([])
+
+        self.assertEqual(
+            get_available_token(self.user_id),
+            PRO_PLAN_TOKEN_GRANT - 25,
+        )
+
+    def test_invoke_llm_rejects_when_pro_plan_exhausted(self):
+        ensure_default_settings(self.user_id)
+        set_setting(self.user_id, SETTING_AVAILABLE_TOKEN, "0", commit=True)
+        self.user.plan = "pro"
+        db.session.commit()
+
+        with patch(
+            "backend.utils.auth.user_context.current_user",
+            return_value=self.user,
+        ), patch("backend.utils.aiChat.chat_service.get_llm") as mock_get_llm:
+            with self.assertRaises(ValueError) as ctx:
+                _invoke_llm([])
+
+        self.assertEqual(str(ctx.exception), PRO_PLAN_TOKEN_EXHAUSTED_MESSAGE)
+        mock_get_llm.assert_not_called()
 
     def test_invoke_llm_rejects_when_free_plan_exhausted(self):
         ensure_default_settings(self.user_id)

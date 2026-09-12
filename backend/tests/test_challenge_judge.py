@@ -31,7 +31,7 @@ class _FreePlanTokenMixin:
             return_value=MagicMock(id="test-user", plan="free"),
         )
         self.assert_tokens_patcher = patch(
-            "backend.utils.database.settings.assert_free_plan_has_tokens"
+            "backend.utils.database.settings.assert_plan_has_tokens"
         )
         self.deduct_tokens_patcher = patch(
             "backend.utils.database.settings.deduct_available_token"
