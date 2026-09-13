@@ -63,6 +63,7 @@ class TestListListeningPracticesForUser(PostgresTestCase):
                     "hsk_level": 1,
                     "type": "dialog",
                     "topic": "test",
+                    "translated_topic": "test",
                     "status": "TODO",
                     "vocabulary_score": 0,
                     "grammar_score": 0,
@@ -96,6 +97,7 @@ class TestListListeningPracticesForUser(PostgresTestCase):
                 "hsk_level": 1,
                 "type": "dialog",
                 "topic": "test",
+                "translated_topic": "test",
                 "status": "DONE",
                 "vocabulary_score": 80,
                 "grammar_score": 50,
@@ -128,7 +130,10 @@ class TestListListeningPracticesForUser(PostgresTestCase):
             [row["title"] for row in result], ["Niveau 1", "Level 2"]
         )
         self.assertEqual([row["type"] for row in result], ["dialogue", "dialog"])
-        self.assertEqual([row["topic"] for row in result], ["essai", "test"])
+        self.assertEqual([row["topic"] for row in result], ["test", "test"])
+        self.assertEqual(
+            [row["translated_topic"] for row in result], ["essai", "test"]
+        )
 
 
 class TestRefreshListeningProgress(PostgresTestCase):

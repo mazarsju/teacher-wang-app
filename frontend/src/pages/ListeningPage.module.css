@@ -1,13 +1,12 @@
 .listening-mosaic {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(23rem, 1fr));
   gap: 1rem;
 }
 
 .listening-tile {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border: 1px solid var(--app-border-light);
@@ -26,26 +25,26 @@
   outline-offset: -2px;
 }
 
-/* Background communicates the overall vocabulary+grammar fit, same 4 tiers as the score icon:
-   a soft top-to-bottom fade from the tier color into the tile's normal surface color. */
+/* Border color communicates the overall vocabulary+grammar fit, same 4 tiers as the score icon. */
 .listening-tile-excellent {
-  background: linear-gradient(to bottom, rgba(37, 99, 235, 0.28), var(--app-surface) 100%);
+  border-color: rgb(37, 99, 235);
 }
 
 .listening-tile-good {
-  background: linear-gradient(to bottom, rgba(22, 163, 74, 0.28), var(--app-surface) 100%);
+  border-color: rgb(22, 163, 74);
 }
 
 .listening-tile-fair {
-  background: linear-gradient(to bottom, rgba(250, 204, 21, 0.4), var(--app-surface) 100%);
+  border-color: rgb(250, 204, 21);
 }
 
 .listening-tile-poor {
-  background: linear-gradient(to bottom, rgba(220, 38, 38, 0.28), var(--app-surface) 100%);
+  border-color: rgb(220, 38, 38);
 }
 
 .listening-tile-main {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
@@ -72,6 +71,14 @@
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.listening-tile-image {
+  flex-shrink: 0;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 0.75rem;
+  object-fit: cover;
 }
 
 /* Assigned by hashing the badge text, so the same type/topic always gets the same color. */

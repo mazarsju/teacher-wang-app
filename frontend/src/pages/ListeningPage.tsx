@@ -1,5 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import animalsTopicImage from "../assets/listening/animals.png";
+import familyTopicImage from "../assets/listening/family.png";
+import foodTopicImage from "../assets/listening/food.png";
+import friendsTopicImage from "../assets/listening/friends.png";
+import healthTopicImage from "../assets/listening/health.png";
+import numbersTopicImage from "../assets/listening/numbers.png";
+import schoolTopicImage from "../assets/listening/school.png";
+import shoppingTopicImage from "../assets/listening/shopping.png";
+import sportTopicImage from "../assets/listening/sport.png";
+import studyTopicImage from "../assets/listening/study.png";
+import timeTopicImage from "../assets/listening/time.png";
+import travelTopicImage from "../assets/listening/travel.png";
+import workTopicImage from "../assets/listening/work.png";
+import cultureTopicImage from "../assets/listening/culture.png";
+import hobbiesTopicImage from "../assets/listening/hobbies.png";
+import historyTopicImage from "../assets/listening/history.png";
+import weatherTopicImage from "../assets/listening/weather.png";
 import {
   HappyFaceIcon,
   NeutralFaceIcon,
@@ -24,6 +41,26 @@ const TIER_FACE_ICON: Record<ScoreTier, typeof VeryHappyFaceIcon> = {
   good: HappyFaceIcon,
   fair: NeutralFaceIcon,
   poor: UnhappyFaceIcon,
+};
+
+const TOPIC_IMAGE: Record<string, string> = {
+  animals: animalsTopicImage,
+  family: familyTopicImage,
+  food: foodTopicImage,
+  friends: friendsTopicImage,
+  health: healthTopicImage,
+  numbers: numbersTopicImage,
+  school: schoolTopicImage,
+  shopping: shoppingTopicImage,
+  sport: sportTopicImage,
+  study: studyTopicImage,
+  time: timeTopicImage,
+  travel: travelTopicImage,
+  work: workTopicImage,
+  culture: cultureTopicImage,
+  hobbies: hobbiesTopicImage,
+  history: historyTopicImage,
+  weather: weatherTopicImage,
 };
 
 const BADGE_PALETTE_SIZE = 8;
@@ -116,6 +153,7 @@ export default function ListeningPage() {
       overallScore(practice.vocabulary_score, practice.grammar_score),
     );
     const FaceIcon = TIER_FACE_ICON[tier];
+    const topicImage = TOPIC_IMAGE[practice.topic];
     return (
       <div
         key={practice.id}
@@ -130,6 +168,13 @@ export default function ListeningPage() {
           }
         }}
       >
+        {topicImage && (
+          <img
+            className={styles.listeningTileImage}
+            src={topicImage}
+            alt={practice.translated_topic}
+          />
+        )}
         <div className={styles.listeningTileMain}>
           <span className={styles.listeningTileTitle}>{practice.title}</span>
           <div className={styles.listeningTileBadges}>
@@ -142,15 +187,15 @@ export default function ListeningPage() {
                 defaultValue: practice.type,
               })}
             </span>
-            <span
-              className={`${styles.listeningBadge} ${
-                styles[`listening-badge-${badgePaletteIndex(practice.topic)}`]
-              }`}
-            >
-              {t(`listeningPage.topic.${practice.topic}`, {
-                defaultValue: practice.topic,
-              })}
-            </span>
+            {!topicImage && (
+              <span
+                className={`${styles.listeningBadge} ${
+                  styles[`listening-badge-${badgePaletteIndex(practice.topic)}`]
+                }`}
+              >
+                {practice.translated_topic}
+              </span>
+            )}
           </div>
         </div>
         <button

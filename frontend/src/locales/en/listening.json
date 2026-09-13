@@ -11,18 +11,6 @@
       "personal_story": "Personal story",
       "explanatory_text": "Explanation"
     },
-    "topic": {
-      "family": "Family",
-      "pets": "Pets",
-      "animals": "Animals",
-      "food": "Food",
-      "shopping": "Shopping",
-      "travel": "Travel",
-      "study": "Study",
-      "health": "Health",
-      "sport": "Sport",
-      "friends": "Friends"
-    },
     "completedSection": {
       "summary": "Completed practices ({{count}})"
     }

@@ -11,18 +11,6 @@
       "personal_story": "Récit personnel",
       "explanatory_text": "Explication"
     },
-    "topic": {
-      "family": "Famille",
-      "pets": "Animaux de compagnie",
-      "animals": "Animaux",
-      "food": "Nourriture",
-      "shopping": "Achats",
-      "travel": "Voyage",
-      "study": "Études",
-      "health": "Santé",
-      "sport": "Sport",
-      "friends": "Amis"
-    },
     "completedSection": {
       "summary": "Exercices terminés ({{count}})"
     }

@@ -9,10 +9,13 @@ its comma-separated ``grammar_rules`` already ``DONE``/``MASTERED`` in
 ``user_grammar_progress``. Both are recomputed by ``refresh_listening_progress``
 (called on login) and read back as-is by ``list_listening_practices_for_user``.
 
-``title``/``type``/``topic`` are translated via
+``title``/``type``/``translated_topic`` are translated via
 ``fetch_listening_practice_translations`` for any non-English ``language``,
 falling back to the English DB row for a topic (or field) without a
-translation — see that function's docstring.
+translation — see that function's docstring. ``topic`` itself is always the
+raw English value: the frontend uses it to pick a topic illustration and
+falls back to ``translated_topic`` as display text when no illustration
+exists for it.
 """
 
 from __future__ import annotations
@@ -64,7 +67,8 @@ def list_listening_practices_for_user(user_id: str, language: str = "en") -> lis
             "title": translations.get(topic.id, {}).get("title", topic.title),
             "hsk_level": topic.hsk_level,
             "type": translations.get(topic.id, {}).get("type", topic.type),
-            "topic": translations.get(topic.id, {}).get("topic", topic.topic),
+            "topic": topic.topic,
+            "translated_topic": translations.get(topic.id, {}).get("topic", topic.topic),
             "status": (
                 progress_by_topic[topic.id].status
                 if topic.id in progress_by_topic

@@ -4,6 +4,7 @@ export type ListeningPractice = {
   hsk_level: number;
   type: string;
   topic: string;
+  translated_topic: string;
   status: string;
   vocabulary_score: number;
   grammar_score: number;

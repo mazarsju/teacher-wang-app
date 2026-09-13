@@ -45,7 +45,8 @@ describe("ListeningPage", () => {
         title: "Weak fit lesson",
         hsk_level: 3,
         type: "dialog",
-        topic: "travel",
+        topic: "technology",
+        translated_topic: "Technology",
         status: "TODO",
         vocabulary_score: 20,
         grammar_score: 10,
@@ -55,7 +56,8 @@ describe("ListeningPage", () => {
         title: "Best fit lesson",
         hsk_level: 1,
         type: "fiction_story",
-        topic: "animals",
+        topic: "pets",
+        translated_topic: "Pets",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -71,14 +73,48 @@ describe("ListeningPage", () => {
     expect(titles).toEqual(["Best fit lesson", "Weak fit lesson"]);
 
     expect(screen.getByText("Story")).toBeInTheDocument();
-    expect(screen.getByText("Animals")).toBeInTheDocument();
+    expect(screen.getByText("Pets")).toBeInTheDocument();
     expect(screen.getByText("Dialog")).toBeInTheDocument();
-    expect(screen.getByText("Travel")).toBeInTheDocument();
+    expect(screen.getByText("Technology")).toBeInTheDocument();
 
     // No level, status, or raw score numbers.
     expect(screen.queryByText("3")).not.toBeInTheDocument();
     expect(screen.queryByText("TODO")).not.toBeInTheDocument();
     expect(screen.queryByText("20%")).not.toBeInTheDocument();
+  });
+
+  it("shows a topic image instead of a text badge when one exists for the topic", async () => {
+    fetchListeningPractices.mockResolvedValue([
+      {
+        id: "with-image",
+        title: "Sport lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "sport",
+        translated_topic: "Sport",
+        status: "TODO",
+        vocabulary_score: 100,
+        grammar_score: 90,
+      },
+      {
+        id: "without-image",
+        title: "Technology lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "technology",
+        translated_topic: "Technology",
+        status: "TODO",
+        vocabulary_score: 20,
+        grammar_score: 10,
+      },
+    ]);
+
+    render(<ListeningPage />);
+
+    await screen.findByText("Sport lesson");
+    expect(screen.getByRole("img", { name: "Sport" })).toBeInTheDocument();
+    expect(screen.queryByText("Sport")).not.toBeInTheDocument();
+    expect(screen.getByText("Technology")).toBeInTheDocument();
   });
 
   it("opens the score dialog when clicking a lesson's icon", async () => {
@@ -90,6 +126,7 @@ describe("ListeningPage", () => {
         hsk_level: 1,
         type: "dialog",
         topic: "family",
+        translated_topic: "Family",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -128,6 +165,7 @@ describe("ListeningPage", () => {
         hsk_level: 1,
         type: "dialog",
         topic: "family",
+        translated_topic: "Family",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -139,6 +177,7 @@ describe("ListeningPage", () => {
       hsk_level: 1,
       type: "dialog",
       topic: "family",
+      translated_topic: "Family",
       status: "TODO",
       vocabulary_score: 100,
       grammar_score: 90,
@@ -167,6 +206,7 @@ describe("ListeningPage", () => {
         hsk_level: 1,
         type: "dialog",
         topic: "family",
+        translated_topic: "Family",
         status: "TODO",
         vocabulary_score: 100,
         grammar_score: 90,
@@ -196,6 +236,7 @@ describe("ListeningPage", () => {
         hsk_level: 1,
         type: "dialog",
         topic: "family",
+        translated_topic: "Family",
         status: "TODO",
         vocabulary_score: 50,
         grammar_score: 50,
@@ -206,6 +247,7 @@ describe("ListeningPage", () => {
         hsk_level: 1,
         type: "dialog",
         topic: "family",
+        translated_topic: "Family",
         status: "DONE",
         vocabulary_score: 100,
         grammar_score: 100,
@@ -232,6 +274,7 @@ describe("ListeningPage", () => {
         hsk_level: 1,
         type: "dialog",
         topic: "family",
+        translated_topic: "Family",
         status: "TODO",
         vocabulary_score: 50,
         grammar_score: 50,
