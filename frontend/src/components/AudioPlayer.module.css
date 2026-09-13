@@ -47,6 +47,45 @@
   min-width: 0;
 }
 
+.audio-player-seek-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.audio-player-waveform {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+
+.audio-player-bar,
+.audio-player-bar-played {
+  flex: 1 1 0;
+  min-width: 1px;
+  border-radius: 1px;
+  background: var(--app-border);
+}
+
+.audio-player-bar-played {
+  background: var(--app-sea);
+}
+
+.audio-player-seek-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
 .audio-player-error {
   flex-shrink: 0;
   color: #b91c1c;

@@ -4,6 +4,38 @@ import { PauseIcon, PlayIcon } from "./icons";
 import styles from "./AudioPlayer.module.css";
 
 const SKIP_SECONDS = 5;
+const WAVEFORM_BARS = 60;
+
+async function computePeaks(blob: Blob): Promise<number[]> {
+  const AudioContextCtor =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
+  if (!AudioContextCtor) {
+    return [];
+  }
+  const audioCtx = new AudioContextCtor();
+  try {
+    const audioBuffer = await audioCtx.decodeAudioData(await blob.arrayBuffer());
+    const channelData = audioBuffer.getChannelData(0);
+    const blockSize = Math.max(1, Math.floor(channelData.length / WAVEFORM_BARS));
+    const peaks: number[] = [];
+    for (let bar = 0; bar < WAVEFORM_BARS; bar++) {
+      let max = 0;
+      const start = bar * blockSize;
+      for (let i = start; i < start + blockSize && i < channelData.length; i++) {
+        max = Math.max(max, Math.abs(channelData[i]));
+      }
+      peaks.push(max);
+    }
+    const scale = Math.max(...peaks, 0.01);
+    return peaks.map((p) => p / scale);
+  } catch {
+    return [];
+  } finally {
+    void audioCtx.close();
+  }
+}
 
 type AudioPlayerProps = {
   loadAudio: () => Promise<Blob>;
@@ -22,6 +54,7 @@ export default function AudioPlayer({
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [peaks, setPeaks] = useState<number[]>([]);
 
   useEffect(() => {
     const audio = new Audio();
@@ -46,6 +79,11 @@ export default function AudioPlayer({
     };
   }, []);
 
+  useEffect(() => {
+    void ensureLoaded();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function ensureLoaded(): Promise<boolean> {
     if (objectUrlRef.current) {
       return true;
@@ -59,6 +97,7 @@ export default function AudioPlayer({
       if (audioRef.current) {
         audioRef.current.src = url;
       }
+      void computePeaks(blob).then(setPeaks);
       return true;
     } catch {
       setError(t("audioPlayer.loadError"));
@@ -132,22 +171,48 @@ export default function AudioPlayer({
           +5s
         </button>
       )}
-      <input
-        type="range"
-        className={styles.audioPlayerSeek}
-        min={0}
-        max={duration || 0}
-        step={0.1}
-        value={currentTime}
-        onChange={(event) => {
-          const time = Number(event.target.value);
-          if (audioRef.current) {
-            audioRef.current.currentTime = time;
+      <div className={styles.audioPlayerSeekWrap}>
+        {peaks.length > 0 && (
+          <div className={styles.audioPlayerWaveform} aria-hidden="true">
+            {peaks.map((peak, index) => {
+              const isPlayed =
+                duration > 0 &&
+                (index + 0.5) / peaks.length <= currentTime / duration;
+              return (
+                <span
+                  key={index}
+                  className={
+                    isPlayed
+                      ? styles.audioPlayerBarPlayed
+                      : styles.audioPlayerBar
+                  }
+                  style={{ height: `${Math.max(peak * 100, 8)}%` }}
+                />
+              );
+            })}
+          </div>
+        )}
+        <input
+          type="range"
+          className={
+            peaks.length > 0
+              ? styles.audioPlayerSeekOverlay
+              : styles.audioPlayerSeek
           }
-          setCurrentTime(time);
-        }}
-        aria-label={t("audioPlayer.seek")}
-      />
+          min={0}
+          max={duration || 0}
+          step={0.1}
+          value={currentTime}
+          onChange={(event) => {
+            const time = Number(event.target.value);
+            if (audioRef.current) {
+              audioRef.current.currentTime = time;
+            }
+            setCurrentTime(time);
+          }}
+          aria-label={t("audioPlayer.seek")}
+        />
+      </div>
       {error && <span className={styles.audioPlayerError}>{error}</span>}
     </div>
   );
