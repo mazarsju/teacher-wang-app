@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useVoiceInput } from "../hooks/useVoiceInput";
+import { transcribeChatAudio } from "../utils/aiChat/chatApi";
 import { MicrophoneIcon } from "./icons";
 import styles from "./VoiceInputButton.module.css";
 
@@ -17,8 +18,9 @@ export default function VoiceInputButton({
   className,
 }: VoiceInputButtonProps) {
   const { t } = useTranslation("common");
-  const { isRecording, isTranscribing, error, startRecording, stopRecording } =
-    useVoiceInput(value, onChange);
+  const { phase, error, pressHandlers } = useVoiceInput(transcribeChatAudio, (text) =>
+    onChange(value + text),
+  );
 
   return (
     <>
@@ -26,19 +28,28 @@ export default function VoiceInputButton({
         type="button"
         className={[
           styles.voiceInputButton,
-          isRecording ? styles.voiceInputButtonActive : "",
+          phase === "recording" ? styles.voiceInputButtonActive : "",
+          phase === "processing" ? styles.voiceInputButtonProcessing : "",
           className ?? "",
         ]
           .filter(Boolean)
           .join(" ")}
         aria-label={
-          isRecording ? t("voiceInput.recording") : t("voiceInput.recordVoice")
+          phase === "recording"
+            ? t("voiceInput.recording")
+            : phase === "processing"
+              ? t("voiceInput.processing")
+              : t("voiceInput.recordVoice")
         }
-        title={isRecording ? t("voiceInput.recording") : t("voiceInput.recordVoice")}
-        disabled={disabled || isTranscribing}
-        onMouseDown={() => void startRecording()}
-        onMouseUp={stopRecording}
-        onMouseLeave={stopRecording}
+        title={
+          phase === "recording"
+            ? t("voiceInput.recording")
+            : phase === "processing"
+              ? t("voiceInput.processing")
+              : t("voiceInput.recordVoice")
+        }
+        disabled={disabled || phase === "processing"}
+        {...pressHandlers}
       >
         <MicrophoneIcon className={styles.voiceInputIcon} />
       </button>

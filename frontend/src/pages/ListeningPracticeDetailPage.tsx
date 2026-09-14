@@ -12,6 +12,7 @@ import type { ListeningPracticeDetail } from "../types/listeningPractice";
 import {
   completeListeningPractice,
   fetchListeningAudioBlob,
+  fetchListeningAudioSegmentBlob,
   fetchListeningPracticeDetail,
 } from "../utils/listening/listeningApi";
 import styles from "./ListeningPracticeDetailPage.module.css";
@@ -64,9 +65,30 @@ export default function ListeningPracticeDetailPage({
     };
   }, [topicId, t]);
 
-  const shadowingCount = detail
-    ? Math.min(detail.sentences.length, detail.segment_count)
-    : 0;
+  const shadowingUnits = detail
+    ? detail.sentences
+        .filter(
+          (sentence, index) =>
+            (sentence.chunks?.length ?? 0) > 0 || index < detail.segment_count,
+        )
+        .flatMap((sentence) =>
+          sentence.chunks && sentence.chunks.length > 0
+            ? sentence.chunks.map((chunk) => ({
+                key: `${sentence.id}-${chunk.id}`,
+                mandarin: chunk.mandarin,
+                loadAudio: () =>
+                  fetchListeningAudioSegmentBlob(detail.id, sentence.id, chunk.id),
+              }))
+            : [
+                {
+                  key: `${sentence.id}`,
+                  mandarin: sentence.mandarin,
+                  loadAudio: () =>
+                    fetchListeningAudioSegmentBlob(detail.id, sentence.id),
+                },
+              ],
+        )
+    : [];
   const fullTranslation = detail
     ? detail.sentences.map((sentence) => sentence.translation).join("\n")
     : "";
@@ -145,12 +167,11 @@ export default function ListeningPracticeDetailPage({
             <p className={styles.listeningDetailSectionInstruction}>
               {t("listeningPracticeDetailPage.shadowingSection.instruction")}
             </p>
-            {Array.from({ length: shadowingCount }, (_, index) => (
+            {shadowingUnits.map((unit) => (
               <ShadowingSentence
-                key={detail.sentences[index].id}
-                topicId={detail.id}
-                segment={index + 1}
-                sentence={detail.sentences[index]}
+                key={unit.key}
+                mandarin={unit.mandarin}
+                loadAudio={unit.loadAudio}
               />
             ))}
           </section>

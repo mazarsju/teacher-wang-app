@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import { renderWithStore as render } from "../test/renderWithStore";
@@ -78,6 +78,62 @@ describe("ListeningPracticeDetailPage", () => {
     ).toBeInTheDocument();
     // One shadowing row per sentence.
     expect(screen.getAllByRole("button", { name: "Show the sentence" })).toHaveLength(2);
+  });
+
+  it("renders one shadowing row per chunk, in order, for a sentence broken into chunks", async () => {
+    const fetchListeningAudioSegmentBlob = vi.mocked(
+      listeningApi.fetchListeningAudioSegmentBlob,
+    );
+    fetchListeningAudioSegmentBlob.mockResolvedValue(
+      new Blob(["audio"], { type: "audio/mpeg" }),
+    );
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      sentences: [
+        { id: 1, mandarin: "你家有几个人？", translation: "How many people?" },
+        {
+          id: 2,
+          mandarin: "我家有五个人，我们住在北京。",
+          translation: "There are five in my family, we live in Beijing.",
+          chunks: [
+            { id: 1, mandarin: "我家有五个人，" },
+            { id: 2, mandarin: "我们住在北京。" },
+          ],
+        },
+      ],
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "How many are in your family?",
+    });
+
+    // Sentence 1 (no chunks) + 2 chunks for sentence 2 = 3 shadowing rows.
+    expect(
+      screen.getAllByRole("button", { name: "Show the sentence" }),
+    ).toHaveLength(3);
+    expect(screen.getByText("我家有五个人，")).toBeInTheDocument();
+    expect(screen.getByText("我们住在北京。")).toBeInTheDocument();
+    expect(screen.queryByText("我家有五个人，我们住在北京。")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(fetchListeningAudioSegmentBlob).toHaveBeenCalledWith(
+        "listening-family-size",
+        2,
+        1,
+      );
+      expect(fetchListeningAudioSegmentBlob).toHaveBeenCalledWith(
+        "listening-family-size",
+        2,
+        2,
+      );
+    });
   });
 
   it("blurs the full text until revealed", async () => {

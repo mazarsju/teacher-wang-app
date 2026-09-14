@@ -421,6 +421,33 @@ class TestReadListeningAudio(unittest.TestCase):
         self.assertEqual(first, b"segment-1")
         self.assertIsNone(missing)
 
+    def test_reads_chunk_audio_from_local_path(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            audio_dir = (
+                root
+                / "listening_practice"
+                / "hsk1"
+                / "listening-family-size"
+                / "audio"
+            )
+            audio_dir.mkdir(parents=True)
+            (audio_dir / "audio-2-1.mp3").write_bytes(b"chunk-2-1")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                chunk = read_listening_audio_segment(
+                    1, "listening-family-size", 2, chunk=1
+                )
+                missing = read_listening_audio_segment(
+                    1, "listening-family-size", 2, chunk=9
+                )
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(chunk, b"chunk-2-1")
+        self.assertIsNone(missing)
+
 
 class TestListListeningAudioSegments(unittest.TestCase):
     def setUp(self) -> None:
@@ -517,9 +544,36 @@ class TestFetchListeningBreakdown(unittest.TestCase):
         self.assertEqual(
             sentences,
             [
-                {"id": 1, "mandarin": "你好", "translation": "Hello"},
-                {"id": 2, "mandarin": "再见", "translation": "Goodbye"},
+                {"id": 1, "mandarin": "你好", "translation": "Hello", "chunks": []},
+                {"id": 2, "mandarin": "再见", "translation": "Goodbye", "chunks": []},
             ],
+        )
+
+    def test_includes_chunks_when_present(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = (
+                root / "listening_practice" / "hsk1" / "listening-family-size"
+            )
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "breakdown.json").write_text(
+                '{"sentences": ['
+                '{"id": 1, "transcript": "[neutral]你好，再见", '
+                '"mandarin": "你好，再见", "english": "Hello, goodbye", '
+                '"chunks": [{"id": 1, "mandarin": "你好，"}, '
+                '{"id": 2, "mandarin": "再见"}]}'
+                "]}"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                sentences = fetch_listening_breakdown(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(
+            sentences[0]["chunks"],
+            [{"id": 1, "mandarin": "你好，"}, {"id": 2, "mandarin": "再见"}],
         )
 
     def test_merges_translated_sibling_for_non_english_language(self):
@@ -547,8 +601,13 @@ class TestFetchListeningBreakdown(unittest.TestCase):
         self.assertEqual(
             sentences,
             [
-                {"id": 1, "mandarin": "你好", "translation": "Bonjour"},
-                {"id": 2, "mandarin": "再见", "translation": "Au revoir"},
+                {"id": 1, "mandarin": "你好", "translation": "Bonjour", "chunks": []},
+                {
+                    "id": 2,
+                    "mandarin": "再见",
+                    "translation": "Au revoir",
+                    "chunks": [],
+                },
             ],
         )
 
@@ -587,7 +646,8 @@ class TestFetchListeningBreakdown(unittest.TestCase):
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
         self.assertEqual(
-            sentences, [{"id": 1, "mandarin": "你好", "translation": "Hello"}]
+            sentences,
+            [{"id": 1, "mandarin": "你好", "translation": "Hello", "chunks": []}],
         )
 
 

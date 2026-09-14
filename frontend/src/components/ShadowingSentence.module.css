@@ -75,11 +75,28 @@
   background: var(--app-mist);
   color: var(--app-ink);
   cursor: pointer;
+  touch-action: none;
+}
+
+.shadowing-sentence-mic-button:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .shadowing-sentence-mic-button-active {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.shadowing-sentence-mic-button-processing {
+  cursor: wait;
+  animation: voice-input-processing-pulse 1.1s ease-in-out infinite;
+}
+
+.shadowing-sentence-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.85rem;
 }
 
 .shadowing-sentence-mic-icon {

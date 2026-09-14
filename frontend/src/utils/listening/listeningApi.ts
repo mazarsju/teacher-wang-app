@@ -62,9 +62,11 @@ export async function fetchListeningAudioBlob(id: string): Promise<Blob> {
 export async function fetchListeningAudioSegmentBlob(
   id: string,
   segment: number,
+  chunk?: number,
 ): Promise<Blob> {
+  const path = chunk === undefined ? `${segment}` : `${segment}/${chunk}`;
   const response = await apiFetch(
-    `${API_BASE}/listening-practices/${encodeURIComponent(id)}/audio/${segment}`,
+    `${API_BASE}/listening-practices/${encodeURIComponent(id)}/audio/${path}`,
     { method: "GET" },
   );
 

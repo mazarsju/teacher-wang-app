@@ -39,6 +39,7 @@
     "inputPlaceholder": "Type or record what you hear...",
     "transcribing": "Transcribing...",
     "record": "Hold to record",
+    "recording": "Recording… release to transcribe",
     "check": "Check"
   },
   "listeningExercises": {

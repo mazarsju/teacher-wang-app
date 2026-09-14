@@ -10,10 +10,16 @@ export type ListeningPractice = {
   grammar_score: number;
 };
 
+export type ListeningChunk = {
+  id: number;
+  mandarin: string;
+};
+
 export type ListeningSentence = {
   id: number;
   mandarin: string;
   translation: string;
+  chunks?: ListeningChunk[];
 };
 
 export type ListeningExercise = {

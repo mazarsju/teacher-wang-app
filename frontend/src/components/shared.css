@@ -350,3 +350,13 @@
 .table-error {
   color: #b91c1c;
 }
+
+@keyframes voice-input-processing-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

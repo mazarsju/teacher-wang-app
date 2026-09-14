@@ -54,12 +54,17 @@ def get_listening_practice_audio(topic_id: str):
 
 
 @bp.get("/listening-practices/<topic_id>/audio/<int:segment>")
-def get_listening_practice_audio_segment(topic_id: str, segment: int):
+@bp.get("/listening-practices/<topic_id>/audio/<int:segment>/<int:chunk>")
+def get_listening_practice_audio_segment(
+    topic_id: str, segment: int, chunk: int | None = None
+):
     topic = ListeningPractice.query.get(topic_id)
     if topic is None:
         return {"error": "Listening practice not found"}, 404
 
-    audio = read_listening_audio_segment(topic.hsk_level, topic.id, segment)
+    audio = read_listening_audio_segment(
+        topic.hsk_level, topic.id, segment, chunk=chunk
+    )
     if audio is None:
         return {"error": "Audio not found"}, 404
     return Response(audio, mimetype="audio/mpeg")

@@ -282,10 +282,17 @@ def list_listening_audio_segments(hsk_level: int, topic_id: str, client=None) ->
 
 
 def read_listening_audio_segment(
-    hsk_level: int, topic_id: str, segment: int, client=None
+    hsk_level: int, topic_id: str, segment: int, chunk: int | None = None, client=None
 ) -> bytes | None:
-    """Raw bytes of one ``audio/audio-<segment>.mp3`` shadowing clip, or None if missing."""
-    relative_path = f"{_topic_folder(hsk_level, topic_id)}/audio/audio-{segment}.mp3"
+    """Raw bytes of one shadowing clip, or None if missing.
+
+    ``audio/audio-<segment>.mp3`` when ``chunk`` is None; for a sentence
+    broken into shadowing chunks (``breakdown.json``'s per-sentence
+    ``chunks``), pass the chunk id to read ``audio/audio-<segment>-<chunk>.mp3``
+    instead.
+    """
+    suffix = f"{segment}-{chunk}" if chunk is not None else f"{segment}"
+    relative_path = f"{_topic_folder(hsk_level, topic_id)}/audio/audio-{suffix}.mp3"
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
         return _read_local_bytes(Path(local_path), relative_path)
@@ -297,7 +304,7 @@ def read_listening_audio_segment(
 def fetch_listening_breakdown(
     hsk_level: int, topic_id: str, language: str = "en", client=None
 ) -> list[dict]:
-    """Per-sentence breakdown: ``[{id, mandarin, translation}, ...]``.
+    """Per-sentence breakdown: ``[{id, mandarin, translation, chunks}, ...]``.
 
     ``translation`` is ``breakdown.json``'s own ``english`` field for
     ``language == "en"``; for any other language it's read from the sibling
@@ -305,6 +312,10 @@ def fetch_listening_breakdown(
     falling back to English per-sentence when that file or a given sentence
     id is missing from it — same fallback contract as the rest of this
     module's translation siblings (``explanation_<language>.md`` etc.).
+
+    ``chunks`` is ``[{id, mandarin}, ...]``, empty for a sentence short
+    enough to shadow whole. Chunks are never translated separately — only
+    the parent sentence carries a ``translation``.
     """
     folder = _topic_folder(hsk_level, topic_id)
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
@@ -342,6 +353,10 @@ def fetch_listening_breakdown(
             "translation": translations_by_id.get(
                 sentence["id"], sentence.get("english", "")
             ),
+            "chunks": [
+                {"id": chunk["id"], "mandarin": chunk["mandarin"]}
+                for chunk in sentence.get("chunks", [])
+            ],
         }
         for sentence in base.get("sentences", [])
     ]

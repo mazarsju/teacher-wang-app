@@ -1,13 +1,10 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import AudioPlayer from "./AudioPlayer";
 import Button from "./Button";
 import { CheckIcon, EyeIcon, IncorrectIcon, MicrophoneIcon } from "./icons";
-import type { ListeningSentence } from "../types/listeningPractice";
-import {
-  fetchListeningAudioSegmentBlob,
-  transcribeListeningAudio,
-} from "../utils/listening/listeningApi";
+import { useVoiceInput } from "../hooks/useVoiceInput";
+import { transcribeListeningAudio } from "../utils/listening/listeningApi";
 import {
   diffSentenceChars,
   matchesSentence,
@@ -15,77 +12,32 @@ import {
 import styles from "./ShadowingSentence.module.css";
 
 type ShadowingSentenceProps = {
-  topicId: string;
-  segment: number;
-  sentence: ListeningSentence;
+  mandarin: string;
+  loadAudio: () => Promise<Blob>;
 };
 
 export default function ShadowingSentence({
-  topicId,
-  segment,
-  sentence,
+  mandarin,
+  loadAudio,
 }: ShadowingSentenceProps) {
   const { t } = useTranslation("listening");
   const [isRevealed, setIsRevealed] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [checkResult, setCheckResult] = useState<
     "correct" | "incorrect" | null
   >(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      mediaStreamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-    } catch {
-      setIsRecording(false);
-    }
-  }
-
-  function stopRecording() {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder || recorder.state === "inactive") {
-      return;
-    }
-    setIsRecording(false);
-    recorder.onstop = () => {
-      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-      const audioBlob = new Blob(audioChunksRef.current, {
-        type: "audio/webm",
-      });
-      setIsTranscribing(true);
-      transcribeListeningAudio(audioBlob)
-        .then((text) => {
-          setInputValue(text);
-          setCheckResult(null);
-        })
-        .catch(() => {})
-        .finally(() => setIsTranscribing(false));
-    };
-    recorder.stop();
-  }
+  const {
+    phase: voicePhase,
+    error: voiceError,
+    pressHandlers: voicePressHandlers,
+  } = useVoiceInput(transcribeListeningAudio, (text) => {
+    setInputValue(text);
+    setCheckResult(null);
+  });
 
   return (
     <div className={styles.shadowingSentence}>
-      <AudioPlayer
-        loadAudio={() => fetchListeningAudioSegmentBlob(topicId, segment)}
-      />
+      <AudioPlayer loadAudio={loadAudio} />
       <div className={styles.shadowingSentenceTextWrap}>
         <span
           className={
@@ -96,27 +48,25 @@ export default function ShadowingSentence({
         >
           {checkResult === "correct" ? (
             <span className={styles.shadowingSentenceCharCorrect}>
-              {sentence.mandarin}
+              {mandarin}
             </span>
           ) : checkResult === "incorrect" ? (
-            diffSentenceChars(inputValue, sentence.mandarin).map(
-              (entry, index) => (
-                <span
-                  key={index}
-                  className={
-                    entry.matched === null
-                      ? undefined
-                      : entry.matched
-                        ? styles.shadowingSentenceCharCorrect
-                        : styles.shadowingSentenceCharIncorrect
-                  }
-                >
-                  {entry.char}
-                </span>
-              ),
-            )
+            diffSentenceChars(inputValue, mandarin).map((entry, index) => (
+              <span
+                key={index}
+                className={
+                  entry.matched === null
+                    ? undefined
+                    : entry.matched
+                      ? styles.shadowingSentenceCharCorrect
+                      : styles.shadowingSentenceCharIncorrect
+                }
+              >
+                {entry.char}
+              </span>
+            ))
           ) : (
-            sentence.mandarin
+            mandarin
           )}
         </span>
         <button
@@ -138,23 +88,30 @@ export default function ShadowingSentence({
             setCheckResult(null);
           }}
           placeholder={
-            isTranscribing
+            voicePhase === "processing"
               ? t("shadowingSentence.transcribing")
               : t("shadowingSentence.inputPlaceholder")
           }
-          disabled={isTranscribing}
+          disabled={voicePhase === "processing"}
         />
         <button
           type="button"
-          className={
-            isRecording
-              ? `${styles.shadowingSentenceMicButton} ${styles.shadowingSentenceMicButtonActive}`
-              : styles.shadowingSentenceMicButton
+          className={`${styles.shadowingSentenceMicButton} ${
+            voicePhase === "recording"
+              ? styles.shadowingSentenceMicButtonActive
+              : voicePhase === "processing"
+                ? styles.shadowingSentenceMicButtonProcessing
+                : ""
+          }`}
+          disabled={voicePhase === "processing"}
+          aria-label={
+            voicePhase === "recording"
+              ? t("shadowingSentence.recording")
+              : voicePhase === "processing"
+                ? t("shadowingSentence.transcribing")
+                : t("shadowingSentence.record")
           }
-          onMouseDown={() => void startRecording()}
-          onMouseUp={stopRecording}
-          onMouseLeave={stopRecording}
-          aria-label={t("shadowingSentence.record")}
+          {...voicePressHandlers}
         >
           <MicrophoneIcon className={styles.shadowingSentenceMicIcon} />
         </button>
@@ -165,9 +122,7 @@ export default function ShadowingSentence({
           disabled={!inputValue.trim()}
           onClick={() =>
             setCheckResult(
-              matchesSentence(inputValue, sentence.mandarin)
-                ? "correct"
-                : "incorrect",
+              matchesSentence(inputValue, mandarin) ? "correct" : "incorrect",
             )
           }
         />
@@ -182,6 +137,7 @@ export default function ShadowingSentence({
           />
         )}
       </div>
+      {voiceError && <p className={styles.shadowingSentenceError}>{voiceError}</p>}
     </div>
   );
 }

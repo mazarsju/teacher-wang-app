@@ -39,6 +39,7 @@
     "inputPlaceholder": "Écrivez ou enregistrez ce que vous entendez...",
     "transcribing": "Transcription en cours...",
     "record": "Maintenir pour enregistrer",
+    "recording": "Enregistrement… relâchez pour transcrire",
     "check": "Vérifier"
   },
   "listeningExercises": {

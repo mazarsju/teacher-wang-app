@@ -662,6 +662,7 @@ img.chat-message-avatar {
   background: #ffffff;
   color: var(--app-ink);
   cursor: pointer;
+  touch-action: none;
 }
 
 .chat-modal-record-button:hover:not(:disabled) {
@@ -677,6 +678,11 @@ img.chat-message-avatar {
   border-color: #dc2626;
   background: #fee2e2;
   color: #dc2626;
+}
+
+.chat-modal-record-button-processing {
+  cursor: wait;
+  animation: voice-input-processing-pulse 1.1s ease-in-out infinite;
 }
 
 .chat-modal-record-icon {

@@ -1,4 +1,5 @@
 import io
+import re
 
 from flask import Blueprint, current_app, request, send_file
 
@@ -54,6 +55,12 @@ from backend.utils.knowledgeBase.hsk_level import get_chat_tts_speed
 bp = Blueprint("chat", __name__)
 
 TTS_VOICES = {"alloy", "echo", "fable", "onyx", "nova", "shimmer"}
+
+_CHINESE_CHAR_PATTERN = re.compile(r"[一-鿿]+")
+
+
+def _chinese_only(text: str) -> str:
+    return "".join(_CHINESE_CHAR_PATTERN.findall(text))
 
 
 def _charge_token_usage(user, *, input_tokens: int = 0, output_tokens: int = 0) -> None:
@@ -508,7 +515,7 @@ def stt():
 
     _charge_token_usage(user, output_tokens=estimate_text_tokens(transcript.text))
 
-    return {"text": transcript.text}, 200
+    return {"text": _chinese_only(transcript.text)}, 200
 
 
 @bp.get("/chat/history/<character_id>")

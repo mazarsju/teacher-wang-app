@@ -189,13 +189,38 @@ class TestGetListeningPracticeAudioEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, b"segment-bytes")
         self.assertEqual(response.mimetype, "audio/mpeg")
-        self.mock_read_segment.assert_called_once_with(1, "listening-family-size", 2)
+        self.mock_read_segment.assert_called_once_with(
+            1, "listening-family-size", 2, chunk=None
+        )
 
     def test_returns_404_when_segment_missing(self):
         self.mock_read_segment.return_value = None
 
         response = self.client.get(
             "/listening-practices/listening-family-size/audio/9"
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_returns_chunk_audio_bytes(self):
+        self.mock_read_segment.return_value = b"chunk-bytes"
+
+        response = self.client.get(
+            "/listening-practices/listening-family-size/audio/2/3"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, b"chunk-bytes")
+        self.assertEqual(response.mimetype, "audio/mpeg")
+        self.mock_read_segment.assert_called_once_with(
+            1, "listening-family-size", 2, chunk=3
+        )
+
+    def test_returns_404_when_chunk_missing(self):
+        self.mock_read_segment.return_value = None
+
+        response = self.client.get(
+            "/listening-practices/listening-family-size/audio/2/9"
         )
 
         self.assertEqual(response.status_code, 404)

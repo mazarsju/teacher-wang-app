@@ -4,30 +4,22 @@ import ShadowingSentence from "./ShadowingSentence";
 import * as listeningApi from "../utils/listening/listeningApi";
 
 vi.mock("../utils/listening/listeningApi", () => ({
-  fetchListeningAudioSegmentBlob: vi.fn(),
   transcribeListeningAudio: vi.fn(),
 }));
 
-const fetchListeningAudioSegmentBlob = vi.mocked(
-  listeningApi.fetchListeningAudioSegmentBlob,
-);
 const transcribeListeningAudio = vi.mocked(listeningApi.transcribeListeningAudio);
 
-const sentence = { id: 1, mandarin: "你家有几个人？", translation: "..." };
+const mandarin = "你家有几个人？";
+const loadAudio = () => Promise.resolve(new Blob(["audio"], { type: "audio/mpeg" }));
 
 describe("ShadowingSentence", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchListeningAudioSegmentBlob.mockResolvedValue(
-      new Blob(["audio"], { type: "audio/mpeg" }),
-    );
   });
 
   it("blurs the sentence until revealed", async () => {
     const user = userEvent.setup();
-    render(
-      <ShadowingSentence topicId="listening-family-size" segment={1} sentence={sentence} />,
-    );
+    render(<ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />);
 
     const text = screen.getByText("你家有几个人？");
     expect(text.className).toMatch(/blurred/i);
@@ -39,7 +31,7 @@ describe("ShadowingSentence", () => {
   it("shows a result icon after checking a correct typed answer", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <ShadowingSentence topicId="listening-family-size" segment={1} sentence={sentence} />,
+      <ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />,
     );
 
     const svgCountBefore = container.querySelectorAll("svg").length;
@@ -55,7 +47,7 @@ describe("ShadowingSentence", () => {
   it("clears the result icon when the input changes again", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <ShadowingSentence topicId="listening-family-size" segment={1} sentence={sentence} />,
+      <ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />,
     );
 
     const input = screen.getByPlaceholderText("Type or record what you hear...");
@@ -92,9 +84,7 @@ describe("ShadowingSentence", () => {
     vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
     transcribeListeningAudio.mockResolvedValue("你家有几个人");
 
-    render(
-      <ShadowingSentence topicId="listening-family-size" segment={1} sentence={sentence} />,
-    );
+    render(<ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />);
 
     const recordButton = screen.getByRole("button", { name: "Hold to record" });
     fireEvent.mouseDown(recordButton);

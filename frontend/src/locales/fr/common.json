@@ -101,9 +101,11 @@
   "voiceInput": {
     "recordVoice": "Maintenir pour enregistrer votre voix",
     "recording": "Enregistrement… relâchez pour transcrire",
+    "processing": "Transcription en cours…",
     "errors": {
       "microphoneUnavailable": "Impossible d'accéder à votre microphone.",
-      "transcribeAudio": "Échec de la transcription de votre enregistrement."
+      "transcribeAudio": "Échec de la transcription de votre enregistrement.",
+      "noSpeechDetected": "Aucune parole en chinois détectée. Veuillez réessayer."
     }
   },
   "challengeVocabularyModal": {

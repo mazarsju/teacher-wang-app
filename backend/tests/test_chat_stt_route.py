@@ -60,6 +60,34 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertEqual(record_kwargs["input_tokens"], 0)
         self.assertGreater(record_kwargs["output_tokens"], 0)
 
+    def test_strips_non_chinese_characters_from_transcript(self):
+        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
+            text="Hello, 你好! How are you 吗?"
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": "你好吗"})
+
+    def test_returns_empty_text_when_no_chinese_characters_detected(self):
+        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
+            text="Hello there, how are you?"
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": ""})
+
     def test_rejects_missing_audio(self):
         response = self.client.post("/chat/stt", data={}, content_type="multipart/form-data")
         self.assertEqual(response.status_code, 400)
