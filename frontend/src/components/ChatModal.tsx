@@ -360,7 +360,11 @@ export default function ChatModal({
     phase: voicePhase,
     error: voiceError,
     pressHandlers: voicePressHandlers,
-  } = useVoiceInput(transcribeChatAudio, (text) => setMessage(text), focusMessageInput);
+  } = useVoiceInput(
+    transcribeChatAudio,
+    (text) => setMessage((current) => current + text),
+    focusMessageInput,
+  );
 
   useEffect(() => {
     if (voiceError) {

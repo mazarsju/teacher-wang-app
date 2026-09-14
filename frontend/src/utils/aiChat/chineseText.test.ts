@@ -14,6 +14,13 @@ describe("isChineseOnlyText", () => {
     expect(isChineseOnlyText("你好 world")).toBe(false);
   });
 
+  it("accepts Chinese text quoted with curly double or single quotation marks", () => {
+    expect(isChineseOnlyText("你可以说：“我找不到火车站。”火车站在前面。")).toBe(
+      true,
+    );
+    expect(isChineseOnlyText("他说‘你好’。")).toBe(true);
+  });
+
   it("rejects pinyin", () => {
     expect(isChineseOnlyText("nǐ hǎo")).toBe(false);
   });

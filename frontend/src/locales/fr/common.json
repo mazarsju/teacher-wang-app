@@ -105,7 +105,7 @@
     "errors": {
       "microphoneUnavailable": "Impossible d'accéder à votre microphone.",
       "transcribeAudio": "Échec de la transcription de votre enregistrement.",
-      "noSpeechDetected": "Aucune parole en chinois détectée. Veuillez réessayer."
+      "noSpeechDetected": "Aucune parole détectée. Veuillez réessayer."
     }
   },
   "challengeVocabularyModal": {

@@ -31,7 +31,7 @@ export default function ShadowingSentence({
     error: voiceError,
     pressHandlers: voicePressHandlers,
   } = useVoiceInput(transcribeListeningAudio, (text) => {
-    setInputValue(text);
+    setInputValue((current) => current + text);
     setCheckResult(null);
   });
 

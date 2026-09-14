@@ -120,7 +120,7 @@ describe("VoiceInputButton", () => {
     await waitFor(() => expect(getUserMediaMock).toHaveBeenCalled());
     fireEvent.mouseUp(button);
 
-    await screen.findByText("No Chinese speech detected. Please try again.");
+    await screen.findByText("No speech detected. Please try again.");
     expect(screen.getByRole("textbox")).toHaveValue("existing ");
   });
 });

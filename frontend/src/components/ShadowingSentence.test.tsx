@@ -100,4 +100,45 @@ describe("ShadowingSentence", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("appends the transcript to text already typed in the input", async () => {
+    const user = userEvent.setup();
+    const fakeStream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const getUserMediaMock = vi.fn().mockResolvedValue(fakeStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: getUserMediaMock },
+      configurable: true,
+    });
+
+    class FakeMediaRecorder {
+      state = "recording";
+      ondataavailable: ((event: { data: Blob }) => void) | null = null;
+      onstop: (() => void) | null = null;
+      start() {
+        // no-op: the fake recorder emits its chunk on stop()
+      }
+      stop() {
+        this.state = "inactive";
+        this.ondataavailable?.({ data: new Blob(["chunk"]) });
+        this.onstop?.();
+      }
+    }
+    vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
+    transcribeListeningAudio.mockResolvedValue("几个人");
+
+    render(<ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />);
+
+    const input = screen.getByPlaceholderText("Type or record what you hear...");
+    await user.type(input, "你家有");
+
+    const recordButton = screen.getByRole("button", { name: "Hold to record" });
+    fireEvent.mouseDown(recordButton);
+    await waitFor(() => expect(getUserMediaMock).toHaveBeenCalled());
+
+    fireEvent.mouseUp(recordButton);
+
+    await waitFor(() => expect(input).toHaveValue("你家有几个人"));
+
+    vi.unstubAllGlobals();
+  });
 });

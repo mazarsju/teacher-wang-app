@@ -74,6 +74,20 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"text": "你好吗"})
 
+    def test_keeps_digits_alongside_chinese_characters(self):
+        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
+            text="我今年20岁, room #208"
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": "我今年20岁208"})
+
     def test_returns_empty_text_when_no_chinese_characters_detected(self):
         self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
             text="Hello there, how are you?"
