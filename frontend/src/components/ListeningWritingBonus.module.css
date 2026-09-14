@@ -1,0 +1,125 @@
+.bonus-textarea-wrapper {
+  position: relative;
+}
+
+.bonus-textarea {
+  width: 100%;
+  min-height: 10rem;
+  max-height: 30vh;
+  overflow-y: auto;
+  resize: vertical;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  color: #111827;
+  font: inherit;
+  line-height: 1.6;
+}
+
+.bonus-textarea:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -2px;
+}
+
+.bonus-voice-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.bonus-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.bonus-reviewing-message {
+  margin: 0 0 0.75rem;
+  font-style: italic;
+  color: #4b5563;
+}
+
+.bonus-reviewed {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  color: #111827;
+  line-height: 1.6;
+}
+
+.bonus-paragraph {
+  margin: 0 0 0.75rem;
+}
+
+.bonus-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.bonus-sentence {
+  transition: color 0.2s ease-out;
+}
+
+.bonus-sentence--checking {
+  opacity: 0.6;
+}
+
+.bonus-sentence--none {
+  color: #16a34a;
+}
+
+.bonus-sentence--minor {
+  color: #d97706;
+}
+
+.bonus-sentence--awkward {
+  color: #ea580c;
+}
+
+.bonus-sentence--incorrect {
+  color: #dc2626;
+}
+
+.bonus-sentence--clickable {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.bonus-sentence--clickable:hover {
+  opacity: 0.8;
+}
+
+.bonus-sentence--clickable:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.bonus-sentence-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0 0.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.bonus-sentence-edit-button:hover,
+.bonus-sentence-edit-button:focus-visible {
+  color: var(--app-sea);
+  outline: none;
+}
+
+.bonus-sentence-edit-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+}

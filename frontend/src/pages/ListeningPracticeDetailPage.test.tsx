@@ -31,6 +31,7 @@ const detail = {
     { id: 2, mandarin: "我家有五个人。", translation: "Five people." },
   ],
   exercises: [],
+  bonus_question: null,
   segment_count: 2,
 };
 
@@ -298,6 +299,42 @@ describe("ListeningPracticeDetailPage", () => {
 
     await user.click(await screen.findByRole("button", { name: "Back" }));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the bonus writing question at the bottom of the page when present", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      bonus_question: "How many people are in your family? Describe them.",
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    expect(await screen.findByText("Bonus: Writing practice")).toBeInTheDocument();
+    expect(
+      screen.getByText("How many people are in your family? Describe them."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Your answer")).toBeInTheDocument();
+  });
+
+  it("does not show the bonus writing section when there is no bonus question", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue(detail);
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "How many are in your family?",
+    });
+    expect(screen.queryByText("Bonus: Writing practice")).not.toBeInTheDocument();
   });
 
   it("shows an error when loading fails", async () => {

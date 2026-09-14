@@ -365,14 +365,16 @@ def fetch_listening_breakdown(
 def fetch_listening_exercises(
     hsk_level: int, topic_id: str, language: str = "en", client=None
 ) -> list[dict]:
-    """Multiple-choice comprehension exercises for a listening topic.
+    """Comprehension exercises for a listening topic.
 
-    ``[{id, type: "multiple_choice", question, choices, answer}, ...]`` —
-    same shape as the grammar content pipeline's ``exercises.json``, but
-    listening topics only ever use ``multiple_choice``. English reads
-    ``exercises.json``; any other language reads the fully translated
-    ``exercises_<language>.json`` sibling, falling back to the English file
-    if that translation hasn't been authored yet.
+    ``[{id, type: "multiple_choice", question, choices, answer}, ...]`` plus
+    a trailing ``{id, type: "open_question", question}`` entry — same shape
+    as the grammar content pipeline's ``exercises.json``. The route layer
+    (``get_listening_practice.py``) splits the ``open_question`` entry out
+    into its own ``bonus_question`` field; this loader returns the raw list
+    as-is. English reads ``exercises.json``; any other language reads the
+    fully translated ``exercises_<language>.json`` sibling, falling back to
+    the English file if that translation hasn't been authored yet.
     """
     folder = _topic_folder(hsk_level, topic_id)
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()

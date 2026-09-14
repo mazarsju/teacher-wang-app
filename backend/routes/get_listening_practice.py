@@ -25,6 +25,19 @@ def get_listening_practice(topic_id: str):
     ).first()
     language = current_user().language
 
+    exercises = fetch_listening_exercises(topic.hsk_level, topic.id, language)
+    mcq_exercises = [
+        exercise for exercise in exercises if exercise.get("type") != "open_question"
+    ]
+    bonus_question = next(
+        (
+            exercise["question"]
+            for exercise in exercises
+            if exercise.get("type") == "open_question"
+        ),
+        None,
+    )
+
     return {
         "id": topic.id,
         "title": topic.title,
@@ -34,7 +47,8 @@ def get_listening_practice(topic_id: str):
         "grammar_score": progress.grammar_score if progress else 0,
         "text": fetch_listening_text(topic.hsk_level, topic.id) or "",
         "sentences": fetch_listening_breakdown(topic.hsk_level, topic.id, language),
-        "exercises": fetch_listening_exercises(topic.hsk_level, topic.id, language),
+        "exercises": mcq_exercises,
+        "bonus_question": bonus_question,
         "segment_count": len(
             list_listening_audio_segments(topic.hsk_level, topic.id)
         ),

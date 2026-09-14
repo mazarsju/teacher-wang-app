@@ -105,6 +105,7 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
                         "answer": 1,
                     }
                 ],
+                "bonus_question": None,
                 "segment_count": 3,
             },
         )
@@ -114,6 +115,40 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         self.mock_exercises.assert_called_once_with(
             1, "listening-family-size", "en"
         )
+
+    def test_splits_the_open_question_out_of_exercises_into_bonus_question(self):
+        self._stub_topic()
+        self.mock_exercises.return_value = [
+            {
+                "id": "mcq_001",
+                "type": "multiple_choice",
+                "question": "How many?",
+                "choices": ["3", "5"],
+                "answer": 1,
+            },
+            {
+                "id": "open_001",
+                "type": "open_question",
+                "question": "Describe your family.",
+            },
+        ]
+
+        response = self.client.get("/listening-practices/listening-family-size")
+
+        body = response.get_json()
+        self.assertEqual(
+            body["exercises"],
+            [
+                {
+                    "id": "mcq_001",
+                    "type": "multiple_choice",
+                    "question": "How many?",
+                    "choices": ["3", "5"],
+                    "answer": 1,
+                }
+            ],
+        )
+        self.assertEqual(body["bonus_question"], "Describe your family.")
 
     def test_returns_existing_progress(self):
         self._stub_topic()

@@ -4,6 +4,7 @@ import AudioPlayer from "../components/AudioPlayer";
 import Button from "../components/Button";
 import { EyeIcon } from "../components/icons";
 import ListeningExercises from "../components/ListeningExercises";
+import ListeningWritingBonus from "../components/ListeningWritingBonus";
 import ShadowingSentence from "../components/ShadowingSentence";
 import Page from "../components/Page";
 import { useAppDispatch } from "../store/hooks";
@@ -249,6 +250,21 @@ export default function ListeningPracticeDetailPage({
               </p>
             )}
           </section>
+
+          {detail.bonus_question && (
+            <section
+              className={`${styles.listeningDetailSection} ${styles.listeningDetailBonusSection}`}
+            >
+              <h2 className={styles.listeningDetailSectionTitle}>
+                {t("listeningPracticeDetailPage.bonusWritingSection.title")}
+              </h2>
+              <p className={styles.listeningDetailSectionInstruction}>
+                {t("listeningPracticeDetailPage.bonusWritingSection.instruction")}
+              </p>
+              <p className={styles.listeningDetailBonusQuestion}>{detail.bonus_question}</p>
+              <ListeningWritingBonus question={detail.bonus_question} />
+            </section>
+          )}
         </>
       )}
     </Page>

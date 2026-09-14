@@ -80,6 +80,13 @@
       "no": "No",
       "markedDone": "Marked as completed.",
       "markedNotDone": "Marked as not completed yet."
+    },
+    "bonusWritingSection": {
+      "title": "Bonus: Writing practice",
+      "instruction": "Answer the question below with a few sentences in Chinese. We'll check that your answer addresses the question, then check your grammar sentence by sentence.",
+      "textareaAriaLabel": "Your answer",
+      "reviewedAriaLabel": "Your answer",
+      "offTopicWarning": "Your text doesn't seem to answer this question yet. Take another look at the question above, then rewrite your text to address it before submitting."
     }
   }
 }

@@ -10,15 +10,23 @@ import VoiceInputButton from "../components/VoiceInputButton";
 import WarningModal from "../components/WarningModal";
 import WritingReviewModal from "../components/WritingReviewModal";
 import { getTeacherWang } from "../data/chatCharacters";
-import type { CoveredGrammarPoint, WritingSentenceCheck } from "../types/writingSentence";
+import type { WritingSentenceCheck } from "../types/writingSentence";
 import { renderFormattedText } from "../utils/formatMarkdownText";
-import { detectGrammarPoints, recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
+import { recordGrammarUsage } from "../utils/grammar/grammarPointsApi";
 import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { useAppDispatch } from "../store/hooks";
 import { applyGrammarPointUsageUpdates } from "../store/slices/grammarSlice";
+import {
+  buildReviewSummary,
+  buildSentenceCorrectionContext,
+  groupByParagraph,
+  isAllCorrect,
+  isFlawed,
+  runSentenceCheck,
+  type ReviewSummary,
+} from "../utils/writing/sentenceReview";
 import { splitIntoSentences } from "../utils/writing/splitSentences";
 import {
-  checkWritingSentence,
   checkWritingTopicRelevance,
   completeWritingDraft,
   fetchWritingPractice,
@@ -34,24 +42,6 @@ type WritingPracticeDetailPageProps = {
   onBack: () => void;
 };
 
-type ReviewSummary = {
-  allCorrect: boolean;
-  grammarPointTitles: string[];
-};
-
-function groupByParagraph(sentences: WritingSentenceCheck[]): WritingSentenceCheck[][] {
-  const paragraphs: WritingSentenceCheck[][] = [];
-  for (const sentence of sentences) {
-    const lastParagraph = paragraphs[paragraphs.length - 1];
-    if (lastParagraph && lastParagraph[0]?.paragraphIndex === sentence.paragraphIndex) {
-      lastParagraph.push(sentence);
-    } else {
-      paragraphs.push([sentence]);
-    }
-  }
-  return paragraphs;
-}
-
 // Reconstructs the full draft text from sentence checks so edits made
 // through the correction modal are what gets saved/archived, not the
 // pre-submit textarea value.
@@ -59,54 +49,6 @@ function joinSentenceChecks(checks: WritingSentenceCheck[]): string {
   return groupByParagraph(checks)
     .map((paragraph) => paragraph.map((sentence) => sentence.text).join(" "))
     .join("\n");
-}
-
-function isFlawed(sentence: WritingSentenceCheck): boolean {
-  return sentence.status === "done" && sentence.severity !== null && sentence.severity !== "none";
-}
-
-function buildSentenceCorrectionContext(sentence: WritingSentenceCheck): string {
-  return `# Writing correction\n\nThe learner wrote: "${sentence.text}"\n\n${sentence.answer}`;
-}
-
-type SentenceCheckResult = Pick<
-  WritingSentenceCheck,
-  "status" | "severity" | "answer" | "grammarPointsCovered"
->;
-
-async function runSentenceCheck(text: string): Promise<SentenceCheckResult> {
-  try {
-    const correction = await checkWritingSentence(text);
-    let grammarPointsCovered: CoveredGrammarPoint[] = [];
-    if (correction.severity === "none") {
-      try {
-        grammarPointsCovered = await detectGrammarPoints(text);
-      } catch {
-        // Grammar-rule detection is a bonus signal; a failure here
-        // shouldn't block showing the correctness result.
-      }
-    }
-    return {
-      status: "done",
-      severity: correction.severity,
-      answer: correction.answer ?? null,
-      grammarPointsCovered,
-    };
-  } catch {
-    return { status: "error", severity: null, answer: null, grammarPointsCovered: [] };
-  }
-}
-
-function isAllCorrect(checks: WritingSentenceCheck[]): boolean {
-  return checks.every((sentence) => sentence.severity === "none");
-}
-
-function buildReviewSummary(checks: WritingSentenceCheck[], allCorrect: boolean): ReviewSummary {
-  const covered = checks.flatMap((sentence) => sentence.grammarPointsCovered);
-  return {
-    allCorrect,
-    grammarPointTitles: [...new Set(covered.map((point) => point.title))],
-  };
 }
 
 export default function WritingPracticeDetailPage({

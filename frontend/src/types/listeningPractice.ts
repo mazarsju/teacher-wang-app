@@ -34,6 +34,7 @@ export type ListeningPracticeDetail = ListeningPractice & {
   text: string;
   sentences: ListeningSentence[];
   exercises: ListeningExercise[];
+  bonus_question: string | null;
   segment_count: number;
 };
 

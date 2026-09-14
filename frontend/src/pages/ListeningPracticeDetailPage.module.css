@@ -70,3 +70,16 @@
   display: flex;
   gap: 0.75rem;
 }
+
+.listening-detail-bonus-section {
+  padding: 1.25rem;
+  border: 1px solid var(--app-sea);
+  border-radius: 0.75rem;
+  background: var(--app-mist);
+}
+
+.listening-detail-bonus-question {
+  margin: 0 0 0.9rem;
+  font-weight: 650;
+  color: #111827;
+}
