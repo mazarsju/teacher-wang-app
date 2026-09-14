@@ -8,6 +8,10 @@ describe("normalizeForComparison", () => {
   it("strips whitespace and punctuation", () => {
     expect(normalizeForComparison("你 好，世界！")).toBe("你好世界");
   });
+
+  it("strips any non-Chinese character, including ones outside the old punctuation list", () => {
+    expect(normalizeForComparison("你好…（世界）123abc")).toBe("你好世界");
+  });
 });
 
 describe("matchesSentence", () => {
@@ -25,6 +29,10 @@ describe("matchesSentence", () => {
 
   it("does not match an empty input", () => {
     expect(matchesSentence("", "你好")).toBe(false);
+  });
+
+  it("matches ignoring punctuation marks not in the old hardcoded list", () => {
+    expect(matchesSentence("你家有几个人…", "（你家有几个人）")).toBe(true);
   });
 });
 

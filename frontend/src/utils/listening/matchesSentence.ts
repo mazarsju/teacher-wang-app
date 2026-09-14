@@ -1,11 +1,11 @@
-// Ignores whitespace and punctuation everywhere (not just trailing) since a
-// spoken/STT answer rarely reproduces punctuation the way typed text does.
-const PUNCTUATION_CHARS = "\\s，。！？：；、\"'\"\"''~～,.!?:;";
-const PUNCTUATION_RE = new RegExp(`[${PUNCTUATION_CHARS}]`, "g");
-const PUNCTUATION_CHAR_RE = new RegExp(`[${PUNCTUATION_CHARS}]`);
+// Only Hanzi are compared — whitespace, punctuation, digits, and any other
+// script are ignored, since a spoken/STT answer rarely reproduces them the
+// way typed text does.
+const CHINESE_CHAR_RE = /[一-鿿]/;
+const CHINESE_CHAR_RE_GLOBAL = /[一-鿿]/g;
 
 export function normalizeForComparison(text: string): string {
-  return text.replace(PUNCTUATION_RE, "");
+  return (text.match(CHINESE_CHAR_RE_GLOBAL) ?? []).join("");
 }
 
 export function matchesSentence(input: string, expected: string): boolean {
@@ -60,7 +60,7 @@ export function diffSentenceChars(
   const expectedIndices: number[] = [];
   const expectedNormalized: string[] = [];
   expectedChars.forEach((char, index) => {
-    if (!PUNCTUATION_CHAR_RE.test(char)) {
+    if (CHINESE_CHAR_RE.test(char)) {
       expectedIndices.push(index);
       expectedNormalized.push(char);
     }
@@ -75,7 +75,7 @@ export function diffSentenceChars(
   );
 
   return expectedChars.map((char, index) => {
-    if (PUNCTUATION_CHAR_RE.test(char)) {
+    if (!CHINESE_CHAR_RE.test(char)) {
       return { char, matched: null };
     }
     return { char, matched: matchedOriginalIndices.has(index) };
