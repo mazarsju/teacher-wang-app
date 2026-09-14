@@ -674,7 +674,8 @@ img.chat-message-avatar {
   opacity: 0.6;
 }
 
-.chat-modal-record-button-active {
+.chat-modal-record-button-active,
+.chat-modal-record-button:active:not(:disabled) {
   border-color: #dc2626;
   background: #fee2e2;
   color: #dc2626;

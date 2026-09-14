@@ -17,6 +17,10 @@ import cultureTopicImage from "../assets/listening/culture.png";
 import hobbiesTopicImage from "../assets/listening/hobbies.png";
 import historyTopicImage from "../assets/listening/history.png";
 import weatherTopicImage from "../assets/listening/weather.png";
+import transportationTopicImage from "../assets/listening/transportation.png";
+import housingTopicImage from "../assets/listening/housing.png";
+import natureTopicImage from "../assets/listening/nature.png";
+import relationshipsTopicImage from "../assets/listening/relationships.png";
 import {
   HappyFaceIcon,
   NeutralFaceIcon,
@@ -61,6 +65,10 @@ const TOPIC_IMAGE: Record<string, string> = {
   hobbies: hobbiesTopicImage,
   history: historyTopicImage,
   weather: weatherTopicImage,
+  transportation: transportationTopicImage,
+  housing: housingTopicImage,
+  nature: natureTopicImage,
+  relationships: relationshipsTopicImage
 };
 
 const BADGE_PALETTE_SIZE = 8;

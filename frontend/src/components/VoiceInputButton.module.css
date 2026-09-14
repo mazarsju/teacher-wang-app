@@ -23,7 +23,8 @@
   opacity: 0.6;
 }
 
-.voice-input-button-active {
+.voice-input-button-active,
+.voice-input-button:active:not(:disabled) {
   border-color: #dc2626;
   background: #fee2e2;
   color: #dc2626;

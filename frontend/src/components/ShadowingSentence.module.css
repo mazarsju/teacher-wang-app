@@ -83,7 +83,8 @@
   opacity: 0.6;
 }
 
-.shadowing-sentence-mic-button-active {
+.shadowing-sentence-mic-button-active,
+.shadowing-sentence-mic-button:active:not(:disabled) {
   background: #fee2e2;
   color: #b91c1c;
 }
