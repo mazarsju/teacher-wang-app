@@ -4,8 +4,8 @@
     "tableHeaders": {
       "char": "char",
       "pinyin": "pinyin",
-      "writingKnown": "writing_known",
-      "updatedAt": "updated_at",
+      "writingKnown": "writing?",
+      "updatedAt": "updated at",
       "word": "words",
       "definition": "definition"
     },

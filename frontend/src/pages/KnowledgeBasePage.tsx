@@ -7,7 +7,7 @@ import Banner from "../components/Banner";
 import Button from "../components/Button";
 import CharacterWordsModal from "../components/CharacterWordsModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
+import { CheckIcon, ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
 import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
@@ -43,7 +43,8 @@ function getCharacterColumns(t: TFunction): TableColumn<Character>[] {
     {
       key: "writing_known",
       header: t("knowledgeBasePage.tableHeaders.writingKnown"),
-      render: (row) => String(row.writing_known),
+      render: (row) =>
+        row.writing_known ? <CheckIcon className={styles.writingKnownIcon} /> : "-",
     },
     {
       key: "updated_at",
@@ -69,7 +70,8 @@ function getWordColumns(t: TFunction): TableColumn<Word>[] {
     {
       key: "writing_known",
       header: t("knowledgeBasePage.tableHeaders.writingKnown"),
-      render: (row) => String(row.writing_known),
+      render: (row) =>
+        row.writing_known ? <CheckIcon className={styles.writingKnownIcon} /> : "-",
     },
     {
       key: "updated_at",
