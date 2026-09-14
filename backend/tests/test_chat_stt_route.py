@@ -1,6 +1,7 @@
 import bootstrap  # noqa: F401
 import io
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import backend.utils.database.database as database_module
@@ -10,6 +11,14 @@ database_module.configure_database = MagicMock()
 
 from backend.app import app  # noqa: E402
 from auth_stub import authenticated_client, patch_request_auth  # noqa: E402
+
+
+def _segment(text, no_speech_prob=0.05, avg_logprob=-0.2):
+    return SimpleNamespace(text=text, no_speech_prob=no_speech_prob, avg_logprob=avg_logprob)
+
+
+def _transcript(text, segments=None):
+    return SimpleNamespace(text=text, segments=segments)
 
 
 class TestChatSttEndpoint(unittest.TestCase):
@@ -23,8 +32,8 @@ class TestChatSttEndpoint(unittest.TestCase):
 
         self.mock_openai_client = MagicMock()
         self.mock_get_client.return_value = self.mock_openai_client
-        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
-            text="你好"
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            "你好", segments=[_segment("你好")]
         )
 
         self.assert_tokens_patcher = patch(
@@ -53,6 +62,7 @@ class TestChatSttEndpoint(unittest.TestCase):
         _, kwargs = self.mock_openai_client.audio.transcriptions.create.call_args
         self.assertEqual(kwargs["model"], "whisper-1")
         self.assertEqual(kwargs["language"], "zh")
+        self.assertEqual(kwargs["response_format"], "verbose_json")
         self.assertEqual(kwargs["file"][0], "recording.webm")
         self.mock_assert_tokens.assert_called_once()
         self.mock_record_tokens.assert_called_once()
@@ -61,8 +71,9 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertGreater(record_kwargs["output_tokens"], 0)
 
     def test_strips_non_chinese_characters_from_transcript(self):
-        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
-            text="Hello, 你好! How are you 吗?"
+        text = "Hello, 你好! How are you 吗?"
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            text, segments=[_segment(text)]
         )
 
         response = self.client.post(
@@ -75,8 +86,9 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertEqual(response.get_json(), {"text": "你好吗"})
 
     def test_keeps_digits_alongside_chinese_characters(self):
-        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
-            text="我今年20岁, room #208"
+        text = "我今年20岁, room #208"
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            text, segments=[_segment(text)]
         )
 
         response = self.client.post(
@@ -89,8 +101,9 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertEqual(response.get_json(), {"text": "我今年20岁208"})
 
     def test_returns_empty_text_when_no_chinese_characters_detected(self):
-        self.mock_openai_client.audio.transcriptions.create.return_value = MagicMock(
-            text="Hello there, how are you?"
+        text = "Hello there, how are you?"
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            text, segments=[_segment(text)]
         )
 
         response = self.client.post(
@@ -101,6 +114,58 @@ class TestChatSttEndpoint(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"text": ""})
+
+    def test_drops_hallucinated_text_when_audio_is_silent(self):
+        # Whisper's classic silence hallucination: a memorized subtitle-credit
+        # line instead of empty text, flagged by a high no_speech_prob and a
+        # low avg_logprob on its (only) segment.
+        text = "由社群提供的字幕"
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            text, segments=[_segment(text, no_speech_prob=0.95, avg_logprob=-1.5)]
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": ""})
+
+    def test_drops_only_the_hallucinated_trailing_segment(self):
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            "你家有几个人？由社群提供的字幕",
+            segments=[
+                _segment("你家有几个人？", no_speech_prob=0.05, avg_logprob=-0.2),
+                _segment("由社群提供的字幕", no_speech_prob=0.95, avg_logprob=-1.5),
+            ],
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": "你家有几个人"})
+
+    def test_keeps_a_quiet_but_confidently_transcribed_segment(self):
+        # A high no_speech_prob alone shouldn't drop real speech Whisper was
+        # still confident about (a quiet utterance) — both signals must agree.
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            "你好", segments=[_segment("你好", no_speech_prob=0.8, avg_logprob=-0.3)]
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": "你好"})
 
     def test_rejects_missing_audio(self):
         response = self.client.post("/chat/stt", data={}, content_type="multipart/form-data")

@@ -58,9 +58,30 @@ TTS_VOICES = {"alloy", "echo", "fable", "onyx", "nova", "shimmer"}
 
 _CHINESE_OR_DIGIT_PATTERN = re.compile(r"[一-鿿0-9]+")
 
+# Whisper hallucinates stock phrases (e.g. "由社群提供的字幕", a subtitle-credit
+# line memorized from its training data) when given silence/noise instead of
+# returning empty text. `verbose_json` exposes per-segment confidence so we
+# can drop those segments instead of trusting the raw transcript.
+_NO_SPEECH_PROB_THRESHOLD = 0.6
+_AVG_LOGPROB_THRESHOLD = -1.0
+
 
 def _chinese_and_digits_only(text: str) -> str:
     return "".join(_CHINESE_OR_DIGIT_PATTERN.findall(text))
+
+
+def _drop_silent_segments(transcript) -> str:
+    segments = getattr(transcript, "segments", None)
+    if not segments:
+        return transcript.text
+    return "".join(
+        segment.text
+        for segment in segments
+        if not (
+            segment.no_speech_prob > _NO_SPEECH_PROB_THRESHOLD
+            and segment.avg_logprob < _AVG_LOGPROB_THRESHOLD
+        )
+    )
 
 
 def _charge_token_usage(user, *, input_tokens: int = 0, output_tokens: int = 0) -> None:
@@ -509,13 +530,14 @@ def stt():
             model="whisper-1",
             file=(audio_file.filename or "audio.webm", audio_file.read(), audio_file.mimetype),
             language="zh",
+            response_format="verbose_json",
         )
     except Exception:
         return {"error": "Failed to transcribe audio"}, 500
 
     _charge_token_usage(user, output_tokens=estimate_text_tokens(transcript.text))
 
-    return {"text": _chinese_and_digits_only(transcript.text)}, 200
+    return {"text": _chinese_and_digits_only(_drop_silent_segments(transcript))}, 200
 
 
 @bp.get("/chat/history/<character_id>")
