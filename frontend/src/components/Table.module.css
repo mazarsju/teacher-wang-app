@@ -79,6 +79,10 @@
   background: var(--app-bg);
 }
 
+.table-row--clickable {
+  cursor: pointer;
+}
+
 .table-actions-header {
   width: 1%;
 }

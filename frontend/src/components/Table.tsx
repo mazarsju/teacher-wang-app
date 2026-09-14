@@ -14,6 +14,7 @@ type TableProps<T> = {
   getRowKey: (row: T) => string;
   emptyMessage?: string;
   renderRowActions?: (row: T) => ReactNode;
+  onRowClick?: (row: T) => void;
   compact?: boolean;
   maxVisibleRows?: number;
   maxHeight?: string;
@@ -25,6 +26,7 @@ export default function Table<T>({
   getRowKey,
   emptyMessage,
   renderRowActions,
+  onRowClick,
   compact = false,
   maxVisibleRows,
   maxHeight,
@@ -69,7 +71,13 @@ export default function Table<T>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={getRowKey(row)} className={styles.tableRow}>
+            <tr
+              key={getRowKey(row)}
+              className={[styles.tableRow, onRowClick && styles.tableRowClickable]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={onRowClick && (() => onRowClick(row))}
+            >
               {columns.map((column) => (
                 <td key={column.key}>
                   {column.render ? column.render(row) : String(row[column.key])}

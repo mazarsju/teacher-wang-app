@@ -5,6 +5,7 @@ import AddSuggestedWordsModal from "../components/AddSuggestedWordsModal";
 import AddWordModal, { type WordFormValues } from "../components/AddWordModal";
 import Banner from "../components/Banner";
 import Button from "../components/Button";
+import CharacterStrokeOrderModal from "../components/CharacterStrokeOrderModal";
 import CharacterWordsModal from "../components/CharacterWordsModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { CheckIcon, ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
@@ -143,6 +144,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     { char: string; pinyin: string } | null
   >(null);
   const [characterSearchQuery, setCharacterSearchQuery] = useState("");
+  const [strokeOrderChar, setStrokeOrderChar] = useState<string | null>(null);
   const [wordSearchQuery, setWordSearchQuery] = useState("");
   const [wordToDelete, setWordToDelete] = useState<Word | null>(null);
   const [wordToEdit, setWordToEdit] = useState<Word | null>(null);
@@ -676,8 +678,14 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
                   ? t("knowledgeBasePage.charactersSection.emptyDatabase")
                   : t("knowledgeBasePage.charactersSection.emptySearch")
               }
+              onRowClick={(row) => setStrokeOrderChar(row.char)}
             />
           </section>
+          <CharacterStrokeOrderModal
+            isOpen={strokeOrderChar !== null}
+            char={strokeOrderChar}
+            onClose={() => setStrokeOrderChar(null)}
+          />
         </>
       )}
         </>

@@ -451,6 +451,7 @@ Differentiate free and paid tiers so AI chat can scale without unbounded cost. D
 Smaller additions that aren't part of a bigger initiative but are still worth doing.
 
 - [x] Weekly Chinese-related article adapted to the learner's HSK level
+- [x] Stroke order animation per character in the knowledge base
 
 ### 10. Grammar learning
 

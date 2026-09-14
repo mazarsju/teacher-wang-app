@@ -228,6 +228,25 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByRole("cell", { name: "ai4 hao3" })).toBeInTheDocument();
   });
 
+  it("opens the stroke order modal when clicking a character row", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+    await screen.findByRole("cell", { name: "爱" });
+
+    await user.click(screen.getByRole("cell", { name: "爱" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("爱")).toBeInTheDocument();
+    expect(within(dialog).getByRole("img")).toHaveAttribute(
+      "src",
+      `https://www.strokeorder.com/assets/bishun/animation/${"爱".codePointAt(0)}.gif`,
+    );
+
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("auto-fills pinyin from the user's own character table when missing from HSK", async () => {
     const user = userEvent.setup();
 

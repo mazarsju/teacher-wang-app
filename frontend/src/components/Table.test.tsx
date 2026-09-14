@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import Table from "./Table";
 
 type Row = {
@@ -48,6 +49,24 @@ describe("Table", () => {
     );
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+  });
+
+  it("calls onRowClick with the row when a row is clicked", async () => {
+    const user = userEvent.setup();
+    const onRowClick = vi.fn();
+
+    render(
+      <Table<Row>
+        columns={columns}
+        rows={[{ id: "1", name: "Alice" }]}
+        getRowKey={(row) => row.id}
+        onRowClick={onRowClick}
+      />,
+    );
+
+    await user.click(screen.getByRole("cell", { name: "Alice" }));
+
+    expect(onRowClick).toHaveBeenCalledWith({ id: "1", name: "Alice" });
   });
 
   it("applies compact and scrollable classes when configured", () => {
