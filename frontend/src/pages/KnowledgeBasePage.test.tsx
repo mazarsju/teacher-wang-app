@@ -96,8 +96,13 @@ function matchesApiPath(url: string, path: string) {
   }
 }
 
+async function openActionsMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "More options" }));
+}
+
 async function enterViewMode(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "View" }));
+  await openActionsMenu(user);
+  await user.click(screen.getByRole("menuitem", { name: "Pinyin table view" }));
 }
 
 describe("KnowledgeBasePage", () => {
@@ -138,7 +143,9 @@ describe("KnowledgeBasePage", () => {
   it("starts in edit mode with words before characters", async () => {
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
 
-    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "More options" }),
+    ).toBeInTheDocument();
     expect(
       await screen.findByPlaceholderText("Search words..."),
     ).toBeInTheDocument();
@@ -196,24 +203,28 @@ describe("KnowledgeBasePage", () => {
     expect(
       await screen.findByPlaceholderText("Search characters..."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "More options" }),
+    ).toBeInTheDocument();
 
     await enterViewMode(user);
 
     expect(
       screen.queryByPlaceholderText("Search characters..."),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Modify" })).toBeInTheDocument();
     expect(
       await screen.findByRole("columnheader", { name: "ai" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Modify" }));
+    await openActionsMenu(user);
+    await user.click(screen.getByRole("menuitem", { name: "Go back to edit mode" }));
 
     expect(
       await screen.findByPlaceholderText("Search characters..."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "More options" }),
+    ).toBeInTheDocument();
   });
 
   it("loads and displays characters and words in edit mode", async () => {
@@ -400,21 +411,7 @@ describe("KnowledgeBasePage", () => {
     expect(screen.getByText("No words match your search.")).toBeInTheDocument();
   });
 
-  it("shows view mode toggles for writing known and not known", async () => {
-    const user = userEvent.setup();
-
-    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
-    await enterViewMode(user);
-
-    expect(
-      await screen.findByRole("switch", { name: "Writing known" }),
-    ).toBeChecked();
-    expect(
-      screen.getByRole("switch", { name: "Writing not known" }),
-    ).toBeChecked();
-  });
-
-  it("hides characters based on the view mode toggles", async () => {
+  it("shows all characters by default in view mode", async () => {
     const user = userEvent.setup();
 
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
@@ -425,8 +422,36 @@ describe("KnowledgeBasePage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("唉")).toBeInTheDocument();
     expect(screen.getByText("好")).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole("switch", { name: "Writing known" }));
+  it("filters characters via the view mode overflow menu", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
+    await enterViewMode(user);
+    await screen.findByRole("button", { name: "爱 associated words" });
+    expect(screen.getByText("Displaying all characters")).toBeInTheDocument();
+
+    await openActionsMenu(user);
+    await user.click(
+      screen.getByRole("menuitem", { name: "Display only when writing known" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "爱 associated words" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("唉")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("好")).toBeInTheDocument();
+    expect(
+      screen.getByText("Displaying only characters with known writing"),
+    ).toBeInTheDocument();
+
+    await openActionsMenu(user);
+    await user.click(
+      screen.getByRole("menuitem", { name: "Display only when writing not known" }),
+    );
 
     await waitFor(() => {
       expect(
@@ -435,19 +460,21 @@ describe("KnowledgeBasePage", () => {
       expect(screen.queryByText("好")).not.toBeInTheDocument();
     });
     expect(screen.getByText("唉")).toBeInTheDocument();
+    expect(
+      screen.getByText("Displaying only characters with writing not known"),
+    ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("switch", { name: "Writing known" }));
-    await user.click(
-      screen.getByRole("switch", { name: "Writing not known" }),
-    );
+    await openActionsMenu(user);
+    await user.click(screen.getByRole("menuitem", { name: "Display all" }));
 
     await waitFor(() => {
-      expect(screen.queryByText("唉")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "爱 associated words" }),
+      ).toBeInTheDocument();
     });
-    expect(
-      screen.getByRole("button", { name: "爱 associated words" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("唉")).toBeInTheDocument();
     expect(screen.getByText("好")).toBeInTheDocument();
+    expect(screen.getByText("Displaying all characters")).toBeInTheDocument();
   });
 
   it("opens the associated words modal when clicking a linked character", async () => {
@@ -578,7 +605,7 @@ describe("KnowledgeBasePage", () => {
     const fetchMock = vi.mocked(fetch);
 
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
-    await screen.findByRole("button", { name: "Export" });
+    await screen.findByRole("button", { name: "More options" });
 
     fetchMock.mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
@@ -617,7 +644,8 @@ describe("KnowledgeBasePage", () => {
       });
     });
 
-    await user.click(screen.getByRole("button", { name: "Export" }));
+    await openActionsMenu(user);
+    await user.click(screen.getByRole("menuitem", { name: "Export" }));
     await waitFor(() => {
       expect(
         screen.getByText("The database has been downloaded as a zip file."),
@@ -630,7 +658,7 @@ describe("KnowledgeBasePage", () => {
     const fetchMock = vi.mocked(fetch);
 
     renderWithStore(<KnowledgeBasePage />, { preloadedState: syncedState });
-    await screen.findByRole("button", { name: "Import" });
+    await screen.findByRole("button", { name: "More options" });
 
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {

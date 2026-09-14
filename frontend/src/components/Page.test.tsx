@@ -26,4 +26,14 @@ describe("Page", () => {
       screen.getByRole("button", { name: "Add character" }),
     ).toBeInTheDocument();
   });
+
+  it("renders an optional subtitle next to the title", () => {
+    render(
+      <Page title="Knowledge base" subtitle="Displaying all characters">
+        <p>Table content</p>
+      </Page>,
+    );
+
+    expect(screen.getByText("Displaying all characters")).toBeInTheDocument();
+  });
 });

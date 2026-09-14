@@ -21,6 +21,7 @@ import {
   QuestionIcon,
   StarIcon,
   MoreIcon,
+  TableIcon,
 } from "./icons";
 
 describe("icons", () => {
@@ -46,6 +47,7 @@ describe("icons", () => {
     ["ProfileIcon", ProfileIcon],
     ["PowerIcon", PowerIcon],
     ["MoreIcon", MoreIcon],
+    ["TableIcon", TableIcon],
   ])("renders %s as an accessible decorative svg", (_name, Icon) => {
     const { container } = render(<Icon className="navbar-icon" />);
 

@@ -9,15 +9,20 @@
       "word": "mots",
       "definition": "définition"
     },
-    "toggles": {
-      "writingKnown": "Écriture connue",
-      "writingNotKnown": "Écriture non connue"
-    },
     "actions": {
-      "modify": "Modifier",
+      "moreOptions": "Plus d'options",
       "export": "Exporter",
       "import": "Importer",
-      "view": "Voir"
+      "pinyinTableView": "Vue tableau pinyin",
+      "showWritingKnown": "Afficher uniquement l'écriture connue",
+      "showWritingUnknown": "Afficher uniquement l'écriture non connue",
+      "showAll": "Tout afficher",
+      "backToEditMode": "Retourner au mode édition"
+    },
+    "subtitle": {
+      "known": "Affichage des caractères avec écriture connue uniquement",
+      "unknown": "Affichage des caractères avec écriture non connue uniquement",
+      "all": "Affichage de tous les caractères"
     },
     "ankiSyncBanner": {
       "message_one": "{{count}} carte doit être ajoutée dans Anki pour la synchronisation.",

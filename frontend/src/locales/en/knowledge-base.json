@@ -9,15 +9,20 @@
       "word": "words",
       "definition": "definition"
     },
-    "toggles": {
-      "writingKnown": "Writing known",
-      "writingNotKnown": "Writing not known"
-    },
     "actions": {
-      "modify": "Modify",
+      "moreOptions": "More options",
       "export": "Export",
       "import": "Import",
-      "view": "View"
+      "pinyinTableView": "Pinyin table view",
+      "showWritingKnown": "Display only when writing known",
+      "showWritingUnknown": "Display only when writing not known",
+      "showAll": "Display all",
+      "backToEditMode": "Go back to edit mode"
+    },
+    "subtitle": {
+      "known": "Displaying only characters with known writing",
+      "unknown": "Displaying only characters with writing not known",
+      "all": "Displaying all characters"
     },
     "ankiSyncBanner": {
       "message_one": "{{count}} card need to be added in Anki for synchronization.",

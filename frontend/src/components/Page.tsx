@@ -3,6 +3,7 @@ import styles from "./Page.module.css";
 
 type PageProps = {
   title: string;
+  subtitle?: ReactNode;
   children?: ReactNode;
   headerCenter?: ReactNode;
   headerAction?: ReactNode;
@@ -11,6 +12,7 @@ type PageProps = {
 
 export default function Page({
   title,
+  subtitle,
   children,
   headerCenter,
   headerAction,
@@ -25,7 +27,10 @@ export default function Page({
       }
     >
       <header className={styles.pageHeader}>
-        <h1>{title}</h1>
+        <div className={styles.pageHeaderTitleGroup}>
+          <h1>{title}</h1>
+          {subtitle && <p className={styles.pageHeaderSubtitle}>{subtitle}</p>}
+        </div>
         {headerCenter}
         {headerAction}
       </header>

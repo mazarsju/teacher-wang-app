@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import AddSuggestedWordsModal from "../components/AddSuggestedWordsModal";
@@ -8,7 +15,16 @@ import Button from "../components/Button";
 import CharacterStrokeOrderModal from "../components/CharacterStrokeOrderModal";
 import CharacterWordsModal from "../components/CharacterWordsModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { CheckIcon, ExportIcon, EyeIcon, ImportIcon, PenIcon } from "../components/icons";
+import {
+  CheckIcon,
+  CloseIcon,
+  EyeIcon,
+  ExportIcon,
+  ImportIcon,
+  MoreIcon,
+  PenIcon,
+  TableIcon,
+} from "../components/icons";
 import KnowledgeBaseInitWizardModal from "../components/KnowledgeBaseInitWizardModal";
 import type { PageId } from "../components/Navbar";
 import Page from "../components/Page";
@@ -33,7 +49,6 @@ import {
   type CharacterSyncResult,
 } from "../utils/knowledgeBase/wordsApi";
 import { buildWordsByCharacter } from "../utils/knowledgeBase/wordsByCharacter";
-import pageStyles from "../components/Page.module.css";
 import tableStyles from "../components/Table.module.css";
 import styles from "./KnowledgeBasePage.module.css";
 
@@ -108,13 +123,18 @@ function filterWords(words: Word[], searchQuery: string) {
   );
 }
 
+type CharacterViewFilter = "known" | "unknown" | "all";
+
 function filterCharactersForView(
   characters: Character[],
-  showWritingKnown: boolean,
-  showWritingUnknown: boolean,
+  filter: CharacterViewFilter,
 ): Character[] {
+  if (filter === "all") {
+    return characters;
+  }
+
   return characters.filter((character) =>
-    character.writing_known ? showWritingKnown : showWritingUnknown,
+    filter === "known" ? character.writing_known : !character.writing_known,
   );
 }
 
@@ -138,8 +158,8 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
 
   const [pageMode, setPageMode] = useState<KnowledgeBaseMode>("edit");
-  const [showWritingKnown, setShowWritingKnown] = useState(true);
-  const [showWritingUnknown, setShowWritingUnknown] = useState(true);
+  const [characterViewFilter, setCharacterViewFilter] =
+    useState<CharacterViewFilter>("all");
   const [selectedCharacter, setSelectedCharacter] = useState<
     { char: string; pinyin: string } | null
   >(null);
@@ -157,10 +177,40 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   const [quickSyncError, setQuickSyncError] = useState<string | null>(null);
   const [isInitWizardOpen, setIsInitWizardOpen] = useState(false);
   const [isSuggestedWordsModalOpen, setIsSuggestedWordsModalOpen] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
 
   const characterColumns = useMemo(() => getCharacterColumns(t), [t]);
   const wordColumns = useMemo(() => getWordColumns(t), [t]);
+
+  useEffect(() => {
+    if (!isActionsMenuOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (
+        actionsMenuRef.current !== null &&
+        !actionsMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsActionsMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsActionsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isActionsMenuOpen]);
 
   const hasSyncedData = lastSyncedAt !== null;
   const isLoading =
@@ -199,14 +249,14 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   );
 
   const viewModeCharacters = useMemo(
-    () =>
-      filterCharactersForView(
-        characters,
-        showWritingKnown,
-        showWritingUnknown,
-      ),
-    [characters, showWritingKnown, showWritingUnknown],
+    () => filterCharactersForView(characters, characterViewFilter),
+    [characters, characterViewFilter],
   );
+
+  const viewModeSubtitle =
+    pageMode === "view"
+      ? t(`knowledgeBasePage.subtitle.${characterViewFilter}`)
+      : undefined;
 
   const wordsByCharacter = useMemo(
     () => buildWordsByCharacter(words),
@@ -402,74 +452,122 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
   return (
     <Page
       title={t("knowledgeBasePage.title")}
+      subtitle={viewModeSubtitle}
       fullWidth={pageMode === "view"}
-      headerCenter={
-        pageMode === "view" ? (
-          <div className={styles.pageHeaderToggles}>
-            <label className={styles.pageHeaderToggle}>
-              <span className={styles.pageHeaderToggleLabel}>
-                {t("knowledgeBasePage.toggles.writingKnown")}
-              </span>
-              <span className="toggle">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  aria-label={t("knowledgeBasePage.toggles.writingKnown")}
-                  checked={showWritingKnown}
-                  onChange={(event) =>
-                    setShowWritingKnown(event.target.checked)
-                  }
-                />
-                <span className="toggle-slider" />
-              </span>
-            </label>
-            <label className={styles.pageHeaderToggle}>
-              <span className={styles.pageHeaderToggleLabel}>
-                {t("knowledgeBasePage.toggles.writingNotKnown")}
-              </span>
-              <span className="toggle">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  aria-label={t("knowledgeBasePage.toggles.writingNotKnown")}
-                  checked={showWritingUnknown}
-                  onChange={(event) =>
-                    setShowWritingUnknown(event.target.checked)
-                  }
-                />
-                <span className="toggle-slider" />
-              </span>
-            </label>
-          </div>
-        ) : undefined
-      }
       headerAction={
-        pageMode === "view" ? (
-          <Button
-            kind="cancel"
-            variant="page"
-            text={t("knowledgeBasePage.actions.modify")}
-            icon={<PenIcon />}
-            onClick={() => setPageMode("edit")}
-          />
-        ) : (
-          <div className={pageStyles.pageHeaderActions}>
-            <Button
-              kind="cancel"
-              variant="page"
-              text={t("knowledgeBasePage.actions.export")}
-              icon={<ExportIcon />}
-              onClick={() => void handleExportDatabase()}
-              disabled={isExporting}
-            />
-            <Button
-              kind="cancel"
-              variant="page"
-              text={t("knowledgeBasePage.actions.import")}
-              icon={<ImportIcon />}
-              onClick={() => importInputRef.current?.click()}
-              disabled={isImporting}
-            />
+        <div className={styles.actionsMenu} ref={actionsMenuRef}>
+          <button
+            type="button"
+            className={styles.actionsMenuTrigger}
+            aria-label={t("knowledgeBasePage.actions.moreOptions")}
+            aria-haspopup="menu"
+            aria-expanded={isActionsMenuOpen}
+            onClick={() => setIsActionsMenuOpen((open) => !open)}
+          >
+            <MoreIcon className={styles.actionsMenuTriggerIcon} />
+          </button>
+          {isActionsMenuOpen && (
+            <div
+              className={styles.actionsMenuDropdown}
+              role="menu"
+              aria-label={t("knowledgeBasePage.actions.moreOptions")}
+            >
+              {pageMode === "view" ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      setCharacterViewFilter("known");
+                    }}
+                  >
+                    <CheckIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.showWritingKnown")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      setCharacterViewFilter("unknown");
+                    }}
+                  >
+                    <CloseIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.showWritingUnknown")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      setCharacterViewFilter("all");
+                    }}
+                  >
+                    <EyeIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.showAll")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      setPageMode("edit");
+                    }}
+                  >
+                    <PenIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.backToEditMode")}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    disabled={isExporting}
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      void handleExportDatabase();
+                    }}
+                  >
+                    <ExportIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.export")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    disabled={isImporting}
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      importInputRef.current?.click();
+                    }}
+                  >
+                    <ImportIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.import")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.actionsMenuItem}
+                    role="menuitem"
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      switchToViewMode();
+                    }}
+                  >
+                    <TableIcon className={styles.actionsMenuItemIcon} />
+                    <span>{t("knowledgeBasePage.actions.pinyinTableView")}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          {pageMode === "edit" && (
             <input
               ref={importInputRef}
               type="file"
@@ -477,15 +575,8 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               className={styles.knowledgeBaseImportInput}
               onChange={(event) => void handleImportDatabase(event)}
             />
-            <Button
-              kind="cancel"
-              variant="page"
-              text={t("knowledgeBasePage.actions.view")}
-              icon={<EyeIcon />}
-              onClick={switchToViewMode}
-            />
-          </div>
-        )
+          )}
+        </div>
       }
     >
       {showAnkiSyncBanner && (
