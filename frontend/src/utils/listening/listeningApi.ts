@@ -2,6 +2,7 @@ import type {
   CompleteListeningPracticeResult,
   ListeningPractice,
   ListeningPracticeDetail,
+  ListeningProgressData,
 } from "../../types/listeningPractice";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
@@ -95,6 +96,27 @@ export async function completeListeningPractice(
   }
 
   return (await response.json()) as CompleteListeningPracticeResult;
+}
+
+/** Saves the learner's Questions/Shadowing/Bonus answers wholesale — called
+ * on every Verify/Check/Submit click, not on every keystroke. Best-effort:
+ * callers swallow failures rather than surfacing a save error to the learner. */
+export async function saveListeningProgress(
+  id: string,
+  progress: ListeningProgressData,
+): Promise<void> {
+  const response = await apiFetch(
+    `${API_BASE}/listening-practices/${encodeURIComponent(id)}/progress`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ progress }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to save your progress.");
+  }
 }
 
 export async function transcribeListeningAudio(audio: Blob): Promise<string> {

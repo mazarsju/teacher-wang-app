@@ -1,4 +1,5 @@
 import bootstrap  # noqa: F401
+import json
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -106,6 +107,7 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
                     }
                 ],
                 "bonus_question": None,
+                "progress": None,
                 "segment_count": 3,
             },
         )
@@ -153,7 +155,9 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
     def test_returns_existing_progress(self):
         self._stub_topic()
         self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
-            MagicMock(status="DONE", vocabulary_score=80, grammar_score=60)
+            MagicMock(
+                status="DONE", vocabulary_score=80, grammar_score=60, progress=None
+            )
         )
 
         response = self.client.get("/listening-practices/listening-family-size")
@@ -162,6 +166,27 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         self.assertEqual(body["status"], "DONE")
         self.assertEqual(body["vocabulary_score"], 80)
         self.assertEqual(body["grammar_score"], 60)
+        self.assertIsNone(body["progress"])
+
+    def test_returns_the_saved_answer_progress_parsed_as_json(self):
+        self._stub_topic()
+        saved = {
+            "exercises": {"mcq_001": 1},
+            "shadowing": {"1": {"text": "你家有几个人？", "result": "correct"}},
+            "bonus": None,
+        }
+        self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
+            MagicMock(
+                status="TODO",
+                vocabulary_score=0,
+                grammar_score=0,
+                progress=json.dumps(saved),
+            )
+        )
+
+        response = self.client.get("/listening-practices/listening-family-size")
+
+        self.assertEqual(response.get_json()["progress"], saved)
 
     def test_returns_404_for_unknown_topic(self):
         self.mock_practice_cls.query.get.return_value = None

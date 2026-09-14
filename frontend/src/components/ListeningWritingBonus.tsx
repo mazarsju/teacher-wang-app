@@ -27,19 +27,30 @@ import styles from "./ListeningWritingBonus.module.css";
 
 type ListeningWritingBonusProps = {
   question: string;
+  initialSentenceChecks?: WritingSentenceCheck[] | null;
+  onProgressChange?: (sentenceChecks: WritingSentenceCheck[] | null) => void;
 };
 
 // Same submit -> topic-relevance check -> per-sentence grammar check flow as
 // WritingPracticeDetailPage (shared via utils/writing/sentenceReview), minus
 // draft persistence/archiving — this is an ephemeral bonus question attached
-// to a listening topic, not a standalone writing-practice topic.
-export default function ListeningWritingBonus({ question }: ListeningWritingBonusProps) {
+// to a listening topic, not a standalone writing-practice topic. The raw
+// pre-submit draft is never restored/persisted (only per-check snapshots
+// are), so a learner who typed something but never hit Submit loses it on
+// reload — matching "no need to save the current state for each input".
+export default function ListeningWritingBonus({
+  question,
+  initialSentenceChecks,
+  onProgressChange,
+}: ListeningWritingBonusProps) {
   const dispatch = useAppDispatch();
   const { t } = useTranslation("listening");
   const { t: tWriting } = useTranslation("writing");
   const { t: tChat } = useTranslation("chat");
   const [draft, setDraft] = useState("");
-  const [sentenceChecks, setSentenceChecks] = useState<WritingSentenceCheck[] | null>(null);
+  const [sentenceChecks, setSentenceChecks] = useState<WritingSentenceCheck[] | null>(
+    initialSentenceChecks ?? null,
+  );
   const [isReviewing, setIsReviewing] = useState(false);
   const [activeSentenceChat, setActiveSentenceChat] = useState<WritingSentenceCheck | null>(
     null,
@@ -130,6 +141,7 @@ export default function ListeningWritingBonus({ question }: ListeningWritingBonu
 
     setIsReviewing(false);
     settleReview(finalChecks, true);
+    onProgressChange?.(finalChecks);
   }
 
   async function handleConfirmCorrection(sentenceId: string, correctedText: string) {
@@ -148,6 +160,7 @@ export default function ListeningWritingBonus({ question }: ListeningWritingBonu
     );
     setSentenceChecks(updated);
     settleReview(updated, false);
+    onProgressChange?.(updated);
   }
 
   return (

@@ -9,12 +9,18 @@ import ShadowingSentence from "../components/ShadowingSentence";
 import Page from "../components/Page";
 import { useAppDispatch } from "../store/hooks";
 import { setListeningPracticeResult } from "../store/slices/listeningSlice";
-import type { ListeningPracticeDetail } from "../types/listeningPractice";
+import type {
+  ListeningPracticeDetail,
+  ListeningProgressData,
+  ListeningShadowingAnswer,
+} from "../types/listeningPractice";
+import type { WritingSentenceCheck } from "../types/writingSentence";
 import {
   completeListeningPractice,
   fetchListeningAudioBlob,
   fetchListeningAudioSegmentBlob,
   fetchListeningPracticeDetail,
+  saveListeningProgress,
 } from "../utils/listening/listeningApi";
 import styles from "./ListeningPracticeDetailPage.module.css";
 
@@ -34,6 +40,11 @@ export default function ListeningPracticeDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [isTextRevealed, setIsTextRevealed] = useState(false);
   const [isTranslationShown, setIsTranslationShown] = useState(false);
+  const [exercisesAnswers, setExercisesAnswers] = useState<Record<string, number>>({});
+  const [shadowingAnswers, setShadowingAnswers] = useState<
+    Record<string, ListeningShadowingAnswer>
+  >({});
+  const [bonusChecks, setBonusChecks] = useState<WritingSentenceCheck[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +55,9 @@ export default function ListeningPracticeDetailPage({
       .then((result) => {
         if (!cancelled) {
           setDetail(result);
+          setExercisesAnswers(result.progress?.exercises ?? {});
+          setShadowingAnswers(result.progress?.shadowing ?? {});
+          setBonusChecks(result.progress?.bonus ?? null);
         }
       })
       .catch((fetchError) => {
@@ -122,6 +136,34 @@ export default function ListeningPracticeDetailPage({
       .catch(() => {});
   }
 
+  // Saves the whole {exercises, shadowing, bonus} triple on every
+  // Verify/Check/Submit click — never on individual keystrokes/selections.
+  // Best-effort: a failed save shouldn't surface as a user-facing error.
+  function persistProgress(next: ListeningProgressData) {
+    if (!detail) return;
+    saveListeningProgress(detail.id, next).catch(() => {});
+  }
+
+  function handleExercisesVerify(answers: Record<string, number>) {
+    setExercisesAnswers(answers);
+    persistProgress({ exercises: answers, shadowing: shadowingAnswers, bonus: bonusChecks });
+  }
+
+  function handleShadowingCheck(key: string, answer: ListeningShadowingAnswer) {
+    const next = { ...shadowingAnswers, [key]: answer };
+    setShadowingAnswers(next);
+    persistProgress({ exercises: exercisesAnswers, shadowing: next, bonus: bonusChecks });
+  }
+
+  function handleBonusProgressChange(sentenceChecks: WritingSentenceCheck[] | null) {
+    setBonusChecks(sentenceChecks);
+    persistProgress({
+      exercises: exercisesAnswers,
+      shadowing: shadowingAnswers,
+      bonus: sentenceChecks,
+    });
+  }
+
   return (
     <Page
       title={detail?.title ?? t("listeningPracticeDetailPage.title")}
@@ -158,7 +200,11 @@ export default function ListeningPracticeDetailPage({
             <p className={styles.listeningDetailSectionInstruction}>
               {t("listeningPracticeDetailPage.questionsSection.instruction")}
             </p>
-            <ListeningExercises exercises={detail.exercises} />
+            <ListeningExercises
+              exercises={detail.exercises}
+              initialAnswers={detail.progress?.exercises}
+              onVerify={handleExercisesVerify}
+            />
           </section>
 
           <section className={styles.listeningDetailSection}>
@@ -173,6 +219,8 @@ export default function ListeningPracticeDetailPage({
                 key={unit.key}
                 mandarin={unit.mandarin}
                 loadAudio={unit.loadAudio}
+                initialAnswer={detail.progress?.shadowing?.[unit.key]}
+                onCheck={(answer) => handleShadowingCheck(unit.key, answer)}
               />
             ))}
           </section>
@@ -262,7 +310,11 @@ export default function ListeningPracticeDetailPage({
                 {t("listeningPracticeDetailPage.bonusWritingSection.instruction")}
               </p>
               <p className={styles.listeningDetailBonusQuestion}>{detail.bonus_question}</p>
-              <ListeningWritingBonus question={detail.bonus_question} />
+              <ListeningWritingBonus
+                question={detail.bonus_question}
+                initialSentenceChecks={detail.progress?.bonus}
+                onProgressChange={handleBonusProgressChange}
+              />
             </section>
           )}
         </>

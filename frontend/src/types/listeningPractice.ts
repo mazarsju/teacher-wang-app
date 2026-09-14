@@ -1,3 +1,5 @@
+import type { WritingSentenceCheck } from "./writingSentence";
+
 export type ListeningPractice = {
   id: string;
   title: string;
@@ -30,11 +32,25 @@ export type ListeningExercise = {
   answer: number;
 };
 
+export type ListeningShadowingAnswer = {
+  text: string;
+  result: "correct" | "incorrect";
+};
+
+/** The learner's answers on a topic's Questions/Shadowing/Bonus sections —
+ * saved wholesale on every Verify/Check/Submit click, restored on load. */
+export type ListeningProgressData = {
+  exercises: Record<string, number>;
+  shadowing: Record<string, ListeningShadowingAnswer>;
+  bonus: WritingSentenceCheck[] | null;
+};
+
 export type ListeningPracticeDetail = ListeningPractice & {
   text: string;
   sentences: ListeningSentence[];
   exercises: ListeningExercise[];
   bonus_question: string | null;
+  progress: ListeningProgressData | null;
   segment_count: number;
 };
 

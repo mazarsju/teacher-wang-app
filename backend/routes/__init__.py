@@ -45,6 +45,7 @@ def register_routes(app: Flask) -> None:
         reload_grammar_rules,
         reload_hsk_content,
         reload_listening_practice,
+        save_listening_progress,
         skip_grammar_point,
         smart_ai_preference,
         suggest_hsk_words,
@@ -87,6 +88,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(list_listening_practices.bp)
     app.register_blueprint(get_listening_practice.bp)
     app.register_blueprint(complete_listening_practice.bp)
+    app.register_blueprint(save_listening_progress.bp)
     app.register_blueprint(refresh_listening_practices.bp)
     app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(complete_grammar_point.bp)

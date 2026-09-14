@@ -4,6 +4,7 @@ import AudioPlayer from "./AudioPlayer";
 import Button from "./Button";
 import { CheckIcon, EyeIcon, IncorrectIcon, MicrophoneIcon } from "./icons";
 import { useVoiceInput } from "../hooks/useVoiceInput";
+import type { ListeningShadowingAnswer } from "../types/listeningPractice";
 import { transcribeListeningAudio } from "../utils/listening/listeningApi";
 import {
   diffSentenceChars,
@@ -14,18 +15,22 @@ import styles from "./ShadowingSentence.module.css";
 type ShadowingSentenceProps = {
   mandarin: string;
   loadAudio: () => Promise<Blob>;
+  initialAnswer?: ListeningShadowingAnswer;
+  onCheck?: (answer: ListeningShadowingAnswer) => void;
 };
 
 export default function ShadowingSentence({
   mandarin,
   loadAudio,
+  initialAnswer,
+  onCheck,
 }: ShadowingSentenceProps) {
   const { t } = useTranslation("listening");
   const [isRevealed, setIsRevealed] = useState(false);
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(initialAnswer?.text ?? "");
   const [checkResult, setCheckResult] = useState<
     "correct" | "incorrect" | null
-  >(null);
+  >(initialAnswer?.result ?? null);
   const {
     phase: voicePhase,
     error: voiceError,
@@ -120,11 +125,13 @@ export default function ShadowingSentence({
           variant="table"
           text={t("shadowingSentence.check")}
           disabled={!inputValue.trim()}
-          onClick={() =>
-            setCheckResult(
-              matchesSentence(inputValue, mandarin) ? "correct" : "incorrect",
-            )
-          }
+          onClick={() => {
+            const result = matchesSentence(inputValue, mandarin)
+              ? "correct"
+              : "incorrect";
+            setCheckResult(result);
+            onCheck?.({ text: inputValue, result });
+          }}
         />
         {checkResult === "correct" && (
           <CheckIcon

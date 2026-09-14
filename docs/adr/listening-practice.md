@@ -66,6 +66,20 @@ Listening practice itself — the catalog, comprehension questions, full audio p
 
 The Preferences "Compare plans" dialog (`ChangePlanModal.tsx`) now lists a "Listening exercises" row alongside AI chat and grammar, labeled `Limited` for free / `Full access` for pro — describing that same shared-budget reality (identical to how the `aiChat`/`grammar` rows are worded) rather than a dedicated cap unique to listening. If a real per-feature quota is ever introduced, this row (and this decision) should be revisited.
 
+### 7. Answers are persisted wholesale as one JSON blob, saved on Verify/Check/Submit, never on a keystroke
+
+`listening_progress.progress` (`VARCHAR`, nullable) stores a JSON-stringified `{exercises, shadowing, bonus}` object — the learner's answers across all three of a topic's interactive sections in one row, not three separate columns or a child table. `exercises` is `Record<exerciseId, choiceIndex>` (mirrors `ListeningExercises`' own internal `answers` state); `shadowing` is `Record<shadowingUnitKey, {text, result}>` keyed by the same `key` `ListeningPracticeDetailPage` already builds for each shadowing unit (`"<sentenceId>"` or `"<sentenceId>-<chunkId>"`); `bonus` is the bonus section's `WritingSentenceCheck[] | null` (decision 3b) — the exact array `ListeningWritingBonus` renders from, so restoring it is just passing it back in as `initialSentenceChecks`, no reconstruction needed.
+
+`POST /listening-practices/<id>/progress` (`backend/routes/save_listening_progress.py`) replaces the whole blob on every call — it is not a per-field merge endpoint. `ListeningPracticeDetailPage` owns all three pieces of state (`exercisesAnswers`/`shadowingAnswers`/`bonusChecks`) precisely so it can always send the complete triple: `ListeningExercises`' `onVerify`, each `ShadowingSentence`'s `onCheck`, and `ListeningWritingBonus`'s `onProgressChange` each report only their own slice, which the page merges with the other two in-memory before saving — never a partial write that could clobber another section's already-saved answers. The bonus section's raw pre-submit textarea draft is deliberately **not** part of this blob (or restored) — only post-check snapshots are — so a learner who types an answer but never clicks Submit loses it on reload, same as an unanswered `multiple_choice` selection already does; this matches "no need to save on every keystroke" and keeps the endpoint a plain wholesale-replace rather than something needing debouncing or per-input traffic.
+
+`GET /listening-practices/<id>` parses the stored string back into an object for its `progress` response field (`null` if nothing was ever saved), and each child component takes an `initial*` prop to seed its own state from its slice: `ListeningExercises` also recomputes `isVerified`/`score` from a fully-answered `initialAnswers` so a restored attempt looks exactly as if Verify had just been clicked, rather than only re-selecting choices with no feedback shown.
+
+#### Consequences
+
+- One row, one column, one wholesale save — no migration-prone per-section schema, and no partial-update races between the three sections' independent save triggers.
+- A save is a full overwrite: two browser tabs open on the same topic will have the second save's whole blob clobber the first's, including sections the second tab never touched. Acceptable for a single-learner, single-device feature; would need real per-field merging (or per-section columns) if concurrent multi-tab editing ever became a real scenario.
+- `progress` is opaque JSON to Postgres (a `VARCHAR`, not `JSONB`) — no server-side querying/indexing into individual answers is possible without parsing every row in application code. Fine today since nothing reads this column except the one owning route; revisit (e.g. to `JSONB`, matching `words.custom_fields`) if a future feature needs to query into it.
+
 ## Consequences
 
 ### Advantages

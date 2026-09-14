@@ -327,6 +327,11 @@ class ListeningProgress(db.Model):
     vocabulary_score = db.Column(Integer, nullable=False, default=0)
     grammar_score = db.Column(Integer, nullable=False, default=0)
     status = db.Column(String, nullable=False, default="TODO")
+    # JSON-stringified {exercises, shadowing, bonus} answers the learner has
+    # given on this topic's Questions/Shadowing/Bonus sections. Saved on
+    # every Verify/Check/Submit click (see save_listening_progress.py), not
+    # on every keystroke — null until the first one.
+    progress = db.Column(String, nullable=True)
 
 
 class ConversationSummary(db.Model):

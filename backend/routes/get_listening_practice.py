@@ -1,3 +1,5 @@
+import json
+
 from flask import Blueprint, Response
 
 from backend.utils.auth.user_context import current_user, current_user_id
@@ -20,7 +22,7 @@ def get_listening_practice(topic_id: str):
     if topic is None:
         return {"error": "Listening practice not found"}, 404
 
-    progress = ListeningProgress.query.filter_by(
+    progress_row = ListeningProgress.query.filter_by(
         user_id=current_user_id(), listening_topic=topic_id
     ).first()
     language = current_user().language
@@ -42,13 +44,18 @@ def get_listening_practice(topic_id: str):
         "id": topic.id,
         "title": topic.title,
         "hsk_level": topic.hsk_level,
-        "status": progress.status if progress else "TODO",
-        "vocabulary_score": progress.vocabulary_score if progress else 0,
-        "grammar_score": progress.grammar_score if progress else 0,
+        "status": progress_row.status if progress_row else "TODO",
+        "vocabulary_score": progress_row.vocabulary_score if progress_row else 0,
+        "grammar_score": progress_row.grammar_score if progress_row else 0,
         "text": fetch_listening_text(topic.hsk_level, topic.id) or "",
         "sentences": fetch_listening_breakdown(topic.hsk_level, topic.id, language),
         "exercises": mcq_exercises,
         "bonus_question": bonus_question,
+        "progress": (
+            json.loads(progress_row.progress)
+            if progress_row and progress_row.progress
+            else None
+        ),
         "segment_count": len(
             list_listening_audio_segments(topic.hsk_level, topic.id)
         ),

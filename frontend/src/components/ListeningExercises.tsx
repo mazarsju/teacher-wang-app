@@ -10,15 +10,36 @@ const CONFETTI_DURATION_MS = 2000;
 
 type ListeningExercisesProps = {
   exercises: ListeningExercise[];
+  initialAnswers?: Record<string, number>;
+  onVerify?: (answers: Record<string, number>) => void;
 };
+
+function computeScore(
+  exercises: ListeningExercise[],
+  answers: Record<string, number>,
+): number {
+  const correctCount = exercises.filter(
+    (exercise) => answers[exercise.id] === exercise.answer,
+  ).length;
+  return Math.round((correctCount / exercises.length) * 100);
+}
 
 export default function ListeningExercises({
   exercises,
+  initialAnswers,
+  onVerify,
 }: ListeningExercisesProps) {
   const { t } = useTranslation("listening");
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [isVerified, setIsVerified] = useState(false);
-  const [score, setScore] = useState<number | null>(null);
+  const [answers, setAnswers] = useState<Record<string, number>>(initialAnswers ?? {});
+  // Restoring a previously fully-answered attempt shows it already verified,
+  // as if Verify had just been clicked, instead of losing that feedback.
+  const wasFullyVerified =
+    exercises.length > 0 &&
+    exercises.every((exercise) => (initialAnswers ?? {})[exercise.id] !== undefined);
+  const [isVerified, setIsVerified] = useState(wasFullyVerified);
+  const [score, setScore] = useState<number | null>(
+    wasFullyVerified ? computeScore(exercises, initialAnswers ?? {}) : null,
+  );
   const [showConfetti, setShowConfetti] = useState(false);
 
   if (exercises.length === 0) {
@@ -35,12 +56,10 @@ export default function ListeningExercises({
   }
 
   function handleVerify() {
-    const correctCount = exercises.filter(
-      (exercise) => answers[exercise.id] === exercise.answer,
-    ).length;
-    const percentage = Math.round((correctCount / exercises.length) * 100);
+    const percentage = computeScore(exercises, answers);
     setScore(percentage);
     setIsVerified(true);
+    onVerify?.(answers);
     if (percentage >= PASSING_SCORE) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), CONFETTI_DURATION_MS);

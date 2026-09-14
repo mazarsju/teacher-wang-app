@@ -10,11 +10,13 @@ vi.mock("../utils/listening/listeningApi", () => ({
   fetchListeningAudioSegmentBlob: vi.fn(),
   transcribeListeningAudio: vi.fn(),
   completeListeningPractice: vi.fn(),
+  saveListeningProgress: vi.fn(),
 }));
 
 const fetchListeningPracticeDetail = vi.mocked(
   listeningApi.fetchListeningPracticeDetail,
 );
+const saveListeningProgress = vi.mocked(listeningApi.saveListeningProgress);
 
 const detail = {
   id: "listening-family-size",
@@ -32,12 +34,14 @@ const detail = {
   ],
   exercises: [],
   bonus_question: null,
+  progress: null,
   segment_count: 2,
 };
 
 describe("ListeningPracticeDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    saveListeningProgress.mockResolvedValue(undefined);
   });
 
   it("renders the four sections once loaded", async () => {
@@ -219,6 +223,104 @@ describe("ListeningPracticeDetailPage", () => {
     expect(completeListeningPractice).not.toHaveBeenCalled();
   });
 
+  it("saves progress when Verify is clicked, and restores the previous answers/score on reload", async () => {
+    const user = userEvent.setup();
+    const exercises = [
+      {
+        id: "mcq_001",
+        type: "multiple_choice" as const,
+        question: "How many people?",
+        choices: ["3", "5"],
+        answer: 1,
+      },
+    ];
+    fetchListeningPracticeDetail.mockResolvedValue({ ...detail, exercises });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "5" }));
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+
+    await waitFor(() =>
+      expect(saveListeningProgress).toHaveBeenCalledWith("listening-family-size", {
+        exercises: { mcq_001: 1 },
+        shadowing: {},
+        bonus: null,
+      }),
+    );
+
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      exercises,
+      progress: { exercises: { mcq_001: 1 }, shadowing: {}, bonus: null },
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    expect(
+      await screen.findAllByText("You scored 100%."),
+    ).not.toHaveLength(0);
+  });
+
+  it("saves shadowing progress when Check is clicked, keyed by sentence id", async () => {
+    const user = userEvent.setup();
+    fetchListeningPracticeDetail.mockResolvedValue(detail);
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    const inputs = await screen.findAllByPlaceholderText(
+      "Type or record what you hear...",
+    );
+    await user.type(inputs[0], "你家有几个人？");
+    await user.click(screen.getAllByRole("button", { name: "Check" })[0]);
+
+    await waitFor(() =>
+      expect(saveListeningProgress).toHaveBeenCalledWith("listening-family-size", {
+        exercises: {},
+        shadowing: { "1": { text: "你家有几个人？", result: "correct" } },
+        bonus: null,
+      }),
+    );
+  });
+
+  it("restores a saved shadowing answer into its input on reload", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      progress: {
+        exercises: {},
+        shadowing: { "1": { text: "你家有几个人？", result: "correct" } },
+        bonus: null,
+      },
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    const inputs = await screen.findAllByPlaceholderText(
+      "Type or record what you hear...",
+    );
+    expect(inputs[0]).toHaveValue("你家有几个人？");
+  });
+
   it("asks the learner to decide completion at the bottom of the page and persists their choice", async () => {
     const user = userEvent.setup();
     const completeListeningPractice = vi.mocked(
@@ -335,6 +437,78 @@ describe("ListeningPracticeDetailPage", () => {
       name: "How many are in your family?",
     });
     expect(screen.queryByText("Bonus: Writing practice")).not.toBeInTheDocument();
+  });
+
+  it("saves bonus progress when its Submit is clicked", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.endsWith("/writing/check-topic-relevance")) {
+          return { ok: true, json: async () => ({ on_topic: true }) };
+        }
+        if (url.endsWith("/writing/check-sentence")) {
+          return { ok: true, json: async () => ({ severity: "none" }) };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      }),
+    );
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      bonus_question: "Describe your family.",
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await user.type(await screen.findByLabelText("Your answer"), "我家有五个人和一只猫。");
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => {
+      const call = saveListeningProgress.mock.calls.at(-1);
+      expect(call?.[0]).toBe("listening-family-size");
+      expect(call?.[1].bonus).toMatchObject([{ text: "我家有五个人和一只猫。", severity: "none" }]);
+    });
+
+    vi.unstubAllGlobals();
+  });
+
+  it("restores a saved bonus answer as already-reviewed sentences on reload", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      bonus_question: "Describe your family.",
+      progress: {
+        exercises: {},
+        shadowing: {},
+        bonus: [
+          {
+            id: "0",
+            paragraphIndex: 0,
+            text: "我家有五个人和一只猫。",
+            status: "done",
+            severity: "none",
+            answer: null,
+            grammarPointsCovered: [],
+          },
+        ],
+      },
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    const sentence = await screen.findByText("我家有五个人和一只猫。");
+    expect(sentence.className).toContain("bonus-sentence--none");
+    expect(screen.queryByRole("textbox", { name: "Your answer" })).not.toBeInTheDocument();
   });
 
   it("shows an error when loading fails", async () => {
