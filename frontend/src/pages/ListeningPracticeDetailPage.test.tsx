@@ -29,8 +29,18 @@ const detail = {
   grammar_score: 60,
   text: "小美：你家有几个人？\n大卫：我家有五个人。",
   sentences: [
-    { id: 1, mandarin: "你家有几个人？", translation: "How many people?" },
-    { id: 2, mandarin: "我家有五个人。", translation: "Five people." },
+    {
+      id: 1,
+      mandarin: "你家有几个人？",
+      translation: "How many people?",
+      speaker: "小美",
+    },
+    {
+      id: 2,
+      mandarin: "我家有五个人。",
+      translation: "Five people.",
+      speaker: "大卫",
+    },
   ],
   exercises: [],
   bonus_question: null,
@@ -90,7 +100,7 @@ describe("ListeningPracticeDetailPage", () => {
   it("shows the man/woman speaker pictures and names for a dialog practice", async () => {
     fetchListeningPracticeDetail.mockResolvedValue(detail);
 
-    render(
+    const { container } = render(
       <ListeningPracticeDetailPage
         topicId="listening-family-size"
         onBack={() => {}}
@@ -101,19 +111,52 @@ describe("ListeningPracticeDetailPage", () => {
       name: "How many are in your family?",
     });
 
-    expect(screen.getByAltText("Woman speaker")).toBeInTheDocument();
-    expect(screen.getByAltText("Man speaker")).toBeInTheDocument();
+    const headerImages = container.querySelectorAll(
+      ".listening-detail-speaker-image",
+    );
+    expect(headerImages).toHaveLength(2);
+    expect(headerImages[0]).toHaveAttribute("alt", "Woman speaker");
+    expect(headerImages[1]).toHaveAttribute("alt", "Man speaker");
     expect(screen.getByText("小美")).toBeInTheDocument();
     expect(screen.getByText("大卫")).toBeInTheDocument();
+  });
+
+  it("shows the matching speaker picture before each shadowing audio player", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue(detail);
+
+    const { container } = render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "How many are in your family?",
+    });
+
+    const shadowingImages = container.querySelectorAll(
+      ".shadowing-sentence-speaker-image",
+    );
+    // One per sentence: 小美 (sentence 1), 大卫 (sentence 2).
+    expect(shadowingImages).toHaveLength(2);
+    expect(shadowingImages[0]).toHaveAttribute("alt", "Woman speaker");
+    expect(shadowingImages[1]).toHaveAttribute("alt", "Man speaker");
   });
 
   it("does not show speaker pictures for a non-dialog practice", async () => {
     fetchListeningPracticeDetail.mockResolvedValue({
       ...detail,
       type: "fiction_story",
+      man_name: null,
+      woman_name: null,
+      sentences: detail.sentences.map((sentence) => ({
+        ...sentence,
+        speaker: "",
+      })),
     });
 
-    render(
+    const { container } = render(
       <ListeningPracticeDetailPage
         topicId="listening-family-size"
         onBack={() => {}}
@@ -126,6 +169,9 @@ describe("ListeningPracticeDetailPage", () => {
 
     expect(screen.queryByAltText("Woman speaker")).not.toBeInTheDocument();
     expect(screen.queryByAltText("Man speaker")).not.toBeInTheDocument();
+    expect(
+      container.querySelectorAll(".shadowing-sentence-speaker-image"),
+    ).toHaveLength(0);
   });
 
   it("renders one shadowing row per chunk, in order, for a sentence broken into chunks", async () => {
@@ -138,11 +184,17 @@ describe("ListeningPracticeDetailPage", () => {
     fetchListeningPracticeDetail.mockResolvedValue({
       ...detail,
       sentences: [
-        { id: 1, mandarin: "你家有几个人？", translation: "How many people?" },
+        {
+          id: 1,
+          mandarin: "你家有几个人？",
+          translation: "How many people?",
+          speaker: "小美",
+        },
         {
           id: 2,
           mandarin: "我家有五个人，我们住在北京。",
           translation: "There are five in my family, we live in Beijing.",
+          speaker: "大卫",
           chunks: [
             { id: 1, mandarin: "我家有五个人，" },
             { id: 2, mandarin: "我们住在北京。" },

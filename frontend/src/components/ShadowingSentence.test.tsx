@@ -17,6 +17,28 @@ describe("ShadowingSentence", () => {
     vi.clearAllMocks();
   });
 
+  it("shows the speaker image before the audio player when given one", () => {
+    render(
+      <ShadowingSentence
+        mandarin={mandarin}
+        loadAudio={loadAudio}
+        speakerImage="/man.png"
+        speakerAlt="Man speaker"
+      />,
+    );
+
+    expect(screen.getByAltText("Man speaker")).toHaveAttribute(
+      "src",
+      "/man.png",
+    );
+  });
+
+  it("does not render a speaker image when none is given", () => {
+    render(<ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />);
+
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
   it("blurs the sentence until revealed", async () => {
     const user = userEvent.setup();
     render(<ShadowingSentence mandarin={mandarin} loadAudio={loadAudio} />);

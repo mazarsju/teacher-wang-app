@@ -15,6 +15,8 @@ import styles from "./ShadowingSentence.module.css";
 type ShadowingSentenceProps = {
   mandarin: string;
   loadAudio: () => Promise<Blob>;
+  speakerImage?: string;
+  speakerAlt?: string;
   initialAnswer?: ListeningShadowingAnswer;
   onCheck?: (answer: ListeningShadowingAnswer) => void;
 };
@@ -22,6 +24,8 @@ type ShadowingSentenceProps = {
 export default function ShadowingSentence({
   mandarin,
   loadAudio,
+  speakerImage,
+  speakerAlt,
   initialAnswer,
   onCheck,
 }: ShadowingSentenceProps) {
@@ -42,7 +46,18 @@ export default function ShadowingSentence({
 
   return (
     <div className={styles.shadowingSentence}>
-      <AudioPlayer loadAudio={loadAudio} />
+      <div className={styles.shadowingSentenceAudioRow}>
+        {speakerImage && (
+          <img
+            src={speakerImage}
+            alt={speakerAlt}
+            className={styles.shadowingSentenceSpeakerImage}
+          />
+        )}
+        <div className={styles.shadowingSentenceAudioPlayerWrap}>
+          <AudioPlayer loadAudio={loadAudio} />
+        </div>
+      </div>
       <div className={styles.shadowingSentenceTextWrap}>
         <span
           className={

@@ -327,7 +327,12 @@ def read_listening_audio_segment(
 def fetch_listening_breakdown(
     hsk_level: int, topic_id: str, language: str = "en", client=None
 ) -> list[dict]:
-    """Per-sentence breakdown: ``[{id, mandarin, translation, chunks}, ...]``.
+    """Per-sentence breakdown: ``[{id, mandarin, translation, speaker, chunks}, ...]``.
+
+    ``speaker`` is ``breakdown.json``'s own per-sentence field (the speaking
+    character's Chinese name, e.g. ``"大卫"``) — empty string if the sentence
+    doesn't have one. A chunk has no ``speaker`` of its own; it's always the
+    same speaker as its parent sentence.
 
     ``translation`` is ``breakdown.json``'s own ``english`` field for
     ``language == "en"``; for any other language it's read from the sibling
@@ -376,6 +381,7 @@ def fetch_listening_breakdown(
             "translation": translations_by_id.get(
                 sentence["id"], sentence.get("english", "")
             ),
+            "speaker": sentence.get("speaker", ""),
             "chunks": [
                 {"id": chunk["id"], "mandarin": chunk["mandarin"]}
                 for chunk in sentence.get("chunks", [])

@@ -12,6 +12,25 @@
   margin-top: 0.75rem;
 }
 
+.shadowing-sentence-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.shadowing-sentence-audio-player-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.shadowing-sentence-speaker-image {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .shadowing-sentence-text-wrap {
   display: flex;
   align-items: center;

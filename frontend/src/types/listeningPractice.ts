@@ -21,6 +21,7 @@ export type ListeningSentence = {
   id: number;
   mandarin: string;
   translation: string;
+  speaker: string;
   chunks?: ListeningChunk[];
 };
 

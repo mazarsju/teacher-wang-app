@@ -615,10 +615,44 @@ class TestFetchListeningBreakdown(unittest.TestCase):
         self.assertEqual(
             sentences,
             [
-                {"id": 1, "mandarin": "你好", "translation": "Hello", "chunks": []},
-                {"id": 2, "mandarin": "再见", "translation": "Goodbye", "chunks": []},
+                {
+                    "id": 1,
+                    "mandarin": "你好",
+                    "translation": "Hello",
+                    "speaker": "",
+                    "chunks": [],
+                },
+                {
+                    "id": 2,
+                    "mandarin": "再见",
+                    "translation": "Goodbye",
+                    "speaker": "",
+                    "chunks": [],
+                },
             ],
         )
+
+    def test_includes_speaker_when_present(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = (
+                root / "listening_practice" / "hsk1" / "listening-family-size"
+            )
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "breakdown.json").write_text(
+                '{"sentences": ['
+                '{"id": 1, "speaker": "大卫", "transcript": "[neutral]你好", '
+                '"mandarin": "你好", "english": "Hello"}'
+                "]}"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                sentences = fetch_listening_breakdown(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(sentences[0]["speaker"], "大卫")
 
     def test_includes_chunks_when_present(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -672,11 +706,18 @@ class TestFetchListeningBreakdown(unittest.TestCase):
         self.assertEqual(
             sentences,
             [
-                {"id": 1, "mandarin": "你好", "translation": "Bonjour", "chunks": []},
+                {
+                    "id": 1,
+                    "mandarin": "你好",
+                    "translation": "Bonjour",
+                    "speaker": "",
+                    "chunks": [],
+                },
                 {
                     "id": 2,
                     "mandarin": "再见",
                     "translation": "Au revoir",
+                    "speaker": "",
                     "chunks": [],
                 },
             ],
@@ -718,7 +759,15 @@ class TestFetchListeningBreakdown(unittest.TestCase):
 
         self.assertEqual(
             sentences,
-            [{"id": 1, "mandarin": "你好", "translation": "Hello", "chunks": []}],
+            [
+                {
+                    "id": 1,
+                    "mandarin": "你好",
+                    "translation": "Hello",
+                    "speaker": "",
+                    "chunks": [],
+                }
+            ],
         )
 
 

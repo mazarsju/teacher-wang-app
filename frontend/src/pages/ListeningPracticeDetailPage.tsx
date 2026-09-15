@@ -82,6 +82,24 @@ export default function ListeningPracticeDetailPage({
     };
   }, [topicId, t]);
 
+  function speakerImageFor(speaker: string) {
+    if (!detail) return undefined;
+    if (speaker === detail.woman_name) return womanImage;
+    if (speaker === detail.man_name) return manImage;
+    return undefined;
+  }
+
+  function speakerAltFor(speaker: string) {
+    if (!detail) return undefined;
+    if (speaker === detail.woman_name) {
+      return t("listeningPracticeDetailPage.audioSection.womanAlt");
+    }
+    if (speaker === detail.man_name) {
+      return t("listeningPracticeDetailPage.audioSection.manAlt");
+    }
+    return undefined;
+  }
+
   const shadowingUnits = detail
     ? detail.sentences
         .filter(
@@ -93,6 +111,8 @@ export default function ListeningPracticeDetailPage({
             ? sentence.chunks.map((chunk) => ({
                 key: `${sentence.id}-${chunk.id}`,
                 mandarin: chunk.mandarin,
+                speakerImage: speakerImageFor(sentence.speaker),
+                speakerAlt: speakerAltFor(sentence.speaker),
                 loadAudio: () =>
                   fetchListeningAudioSegmentBlob(detail.id, sentence.id, chunk.id),
               }))
@@ -100,6 +120,8 @@ export default function ListeningPracticeDetailPage({
                 {
                   key: `${sentence.id}`,
                   mandarin: sentence.mandarin,
+                  speakerImage: speakerImageFor(sentence.speaker),
+                  speakerAlt: speakerAltFor(sentence.speaker),
                   loadAudio: () =>
                     fetchListeningAudioSegmentBlob(detail.id, sentence.id),
                 },
@@ -249,6 +271,8 @@ export default function ListeningPracticeDetailPage({
                 key={unit.key}
                 mandarin={unit.mandarin}
                 loadAudio={unit.loadAudio}
+                speakerImage={unit.speakerImage}
+                speakerAlt={unit.speakerAlt}
                 initialAnswer={detail.progress?.shadowing?.[unit.key]}
                 onCheck={(answer) => handleShadowingCheck(unit.key, answer)}
               />
