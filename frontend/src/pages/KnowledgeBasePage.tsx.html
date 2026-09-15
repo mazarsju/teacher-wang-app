@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">79.52% </span>
+                <span class="strong">79.32% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>167/210</span>
+                <span class='fraction'>165/208</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">79.76% </span>
+                <span class="strong">79.26% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>67/84</span>
+                <span class='fraction'>65/82</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">78.68% </span>
+                <span class="strong">78.46% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>155/197</span>
+                <span class='fraction'>153/195</span>
             </div>
         
             
@@ -839,19 +839,7 @@
 <a name='L774'></a><a href='#L774'>774</a>
 <a name='L775'></a><a href='#L775'>775</a>
 <a name='L776'></a><a href='#L776'>776</a>
-<a name='L777'></a><a href='#L777'>777</a>
-<a name='L778'></a><a href='#L778'>778</a>
-<a name='L779'></a><a href='#L779'>779</a>
-<a name='L780'></a><a href='#L780'>780</a>
-<a name='L781'></a><a href='#L781'>781</a>
-<a name='L782'></a><a href='#L782'>782</a>
-<a name='L783'></a><a href='#L783'>783</a>
-<a name='L784'></a><a href='#L784'>784</a>
-<a name='L785'></a><a href='#L785'>785</a>
-<a name='L786'></a><a href='#L786'>786</a>
-<a name='L787'></a><a href='#L787'>787</a>
-<a name='L788'></a><a href='#L788'>788</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L777'></a><a href='#L777'>777</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -917,11 +905,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">125x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -935,11 +918,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1678,7 +1656,6 @@ import { removeWord, upsertWord } from "../store/slices/wordsSlice";
 import { syncAppData } from "../store/thunks/syncAppData";
 import { runAnkiQuickSync } from "../utils/anki/ankiApi";
 import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
-import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { extractMissingCharacterEntries } from "../utils/knowledgeBase/wordCharacters";
 import {
@@ -1701,11 +1678,6 @@ function getCharacterColumns(t: TFunction): TableColumn&lt;Character&gt;[] {
       render: (row) =&gt;
         row.writing_known ? &lt;CheckIcon className={styles.writingKnownIcon} /&gt; : "-",
     },
-    {
-      key: "updated_at",
-      header: t("knowledgeBasePage.tableHeaders.updatedAt"),
-      render: (row) =&gt; formatDateTime(row.updated_at),
-    },
   ];
 }
 &nbsp;
@@ -1727,11 +1699,6 @@ function getWordColumns(t: TFunction): TableColumn&lt;Word&gt;[] {
       header: t("knowledgeBasePage.tableHeaders.writingKnown"),
       render: (row) =&gt;
         row.writing_known ? <span class="branch-0 cbranch-no" title="branch not covered" >&lt;CheckIcon className={styles.writingKnownIcon} /&gt; : "</span>-",
-    },
-    {
-      key: "updated_at",
-      header: t("knowledgeBasePage.tableHeaders.updatedAt"),
-      render: (row) =&gt; formatDateTime(row.updated_at),
     },
   ];
 }
@@ -2354,7 +2321,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               columns={wordColumns}
               rows={filteredWords}
               compact
-              maxVisibleRows={5}
+              maxVisibleRows={8}
               getRowKey={(row) =&gt; row.word}
               emptyMessage={
                 words.length === 0
@@ -2402,7 +2369,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               columns={characterColumns}
               rows={filteredCharacters}
               compact
-              maxVisibleRows={5}
+              maxVisibleRows={8}
               getRowKey={(row) =&gt; row.char}
               emptyMessage={
                 characters.length === 0
@@ -2431,7 +2398,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-09-15T06:32:06.254Z
+                at 2026-09-15T11:30:10.850Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
