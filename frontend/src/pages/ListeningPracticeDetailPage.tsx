@@ -14,6 +14,7 @@ import { setListeningPracticeResult } from "../store/slices/listeningSlice";
 import type {
   ListeningPracticeDetail,
   ListeningProgressData,
+  ListeningSentence,
   ListeningShadowingAnswer,
 } from "../types/listeningPractice";
 import type { WritingSentenceCheck } from "../types/writingSentence";
@@ -30,6 +31,33 @@ type ListeningPracticeDetailPageProps = {
   topicId: string;
   onBack: () => void;
 };
+
+// Groups consecutive same-speaker sentences into one "<speaker> : <text>"
+// line, so a dialog's translation reads like an actual conversation instead
+// of one line per sentence.
+function buildDialogTranslation(sentences: ListeningSentence[]): string {
+  const lines: string[] = [];
+  let speaker: string | null = null;
+  let parts: string[] = [];
+
+  function flush() {
+    if (parts.length === 0) return;
+    const text = parts.join(" ");
+    lines.push(speaker ? `${speaker} : ${text}` : text);
+  }
+
+  for (const sentence of sentences) {
+    if (sentence.speaker !== speaker) {
+      flush();
+      speaker = sentence.speaker;
+      parts = [];
+    }
+    parts.push(sentence.translation);
+  }
+  flush();
+
+  return lines.join("\n");
+}
 
 export default function ListeningPracticeDetailPage({
   topicId,
@@ -129,7 +157,9 @@ export default function ListeningPracticeDetailPage({
         )
     : [];
   const fullTranslation = detail
-    ? detail.sentences.map((sentence) => sentence.translation).join("\n")
+    ? detail.type === "dialog"
+      ? buildDialogTranslation(detail.sentences)
+      : detail.sentences.map((sentence) => sentence.translation).join("\n")
     : "";
 
   function handleCompletionChoice(completed: boolean) {

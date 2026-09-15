@@ -281,6 +281,79 @@ describe("ListeningPracticeDetailPage", () => {
     );
 
     const translation = screen.getByText(/How many people\?/);
+    expect(translation.textContent).toBe(
+      "小美 : How many people?\n大卫 : Five people.",
+    );
+  });
+
+  it("rebuilds the dialog translation as speaker turns, grouping consecutive same-speaker sentences", async () => {
+    const user = userEvent.setup();
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      sentences: [
+        {
+          id: 1,
+          mandarin: "你家有几个人？",
+          translation: "How many people?",
+          speaker: "小美",
+        },
+        {
+          id: 2,
+          mandarin: "我家有五个人。",
+          translation: "Five people.",
+          speaker: "大卫",
+        },
+        {
+          id: 3,
+          mandarin: "你呢？",
+          translation: "And you?",
+          speaker: "大卫",
+        },
+        {
+          id: 4,
+          mandarin: "我家只有三个人。",
+          translation: "My family only has three.",
+          speaker: "小美",
+        },
+      ],
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: "Show translation" }),
+    );
+
+    const translation = screen.getByText(/How many people\?/);
+    expect(translation.textContent).toBe(
+      "小美 : How many people?\n大卫 : Five people. And you?\n小美 : My family only has three.",
+    );
+  });
+
+  it("does not label speaker turns in the translation for a non-dialog practice", async () => {
+    const user = userEvent.setup();
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      type: "fiction_story",
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: "Show translation" }),
+    );
+
+    const translation = screen.getByText(/How many people\?/);
     expect(translation.textContent).toBe("How many people?\nFive people.");
   });
 
