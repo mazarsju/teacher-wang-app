@@ -7,6 +7,8 @@ type PageProps = {
   children?: ReactNode;
   headerCenter?: ReactNode;
   headerAction?: ReactNode;
+  /** Keep headerAction on the title's row on mobile instead of wrapping it below. Only suited to a small, fixed-width action (e.g. an icon-only overflow button) — a wide action would get squeezed. */
+  headerActionInline?: boolean;
   fullWidth?: boolean;
 };
 
@@ -16,6 +18,7 @@ export default function Page({
   children,
   headerCenter,
   headerAction,
+  headerActionInline = false,
   fullWidth = false,
 }: PageProps) {
   return (
@@ -26,7 +29,13 @@ export default function Page({
           : styles.page
       }
     >
-      <header className={styles.pageHeader}>
+      <header
+        className={
+          headerActionInline
+            ? `${styles.pageHeader} ${styles.pageHeaderActionInline}`
+            : styles.pageHeader
+        }
+      >
         <div className={styles.pageHeaderTitleGroup}>
           <h1>{title}</h1>
           {subtitle && <p className={styles.pageHeaderSubtitle}>{subtitle}</p>}

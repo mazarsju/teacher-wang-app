@@ -453,6 +453,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
     <Page
       title={t("knowledgeBasePage.title")}
       subtitle={viewModeSubtitle}
+      headerActionInline
       fullWidth={pageMode === "view"}
       headerAction={
         <div className={styles.actionsMenu} ref={actionsMenuRef}>

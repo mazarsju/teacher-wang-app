@@ -63,4 +63,15 @@
   .page-header-actions {
     flex-wrap: wrap;
   }
+
+  .page-header--action-inline {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+
+  .page-header--action-inline .page-header-title-group {
+    flex-basis: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }

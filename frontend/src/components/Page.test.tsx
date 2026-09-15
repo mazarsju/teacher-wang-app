@@ -36,4 +36,20 @@ describe("Page", () => {
 
     expect(screen.getByText("Displaying all characters")).toBeInTheDocument();
   });
+
+  it("keeps the header action inline on mobile when headerActionInline is set", () => {
+    const { container } = render(
+      <Page
+        title="Knowledge base"
+        headerAction={<button>More options</button>}
+        headerActionInline
+      >
+        <p>Table content</p>
+      </Page>,
+    );
+
+    expect(
+      container.querySelector(".page-header--action-inline"),
+    ).toBeInTheDocument();
+  });
 });
