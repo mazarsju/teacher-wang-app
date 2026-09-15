@@ -120,9 +120,15 @@ export async function saveListeningProgress(
   }
 }
 
-export async function transcribeListeningAudio(audio: Blob): Promise<string> {
+export async function transcribeListeningAudio(
+  audio: Blob,
+  expectedText?: string,
+): Promise<string> {
   const formData = new FormData();
   formData.append("audio", audio, "recording.webm");
+  if (expectedText) {
+    formData.append("expected_text", expectedText);
+  }
 
   const response = await apiFetch(`${API_BASE}/chat/stt`, {
     method: "POST",

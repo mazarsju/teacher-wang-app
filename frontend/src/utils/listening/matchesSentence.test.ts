@@ -9,8 +9,13 @@ describe("normalizeForComparison", () => {
     expect(normalizeForComparison("你 好，世界！")).toBe("你好世界");
   });
 
-  it("strips any non-Chinese character, including ones outside the old punctuation list", () => {
-    expect(normalizeForComparison("你好…（世界）123abc")).toBe("你好世界");
+  it("strips any non-Chinese, non-digit character, including ones outside the old punctuation list", () => {
+    expect(normalizeForComparison("你好…（世界）abc")).toBe("你好世界");
+  });
+
+  it("normalizes digits to their Chinese numeral characters", () => {
+    expect(normalizeForComparison("我今年20岁")).toBe("我今年二零岁");
+    expect(normalizeForComparison("我今年二零岁")).toBe("我今年二零岁");
   });
 });
 
@@ -33,6 +38,27 @@ describe("matchesSentence", () => {
 
   it("matches ignoring punctuation marks not in the old hardcoded list", () => {
     expect(matchesSentence("你家有几个人…", "（你家有几个人）")).toBe(true);
+  });
+
+  it("matches a digit against its Chinese numeral character", () => {
+    expect(matchesSentence("三", "3")).toBe(true);
+  });
+
+  it("matches a Chinese numeral character against a digit", () => {
+    expect(matchesSentence("3", "三")).toBe(true);
+  });
+
+  it("matches when both sides use the digit form", () => {
+    expect(matchesSentence("3", "3")).toBe(true);
+  });
+
+  it("matches when both sides use the Chinese numeral form", () => {
+    expect(matchesSentence("三", "三")).toBe(true);
+  });
+
+  it("matches a digit within a full sentence against its Chinese numeral form", () => {
+    expect(matchesSentence("我家有5口人", "我家有五口人")).toBe(true);
+    expect(matchesSentence("我家有五口人", "我家有5口人")).toBe(true);
   });
 });
 
@@ -80,6 +106,28 @@ describe("diffSentenceChars", () => {
       { char: "一", matched: true },
       { char: "只", matched: true },
       { char: "猫", matched: true },
+    ]);
+  });
+
+  it("marks a digit in the expected text matched when the input uses the Chinese numeral form", () => {
+    expect(diffSentenceChars("我家有五口人", "我家有5口人")).toEqual([
+      { char: "我", matched: true },
+      { char: "家", matched: true },
+      { char: "有", matched: true },
+      { char: "5", matched: true },
+      { char: "口", matched: true },
+      { char: "人", matched: true },
+    ]);
+  });
+
+  it("marks a Chinese numeral in the expected text matched when the input uses the digit form", () => {
+    expect(diffSentenceChars("我家有5口人", "我家有五口人")).toEqual([
+      { char: "我", matched: true },
+      { char: "家", matched: true },
+      { char: "有", matched: true },
+      { char: "五", matched: true },
+      { char: "口", matched: true },
+      { char: "人", matched: true },
     ]);
   });
 });

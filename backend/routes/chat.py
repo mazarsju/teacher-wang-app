@@ -536,12 +536,20 @@ def stt():
     except ValueError as error:
         return {"error": str(error)}, 400
 
+    # Shadowing sends the sentence the learner was asked to repeat as a hint:
+    # Whisper's `prompt` biases decoding toward the given text/vocabulary,
+    # which helps disambiguate near-homophones (e.g. "坐几号车" vs. "做鸡好吃")
+    # instead of guessing from acoustics alone. Chat's free-form recording has
+    # no expected answer to hint with, so it omits this field.
+    expected_text = (request.form.get("expected_text") or "").strip()[:200]
+
     try:
         transcript = get_openai_client().audio.transcriptions.create(
             model="whisper-1",
             file=(audio_file.filename or "audio.webm", audio_file.read(), audio_file.mimetype),
             language="zh",
             response_format="verbose_json",
+            prompt=expected_text,
         )
     except Exception:
         return {"error": "Failed to transcribe audio"}, 500

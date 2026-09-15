@@ -39,10 +39,13 @@ export default function ShadowingSentence({
     phase: voicePhase,
     error: voiceError,
     pressHandlers: voicePressHandlers,
-  } = useVoiceInput(transcribeListeningAudio, (text) => {
-    setInputValue((current) => current + text);
-    setCheckResult(null);
-  });
+  } = useVoiceInput(
+    (audio) => transcribeListeningAudio(audio, mandarin),
+    (text) => {
+      setInputValue((current) => current + text);
+      setCheckResult(null);
+    },
+  );
 
   return (
     <div className={styles.shadowingSentence}>

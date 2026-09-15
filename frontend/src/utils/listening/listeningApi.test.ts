@@ -179,6 +179,35 @@ describe("listeningApi", () => {
     );
   });
 
+  it("sends the expected sentence as a hint to bias the transcription", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: async () => ({ text: "坐几号车" }) }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await transcribeListeningAudio(
+      new Blob(["voice"], { type: "audio/webm" }),
+      "坐几号车",
+    );
+
+    const [, init] = fetchMock.mock.calls[0];
+    const formData = init.body as FormData;
+    expect(formData.get("expected_text")).toBe("坐几号车");
+  });
+
+  it("omits the expected_text field when no hint is given", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: async () => ({ text: "你好" }) }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await transcribeListeningAudio(new Blob(["voice"], { type: "audio/webm" }));
+
+    const [, init] = fetchMock.mock.calls[0];
+    const formData = init.body as FormData;
+    expect(formData.has("expected_text")).toBe(false);
+  });
+
   it("throws with the server's error message when transcription fails", async () => {
     vi.stubGlobal(
       "fetch",

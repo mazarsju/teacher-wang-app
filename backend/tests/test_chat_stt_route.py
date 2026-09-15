@@ -64,11 +64,44 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertEqual(kwargs["language"], "zh")
         self.assertEqual(kwargs["response_format"], "verbose_json")
         self.assertEqual(kwargs["file"][0], "recording.webm")
+        self.assertEqual(kwargs["prompt"], "")
         self.mock_assert_tokens.assert_called_once()
         self.mock_record_tokens.assert_called_once()
         _, record_kwargs = self.mock_record_tokens.call_args
         self.assertEqual(record_kwargs["input_tokens"], 0)
         self.assertGreater(record_kwargs["output_tokens"], 0)
+
+    def test_forwards_expected_text_as_a_whisper_prompt_hint(self):
+        # Shadowing passes the sentence the learner was asked to repeat so
+        # Whisper can disambiguate near-homophones (e.g. "坐几号车" vs. a
+        # transcription like "做鸡好吃") using the hint instead of guessing
+        # from acoustics alone.
+        response = self.client.post(
+            "/chat/stt",
+            data={
+                "audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm"),
+                "expected_text": "坐几号车",
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        _, kwargs = self.mock_openai_client.audio.transcriptions.create.call_args
+        self.assertEqual(kwargs["prompt"], "坐几号车")
+
+    def test_truncates_an_overly_long_expected_text_hint(self):
+        response = self.client.post(
+            "/chat/stt",
+            data={
+                "audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm"),
+                "expected_text": "你" * 500,
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        _, kwargs = self.mock_openai_client.audio.transcriptions.create.call_args
+        self.assertEqual(len(kwargs["prompt"]), 200)
 
     def test_keeps_digits_alongside_chinese_characters(self):
         text = "我今年20岁, room #208"

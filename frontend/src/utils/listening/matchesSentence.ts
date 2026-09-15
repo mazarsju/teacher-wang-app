@@ -1,11 +1,35 @@
-// Only Hanzi are compared — whitespace, punctuation, digits, and any other
-// script are ignored, since a spoken/STT answer rarely reproduces them the
-// way typed text does.
-const CHINESE_CHAR_RE = /[一-鿿]/;
-const CHINESE_CHAR_RE_GLOBAL = /[一-鿿]/g;
+// Only Hanzi and digits are compared — whitespace, punctuation, and any
+// other script are ignored, since a spoken/STT answer rarely reproduces them
+// the way typed text does.
+const COMPARABLE_CHAR_RE = /[一-鿿0-9]/;
+const COMPARABLE_CHAR_RE_GLOBAL = /[一-鿿0-9]/g;
+
+// A single Arabic digit and its Chinese numeral character read the same way
+// (e.g. "3" / "三"), so a shadowing answer written either way should count
+// as correct. ponytail: single digits only — a multi-digit number (e.g. "20"
+// vs. "二十") isn't normalized; add a number-to-Chinese-numeral reading if
+// that's ever needed.
+const DIGIT_TO_CHINESE_NUMERAL: Record<string, string> = {
+  "0": "零",
+  "1": "一",
+  "2": "二",
+  "3": "三",
+  "4": "四",
+  "5": "五",
+  "6": "六",
+  "7": "七",
+  "8": "八",
+  "9": "九",
+};
+
+function normalizeChar(char: string): string {
+  return DIGIT_TO_CHINESE_NUMERAL[char] ?? char;
+}
 
 export function normalizeForComparison(text: string): string {
-  return (text.match(CHINESE_CHAR_RE_GLOBAL) ?? []).join("");
+  return (text.match(COMPARABLE_CHAR_RE_GLOBAL) ?? [])
+    .map(normalizeChar)
+    .join("");
 }
 
 export function matchesSentence(input: string, expected: string): boolean {
@@ -60,9 +84,9 @@ export function diffSentenceChars(
   const expectedIndices: number[] = [];
   const expectedNormalized: string[] = [];
   expectedChars.forEach((char, index) => {
-    if (CHINESE_CHAR_RE.test(char)) {
+    if (COMPARABLE_CHAR_RE.test(char)) {
       expectedIndices.push(index);
-      expectedNormalized.push(char);
+      expectedNormalized.push(normalizeChar(char));
     }
   });
   const inputNormalized = Array.from(normalizeForComparison(input));
@@ -75,7 +99,7 @@ export function diffSentenceChars(
   );
 
   return expectedChars.map((char, index) => {
-    if (!CHINESE_CHAR_RE.test(char)) {
+    if (!COMPARABLE_CHAR_RE.test(char)) {
       return { char, matched: null };
     }
     return { char, matched: matchedOriginalIndices.has(index) };
