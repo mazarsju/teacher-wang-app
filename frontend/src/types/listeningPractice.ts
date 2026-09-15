@@ -52,7 +52,7 @@ export type ListeningPracticeDetail = ListeningPractice & {
   exercises: ListeningExercise[];
   bonus_question: string | null;
   progress: ListeningProgressData | null;
-  segment_count: number;
+  segment_ids: number[];
   man_name: string | null;
   woman_name: string | null;
 };

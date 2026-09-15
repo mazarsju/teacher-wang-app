@@ -97,7 +97,7 @@ describe("listeningApi", () => {
       grammar_score: 0,
       text: "你家有几个人？",
       sentences: [{ id: 1, mandarin: "你家有几个人？", translation: "..." }],
-      segment_count: 1,
+      segment_ids: [1],
     };
     const fetchMock = vi.fn(() =>
       Promise.resolve({ ok: true, json: async () => detail }),

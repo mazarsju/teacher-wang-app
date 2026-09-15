@@ -131,8 +131,9 @@ export default function ListeningPracticeDetailPage({
   const shadowingUnits = detail
     ? detail.sentences
         .filter(
-          (sentence, index) =>
-            (sentence.chunks?.length ?? 0) > 0 || index < detail.segment_count,
+          (sentence) =>
+            (sentence.chunks?.length ?? 0) > 0 ||
+            detail.segment_ids.includes(sentence.id),
         )
         .flatMap((sentence) =>
           sentence.chunks && sentence.chunks.length > 0

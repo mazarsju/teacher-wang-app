@@ -62,9 +62,7 @@ def get_listening_practice(topic_id: str):
             if progress_row and progress_row.progress
             else None
         ),
-        "segment_count": len(
-            list_listening_audio_segments(topic.hsk_level, topic.id)
-        ),
+        "segment_ids": list_listening_audio_segments(topic.hsk_level, topic.id),
     }, 200
 
 

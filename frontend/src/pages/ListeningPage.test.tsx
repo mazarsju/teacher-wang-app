@@ -193,7 +193,7 @@ describe("ListeningPage", () => {
       text: "你好",
       sentences: [],
       exercises: [],
-      segment_count: 0,
+      segment_ids: [],
     });
 
     render(<ListeningPage />);

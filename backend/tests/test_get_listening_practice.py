@@ -121,7 +121,7 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
                 ],
                 "bonus_question": None,
                 "progress": None,
-                "segment_count": 3,
+                "segment_ids": [1, 2, 3],
             },
         )
         self.mock_breakdown.assert_called_once_with(

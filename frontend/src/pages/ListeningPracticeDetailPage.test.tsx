@@ -45,7 +45,7 @@ const detail = {
   exercises: [],
   bonus_question: null,
   progress: null,
-  segment_count: 2,
+  segment_ids: [1, 2],
   man_name: "大卫",
   woman_name: "小美",
 };
@@ -234,6 +234,60 @@ describe("ListeningPracticeDetailPage", () => {
         2,
       );
     });
+  });
+
+  it("keeps every sentence with a real audio file even when an earlier sentence is chunked (regression: id-based match, not a sentence-index count)", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      sentences: [
+        {
+          id: 1,
+          mandarin: "你好，很高兴认识你。",
+          translation: "Hello, nice to meet you.",
+          speaker: "小美",
+          chunks: [
+            { id: 1, mandarin: "你好，" },
+            { id: 2, mandarin: "很高兴认识你。" },
+          ],
+        },
+        {
+          id: 2,
+          mandarin: "你家有几个人？",
+          translation: "How many people?",
+          speaker: "大卫",
+        },
+        {
+          id: 3,
+          mandarin: "我家有五个人。",
+          translation: "Five people.",
+          speaker: "小美",
+        },
+      ],
+      // Sentence 1's audio is split into chunk clips, so it contributes
+      // nothing here — only sentences 2 and 3 have their own whole-sentence
+      // audio file. A sentence-index-based guard (index < segment_ids.length)
+      // would wrongly cut this off after 2 sentences and drop sentence 3,
+      // even though its audio file exists on disk.
+      segment_ids: [2, 3],
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "How many are in your family?",
+    });
+
+    // 2 chunks for sentence 1 + sentence 2 + sentence 3 = 4 shadowing rows.
+    expect(
+      screen.getAllByRole("button", { name: "Show the sentence" }),
+    ).toHaveLength(4);
+    expect(screen.getByText("你家有几个人？")).toBeInTheDocument();
+    expect(screen.getByText("我家有五个人。")).toBeInTheDocument();
   });
 
   it("blurs the full text until revealed", async () => {
