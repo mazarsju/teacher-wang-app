@@ -4,8 +4,7 @@
     "tableHeaders": {
       "char": "caractère",
       "pinyin": "pinyin",
-      "writingKnown": "écriture_connue",
-      "updatedAt": "mis_à_jour_le",
+      "writingKnown": "écriture ?",
       "word": "mots",
       "definition": "définition"
     },

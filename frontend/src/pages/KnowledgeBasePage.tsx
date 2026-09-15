@@ -39,7 +39,6 @@ import { removeWord, upsertWord } from "../store/slices/wordsSlice";
 import { syncAppData } from "../store/thunks/syncAppData";
 import { runAnkiQuickSync } from "../utils/anki/ankiApi";
 import { bulkCreateCharacters } from "../utils/knowledgeBase/charactersApi";
-import { formatDateTime } from "../utils/knowledgeBase/formatDateTime";
 import { exportDatabase, importDatabase } from "../utils/knowledgeBase/knowledgeBaseApi";
 import { extractMissingCharacterEntries } from "../utils/knowledgeBase/wordCharacters";
 import {
@@ -62,11 +61,6 @@ function getCharacterColumns(t: TFunction): TableColumn<Character>[] {
       render: (row) =>
         row.writing_known ? <CheckIcon className={styles.writingKnownIcon} /> : "-",
     },
-    {
-      key: "updated_at",
-      header: t("knowledgeBasePage.tableHeaders.updatedAt"),
-      render: (row) => formatDateTime(row.updated_at),
-    },
   ];
 }
 
@@ -88,11 +82,6 @@ function getWordColumns(t: TFunction): TableColumn<Word>[] {
       header: t("knowledgeBasePage.tableHeaders.writingKnown"),
       render: (row) =>
         row.writing_known ? <CheckIcon className={styles.writingKnownIcon} /> : "-",
-    },
-    {
-      key: "updated_at",
-      header: t("knowledgeBasePage.tableHeaders.updatedAt"),
-      render: (row) => formatDateTime(row.updated_at),
     },
   ];
 }
@@ -715,7 +704,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               columns={wordColumns}
               rows={filteredWords}
               compact
-              maxVisibleRows={5}
+              maxVisibleRows={8}
               getRowKey={(row) => row.word}
               emptyMessage={
                 words.length === 0
@@ -763,7 +752,7 @@ export default function KnowledgeBasePage({ onNavigate }: KnowledgeBasePageProps
               columns={characterColumns}
               rows={filteredCharacters}
               compact
-              maxVisibleRows={5}
+              maxVisibleRows={8}
               getRowKey={(row) => row.char}
               emptyMessage={
                 characters.length === 0
