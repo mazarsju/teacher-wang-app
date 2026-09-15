@@ -211,6 +211,7 @@ class TestReloadGrammarContent(PostgresTestCase):
                     grammar_id=new_id,
                     status="DONE",
                     score=91,
+                    usage_in_real_life=3,
                 ),
             ]
         )
@@ -231,6 +232,7 @@ class TestReloadGrammarContent(PostgresTestCase):
         kept = UserGrammarProgress.query.filter_by(grammar_id=new_id).one()
         self.assertEqual(kept.status, "DONE")
         self.assertEqual(int(kept.score), 91)
+        self.assertEqual(int(kept.usage_in_real_life), 3)
         self.assertEqual(UserGrammarProgress.query.count(), 1)
 
     def test_drops_progress_when_title_changes(self):

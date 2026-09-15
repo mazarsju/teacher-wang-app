@@ -182,6 +182,7 @@ def reload_grammar_content(client=None) -> dict[str, int]:
             "status": row.status,
             "score": row.score,
             "last_practiced_at": row.last_practiced_at,
+            "usage_in_real_life": row.usage_in_real_life,
         }
         for row in UserGrammarProgress.query.all()
     ]
