@@ -1,3 +1,35 @@
+.listening-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.listening-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.listening-filter-toggle {
+  gap: 0.75rem;
+}
+
+.listening-filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.listening-filter-select {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--app-border-light);
+  border-radius: 0.5rem;
+  background: var(--app-surface);
+  font-size: 0.9rem;
+}
+
 .listening-mosaic {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(23rem, 1fr));

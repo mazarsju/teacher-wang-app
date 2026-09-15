@@ -62,3 +62,8 @@ export type CompleteListeningPracticeResult = {
   vocabulary_score: number;
   grammar_score: number;
 };
+
+export type ListeningPracticesResult = {
+  practices: ListeningPractice[];
+  currentHskLevel: number;
+};

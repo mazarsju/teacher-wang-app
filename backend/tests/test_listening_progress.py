@@ -11,10 +11,21 @@ from backend.utils.database.models import (
 )
 from backend.utils.database.settings import set_level
 from backend.utils.listening.listening_progress import (
+    get_user_hsk_level,
     list_listening_practices_for_user,
     refresh_listening_progress,
 )
 from postgres_test_case import PostgresTestCase
+
+
+class TestGetUserHskLevel(PostgresTestCase):
+    def test_returns_the_stored_level(self):
+        set_level(self.user_id, 3)
+
+        self.assertEqual(get_user_hsk_level(self.user_id), 3)
+
+    def test_defaults_to_one_when_no_level_stored(self):
+        self.assertEqual(get_user_hsk_level(self.user_id), 1)
 
 
 class TestListListeningPracticesForUser(PostgresTestCase):

@@ -32,23 +32,27 @@ describe("listeningApi", () => {
                 grammar_score: 0,
               },
             ],
+            current_hsk_level: 2,
           }),
         }),
       ),
     );
 
-    await expect(fetchListeningPractices()).resolves.toEqual([
-      {
-        id: "listening-family-size",
-        title: "How many are in your family?",
-        hsk_level: 1,
-        type: "dialog",
-        topic: "family",
-        status: "TODO",
-        vocabulary_score: 0,
-        grammar_score: 0,
-      },
-    ]);
+    await expect(fetchListeningPractices()).resolves.toEqual({
+      practices: [
+        {
+          id: "listening-family-size",
+          title: "How many are in your family?",
+          hsk_level: 1,
+          type: "dialog",
+          topic: "family",
+          status: "TODO",
+          vocabulary_score: 0,
+          grammar_score: 0,
+        },
+      ],
+      currentHskLevel: 2,
+    });
   });
 
   it("throws when loading listening practices fails", async () => {

@@ -32,6 +32,13 @@ function getByTextContent(text: string) {
   );
 }
 
+function withPractices(
+  practices: Parameters<typeof fetchListeningPractices.mockResolvedValue>[0]["practices"],
+  currentHskLevel = 1,
+) {
+  return { practices, currentHskLevel };
+}
+
 describe("ListeningPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,7 +46,7 @@ describe("ListeningPage", () => {
   });
 
   it("shows the title, type/topic badges, and score icon for each practice, ordered by overall score", async () => {
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "weak-fit",
         title: "Weak fit lesson",
@@ -62,7 +69,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 100,
         grammar_score: 90,
       },
-    ]);
+    ]));
 
     render(<ListeningPage />);
 
@@ -72,9 +79,11 @@ describe("ListeningPage", () => {
       .map((element) => element.textContent);
     expect(titles).toEqual(["Best fit lesson", "Weak fit lesson"]);
 
-    expect(screen.getByText("Story")).toBeInTheDocument();
+    // { selector: "span" } excludes the "Type" filter dropdown's <option>s,
+    // which share the same translated labels as these badges.
+    expect(screen.getByText("Story", { selector: "span" })).toBeInTheDocument();
     expect(screen.getByText("Pets")).toBeInTheDocument();
-    expect(screen.getByText("Dialog")).toBeInTheDocument();
+    expect(screen.getByText("Dialog", { selector: "span" })).toBeInTheDocument();
     expect(screen.getByText("Technology")).toBeInTheDocument();
 
     // No level, status, or raw score numbers.
@@ -84,7 +93,7 @@ describe("ListeningPage", () => {
   });
 
   it("shows a topic image instead of a text badge when one exists for the topic", async () => {
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "with-image",
         title: "Sport lesson",
@@ -107,7 +116,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 20,
         grammar_score: 10,
       },
-    ]);
+    ]));
 
     render(<ListeningPage />);
 
@@ -119,7 +128,7 @@ describe("ListeningPage", () => {
 
   it("opens the score dialog when clicking a lesson's icon", async () => {
     const user = userEvent.setup();
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "best-fit",
         title: "Best fit lesson",
@@ -131,7 +140,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 100,
         grammar_score: 90,
       },
-    ]);
+    ]));
 
     render(<ListeningPage />);
 
@@ -158,7 +167,7 @@ describe("ListeningPage", () => {
 
   it("opens the practice detail when clicking a lesson card", async () => {
     const user = userEvent.setup();
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "best-fit",
         title: "Best fit lesson",
@@ -170,7 +179,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 100,
         grammar_score: 90,
       },
-    ]);
+    ]));
     fetchListeningPracticeDetail.mockResolvedValue({
       id: "best-fit",
       title: "Best fit lesson",
@@ -199,7 +208,7 @@ describe("ListeningPage", () => {
 
   it("clicking the score icon does not open the practice detail", async () => {
     const user = userEvent.setup();
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "best-fit",
         title: "Best fit lesson",
@@ -211,7 +220,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 100,
         grammar_score: 90,
       },
-    ]);
+    ]));
 
     render(<ListeningPage />);
 
@@ -229,7 +238,7 @@ describe("ListeningPage", () => {
 
   it("moves completed practices into a collapsed section, separate from the active mosaic", async () => {
     const user = userEvent.setup();
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "active-one",
         title: "Active lesson",
@@ -252,7 +261,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 100,
         grammar_score: 100,
       },
-    ]);
+    ]));
 
     render(<ListeningPage />);
 
@@ -267,7 +276,7 @@ describe("ListeningPage", () => {
   });
 
   it("does not show the completed section when nothing is completed yet", async () => {
-    fetchListeningPractices.mockResolvedValue([
+    fetchListeningPractices.mockResolvedValue(withPractices([
       {
         id: "active-one",
         title: "Active lesson",
@@ -279,7 +288,7 @@ describe("ListeningPage", () => {
         vocabulary_score: 50,
         grammar_score: 50,
       },
-    ]);
+    ]));
 
     render(<ListeningPage />);
 
@@ -288,8 +297,173 @@ describe("ListeningPage", () => {
     expect(screen.queryByText(/Completed practices/)).not.toBeInTheDocument();
   });
 
+  it("offers only the HSK levels present among the user's practices, filters by the selected one", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue(withPractices([
+      {
+        id: "level-1",
+        title: "Level 1 lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        translated_topic: "Family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+      {
+        id: "level-3",
+        title: "Level 3 lesson",
+        hsk_level: 3,
+        type: "dialog",
+        topic: "family",
+        translated_topic: "Family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+    ]));
+
+    render(<ListeningPage />);
+    await screen.findByText("Level 1 lesson");
+
+    const hskSelect = screen.getByLabelText("HSK level");
+    expect(
+      Array.from(hskSelect.querySelectorAll("option")).map((option) => option.textContent),
+    ).toEqual(["All levels", "HSK 1", "HSK 3"]);
+
+    await user.selectOptions(hskSelect, "3");
+
+    expect(screen.queryByText("Level 1 lesson")).not.toBeInTheDocument();
+    expect(screen.getByText("Level 3 lesson")).toBeInTheDocument();
+  });
+
+  it("filters practices by type", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue(withPractices([
+      {
+        id: "a-dialog",
+        title: "Dialog lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        translated_topic: "Family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+      {
+        id: "a-story",
+        title: "Story lesson",
+        hsk_level: 1,
+        type: "fiction_story",
+        topic: "family",
+        translated_topic: "Family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+    ]));
+
+    render(<ListeningPage />);
+    await screen.findByText("Dialog lesson");
+
+    await user.selectOptions(screen.getByLabelText("Type"), "fiction_story");
+
+    expect(screen.queryByText("Dialog lesson")).not.toBeInTheDocument();
+    expect(screen.getByText("Story lesson")).toBeInTheDocument();
+  });
+
+  it("shows only good-fit, near-level practices when Made for you is on, and a fit message when none match", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue(
+      withPractices(
+        [
+          {
+            id: "good-fit-near-level",
+            title: "Good fit lesson",
+            hsk_level: 2,
+            type: "dialog",
+            topic: "family",
+            translated_topic: "Family",
+            status: "TODO",
+            vocabulary_score: 90,
+            grammar_score: 90,
+          },
+          {
+            id: "good-fit-far-level",
+            title: "Far level lesson",
+            hsk_level: 5,
+            type: "dialog",
+            topic: "family",
+            translated_topic: "Family",
+            status: "TODO",
+            vocabulary_score: 90,
+            grammar_score: 90,
+          },
+          {
+            id: "poor-fit-near-level",
+            title: "Poor fit lesson",
+            hsk_level: 2,
+            type: "dialog",
+            topic: "family",
+            translated_topic: "Family",
+            status: "TODO",
+            vocabulary_score: 10,
+            grammar_score: 10,
+          },
+        ],
+        2,
+      ),
+    );
+
+    render(<ListeningPage />);
+    await screen.findByText("Good fit lesson");
+
+    await user.click(screen.getByRole("switch", { name: "Made for you" }));
+
+    expect(screen.getByText("Good fit lesson")).toBeInTheDocument();
+    expect(screen.queryByText("Far level lesson")).not.toBeInTheDocument();
+    expect(screen.queryByText("Poor fit lesson")).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("HSK level"), "5");
+
+    expect(screen.queryByText("Good fit lesson")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "There's no listening practice that fits your current level yet. Try completing more grammar lessons and building up a stronger knowledge base before coming back to this section.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a generic no-results message when a non-made-for-you filter matches nothing", async () => {
+    const user = userEvent.setup();
+    fetchListeningPractices.mockResolvedValue(withPractices([
+      {
+        id: "a-dialog",
+        title: "Dialog lesson",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        translated_topic: "Family",
+        status: "TODO",
+        vocabulary_score: 50,
+        grammar_score: 50,
+      },
+    ]));
+
+    render(<ListeningPage />);
+    await screen.findByText("Dialog lesson");
+
+    await user.selectOptions(screen.getByLabelText("Type"), "personal_story");
+
+    expect(
+      screen.getByText("No listening practice matches these filters."),
+    ).toBeInTheDocument();
+  });
+
   it("shows an empty message when there are no listening practices", async () => {
-    fetchListeningPractices.mockResolvedValue([]);
+    fetchListeningPractices.mockResolvedValue(withPractices([]));
 
     render(<ListeningPage />);
 

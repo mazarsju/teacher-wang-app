@@ -11,6 +11,22 @@
       "personal_story": "Récit personnel",
       "explanatory_text": "Explication"
     },
+    "filters": {
+      "hskLevel": {
+        "label": "Niveau HSK",
+        "all": "Tous les niveaux",
+        "option": "HSK {{level}}"
+      },
+      "type": {
+        "label": "Type",
+        "all": "Tous les types"
+      },
+      "madeForYou": {
+        "label": "Fait pour vous"
+      },
+      "noResults": "Aucun exercice d'écoute ne correspond à ces filtres.",
+      "notFitForLevel": "Aucun exercice d'écoute ne correspond encore à votre niveau actuel. Essayez de terminer davantage de leçons de grammaire et de renforcer vos connaissances avant de revenir dans cette section."
+    },
     "completedSection": {
       "summary": "Exercices terminés ({{count}})"
     }

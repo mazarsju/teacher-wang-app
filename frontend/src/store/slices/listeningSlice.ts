@@ -1,14 +1,16 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ListeningPractice } from "../../types/listeningPractice";
+import type { ListeningPracticesResult } from "../../types/listeningPractice";
 import { resetAppData, syncAppData } from "../thunks/syncAppData";
 
 export type ListeningState = {
-  items: ListeningPractice[];
+  items: ListeningPracticesResult["practices"];
+  currentHskLevel: number;
   loaded: boolean;
 };
 
 const initialState: ListeningState = {
   items: [],
+  currentHskLevel: 1,
   loaded: false,
 };
 
@@ -16,8 +18,9 @@ const listeningSlice = createSlice({
   name: "listening",
   initialState,
   reducers: {
-    setListeningPractices(state, action: PayloadAction<ListeningPractice[]>) {
-      state.items = action.payload;
+    setListeningPractices(state, action: PayloadAction<ListeningPracticesResult>) {
+      state.items = action.payload.practices;
+      state.currentHskLevel = action.payload.currentHskLevel;
       state.loaded = true;
     },
     setListeningPracticeResult(
@@ -40,7 +43,8 @@ const listeningSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(syncAppData.fulfilled, (state, action) => {
-        state.items = action.payload.listeningPractices;
+        state.items = action.payload.listeningPractices.practices;
+        state.currentHskLevel = action.payload.listeningPractices.currentHskLevel;
         state.loaded = true;
       })
       .addCase(resetAppData, () => initialState);

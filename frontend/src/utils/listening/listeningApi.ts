@@ -1,13 +1,13 @@
 import type {
   CompleteListeningPracticeResult,
-  ListeningPractice,
   ListeningPracticeDetail,
+  ListeningPracticesResult,
   ListeningProgressData,
 } from "../../types/listeningPractice";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
 
-export async function fetchListeningPractices(): Promise<ListeningPractice[]> {
+export async function fetchListeningPractices(): Promise<ListeningPracticesResult> {
   const response = await apiFetch(`${API_BASE}/listening-practices`, {
     method: "GET",
   });
@@ -17,9 +17,10 @@ export async function fetchListeningPractices(): Promise<ListeningPractice[]> {
   }
 
   const data = (await response.json()) as {
-    listening_practices: ListeningPractice[];
+    listening_practices: ListeningPracticesResult["practices"];
+    current_hsk_level: number;
   };
-  return data.listening_practices;
+  return { practices: data.listening_practices, currentHskLevel: data.current_hsk_level };
 }
 
 export async function refreshListeningPractices(): Promise<void> {

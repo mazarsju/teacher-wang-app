@@ -81,16 +81,40 @@ function badgePaletteIndex(text: string): number {
   return (Math.abs(hash) % BADGE_PALETTE_SIZE) + 1;
 }
 
+// Every listening-content `type` value the app knows how to label — see
+// `listeningPage.type.*` in the locale files and `ListeningPractice.type`'s
+// docstring in the backend model.
+const LISTENING_TYPES = [
+  "dialog",
+  "fiction_story",
+  "personal_story",
+  "explanatory_text",
+] as const;
+
+const HSK_FILTER_ALL = "all";
+const TYPE_FILTER_ALL = "all";
+
+function isMadeForYou(practice: ListeningPractice, currentHskLevel: number): boolean {
+  const tier = scoreTier(overallScore(practice.vocabulary_score, practice.grammar_score));
+  const isGoodFit = tier === "excellent" || tier === "good";
+  const isNearLevel = Math.abs(practice.hsk_level - currentHskLevel) <= 1;
+  return isGoodFit && isNearLevel;
+}
+
 export default function ListeningPage() {
   const { t } = useTranslation("listening");
   const dispatch = useAppDispatch();
   const practices = useAppSelector((state) => state.listening.items);
+  const currentHskLevel = useAppSelector((state) => state.listening.currentHskLevel);
   const listeningLoaded = useAppSelector((state) => state.listening.loaded);
   const [isLoading, setIsLoading] = useState(!listeningLoaded);
   const [error, setError] = useState<string | null>(null);
   const [selectedPractice, setSelectedPractice] =
     useState<ListeningPractice | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [hskFilter, setHskFilter] = useState<string>(HSK_FILTER_ALL);
+  const [typeFilter, setTypeFilter] = useState<string>(TYPE_FILTER_ALL);
+  const [madeForYouOnly, setMadeForYouOnly] = useState(false);
 
   useEffect(() => {
     if (listeningLoaded) return;
@@ -140,10 +164,30 @@ export default function ListeningPage() {
     [practices],
   );
 
-  const activePractices = sortedPractices.filter(
+  const availableHskLevels = useMemo(
+    () => [...new Set(practices.map((practice) => practice.hsk_level))].sort(
+      (a, b) => a - b,
+    ),
+    [practices],
+  );
+
+  const filteredPractices = sortedPractices.filter((practice) => {
+    if (hskFilter !== HSK_FILTER_ALL && practice.hsk_level !== Number(hskFilter)) {
+      return false;
+    }
+    if (typeFilter !== TYPE_FILTER_ALL && practice.type !== typeFilter) {
+      return false;
+    }
+    if (madeForYouOnly && !isMadeForYou(practice, currentHskLevel)) {
+      return false;
+    }
+    return true;
+  });
+
+  const activePractices = filteredPractices.filter(
     (practice) => practice.status !== "DONE",
   );
-  const completedPractices = sortedPractices.filter(
+  const completedPractices = filteredPractices.filter(
     (practice) => practice.status === "DONE",
   );
 
@@ -227,9 +271,77 @@ export default function ListeningPage() {
     <Page title={t("listeningPage.title")}>
       {isLoading && <p>{t("listeningPage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
+      {!isLoading && !error && sortedPractices.length > 0 && (
+        <div className={styles.listeningFilters}>
+          <label className={styles.listeningFilterField}>
+            <span className={styles.listeningFilterLabel}>
+              {t("listeningPage.filters.hskLevel.label")}
+            </span>
+            <select
+              className={styles.listeningFilterSelect}
+              value={hskFilter}
+              onChange={(event) => setHskFilter(event.target.value)}
+            >
+              <option value={HSK_FILTER_ALL}>
+                {t("listeningPage.filters.hskLevel.all")}
+              </option>
+              {availableHskLevels.map((level) => (
+                <option key={level} value={level}>
+                  {t("listeningPage.filters.hskLevel.option", { level })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.listeningFilterField}>
+            <span className={styles.listeningFilterLabel}>
+              {t("listeningPage.filters.type.label")}
+            </span>
+            <select
+              className={styles.listeningFilterSelect}
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value)}
+            >
+              <option value={TYPE_FILTER_ALL}>
+                {t("listeningPage.filters.type.all")}
+              </option>
+              {LISTENING_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {t(`listeningPage.type.${type}`, { defaultValue: type })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={`${styles.listeningFilterField} ${styles.listeningFilterToggle}`}>
+            <span className={styles.listeningFilterLabel}>
+              {t("listeningPage.filters.madeForYou.label")}
+            </span>
+            <span className="toggle">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={madeForYouOnly}
+                onChange={(event) => setMadeForYouOnly(event.target.checked)}
+              />
+              <span className="toggle-slider" />
+            </span>
+          </label>
+        </div>
+      )}
       {!isLoading && !error && sortedPractices.length === 0 && (
         <p>{t("listeningPage.empty")}</p>
       )}
+      {!isLoading &&
+        !error &&
+        sortedPractices.length > 0 &&
+        filteredPractices.length === 0 && (
+          <p>
+            {t(
+              madeForYouOnly
+                ? "listeningPage.filters.notFitForLevel"
+                : "listeningPage.filters.noResults",
+            )}
+          </p>
+        )}
       {!isLoading && !error && activePractices.length > 0 && (
         <div className={styles.listeningMosaic}>
           {activePractices.map(renderTile)}

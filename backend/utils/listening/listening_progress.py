@@ -44,6 +44,16 @@ def _percent(covered: int, total: int) -> int:
     return round((covered / total) * 100) if total else 100
 
 
+def get_user_hsk_level(user_id: str) -> int:
+    """The learner's own achieved HSK level, the "your level" ``ListeningPage``
+    filters/sorts against — defaults to 1 for a learner who hasn't completed
+    HSK1 yet (``get_stored_current_hsk_level`` returns ``None``). Distinct
+    from ``_visible_topics``'s ceiling (this level + 1, capped), which is how
+    high a topic's own ``hsk_level`` may go to still be shown at all.
+    """
+    return get_stored_current_hsk_level(user_id) or 1
+
+
 def _visible_topics(user_id: str) -> list[ListeningPractice]:
     max_level = speaking_hsk_level_from_current(get_stored_current_hsk_level(user_id))
     return (

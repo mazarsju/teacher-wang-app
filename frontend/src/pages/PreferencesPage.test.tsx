@@ -106,7 +106,7 @@ describe("PreferencesPage", () => {
     });
     fetchHskCharacters.mockResolvedValue([]);
     fetchGrammarPoints.mockResolvedValue({ grammarPoints: [], writingPractices: [] });
-    fetchListeningPractices.mockResolvedValue([]);
+    fetchListeningPractices.mockResolvedValue({ practices: [], currentHskLevel: 1 });
     refreshListeningPractices.mockResolvedValue(undefined);
     vi.stubGlobal(
       "fetch",

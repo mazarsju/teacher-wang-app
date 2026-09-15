@@ -2,7 +2,7 @@ import { createAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { emptyAnkiStatus, type AnkiStatus } from "../../types/anki";
 import type { Character } from "../../types/character";
 import type { GrammarPoint } from "../../types/grammarPoint";
-import type { ListeningPractice } from "../../types/listeningPractice";
+import type { ListeningPracticesResult } from "../../types/listeningPractice";
 import type { Word } from "../../types/word";
 import type { WritingTopic } from "../../types/writingTopic";
 import { fetchAnkiStatus } from "../../utils/anki/ankiApi";
@@ -27,7 +27,7 @@ export type SyncedAppData = {
   ankiStatus: AnkiStatus;
   grammarPoints: GrammarPoint[];
   writingPractices: WritingTopic[];
-  listeningPractices: ListeningPractice[];
+  listeningPractices: ListeningPracticesResult;
 };
 
 export const resetAppData = createAction("appData/reset");

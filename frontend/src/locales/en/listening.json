@@ -11,6 +11,22 @@
       "personal_story": "Personal story",
       "explanatory_text": "Explanation"
     },
+    "filters": {
+      "hskLevel": {
+        "label": "HSK level",
+        "all": "All levels",
+        "option": "HSK {{level}}"
+      },
+      "type": {
+        "label": "Type",
+        "all": "All types"
+      },
+      "madeForYou": {
+        "label": "Made for you"
+      },
+      "noResults": "No listening practice matches these filters.",
+      "notFitForLevel": "There's no listening practice that fits your current level yet. Try completing more grammar lessons and building up a stronger knowledge base before coming back to this section."
+    },
     "completedSection": {
       "summary": "Completed practices ({{count}})"
     }
