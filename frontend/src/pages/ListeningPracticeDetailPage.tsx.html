@@ -833,6 +833,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -840,25 +859,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1229,6 +1229,25 @@ export default function ListeningPracticeDetailPage({
             )}
           &lt;/section&gt;
 &nbsp;
+          {detail.bonus_question &amp;&amp; (
+            &lt;section
+              className={`${styles.listeningDetailSection} ${styles.listeningDetailBonusSection}`}
+            &gt;
+              &lt;h2 className={styles.listeningDetailSectionTitle}&gt;
+                {t("listeningPracticeDetailPage.bonusWritingSection.title")}
+              &lt;/h2&gt;
+              &lt;p className={styles.listeningDetailSectionInstruction}&gt;
+                {t("listeningPracticeDetailPage.bonusWritingSection.instruction")}
+              &lt;/p&gt;
+              &lt;p className={styles.listeningDetailBonusQuestion}&gt;{detail.bonus_question}&lt;/p&gt;
+              &lt;ListeningWritingBonus
+                question={detail.bonus_question}
+                initialSentenceChecks={detail.progress?.bonus}
+                onProgressChange={handleBonusProgressChange}
+              /&gt;
+            &lt;/section&gt;
+          )}
+&nbsp;
           &lt;section className={styles.listeningDetailSection}&gt;
             &lt;h2 className={styles.listeningDetailSectionTitle}&gt;
               {t("listeningPracticeDetailPage.completionSection.title")}
@@ -1263,25 +1282,6 @@ export default function ListeningPracticeDetailPage({
               &lt;/p&gt;
             )}
           &lt;/section&gt;
-&nbsp;
-          {detail.bonus_question &amp;&amp; (
-            &lt;section
-              className={`${styles.listeningDetailSection} ${styles.listeningDetailBonusSection}`}
-            &gt;
-              &lt;h2 className={styles.listeningDetailSectionTitle}&gt;
-                {t("listeningPracticeDetailPage.bonusWritingSection.title")}
-              &lt;/h2&gt;
-              &lt;p className={styles.listeningDetailSectionInstruction}&gt;
-                {t("listeningPracticeDetailPage.bonusWritingSection.instruction")}
-              &lt;/p&gt;
-              &lt;p className={styles.listeningDetailBonusQuestion}&gt;{detail.bonus_question}&lt;/p&gt;
-              &lt;ListeningWritingBonus
-                question={detail.bonus_question}
-                initialSentenceChecks={detail.progress?.bonus}
-                onProgressChange={handleBonusProgressChange}
-              /&gt;
-            &lt;/section&gt;
-          )}
         &lt;/&gt;
       )}
     &lt;/Page&gt;
@@ -1294,7 +1294,7 @@ export default function ListeningPracticeDetailPage({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-09-15T06:00:44.514Z
+                at 2026-09-15T06:32:06.254Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
