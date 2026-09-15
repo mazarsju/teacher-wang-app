@@ -348,6 +348,25 @@ export default function ListeningPracticeDetailPage({
             )}
           </section>
 
+          {detail.bonus_question && (
+            <section
+              className={`${styles.listeningDetailSection} ${styles.listeningDetailBonusSection}`}
+            >
+              <h2 className={styles.listeningDetailSectionTitle}>
+                {t("listeningPracticeDetailPage.bonusWritingSection.title")}
+              </h2>
+              <p className={styles.listeningDetailSectionInstruction}>
+                {t("listeningPracticeDetailPage.bonusWritingSection.instruction")}
+              </p>
+              <p className={styles.listeningDetailBonusQuestion}>{detail.bonus_question}</p>
+              <ListeningWritingBonus
+                question={detail.bonus_question}
+                initialSentenceChecks={detail.progress?.bonus}
+                onProgressChange={handleBonusProgressChange}
+              />
+            </section>
+          )}
+
           <section className={styles.listeningDetailSection}>
             <h2 className={styles.listeningDetailSectionTitle}>
               {t("listeningPracticeDetailPage.completionSection.title")}
@@ -382,25 +401,6 @@ export default function ListeningPracticeDetailPage({
               </p>
             )}
           </section>
-
-          {detail.bonus_question && (
-            <section
-              className={`${styles.listeningDetailSection} ${styles.listeningDetailBonusSection}`}
-            >
-              <h2 className={styles.listeningDetailSectionTitle}>
-                {t("listeningPracticeDetailPage.bonusWritingSection.title")}
-              </h2>
-              <p className={styles.listeningDetailSectionInstruction}>
-                {t("listeningPracticeDetailPage.bonusWritingSection.instruction")}
-              </p>
-              <p className={styles.listeningDetailBonusQuestion}>{detail.bonus_question}</p>
-              <ListeningWritingBonus
-                question={detail.bonus_question}
-                initialSentenceChecks={detail.progress?.bonus}
-                onProgressChange={handleBonusProgressChange}
-              />
-            </section>
-          )}
         </>
       )}
     </Page>

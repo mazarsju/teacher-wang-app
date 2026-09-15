@@ -163,6 +163,17 @@ export default function ListeningWritingBonus({
     onProgressChange?.(updated);
   }
 
+  // Starts a fresh attempt: back to a blank, editable textarea. Called only
+  // from the explicit "Redo exercise" button once the current attempt is
+  // fully correct — success no longer auto-clears the text on its own (the
+  // reviewed, non-editable sentences stay up so the learner can re-read what
+  // they wrote), so redoing is the one deliberate way back to editing.
+  function handleRedo() {
+    setDraft("");
+    setSentenceChecks(null);
+    onProgressChange?.(null);
+  }
+
   return (
     <>
       {sentenceChecks === null ? (
@@ -256,6 +267,16 @@ export default function ListeningWritingBonus({
               </p>
             ))}
           </div>
+          {isAllCorrect(sentenceChecks) && (
+            <div className={styles.bonusSubmitRow}>
+              <Button
+                kind="cancel"
+                variant="page"
+                text={t("listeningPracticeDetailPage.bonusWritingSection.redoExercise")}
+                onClick={handleRedo}
+              />
+            </div>
+          )}
         </>
       )}
       <WarningModal
@@ -293,14 +314,7 @@ export default function ListeningWritingBonus({
         <WritingReviewModal
           allCorrect={reviewSummary.allCorrect}
           grammarPointTitles={reviewSummary.grammarPointTitles}
-          onClose={() => {
-            const wasAllCorrect = reviewSummary.allCorrect;
-            setReviewSummary(null);
-            if (wasAllCorrect) {
-              setDraft("");
-              setSentenceChecks(null);
-            }
-          }}
+          onClose={() => setReviewSummary(null)}
         />
       )}
     </>

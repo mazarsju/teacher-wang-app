@@ -127,4 +127,53 @@ describe("ListeningWritingBonus", () => {
     );
     expect(checkSentenceCalls).toEqual(["我有五个人家。", "我家有五个人。"]);
   });
+
+  it("keeps the text visible and non-editable after a successful submission, with a Redo exercise button", async () => {
+    const user = userEvent.setup();
+    stubApiFetch({ checkSentence: () => ({ severity: "none" }) });
+    renderWithStore(<ListeningWritingBonus question="Describe your family." />);
+
+    await user.type(screen.getByLabelText("Your answer"), "我家有五个人。");
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await screen.findByRole("heading", { name: "Everything is correct!" });
+    await user.click(screen.getByRole("button", { name: "OK" }));
+
+    expect(screen.getByText("我家有五个人。")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Your answer" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Redo exercise" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument();
+  });
+
+  it("resets to a blank, editable textarea when Redo exercise is clicked", async () => {
+    const user = userEvent.setup();
+    stubApiFetch({ checkSentence: () => ({ severity: "none" }) });
+    renderWithStore(<ListeningWritingBonus question="Describe your family." />);
+
+    await user.type(screen.getByLabelText("Your answer"), "我家有五个人。");
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    await screen.findByRole("heading", { name: "Everything is correct!" });
+    await user.click(screen.getByRole("button", { name: "OK" }));
+
+    await user.click(screen.getByRole("button", { name: "Redo exercise" }));
+
+    expect(screen.queryByText("我家有五个人。")).not.toBeInTheDocument();
+    const textarea = screen.getByLabelText("Your answer");
+    expect(textarea).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Submit" })).toBeInTheDocument();
+  });
+
+  it("does not show a Redo exercise button while some sentences are still wrong", async () => {
+    const user = userEvent.setup();
+    stubApiFetch({ checkSentence: () => ({ severity: "incorrect", answer: "x" }) });
+    renderWithStore(<ListeningWritingBonus question="Describe your family." />);
+
+    await user.type(screen.getByLabelText("Your answer"), "错误句子。");
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await screen.findByRole("heading", { name: "Almost there" });
+    await user.click(screen.getByRole("button", { name: "OK" }));
+
+    expect(screen.queryByRole("button", { name: "Redo exercise" })).not.toBeInTheDocument();
+  });
 });

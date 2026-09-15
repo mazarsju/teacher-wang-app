@@ -104,7 +104,8 @@
       "instruction": "Répondez à la question ci-dessous avec quelques phrases en chinois. Nous vérifierons que votre réponse répond à la question, puis nous vérifierons votre grammaire phrase par phrase.",
       "textareaAriaLabel": "Votre réponse",
       "reviewedAriaLabel": "Votre réponse",
-      "offTopicWarning": "Votre texte ne semble pas encore répondre à cette question. Relisez la question ci-dessus, puis réécrivez votre texte pour y répondre avant de le soumettre."
+      "offTopicWarning": "Votre texte ne semble pas encore répondre à cette question. Relisez la question ci-dessus, puis réécrivez votre texte pour y répondre avant de le soumettre.",
+      "redoExercise": "Refaire l'exercice"
     }
   }
 }
