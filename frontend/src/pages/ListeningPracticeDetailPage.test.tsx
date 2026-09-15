@@ -36,6 +36,8 @@ const detail = {
   bonus_question: null,
   progress: null,
   segment_count: 2,
+  man_name: "大卫",
+  woman_name: "小美",
 };
 
 describe("ListeningPracticeDetailPage", () => {
@@ -83,6 +85,47 @@ describe("ListeningPracticeDetailPage", () => {
     ).toBeInTheDocument();
     // One shadowing row per sentence.
     expect(screen.getAllByRole("button", { name: "Show the sentence" })).toHaveLength(2);
+  });
+
+  it("shows the man/woman speaker pictures and names for a dialog practice", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue(detail);
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "How many are in your family?",
+    });
+
+    expect(screen.getByAltText("Woman speaker")).toBeInTheDocument();
+    expect(screen.getByAltText("Man speaker")).toBeInTheDocument();
+    expect(screen.getByText("小美")).toBeInTheDocument();
+    expect(screen.getByText("大卫")).toBeInTheDocument();
+  });
+
+  it("does not show speaker pictures for a non-dialog practice", async () => {
+    fetchListeningPracticeDetail.mockResolvedValue({
+      ...detail,
+      type: "fiction_story",
+    });
+
+    render(
+      <ListeningPracticeDetailPage
+        topicId="listening-family-size"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "How many are in your family?",
+    });
+
+    expect(screen.queryByAltText("Woman speaker")).not.toBeInTheDocument();
+    expect(screen.queryByAltText("Man speaker")).not.toBeInTheDocument();
   });
 
   it("renders one shadowing row per chunk, in order, for a sentence broken into chunks", async () => {

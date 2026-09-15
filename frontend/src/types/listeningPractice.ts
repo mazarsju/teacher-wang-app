@@ -52,6 +52,8 @@ export type ListeningPracticeDetail = ListeningPractice & {
   bonus_question: string | null;
   progress: ListeningProgressData | null;
   segment_count: number;
+  man_name: string | null;
+  woman_name: string | null;
 };
 
 export type CompleteListeningPracticeResult = {

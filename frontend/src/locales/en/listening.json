@@ -57,7 +57,9 @@
     "loadError": "Failed to load the listening practice.",
     "audioSection": {
       "title": "Listen",
-      "instruction": "Listen to the recording and try to understand what it's about."
+      "instruction": "Listen to the recording and try to understand what it's about.",
+      "womanAlt": "Woman speaker",
+      "manAlt": "Man speaker"
     },
     "questionsSection": {
       "title": "Questions",

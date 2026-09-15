@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import manImage from "../assets/listening/man.png";
+import womanImage from "../assets/listening/woman.png";
 import AudioPlayer from "../components/AudioPlayer";
 import Button from "../components/Button";
 import { EyeIcon } from "../components/icons";
@@ -187,6 +189,34 @@ export default function ListeningPracticeDetailPage({
             <p className={styles.listeningDetailSectionInstruction}>
               {t("listeningPracticeDetailPage.audioSection.instruction")}
             </p>
+            {detail.type === "dialog" && (
+              <div className={styles.listeningDetailSpeakers}>
+                <div className={styles.listeningDetailSpeaker}>
+                  <img
+                    src={womanImage}
+                    alt={t("listeningPracticeDetailPage.audioSection.womanAlt")}
+                    className={styles.listeningDetailSpeakerImage}
+                  />
+                  {detail.woman_name && (
+                    <span className={styles.listeningDetailSpeakerName}>
+                      {detail.woman_name}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.listeningDetailSpeaker}>
+                  <img
+                    src={manImage}
+                    alt={t("listeningPracticeDetailPage.audioSection.manAlt")}
+                    className={styles.listeningDetailSpeakerImage}
+                  />
+                  {detail.man_name && (
+                    <span className={styles.listeningDetailSpeakerName}>
+                      {detail.man_name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <AudioPlayer
               loadAudio={() => fetchListeningAudioBlob(detail.id)}
               showSkipButtons

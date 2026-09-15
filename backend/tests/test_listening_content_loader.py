@@ -18,6 +18,7 @@ from backend.utils.listening.listening_content_loader import (
     fetch_listening_breakdown,
     fetch_listening_exercises,
     fetch_listening_practice_translations,
+    fetch_listening_speaker_names,
     fetch_listening_text,
     list_listening_audio_segments,
     read_listening_audio,
@@ -345,6 +346,76 @@ class TestFetchListeningText(unittest.TestCase):
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
         self.assertEqual(text, "你好\n")
+
+
+class TestFetchListeningSpeakerNames(unittest.TestCase):
+    def setUp(self) -> None:
+        self._local_path_env = os.environ.pop("GRAMMAR_CONTENT_S3_PATH", None)
+        self.addCleanup(self._restore_local_path_env)
+
+    def _restore_local_path_env(self) -> None:
+        if self._local_path_env is not None:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = self._local_path_env
+
+    def test_reads_names_from_local_overview_yaml(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "overview.yaml").write_text(
+                "manName: 大卫\nwomanName: 小美\n"
+            )
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                names = fetch_listening_speaker_names(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(names, {"manName": "大卫", "womanName": "小美"})
+
+    def test_missing_names_are_omitted(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            topic_dir = root / "listening_practice" / "hsk1" / "listening-family-size"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "overview.yaml").write_text("title: Family size\n")
+
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = str(root)
+            try:
+                names = fetch_listening_speaker_names(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(names, {})
+
+    def test_missing_file_returns_empty_dict(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["GRAMMAR_CONTENT_S3_PATH"] = temp_dir
+            try:
+                names = fetch_listening_speaker_names(1, "listening-family-size")
+            finally:
+                del os.environ["GRAMMAR_CONTENT_S3_PATH"]
+
+        self.assertEqual(names, {})
+
+    def test_reads_from_s3(self):
+        client = _make_client(
+            {
+                "listening_practice/hsk1/listening-family-size/overview.yaml": (
+                    "manName: 大卫\nwomanName: 小美\n"
+                )
+            }
+        )
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            names = fetch_listening_speaker_names(
+                1, "listening-family-size", client=client
+            )
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(names, {"manName": "大卫", "womanName": "小美"})
 
 
 class TestReadListeningAudio(unittest.TestCase):

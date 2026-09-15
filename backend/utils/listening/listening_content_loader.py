@@ -27,6 +27,7 @@ import os
 import re
 from pathlib import Path
 
+import yaml
 from botocore.exceptions import ClientError
 from sqlalchemy.dialects.postgresql import insert
 
@@ -240,6 +241,28 @@ def fetch_listening_text(hsk_level: int, topic_id: str, client=None) -> str | No
     bucket = _bucket()
     client = client or _s3_client()
     return _read_s3_object(client, bucket, relative_path)
+
+
+def fetch_listening_speaker_names(
+    hsk_level: int, topic_id: str, client=None
+) -> dict[str, str]:
+    """``{"manName": ..., "womanName": ...}`` from overview.yaml, keys omitted if absent."""
+    relative_path = (
+        f"{_topic_folder(hsk_level, topic_id)}/{LISTENING_PRACTICE_MANIFEST_FILENAME}"
+    )
+    local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
+    if local_path:
+        raw = _read_local_file(Path(local_path), relative_path)
+    else:
+        bucket = _bucket()
+        client = client or _s3_client()
+        raw = _read_s3_object(client, bucket, relative_path)
+    manifest = yaml.safe_load(raw) if raw else {}
+    return {
+        field: manifest[field]
+        for field in ("manName", "womanName")
+        if manifest.get(field)
+    }
 
 
 def read_listening_audio(hsk_level: int, topic_id: str, client=None) -> bytes | None:

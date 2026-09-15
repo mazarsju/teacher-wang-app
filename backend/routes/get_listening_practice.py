@@ -7,6 +7,7 @@ from backend.utils.database.models import ListeningPractice, ListeningProgress
 from backend.utils.listening.listening_content_loader import (
     fetch_listening_breakdown,
     fetch_listening_exercises,
+    fetch_listening_speaker_names,
     fetch_listening_text,
     list_listening_audio_segments,
     read_listening_audio,
@@ -40,10 +41,15 @@ def get_listening_practice(topic_id: str):
         None,
     )
 
+    speaker_names = fetch_listening_speaker_names(topic.hsk_level, topic.id)
+
     return {
         "id": topic.id,
         "title": topic.title,
         "hsk_level": topic.hsk_level,
+        "type": topic.type,
+        "man_name": speaker_names.get("manName"),
+        "woman_name": speaker_names.get("womanName"),
         "status": progress_row.status if progress_row else "TODO",
         "vocabulary_score": progress_row.vocabulary_score if progress_row else 0,
         "grammar_score": progress_row.grammar_score if progress_row else 0,

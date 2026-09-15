@@ -57,7 +57,9 @@
     "loadError": "Échec du chargement de l'exercice d'écoute.",
     "audioSection": {
       "title": "Écouter",
-      "instruction": "Écoutez l'enregistrement et essayez de comprendre de quoi il s'agit."
+      "instruction": "Écoutez l'enregistrement et essayez de comprendre de quoi il s'agit.",
+      "womanAlt": "Locutrice",
+      "manAlt": "Locuteur"
     },
     "questionsSection": {
       "title": "Questions",

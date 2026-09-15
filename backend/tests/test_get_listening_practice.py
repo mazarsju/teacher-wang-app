@@ -73,9 +73,19 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         self.mock_exercises = self.exercises_patcher.start()
         self.addCleanup(self.exercises_patcher.stop)
 
+        self.speaker_names_patcher = patch(
+            "backend.routes.get_listening_practice.fetch_listening_speaker_names",
+            return_value={},
+        )
+        self.mock_speaker_names = self.speaker_names_patcher.start()
+        self.addCleanup(self.speaker_names_patcher.stop)
+
     def _stub_topic(self):
         self.mock_practice_cls.query.get.return_value = MagicMock(
-            id="listening-family-size", title="Family size", hsk_level=1
+            id="listening-family-size",
+            title="Family size",
+            hsk_level=1,
+            type="dialog",
         )
 
     def test_returns_topic_detail_with_default_progress(self):
@@ -90,6 +100,9 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
                 "id": "listening-family-size",
                 "title": "Family size",
                 "hsk_level": 1,
+                "type": "dialog",
+                "man_name": None,
+                "woman_name": None,
                 "status": "TODO",
                 "vocabulary_score": 0,
                 "grammar_score": 0,
@@ -187,6 +200,19 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         response = self.client.get("/listening-practices/listening-family-size")
 
         self.assertEqual(response.get_json()["progress"], saved)
+
+    def test_returns_speaker_names_when_present_in_overview_yaml(self):
+        self._stub_topic()
+        self.mock_speaker_names.return_value = {
+            "manName": "大卫",
+            "womanName": "小美",
+        }
+
+        response = self.client.get("/listening-practices/listening-family-size")
+
+        body = response.get_json()
+        self.assertEqual(body["man_name"], "大卫")
+        self.assertEqual(body["woman_name"], "小美")
 
     def test_returns_404_for_unknown_topic(self):
         self.mock_practice_cls.query.get.return_value = None
