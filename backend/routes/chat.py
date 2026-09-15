@@ -56,7 +56,10 @@ bp = Blueprint("chat", __name__)
 
 TTS_VOICES = {"alloy", "echo", "fable", "onyx", "nova", "shimmer"}
 
-_CHINESE_OR_DIGIT_PATTERN = re.compile(r"[一-鿿0-9]+")
+_CHINESE_PUNCTUATION = "，。！？：；、“”‘’（）《》…—～"
+_CHINESE_DIGIT_OR_PUNCTUATION_PATTERN = re.compile(
+    "[一-鿿0-9" + _CHINESE_PUNCTUATION + "]+"
+)
 
 # Whisper hallucinates stock phrases (e.g. "由社群提供的字幕", a subtitle-credit
 # line memorized from its training data) when given silence/noise instead of
@@ -66,8 +69,8 @@ _NO_SPEECH_PROB_THRESHOLD = 0.6
 _AVG_LOGPROB_THRESHOLD = -1.0
 
 
-def _chinese_and_digits_only(text: str) -> str:
-    return "".join(_CHINESE_OR_DIGIT_PATTERN.findall(text))
+def _chinese_digits_and_punctuation_only(text: str) -> str:
+    return "".join(_CHINESE_DIGIT_OR_PUNCTUATION_PATTERN.findall(text))
 
 
 def _drop_silent_segments(transcript) -> str:
@@ -537,7 +540,7 @@ def stt():
 
     _charge_token_usage(user, output_tokens=estimate_text_tokens(transcript.text))
 
-    return {"text": _chinese_and_digits_only(_drop_silent_segments(transcript))}, 200
+    return {"text": _chinese_digits_and_punctuation_only(_drop_silent_segments(transcript))}, 200
 
 
 @bp.get("/chat/history/<character_id>")
