@@ -57,9 +57,16 @@ bp = Blueprint("chat", __name__)
 TTS_VOICES = {"alloy", "echo", "fable", "onyx", "nova", "shimmer"}
 
 _CHINESE_PUNCTUATION = "，。！？：；、“”‘’（）《》…—～"
+# Whisper doesn't consistently use full-width punctuation for Mandarin speech
+# — it sometimes emits plain ASCII "!"/"?"/"," too — so both forms are kept.
+# A run is only discarded if it has no Hanzi/digit in it at all, which is how
+# punctuation glued to stray hallucinated Latin text (the only place
+# half-width marks show up on their own) still gets dropped.
+_HALFWIDTH_PUNCTUATION = ",.!?:;()\"'"
 _CHINESE_DIGIT_OR_PUNCTUATION_PATTERN = re.compile(
-    "[一-鿿0-9" + _CHINESE_PUNCTUATION + "]+"
+    "[一-鿿0-9" + _CHINESE_PUNCTUATION + _HALFWIDTH_PUNCTUATION + "]+"
 )
+_CHINESE_OR_DIGIT_CHAR = re.compile("[一-鿿0-9]")
 
 # Whisper hallucinates stock phrases (e.g. "由社群提供的字幕", a subtitle-credit
 # line memorized from its training data) when given silence/noise instead of
@@ -70,7 +77,8 @@ _AVG_LOGPROB_THRESHOLD = -1.0
 
 
 def _chinese_digits_and_punctuation_only(text: str) -> str:
-    return "".join(_CHINESE_DIGIT_OR_PUNCTUATION_PATTERN.findall(text))
+    runs = _CHINESE_DIGIT_OR_PUNCTUATION_PATTERN.findall(text)
+    return "".join(run for run in runs if _CHINESE_OR_DIGIT_CHAR.search(run))
 
 
 def _drop_silent_segments(transcript) -> str:

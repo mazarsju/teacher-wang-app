@@ -83,7 +83,7 @@ class TestChatSttEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"text": "我今年20岁208"})
+        self.assertEqual(response.get_json(), {"text": "我今年20岁,208"})
 
     def test_keeps_chinese_punctuation(self):
         text = "我的家有5口。有爸爸妈妈哥哥和妹妹。"
@@ -100,10 +100,29 @@ class TestChatSttEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"text": text})
 
-    def test_drops_halfwidth_punctuation_attached_to_non_chinese_text(self):
-        # Half-width punctuation (as opposed to the full-width forms Whisper
-        # uses for real Mandarin speech) is only ever seen glued to stray
-        # Latin text, so it's dropped along with that text rather than kept.
+    def test_keeps_halfwidth_punctuation_too_since_whisper_uses_both_forms(self):
+        # Whisper doesn't consistently write full-width punctuation for
+        # Mandarin speech — plain ASCII "！"/"？" show up too — so both must
+        # be preserved, not just the full-width forms.
+        text = "你好！医院在哪里？"
+        self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
+            text.replace("！", "!").replace("？", "?"),
+            segments=[_segment(text.replace("！", "!").replace("？", "?"))],
+        )
+
+        response = self.client.post(
+            "/chat/stt",
+            data={"audio": (io.BytesIO(b"fake-audio-bytes"), "recording.webm")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"text": "你好!医院在哪里?"})
+
+    def test_drops_halfwidth_punctuation_orphaned_by_stripped_latin_text(self):
+        # A run of punctuation with no Hanzi/digit anywhere in it (the comma
+        # left behind once "Hello" itself is stripped) is still dropped —
+        # only punctuation actually attached to real Chinese/digit text survives.
         text = "Hello, 你好! How are you 吗?"
         self.mock_openai_client.audio.transcriptions.create.return_value = _transcript(
             text, segments=[_segment(text)]
@@ -116,7 +135,7 @@ class TestChatSttEndpoint(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"text": "你好吗"})
+        self.assertEqual(response.get_json(), {"text": "你好!吗?"})
 
     def test_returns_empty_text_when_no_chinese_characters_detected(self):
         text = "Hello there, how are you?"
