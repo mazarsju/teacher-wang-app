@@ -1129,6 +1129,19 @@ describe("ChatModal", () => {
     const ttsBody = JSON.parse((ttsInit as RequestInit).body as string);
     // Only the Chinese dialogue is sent to TTS, not the stage direction.
     expect(ttsBody.text).toBe("您的素炒菜来了，请慢用。");
+
+    // Revealing swaps the eye button for a "blur again" one, which re-masks it.
+    expect(
+      screen.queryByRole("button", { name: "Reveal text" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Blur text again" }));
+
+    expect(
+      screen.getByText("您的素炒菜来了，请慢用。").closest(".chat-message-masked-text"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Blur text again" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a challenge completed banner when all tasks are done", async () => {
@@ -1472,6 +1485,18 @@ describe("ChatModal", () => {
     expect(
       screen.queryByRole("button", { name: "Reveal text" }),
     ).not.toBeInTheDocument();
+
+    // A "blur again" button takes its place once revealed, and toggles the
+    // mask back on.
+    const hideButton = screen.getByRole("button", { name: "Blur text again" });
+    await user.click(hideButton);
+
+    expect(
+      screen.getByText("你好！").closest(".chat-message-masked-text"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Reveal text" }),
+    ).toBeInTheDocument();
 
     playSpy.mockRestore();
   });

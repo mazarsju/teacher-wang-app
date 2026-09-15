@@ -442,8 +442,16 @@ export default function ChatModal({
     void audioPlayerRef.current.play();
   }
 
-  function revealMessage(index: number) {
-    setRevealedIndices((current) => new Set(current).add(index));
+  function toggleMessageReveal(index: number) {
+    setRevealedIndices((current) => {
+      const next = new Set(current);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
   }
 
   function renderListenButton(
@@ -990,7 +998,7 @@ export default function ChatModal({
                                           className={styles.chatMessageRevealButton}
                                           aria-label={t("chatModal.revealText")}
                                           title={t("chatModal.revealText")}
-                                          onClick={() => revealMessage(index)}
+                                          onClick={() => toggleMessageReveal(index)}
                                         >
                                           <EyeIcon
                                             className={styles.chatMessageRevealIcon}
@@ -1008,6 +1016,20 @@ export default function ChatModal({
                                           chatMessage,
                                           isAudioLoading,
                                         )}
+                                        {listeningMode === "listening_first" &&
+                                          revealedIndices.has(index) && (
+                                            <button
+                                              type="button"
+                                              className={styles.chatMessageRevealButton}
+                                              aria-label={t("chatModal.hideText")}
+                                              title={t("chatModal.hideText")}
+                                              onClick={() => toggleMessageReveal(index)}
+                                            >
+                                              <EyeIcon
+                                                className={styles.chatMessageRevealIcon}
+                                              />
+                                            </button>
+                                          )}
                                       </div>
                                     ) : (
                                       renderFormattedText(
@@ -1080,7 +1102,7 @@ export default function ChatModal({
                                 className={styles.chatMessageRevealButton}
                                 aria-label={t("chatModal.revealText")}
                                 title={t("chatModal.revealText")}
-                                onClick={() => revealMessage(index)}
+                                onClick={() => toggleMessageReveal(index)}
                               >
                                 <EyeIcon className={styles.chatMessageRevealIcon} />
                               </button>
@@ -1092,6 +1114,18 @@ export default function ChatModal({
                                 styles.chatMessageHeading,
                               )}
                               {renderListenButton(index, chatMessage, isAudioLoading)}
+                              {listeningMode === "listening_first" &&
+                                revealedIndices.has(index) && (
+                                  <button
+                                    type="button"
+                                    className={styles.chatMessageRevealButton}
+                                    aria-label={t("chatModal.hideText")}
+                                    title={t("chatModal.hideText")}
+                                    onClick={() => toggleMessageReveal(index)}
+                                  >
+                                    <EyeIcon className={styles.chatMessageRevealIcon} />
+                                  </button>
+                                )}
                             </div>
                           ) : (
                             renderFormattedText(

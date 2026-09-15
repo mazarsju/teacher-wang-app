@@ -86,6 +86,7 @@
     "playAudio": "Écouter l'audio",
     "loadingAudio": "Chargement de l'audio…",
     "revealText": "Révéler le texte",
+    "hideText": "Flouter à nouveau le texte",
     "openGrammarNoteAriaLabel": "Ouvrir la note de grammaire ({{severity}}) avec Teacher Wang",
     "askTeacherWangTitle": "{{severity}} — demander à Teacher Wang",
     "errors": {
