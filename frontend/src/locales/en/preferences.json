@@ -11,7 +11,6 @@
   },
   "preferencesPage": {
     "title": "Preferences",
-    "loading": "Loading preferences...",
     "language": {
       "title": "Language",
       "description": "Choose the language used across the app.",
@@ -23,6 +22,7 @@
     },
     "chatSetup": {
       "title": "Chat setup",
+      "loading": "Loading chat setup…",
       "description": "Choose how spoken and written Chinese show up in your AI conversations.",
       "listeningMode": {
         "title": "Reading first vs. Listening first",
@@ -46,12 +46,14 @@
     },
     "currentPlan": {
       "title": "Current plan",
+      "loading": "Loading current plan…",
       "descriptionFree": "You're on the <1>Free</1> plan.",
       "descriptionPro": "You're on the <1>Pro</1> plan.",
       "comparePlans": "Compare plans"
     },
     "anki": {
       "title": "Anki synchronization",
+      "loading": "Loading Anki status…",
       "mobileWarning": "Anki synchronization isn't available on a mobile phone. Use a computer to set up and manage your Anki decks.",
       "description": "Map your knowledge-base characters and words to Anki decks through AnkiConnect.",
       "notConnectedBanner": {
@@ -73,6 +75,7 @@
     },
     "usage": {
       "title": "AI usage",
+      "loading": "Loading AI usage…",
       "description": "How much of your monthly AI allowance chat and grammar-check calls have used.",
       "smartAi": {
         "title": "Smart AI",

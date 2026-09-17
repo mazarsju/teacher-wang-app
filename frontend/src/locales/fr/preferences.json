@@ -11,7 +11,6 @@
   },
   "preferencesPage": {
     "title": "Préférences",
-    "loading": "Chargement des préférences...",
     "language": {
       "title": "Langue",
       "description": "Choisissez la langue utilisée dans l'application.",
@@ -23,6 +22,7 @@
     },
     "chatSetup": {
       "title": "Configuration des discussions",
+      "loading": "Chargement de la configuration des discussions…",
       "description": "Choisissez comment le chinois parlé et écrit apparaît dans vos conversations avec l'IA.",
       "listeningMode": {
         "title": "Lecture d'abord vs. Écoute d'abord",
@@ -46,12 +46,14 @@
     },
     "currentPlan": {
       "title": "Offre actuelle",
+      "loading": "Chargement de l'offre actuelle…",
       "descriptionFree": "Vous êtes sur l'offre <1>Gratuite</1>.",
       "descriptionPro": "Vous êtes sur l'offre <1>Pro</1>.",
       "comparePlans": "Comparer les offres"
     },
     "anki": {
       "title": "Synchronisation Anki",
+      "loading": "Chargement du statut Anki…",
       "mobileWarning": "La synchronisation Anki n'est pas disponible sur un téléphone mobile. Utilisez un ordinateur pour configurer et gérer vos paquets Anki.",
       "description": "Associez les caractères et mots de votre base de connaissances à des paquets Anki via AnkiConnect.",
       "notConnectedBanner": {
@@ -73,6 +75,7 @@
     },
     "usage": {
       "title": "Utilisation de l'IA",
+      "loading": "Chargement de l'utilisation de l'IA…",
       "description": "La part de votre quota mensuel d'IA utilisée par les appels de discussion et de vérification de grammaire.",
       "smartAi": {
         "title": "IA intelligente",

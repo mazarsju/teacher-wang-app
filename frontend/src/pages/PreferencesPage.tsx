@@ -103,12 +103,10 @@ export default function PreferencesPage() {
   const { t, i18n } = useTranslation("preferences");
   const dispatch = useAppDispatch();
   const ankiStatus = useAppSelector((state) => state.anki.status);
-  const syncStatus = useAppSelector((state) => state.sync.status);
-  const syncError = useAppSelector((state) => state.sync.error);
-  const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
 
   const [tokenUsage, setTokenUsage] = useState<TokenUsageSummary | null>(null);
   const [isTokenUsageLoading, setIsTokenUsageLoading] = useState(true);
+  const [isAnkiLoading, setIsAnkiLoading] = useState(true);
   const [isSmartAiEnabled, setIsSmartAiEnabled] = useState(true);
   const [isSmartAiLoading, setIsSmartAiLoading] = useState(true);
   const [isSmartAiSaving, setIsSmartAiSaving] = useState(false);
@@ -269,13 +267,6 @@ export default function PreferencesPage() {
     }
   }
 
-  const hasSyncedData = lastSyncedAt !== null;
-  const isLoading =
-    (!hasSyncedData &&
-      (syncStatus === "idle" || syncStatus === "loading")) ||
-    isTokenUsageLoading;
-  const error = extrasError ?? (!hasSyncedData ? syncError : null);
-
   async function refreshAnkiStatus() {
     try {
       const anki = await fetchAnkiStatus();
@@ -286,6 +277,8 @@ export default function PreferencesPage() {
           ? refreshError.message
           : t("preferencesPage.errors.refreshAnkiStatus"),
       );
+    } finally {
+      setIsAnkiLoading(false);
     }
   }
 
@@ -381,413 +374,425 @@ export default function PreferencesPage() {
 
   return (
     <Page title={t("preferencesPage.title")}>
-      {isLoading && <p>{t("preferencesPage.loading")}</p>}
-      {error && <p className="table-error">{error}</p>}
+      {extrasError && <p className="table-error">{extrasError}</p>}
 
-      {!isLoading && (
-        <section className="preferences-section">
-          <h2 className={styles.preferencesSectionTitle}>
-            {t("preferencesPage.language.title")}
-          </h2>
-          <div className={styles.preferencesToggleRow}>
-            <span className={styles.preferencesToggleRowLabel}>
-              {t("preferencesPage.language.description")}
-            </span>
-            <select
-              className={styles.preferencesLanguageSelect}
-              value={i18n.language}
-              disabled={isLanguageSaving}
-              aria-label={t("preferencesPage.language.ariaLabel")}
-              onChange={(event) => void handleLanguageChange(event.target.value)}
-            >
-              {LANGUAGE_OPTIONS.map((language) => (
-                <option key={language} value={language}>
-                  {t(`preferencesPage.language.options.${language}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </section>
-      )}
+      <section className="preferences-section">
+        <h2 className={styles.preferencesSectionTitle}>
+          {t("preferencesPage.language.title")}
+        </h2>
+        <div className={styles.preferencesToggleRow}>
+          <span className={styles.preferencesToggleRowLabel}>
+            {t("preferencesPage.language.description")}
+          </span>
+          <select
+            className={styles.preferencesLanguageSelect}
+            value={i18n.language}
+            disabled={isLanguageSaving}
+            aria-label={t("preferencesPage.language.ariaLabel")}
+            onChange={(event) => void handleLanguageChange(event.target.value)}
+          >
+            {LANGUAGE_OPTIONS.map((language) => (
+              <option key={language} value={language}>
+                {t(`preferencesPage.language.options.${language}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
 
-      {!isLoading && tokenUsage && (
+      {(isTokenUsageLoading || tokenUsage) && (
         <section className={`preferences-section ${styles.preferencesSectionPlan}`}>
           <h2 className={styles.preferencesSectionTitle}>
             {t("preferencesPage.currentPlan.title")}
           </h2>
-          <p className={styles.preferencesSectionDescription}>
-            <span>
-              <Trans
-                i18nKey={
-                  currentPlan === "pro"
-                    ? "preferencesPage.currentPlan.descriptionPro"
-                    : "preferencesPage.currentPlan.descriptionFree"
-                }
-                t={t}
-                components={{ 1: <b /> }}
+          {isTokenUsageLoading ? (
+            <p>{t("preferencesPage.currentPlan.loading")}</p>
+          ) : (
+            <p className={styles.preferencesSectionDescription}>
+              <span>
+                <Trans
+                  i18nKey={
+                    currentPlan === "pro"
+                      ? "preferencesPage.currentPlan.descriptionPro"
+                      : "preferencesPage.currentPlan.descriptionFree"
+                  }
+                  t={t}
+                  components={{ 1: <b /> }}
+                />
+              </span>
+              <Button
+                kind="confirm"
+                variant="page"
+                text={t("preferencesPage.currentPlan.comparePlans")}
+                onClick={() => setIsChangePlanModalOpen(true)}
               />
-            </span>
-            <Button
-              kind="confirm"
-              variant="page"
-              text={t("preferencesPage.currentPlan.comparePlans")}
-              onClick={() => setIsChangePlanModalOpen(true)}
-            />
-          </p>
+            </p>
+          )}
         </section>
       )}
 
-      {!isLoading && (
-        <section className={`preferences-section ${styles.preferencesSectionAnki}`}>
-          <h2 className={styles.preferencesSectionTitle}>
-            {t("preferencesPage.anki.title")}
-          </h2>
-
-          <p className={styles.ankiMobileWarning}>
-            {t("preferencesPage.anki.mobileWarning")}
-          </p>
-
-          <div className={styles.ankiDesktopContent}>
-            <p className={styles.preferencesSectionDescription}>
-              {t("preferencesPage.anki.description")}
+      <section className={`preferences-section ${styles.preferencesSectionAnki}`}>
+        <h2 className={styles.preferencesSectionTitle}>
+          {t("preferencesPage.anki.title")}
+        </h2>
+        {isAnkiLoading ? (
+          <p>{t("preferencesPage.anki.loading")}</p>
+        ) : (
+          <>
+            <p className={styles.ankiMobileWarning}>
+              {t("preferencesPage.anki.mobileWarning")}
             </p>
-            {!ankiStatus.connected && (
-              <Banner
-                type="warning"
-                message={t("preferencesPage.anki.notConnectedBanner.message")}
-                buttonMessage={t(
-                  "preferencesPage.anki.notConnectedBanner.buttonMessage",
-                )}
-                actionOnButtonClick={() => setIsGuideOpen(true)}
-              />
-            )}
 
-            {hasUnsynchronizedDeck && (
-              <Banner
-                type="warning"
-                message={t("preferencesPage.anki.syncHelpBanner.message")}
-                buttonMessage={t(
-                  "preferencesPage.anki.syncHelpBanner.buttonMessage",
-                )}
-                actionOnButtonClick={() => setIsSyncHelpOpen(true)}
-              />
-            )}
+            <div className={styles.ankiDesktopContent}>
+              <p className={styles.preferencesSectionDescription}>
+                {t("preferencesPage.anki.description")}
+              </p>
+              {!ankiStatus.connected && (
+                <Banner
+                  type="warning"
+                  message={t("preferencesPage.anki.notConnectedBanner.message")}
+                  buttonMessage={t(
+                    "preferencesPage.anki.notConnectedBanner.buttonMessage",
+                  )}
+                  actionOnButtonClick={() => setIsGuideOpen(true)}
+                />
+              )}
 
-            <ul className={styles.ankiDeckList}>
-              {deckRows.map(({ kind, label }) => {
-                const mapping = ankiStatus.decks[kind];
-                const statusClass = ankiStatus.connected
-                  ? mapping.status
-                  : "not_synchronized";
-                return (
-                  <li key={kind} className={styles.ankiDeckRow}>
-                    <div className={styles.ankiDeckRowMain}>
-                      <span className={styles.ankiDeckName}>{label}</span>
-                      <span
-                        className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
-                      >
-                        {ankiStatus.connected
-                          ? formatDeckStatus(mapping.status, t)
-                          : t("preferencesPage.anki.deckStatus.notConnected")}
-                      </span>
-                      {mapping.deck_name !== "" && (
-                        <span className={styles.ankiDeckMappedName}>
-                          {mapping.deck_name}
+              {hasUnsynchronizedDeck && (
+                <Banner
+                  type="warning"
+                  message={t("preferencesPage.anki.syncHelpBanner.message")}
+                  buttonMessage={t(
+                    "preferencesPage.anki.syncHelpBanner.buttonMessage",
+                  )}
+                  actionOnButtonClick={() => setIsSyncHelpOpen(true)}
+                />
+              )}
+
+              <ul className={styles.ankiDeckList}>
+                {deckRows.map(({ kind, label }) => {
+                  const mapping = ankiStatus.decks[kind];
+                  const statusClass = ankiStatus.connected
+                    ? mapping.status
+                    : "not_synchronized";
+                  return (
+                    <li key={kind} className={styles.ankiDeckRow}>
+                      <div className={styles.ankiDeckRowMain}>
+                        <span className={styles.ankiDeckName}>{label}</span>
+                        <span
+                          className={`${styles.ankiDeckStatus} ${styles[`anki-deck-status--${statusClass}`]}`}
+                        >
+                          {ankiStatus.connected
+                            ? formatDeckStatus(mapping.status, t)
+                            : t("preferencesPage.anki.deckStatus.notConnected")}
                         </span>
-                      )}
-                    </div>
-                    <div className={styles.ankiDeckRowActions}>
-                      {mapping.status !== "not_configured" && (
+                        {mapping.deck_name !== "" && (
+                          <span className={styles.ankiDeckMappedName}>
+                            {mapping.deck_name}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.ankiDeckRowActions}>
+                        {mapping.status !== "not_configured" && (
+                          <Button
+                            kind="confirm"
+                            variant="page"
+                            text={t("preferencesPage.anki.syncButton")}
+                            icon={<SyncIcon />}
+                            disabled={!ankiStatus.connected}
+                            onClick={() => setSyncKind(kind)}
+                          />
+                        )}
                         <Button
                           kind="confirm"
                           variant="page"
-                          text={t("preferencesPage.anki.syncButton")}
-                          icon={<SyncIcon />}
+                          text={t("preferencesPage.anki.setupButton")}
+                          icon={<SettingsIcon />}
                           disabled={!ankiStatus.connected}
-                          onClick={() => setSyncKind(kind)}
+                          onClick={() => setSetupKind(kind)}
                         />
-                      )}
-                      <Button
-                        kind="confirm"
-                        variant="page"
-                        text={t("preferencesPage.anki.setupButton")}
-                        icon={<SettingsIcon />}
-                        disabled={!ankiStatus.connected}
-                        onClick={() => setSetupKind(kind)}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-      )}
-
-      {!isLoading && !isChatSetupLoading && (
-        <section className="preferences-section">
-          <h2 className={styles.preferencesSectionTitle}>
-            {t("preferencesPage.chatSetup.title")}
-          </h2>
-          <p className={styles.preferencesSectionDescription}>
-            {t("preferencesPage.chatSetup.description")}
-          </p>
-
-          <div className={styles.preferencesFieldGroup}>
-            <span className={styles.preferencesFieldGroupLabel}>
-              {t("preferencesPage.chatSetup.listeningMode.title")}
-            </span>
-            <div
-              className={styles.preferencesModeOptions}
-              role="radiogroup"
-              aria-label={t("preferencesPage.chatSetup.listeningMode.title")}
-            >
-              {LISTENING_MODE_OPTIONS.map((mode) => (
-                <label
-                  key={mode}
-                  className={
-                    chatSetup.listening_mode === mode
-                      ? `${styles.preferencesModeOption} ${styles.preferencesModeOptionSelected}`
-                      : styles.preferencesModeOption
-                  }
-                >
-                  <input
-                    type="radio"
-                    name="chat-listening-mode"
-                    value={mode}
-                    checked={chatSetup.listening_mode === mode}
-                    disabled={isListeningModeSaving}
-                    onChange={() => void handleListeningModeChange(mode)}
-                  />
-                  <span className={styles.preferencesModeOptionTitle}>
-                    {t(`preferencesPage.chatSetup.listeningMode.options.${mode}.title`)}
-                  </span>
-                  <span className={styles.preferencesModeOptionDescription}>
-                    {t(
-                      `preferencesPage.chatSetup.listeningMode.options.${mode}.description`,
-                    )}
-                  </span>
-                </label>
-              ))}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          </div>
+          </>
+        )}
+      </section>
 
-          <div className={styles.preferencesFieldGroup}>
-            <span className={styles.preferencesFieldGroupLabel}>
-              {t("preferencesPage.chatSetup.listenSpeed.title")}
-            </span>
-            <p className={styles.preferencesToggleRowDescription}>
-              {t("preferencesPage.chatSetup.listenSpeed.description")}
+      <section className="preferences-section">
+        <h2 className={styles.preferencesSectionTitle}>
+          {t("preferencesPage.chatSetup.title")}
+        </h2>
+        {isChatSetupLoading ? (
+          <p>{t("preferencesPage.chatSetup.loading")}</p>
+        ) : (
+          <>
+            <p className={styles.preferencesSectionDescription}>
+              {t("preferencesPage.chatSetup.description")}
             </p>
-            <input
-              type="range"
-              className={styles.preferencesSpeedSlider}
-              min={0}
-              max={LISTEN_SPEED_STEPS.length - 1}
-              step={1}
-              value={LISTEN_SPEED_STEPS.indexOf(chatSetup.listen_speed_adjustment)}
-              disabled={isListenSpeedSaving}
-              aria-label={t("preferencesPage.chatSetup.listenSpeed.ariaLabel")}
-              onChange={(event) =>
-                void handleListenSpeedChange(
-                  LISTEN_SPEED_STEPS[Number(event.target.value)],
-                )
-              }
-            />
-            <div className={styles.preferencesSpeedSliderLabels}>
-              {LISTEN_SPEED_STEPS.map((step) => (
-                <span
-                  key={step}
-                  className={
-                    step === chatSetup.listen_speed_adjustment
-                      ? styles.preferencesSpeedSliderLabelActive
-                      : undefined
-                  }
-                >
-                  {formatSpeedStep(step, t)}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
-      {!isLoading && tokenUsage && (
+            <div className={styles.preferencesFieldGroup}>
+              <span className={styles.preferencesFieldGroupLabel}>
+                {t("preferencesPage.chatSetup.listeningMode.title")}
+              </span>
+              <div
+                className={styles.preferencesModeOptions}
+                role="radiogroup"
+                aria-label={t("preferencesPage.chatSetup.listeningMode.title")}
+              >
+                {LISTENING_MODE_OPTIONS.map((mode) => (
+                  <label
+                    key={mode}
+                    className={
+                      chatSetup.listening_mode === mode
+                        ? `${styles.preferencesModeOption} ${styles.preferencesModeOptionSelected}`
+                        : styles.preferencesModeOption
+                    }
+                  >
+                    <input
+                      type="radio"
+                      name="chat-listening-mode"
+                      value={mode}
+                      checked={chatSetup.listening_mode === mode}
+                      disabled={isListeningModeSaving}
+                      onChange={() => void handleListeningModeChange(mode)}
+                    />
+                    <span className={styles.preferencesModeOptionTitle}>
+                      {t(`preferencesPage.chatSetup.listeningMode.options.${mode}.title`)}
+                    </span>
+                    <span className={styles.preferencesModeOptionDescription}>
+                      {t(
+                        `preferencesPage.chatSetup.listeningMode.options.${mode}.description`,
+                      )}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.preferencesFieldGroup}>
+              <span className={styles.preferencesFieldGroupLabel}>
+                {t("preferencesPage.chatSetup.listenSpeed.title")}
+              </span>
+              <p className={styles.preferencesToggleRowDescription}>
+                {t("preferencesPage.chatSetup.listenSpeed.description")}
+              </p>
+              <input
+                type="range"
+                className={styles.preferencesSpeedSlider}
+                min={0}
+                max={LISTEN_SPEED_STEPS.length - 1}
+                step={1}
+                value={LISTEN_SPEED_STEPS.indexOf(chatSetup.listen_speed_adjustment)}
+                disabled={isListenSpeedSaving}
+                aria-label={t("preferencesPage.chatSetup.listenSpeed.ariaLabel")}
+                onChange={(event) =>
+                  void handleListenSpeedChange(
+                    LISTEN_SPEED_STEPS[Number(event.target.value)],
+                  )
+                }
+              />
+              <div className={styles.preferencesSpeedSliderLabels}>
+                {LISTEN_SPEED_STEPS.map((step) => (
+                  <span
+                    key={step}
+                    className={
+                      step === chatSetup.listen_speed_adjustment
+                        ? styles.preferencesSpeedSliderLabelActive
+                        : undefined
+                    }
+                  >
+                    {formatSpeedStep(step, t)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </section>
+
+      {(isTokenUsageLoading || tokenUsage) && (
         <section className={`preferences-section ${styles.preferencesSectionUsage}`}>
           <h2 className={styles.preferencesSectionTitle}>
             {t("preferencesPage.usage.title")}
           </h2>
-          <p className={styles.preferencesSectionDescription}>
-            {t("preferencesPage.usage.description")}
-          </p>
+          {isTokenUsageLoading || !tokenUsage ? (
+            <p>{t("preferencesPage.usage.loading")}</p>
+          ) : (
+            <>
+              <p className={styles.preferencesSectionDescription}>
+                {t("preferencesPage.usage.description")}
+              </p>
 
-          {!isSmartAiLoading && (
-            <div className={styles.preferencesToggleRow}>
-              <span className={styles.preferencesToggleRowLabel}>
-                <span className={styles.preferencesToggleRowTitle}>
-                  {t("preferencesPage.usage.smartAi.title")}
-                </span>
-                <p className={styles.preferencesToggleRowDescription}>
-                  {t("preferencesPage.usage.smartAi.description")}
-                </p>
-              </span>
-              <label
-                className={styles.preferencesToggle}
-                aria-label={t("preferencesPage.usage.smartAi.ariaLabel")}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSmartAiEnabled}
-                  disabled={isSmartAiSaving}
-                  onChange={(event) =>
-                    void handleToggleSmartAi(event.target.checked)
-                  }
-                />
-                <span className={styles.preferencesToggleTrack} />
-                <span className={styles.preferencesToggleThumb} />
-              </label>
-            </div>
-          )}
+              {!isSmartAiLoading && (
+                <div className={styles.preferencesToggleRow}>
+                  <span className={styles.preferencesToggleRowLabel}>
+                    <span className={styles.preferencesToggleRowTitle}>
+                      {t("preferencesPage.usage.smartAi.title")}
+                    </span>
+                    <p className={styles.preferencesToggleRowDescription}>
+                      {t("preferencesPage.usage.smartAi.description")}
+                    </p>
+                  </span>
+                  <label
+                    className={styles.preferencesToggle}
+                    aria-label={t("preferencesPage.usage.smartAi.ariaLabel")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSmartAiEnabled}
+                      disabled={isSmartAiSaving}
+                      onChange={(event) =>
+                        void handleToggleSmartAi(event.target.checked)
+                      }
+                    />
+                    <span className={styles.preferencesToggleTrack} />
+                    <span className={styles.preferencesToggleThumb} />
+                  </label>
+                </div>
+              )}
 
-          <div className={styles.preferencesUsageProgress}>
-            <div className={styles.preferencesUsageProgressHeader}>
-              <span className={styles.preferencesUsageProgressLabel}>
-                {t("preferencesPage.usage.usedThisMonth")}
-              </span>
-              <span className={styles.preferencesUsageProgressValue}>
-                {formatPercent(usedPercent)}
-              </span>
-            </div>
-            <div
-              className={styles.preferencesUsageProgressTrack}
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(usedPercent)}
-              aria-label={t("preferencesPage.usage.progressBarAriaLabel")}
-            >
-              <div
-                className={styles.preferencesUsageProgressFill}
-                style={{ width: `${usedPercent}%` }}
-              />
-            </div>
-            <p className={styles.preferencesUsageResetNote}>
-              {t("preferencesPage.usage.resetNote")}
-            </p>
-          </div>
-
-          {isUsageExhausted && (
-            <Banner
-              type="warning"
-              message={t("preferencesPage.usage.exhaustedBanner.message")}
-              buttonMessage={t("preferencesPage.usage.exhaustedBanner.buttonMessage")}
-              actionOnButtonClick={() => setIsUpdatePlanModalOpen(true)}
-            />
-          )}
-
-          <div
-            className={styles.preferencesUsageChart}
-            role="img"
-            aria-label={t("preferencesPage.usage.chartAriaLabel", {
-              percent: formatPercent(usedPercent),
-            })}
-          >
-            <svg
-              viewBox={`0 0 ${USAGE_CHART_WIDTH} ${USAGE_CHART_HEIGHT}`}
-              className={styles.preferencesUsageChartSvg}
-            >
-              <defs>
-                <linearGradient
-                  id="preferences-usage-area-fill"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
+              <div className={styles.preferencesUsageProgress}>
+                <div className={styles.preferencesUsageProgressHeader}>
+                  <span className={styles.preferencesUsageProgressLabel}>
+                    {t("preferencesPage.usage.usedThisMonth")}
+                  </span>
+                  <span className={styles.preferencesUsageProgressValue}>
+                    {formatPercent(usedPercent)}
+                  </span>
+                </div>
+                <div
+                  className={styles.preferencesUsageProgressTrack}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(usedPercent)}
+                  aria-label={t("preferencesPage.usage.progressBarAriaLabel")}
                 >
-                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {[0, 25, 50, 75, 100].map((tick) => {
-                const y = USAGE_CHART_HEIGHT - (tick / 100) * USAGE_CHART_HEIGHT;
-                return (
-                  <line
-                    key={tick}
-                    x1={0}
-                    x2={USAGE_CHART_WIDTH}
-                    y1={y}
-                    y2={y}
-                    className={styles.preferencesUsageChartGrid}
+                  <div
+                    className={styles.preferencesUsageProgressFill}
+                    style={{ width: `${usedPercent}%` }}
                   />
-                );
-              })}
-              {usageAreaPath && (
-                <path d={usageAreaPath} className={styles.preferencesUsageChartArea} />
+                </div>
+                <p className={styles.preferencesUsageResetNote}>
+                  {t("preferencesPage.usage.resetNote")}
+                </p>
+              </div>
+
+              {isUsageExhausted && (
+                <Banner
+                  type="warning"
+                  message={t("preferencesPage.usage.exhaustedBanner.message")}
+                  buttonMessage={t("preferencesPage.usage.exhaustedBanner.buttonMessage")}
+                  actionOnButtonClick={() => setIsUpdatePlanModalOpen(true)}
+                />
               )}
-              {usageLinePath && (
-                <path d={usageLinePath} className={styles.preferencesUsageChartLine} />
-              )}
-              {usageChartPoints.map((point) => (
-                <circle
-                  key={point.date}
-                  cx={point.x}
-                  cy={point.y}
-                  r={2.5}
-                  className={styles.preferencesUsageChartDot}
+
+              <div
+                className={styles.preferencesUsageChart}
+                role="img"
+                aria-label={t("preferencesPage.usage.chartAriaLabel", {
+                  percent: formatPercent(usedPercent),
+                })}
+              >
+                <svg
+                  viewBox={`0 0 ${USAGE_CHART_WIDTH} ${USAGE_CHART_HEIGHT}`}
+                  className={styles.preferencesUsageChartSvg}
                 >
-                  <title>
-                    {t("preferencesPage.usage.chartDotTitle", {
-                      day: formatDayLabel(point.date),
-                      percent: formatPercent(point.percent),
-                    })}
-                  </title>
-                </circle>
-              ))}
-              {currentUsagePoint && (
-                <text
-                  x={currentUsagePoint.x}
-                  y={Math.max(12, currentUsagePoint.y - 8)}
-                  textAnchor="end"
-                  className={styles.preferencesUsageChartCurrentLabel}
-                >
-                  {formatPercent(usedPercent)}
-                </text>
-              )}
-            </svg>
-            <div className={styles.preferencesUsageChartLabels}>
-              <span>
-                {tokenUsage.days[0]
-                  ? formatDayLabel(tokenUsage.days[0].date)
-                  : ""}
-              </span>
-              <span>
-                {tokenUsage.days[tokenUsage.days.length - 1]
-                  ? formatDayLabel(tokenUsage.days[tokenUsage.days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
+                  <defs>
+                    <linearGradient
+                      id="preferences-usage-area-fill"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {[0, 25, 50, 75, 100].map((tick) => {
+                    const y = USAGE_CHART_HEIGHT - (tick / 100) * USAGE_CHART_HEIGHT;
+                    return (
+                      <line
+                        key={tick}
+                        x1={0}
+                        x2={USAGE_CHART_WIDTH}
+                        y1={y}
+                        y2={y}
+                        className={styles.preferencesUsageChartGrid}
+                      />
+                    );
+                  })}
+                  {usageAreaPath && (
+                    <path d={usageAreaPath} className={styles.preferencesUsageChartArea} />
+                  )}
+                  {usageLinePath && (
+                    <path d={usageLinePath} className={styles.preferencesUsageChartLine} />
+                  )}
+                  {usageChartPoints.map((point) => (
+                    <circle
+                      key={point.date}
+                      cx={point.x}
+                      cy={point.y}
+                      r={2.5}
+                      className={styles.preferencesUsageChartDot}
+                    >
+                      <title>
+                        {t("preferencesPage.usage.chartDotTitle", {
+                          day: formatDayLabel(point.date),
+                          percent: formatPercent(point.percent),
+                        })}
+                      </title>
+                    </circle>
+                  ))}
+                  {currentUsagePoint && (
+                    <text
+                      x={currentUsagePoint.x}
+                      y={Math.max(12, currentUsagePoint.y - 8)}
+                      textAnchor="end"
+                      className={styles.preferencesUsageChartCurrentLabel}
+                    >
+                      {formatPercent(usedPercent)}
+                    </text>
+                  )}
+                </svg>
+                <div className={styles.preferencesUsageChartLabels}>
+                  <span>
+                    {tokenUsage.days[0]
+                      ? formatDayLabel(tokenUsage.days[0].date)
+                      : ""}
+                  </span>
+                  <span>
+                    {tokenUsage.days[tokenUsage.days.length - 1]
+                      ? formatDayLabel(tokenUsage.days[tokenUsage.days.length - 1].date)
+                      : ""}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </section>
       )}
 
-      {!isLoading && (
-        <section className={`preferences-section ${styles.preferencesSectionDanger}`}>
-          <h2 className={styles.preferencesSectionTitle}>
-            {t("preferencesPage.danger.title")}
-          </h2>
-          <p className={styles.preferencesSectionDescription}>
-            {t("preferencesPage.danger.description")}
-          </p>
-          <Button
-            kind="danger"
-            variant="page"
-            text={t("preferencesPage.danger.deleteButton")}
-            icon={<TrashIcon />}
-            onClick={() => setIsDeleteKnowledgeBaseConfirmOpen(true)}
-            disabled={isDeletingKnowledgeBase}
-          />
-        </section>
-      )}
+      <section className={`preferences-section ${styles.preferencesSectionDanger}`}>
+        <h2 className={styles.preferencesSectionTitle}>
+          {t("preferencesPage.danger.title")}
+        </h2>
+        <p className={styles.preferencesSectionDescription}>
+          {t("preferencesPage.danger.description")}
+        </p>
+        <Button
+          kind="danger"
+          variant="page"
+          text={t("preferencesPage.danger.deleteButton")}
+          icon={<TrashIcon />}
+          onClick={() => setIsDeleteKnowledgeBaseConfirmOpen(true)}
+          disabled={isDeletingKnowledgeBase}
+        />
+      </section>
 
       <WarningModal
         isOpen={syncWarningMessage !== null}
