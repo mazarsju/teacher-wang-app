@@ -102,6 +102,22 @@ describe("HomePage", () => {
     expect(screen.getByText("八")).toBeInTheDocument();
   });
 
+  it("shows the cards with a loading spinner while the initial sync is in progress", () => {
+    renderWithStore(<HomePage />, {
+      preloadedState: {
+        sync: { status: "loading", error: null, lastSyncedAt: null },
+      },
+    });
+
+    expect(screen.getByLabelText("HSK level")).toBeInTheDocument();
+    expect(screen.getByText("Characters you are able to recognize")).toBeInTheDocument();
+    expect(screen.getByText("Characters you can write")).toBeInTheDocument();
+    expect(screen.queryByText("Your HSK journey starts here")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "How HSK level is estimated" }),
+    ).toBeDisabled();
+  });
+
   it("shows an error when progress fails to load", async () => {
     renderWithStore(<HomePage />, {
       preloadedState: {

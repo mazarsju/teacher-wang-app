@@ -24,7 +24,6 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   const characters = useAppSelector((state) => state.characters.items);
   const words = useAppSelector((state) => state.words.items);
   const hskLevelStatus = useAppSelector((state) => state.hsk.status);
-  const syncStatus = useAppSelector((state) => state.sync.status);
   const syncError = useAppSelector((state) => state.sync.error);
   const lastSyncedAt = useAppSelector((state) => state.sync.lastSyncedAt);
   const weeklyArticle = useAppSelector((state) => state.weeklyArticle.article);
@@ -60,9 +59,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   }, [loadWeeklyArticle, weeklyArticleLoaded]);
 
   const hasSyncedData = lastSyncedAt !== null;
-  const isLoading =
-    !hasSyncedData && (syncStatus === "idle" || syncStatus === "loading");
   const error = !hasSyncedData ? syncError : null;
+  const statsLoading = hskLevelStatus === null;
 
   const recognizedCount = characters.length;
   const writingCount = useMemo(
@@ -115,25 +113,29 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         onClose={() => setIsInitWizardOpen(false)}
         onNavigate={onNavigate}
       />
-      {isLoading && <p>{t("homePage.loading")}</p>}
       {error && <p className="table-error">{error}</p>}
-      {!isLoading && !error && hskLevelStatus !== null && (
+      {!error && (
         <>
           <section className={styles.homeHskCard} aria-label={t("homePage.hskCard.ariaLabel")}>
             <div className={styles.homeHskBadge}>
               <span className={styles.homeHskBadgeLabel}>{t("homePage.hskCard.badgeLabel")}</span>
               <span className={styles.homeHskBadgeLevel}>
-                {hskLevelStatus.current_level ?? t("homePage.hskCard.levelPlaceholder")}
+                {statsLoading ? (
+                  <span className={styles.homeSpinner} aria-label={t("homePage.loading")} />
+                ) : (
+                  hskLevelStatus.current_level ?? t("homePage.hskCard.levelPlaceholder")
+                )}
               </span>
             </div>
             <div className={styles.homeHskContent}>
               <div className={styles.homeHskTitleRow}>
-                <p className={styles.homeHskTitle}>{hskTitle}</p>
+                <p className={styles.homeHskTitle}>{statsLoading ? "" : hskTitle}</p>
                 <button
                   type="button"
                   className="home-hsk-info-button"
                   aria-label={t("homePage.hskCard.infoButtonAriaLabel")}
                   onClick={() => setIsHskInfoOpen(true)}
+                  disabled={statsLoading}
                 >
                   <InfoIcon className="home-hsk-info-icon" />
                 </button>
@@ -141,7 +143,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               <div
                 className={styles.homeHskProgressTrack}
                 role="progressbar"
-                aria-valuenow={Math.round(hskLevelStatus.progress_to_next_level)}
+                aria-valuenow={statsLoading ? 0 : Math.round(hskLevelStatus.progress_to_next_level)}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-label={t("homePage.hskCard.progressBarAriaLabel")}
@@ -149,13 +151,13 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 <div
                   className={styles.homeHskProgressFill}
                   style={{
-                    width: `${hskLevelStatus.progress_to_next_level}%`,
+                    width: `${statsLoading ? 0 : hskLevelStatus.progress_to_next_level}%`,
                   }}
                 />
               </div>
               <div className={styles.homeHskProgressFooter}>
-                <p className={styles.homeHskProgressLabel}>{hskProgressLabel}</p>
-                {hskLevelStatus.next_level !== null && (
+                <p className={styles.homeHskProgressLabel}>{statsLoading ? "" : hskProgressLabel}</p>
+                {!statsLoading && hskLevelStatus.next_level !== null && (
                   <Button
                     kind="cancel"
                     text={t("homePage.hskCard.missingCharactersButton")}
@@ -169,13 +171,25 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
           <div className={styles.homeMetrics}>
             <div className={styles.homeMetricCard}>
-              <p className={styles.homeMetricValue}>{recognizedCount}</p>
+              <p className={styles.homeMetricValue}>
+                {statsLoading ? (
+                  <span className={styles.homeSpinner} aria-label={t("homePage.loading")} />
+                ) : (
+                  recognizedCount
+                )}
+              </p>
               <p className={styles.homeMetricLabel}>
                 {t("homePage.metrics.recognizedLabel")}
               </p>
             </div>
             <div className={styles.homeMetricCard}>
-              <p className={styles.homeMetricValue}>{writingCount}</p>
+              <p className={styles.homeMetricValue}>
+                {statsLoading ? (
+                  <span className={styles.homeSpinner} aria-label={t("homePage.loading")} />
+                ) : (
+                  writingCount
+                )}
+              </p>
               <p className={styles.homeMetricLabel}>{t("homePage.metrics.writingLabel")}</p>
             </div>
           </div>
@@ -291,12 +305,14 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             </div>
           )}
 
-          <MissingHskCharactersModal
-            isOpen={isMissingModalOpen}
-            level={hskLevelStatus.next_level}
-            characters={hskLevelStatus.missing_characters}
-            onClose={() => setIsMissingModalOpen(false)}
-          />
+          {hskLevelStatus !== null && (
+            <MissingHskCharactersModal
+              isOpen={isMissingModalOpen}
+              level={hskLevelStatus.next_level}
+              characters={hskLevelStatus.missing_characters}
+              onClose={() => setIsMissingModalOpen(false)}
+            />
+          )}
         </>
       )}
     </Page>

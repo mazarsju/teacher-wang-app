@@ -137,6 +137,22 @@
   line-height: 1.4;
 }
 
+.home-spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: home-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes home-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .home-article-card {
   padding: 1.25rem;
   margin-bottom: 1.5rem;

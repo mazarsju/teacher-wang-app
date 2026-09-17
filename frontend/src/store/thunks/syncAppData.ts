@@ -1,4 +1,5 @@
 import { createAction, createAsyncThunk } from "@reduxjs/toolkit";
+import type { RootState } from "../index";
 import { emptyAnkiStatus, type AnkiStatus } from "../../types/anki";
 import type { Character } from "../../types/character";
 import type { GrammarPoint } from "../../types/grammarPoint";
@@ -34,7 +35,7 @@ export const resetAppData = createAction("appData/reset");
 
 export const resetKnowledgeBaseData = createAction("knowledgeBaseData/reset");
 
-export const syncAppData = createAsyncThunk(
+export const syncAppData = createAsyncThunk<SyncedAppData, void, { state: RootState }>(
   "appData/sync",
   async (): Promise<SyncedAppData> => {
     const [characters, words, hskLevel, hskCharacters, grammar, listeningPractices] =
@@ -68,5 +69,8 @@ export const syncAppData = createAsyncThunk(
       writingPractices: grammar.writingPractices,
       listeningPractices,
     };
+  },
+  {
+    condition: (_, { getState }) => getState().sync.status !== "loading",
   },
 );
