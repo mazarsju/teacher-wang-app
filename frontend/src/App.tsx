@@ -16,6 +16,8 @@ import ListeningPage from "./pages/ListeningPage";
 import PreferencesPage from "./pages/PreferencesPage";
 import WelcomeAuthPage from "./pages/WelcomeAuthPage";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
+import { loadGrammarData } from "./store/thunks/loadGrammarData";
+import { loadListeningData } from "./store/thunks/loadListeningData";
 import { resetAppData, syncAppData } from "./store/thunks/syncAppData";
 import { onUnauthorizedSession } from "./utils/auth/apiFetch";
 import { fetchCurrentUser } from "./utils/auth/meApi";
@@ -62,6 +64,16 @@ export default function App() {
       return;
     }
 
+    // loadGrammarData/loadListeningData must be dispatched first: each
+    // awaits GET /hsk-level-light before firing any other request, and
+    // dispatching a thunk starts its payload creator (and thus that first
+    // fetch call) synchronously, so this ordering makes hsk-level-light the
+    // very first request of the login sequence, ahead of syncAppData's own
+    // calls. (Each fetches it independently rather than sharing one call —
+    // see loadGrammarData's own comment on why chaining that off a shared
+    // thunk is unsafe under StrictMode.)
+    void dispatch(loadGrammarData());
+    void dispatch(loadListeningData());
     void dispatch(syncAppData());
     fetchCurrentUser()
       .then((user) => {

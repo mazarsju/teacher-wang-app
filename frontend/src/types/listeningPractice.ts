@@ -63,7 +63,12 @@ export type CompleteListeningPracticeResult = {
   grammar_score: number;
 };
 
-export type ListeningPracticesResult = {
-  practices: ListeningPractice[];
-  currentHskLevel: number;
-};
+export type ListeningPracticeCatalogEntry = Pick<
+  ListeningPractice,
+  "id" | "title" | "hsk_level" | "type" | "topic" | "translated_topic"
+>;
+
+export type ListeningPracticeLevelEntry = Pick<
+  ListeningPractice,
+  "id" | "status" | "vocabulary_score" | "grammar_score"
+>;

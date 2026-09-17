@@ -28,20 +28,23 @@ def register_routes(app: Flask) -> None:
         generate_article,
         get_grammar_point,
         get_hsk_level,
+        get_hsk_level_light,
         get_listening_practice,
         health,
         ignore_hsk_word,
         language_preference,
         list_characters,
         list_grammar_points,
+        list_grammar_points_light,
         list_hsk_character_words,
         list_hsk_characters,
         list_listening_practices,
+        list_listening_practices_light,
         list_users,
         list_words,
+        list_writing_practices,
         pick_hsk_word,
         record_grammar_usage,
-        refresh_listening_practices,
         reload_grammar_rules,
         reload_hsk_content,
         reload_listening_practice,
@@ -83,13 +86,15 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(export_database.bp)
     app.register_blueprint(delete_knowledge_base.bp)
     app.register_blueprint(list_grammar_points.bp)
+    app.register_blueprint(list_grammar_points_light.bp)
+    app.register_blueprint(list_writing_practices.bp)
     app.register_blueprint(get_grammar_point.bp)
     app.register_blueprint(writing_practice.bp)
     app.register_blueprint(list_listening_practices.bp)
+    app.register_blueprint(list_listening_practices_light.bp)
     app.register_blueprint(get_listening_practice.bp)
     app.register_blueprint(complete_listening_practice.bp)
     app.register_blueprint(save_listening_progress.bp)
-    app.register_blueprint(refresh_listening_practices.bp)
     app.register_blueprint(skip_grammar_point.bp)
     app.register_blueprint(complete_grammar_point.bp)
     app.register_blueprint(check_grammar_point.bp)
@@ -99,6 +104,7 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(list_hsk_characters.bp)
     app.register_blueprint(list_hsk_character_words.bp)
     app.register_blueprint(get_hsk_level.bp)
+    app.register_blueprint(get_hsk_level_light.bp)
     app.register_blueprint(pick_hsk_word.bp)
     app.register_blueprint(suggest_hsk_words.bp)
     app.register_blueprint(ignore_hsk_word.bp)

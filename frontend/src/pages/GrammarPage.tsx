@@ -4,12 +4,11 @@ import { useTranslation } from "react-i18next";
 import { scoreBand } from "../components/GrammarExercises";
 import { CheckIcon, LockIcon, PenIcon, StarIcon } from "../components/icons";
 import Page from "../components/Page";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { setGrammarData } from "../store/slices/grammarSlice";
+import { useAppSelector } from "../store/hooks";
 import type { GrammarPoint } from "../types/grammarPoint";
 import type { WritingTopic } from "../types/writingTopic";
 import { fetchCurrentUser } from "../utils/auth/meApi";
-import { fetchGrammarPoints } from "../utils/grammar/grammarPointsApi";
+import { HSK_MAX_LEVEL } from "../utils/knowledgeBase/hskLevelApi";
 import GrammarPointDetailPage from "./GrammarPointDetailPage";
 import styles from "./GrammarPage.module.css";
 import WritingPracticeDetailPage from "./WritingPracticeDetailPage";
@@ -59,8 +58,13 @@ const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 type LevelStat = { level: number; percent: number };
 
 type LevelRow =
-  | { kind: "grammar"; grammarPoint: GrammarPoint; locked: boolean }
+  | { kind: "grammar"; grammarPoint: GrammarPoint; locked: boolean; levelLoaded: boolean }
   | { kind: "writing"; topic: WritingTopic };
+
+function CellSpinner() {
+  const { t } = useTranslation("grammar");
+  return <span className={styles.grammarCellSpinner} aria-label={t("grammarPage.loading")} />;
+}
 
 function levelStatsUpToLevel(
   grammarPoints: GrammarPoint[],
@@ -208,22 +212,15 @@ function isGrammarPointAvailable(
 
 export default function GrammarPage() {
   const { t } = useTranslation("grammar");
-  const dispatch = useAppDispatch();
   const grammarPoints = useAppSelector((state) => state.grammar.items);
   const writingPractices = useAppSelector((state) => state.grammar.writingPractices);
-  const grammarLoaded = useAppSelector((state) => state.grammar.loaded);
-  const currentHskLevel = useAppSelector(
-    (state) => state.hsk.status?.current_level ?? 0,
-  );
-  const maxHskLevel = useAppSelector((state) => state.hsk.status?.max_level);
+  const isLoading = useAppSelector((state) => !state.grammar.loaded);
+  const error = useAppSelector((state) => state.grammar.error);
+  const loadedLevels = useAppSelector((state) => state.grammar.loadedLevels);
+  const currentHskLevel = useAppSelector((state) => state.hsk.currentLevelLight ?? 0);
   // Achieved level is already done; the learner is aiming at the next one
   // (capped at the catalog max), so that level's topics are available too.
-  const targetHskLevel = Math.min(
-    currentHskLevel + 1,
-    maxHskLevel ?? currentHskLevel + 1,
-  );
-  const [isLoading, setIsLoading] = useState(!grammarLoaded);
-  const [error, setError] = useState<string | null>(null);
+  const targetHskLevel = Math.min(currentHskLevel + 1, HSK_MAX_LEVEL);
   const [selectedGrammarId, setSelectedGrammarId] = useState<string | null>(
     null,
   );
@@ -248,13 +245,23 @@ export default function GrammarPage() {
     );
     return grammarPoints
       .filter((point) => point.hsk_level <= targetHskLevel)
-      .map((point) => ({
-        grammarPoint: point,
-        locked:
-          !isGrammarPointAvailable(point, statusById) ||
-          (plan === "free" && point.index > FREE_PLAN_LESSON_LIMIT),
-      }));
-  }, [grammarPoints, targetHskLevel, plan]);
+      .map((point) => {
+        const levelLoaded = loadedLevels.includes(point.hsk_level);
+        return {
+          grammarPoint: point,
+          levelLoaded,
+          // Until this level's real status/prerequisites have arrived, the
+          // placeholder "TODO" data would otherwise show every row as
+          // locked; treat it as unlocked instead so the row just looks like
+          // it's still loading (via the status/score spinners) rather than
+          // flashing a lock icon that isn't real.
+          locked:
+            levelLoaded &&
+            (!isGrammarPointAvailable(point, statusById) ||
+              (plan === "free" && point.index > FREE_PLAN_LESSON_LIMIT)),
+        };
+      });
+  }, [grammarPoints, targetHskLevel, plan, loadedLevels]);
 
   const levelStats = useMemo(
     () => levelStatsUpToLevel(grammarPoints, targetHskLevel),
@@ -290,40 +297,6 @@ export default function GrammarPage() {
         return { level, rows };
       });
   }, [visibleGrammarPoints, writingPractices]);
-
-  useEffect(() => {
-    if (grammarLoaded) return;
-    let cancelled = false;
-
-    fetchGrammarPoints()
-      .then(({ grammarPoints, writingPractices }) => {
-        if (!cancelled) {
-          dispatch(setGrammarData({ grammarPoints, writingPractices }));
-        }
-      })
-      .catch((fetchError) => {
-        if (!cancelled) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : t("grammarPage.loadError"),
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // grammarLoaded is intentionally excluded: this dispatches setGrammarData,
-    // which flips grammarLoaded itself, and re-running on that flip would
-    // cancel this same in-flight fetch before its `finally` clears isLoading.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, t]);
 
   function handleSelect(grammarPoint: GrammarPoint) {
     setSelectedGrammarId(grammarPoint.id);
@@ -426,8 +399,8 @@ export default function GrammarPage() {
                       <tr
                         key={row.grammarPoint.id}
                         role="button"
-                        tabIndex={row.locked ? -1 : 0}
-                        aria-disabled={row.locked}
+                        tabIndex={row.locked || !row.levelLoaded ? -1 : 0}
+                        aria-disabled={row.locked || !row.levelLoaded}
                         title={row.grammarPoint.title}
                         className={
                           row.locked
@@ -435,10 +408,12 @@ export default function GrammarPage() {
                             : styles.grammarRow
                         }
                         onClick={
-                          row.locked ? undefined : () => handleSelect(row.grammarPoint)
+                          row.locked || !row.levelLoaded
+                            ? undefined
+                            : () => handleSelect(row.grammarPoint)
                         }
                         onKeyDown={
-                          row.locked
+                          row.locked || !row.levelLoaded
                             ? undefined
                             : (event) => {
                                 if (event.key === "Enter" || event.key === " ") {
@@ -458,18 +433,26 @@ export default function GrammarPage() {
                           </span>
                         </td>
                         <td>
-                          <StatusBadge status={row.grammarPoint.status} />
+                          {row.levelLoaded ? (
+                            <StatusBadge status={row.grammarPoint.status} />
+                          ) : (
+                            <CellSpinner />
+                          )}
                         </td>
                         <td>
-                          <span className={styles.grammarScoreCell}>
-                            {row.grammarPoint.status === "DONE" && (
-                              <PracticeStars count={row.grammarPoint.usage_count ?? 0} />
-                            )}
-                            <ScoreValue
-                              score={row.grammarPoint.score}
-                              status={row.grammarPoint.status}
-                            />
-                          </span>
+                          {row.levelLoaded ? (
+                            <span className={styles.grammarScoreCell}>
+                              {row.grammarPoint.status === "DONE" && (
+                                <PracticeStars count={row.grammarPoint.usage_count ?? 0} />
+                              )}
+                              <ScoreValue
+                                score={row.grammarPoint.score}
+                                status={row.grammarPoint.status}
+                              />
+                            </span>
+                          ) : (
+                            <CellSpinner />
+                          )}
                         </td>
                       </tr>
                     ),

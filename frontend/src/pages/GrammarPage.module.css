@@ -193,6 +193,22 @@
   gap: 0.4rem;
 }
 
+.grammar-cell-spinner {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--app-border-light);
+  border-top-color: var(--app-sea);
+  border-radius: 50%;
+  animation: grammar-cell-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes grammar-cell-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .grammar-practice-stars {
   position: relative;
   display: inline-flex;

@@ -2,23 +2,16 @@ import { createAppStore } from "../index";
 import { syncAppData } from "./syncAppData";
 import { emptyAnkiStatus } from "../../types/anki";
 import { fetchAnkiStatus } from "../../utils/anki/ankiApi";
-import { fetchGrammarPoints } from "../../utils/grammar/grammarPointsApi";
 import { fetchCharacters } from "../../utils/knowledgeBase/charactersApi";
 import { fetchHskCharacters } from "../../utils/knowledgeBase/hskCharactersApi";
 import { fetchHskLevelStatus } from "../../utils/knowledgeBase/hskLevelApi";
 import { fetchWords } from "../../utils/knowledgeBase/wordsApi";
-import {
-  fetchListeningPractices,
-  refreshListeningPractices,
-} from "../../utils/listening/listeningApi";
 
 vi.mock("../../utils/anki/ankiApi");
-vi.mock("../../utils/grammar/grammarPointsApi");
 vi.mock("../../utils/knowledgeBase/charactersApi");
 vi.mock("../../utils/knowledgeBase/hskCharactersApi");
 vi.mock("../../utils/knowledgeBase/hskLevelApi");
 vi.mock("../../utils/knowledgeBase/wordsApi");
-vi.mock("../../utils/listening/listeningApi");
 
 describe("syncAppData", () => {
   beforeEach(() => {
@@ -35,15 +28,6 @@ describe("syncAppData", () => {
       completion_ratio: 0,
     });
     vi.mocked(fetchHskCharacters).mockResolvedValue([]);
-    vi.mocked(fetchGrammarPoints).mockResolvedValue({
-      grammarPoints: [],
-      writingPractices: [],
-    });
-    vi.mocked(refreshListeningPractices).mockResolvedValue(undefined);
-    vi.mocked(fetchListeningPractices).mockResolvedValue({
-      practices: [],
-      currentHskLevel: 1,
-    });
     vi.mocked(fetchAnkiStatus).mockResolvedValue(emptyAnkiStatus);
   });
 
@@ -55,7 +39,6 @@ describe("syncAppData", () => {
 
     await Promise.all([first, second]);
 
-    expect(refreshListeningPractices).toHaveBeenCalledTimes(1);
     expect(fetchCharacters).toHaveBeenCalledTimes(1);
   });
 
@@ -65,6 +48,6 @@ describe("syncAppData", () => {
     await store.dispatch(syncAppData());
     await store.dispatch(syncAppData());
 
-    expect(refreshListeningPractices).toHaveBeenCalledTimes(2);
+    expect(fetchCharacters).toHaveBeenCalledTimes(2);
   });
 });

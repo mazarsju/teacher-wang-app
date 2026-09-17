@@ -90,14 +90,42 @@ function stubAuthenticatedApis(options: { isAdmin?: boolean } = {}) {
         });
       }
 
-      if (url.includes("/listening-practices/refresh")) {
+      if (url.includes("/hsk-level-light")) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({ message: "Listening progress refreshed", count: 0 }),
+          json: async () => ({ current_level: null }),
         });
       }
 
-      if (url.includes("/listening-practices")) {
+      if (url.includes("/grammar-points-light")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ grammar_points: [] }),
+        });
+      }
+
+      if (url.includes("/grammar-points/")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ grammar_points: [] }),
+        });
+      }
+
+      if (url.includes("/writing-practices")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ writing_practices: [] }),
+        });
+      }
+
+      if (url.includes("/listening-practices-light")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ listening_practices: [] }),
+        });
+      }
+
+      if (url.includes("/listening-practices/")) {
         return Promise.resolve({
           ok: true,
           json: async () => ({ listening_practices: [] }),
@@ -204,7 +232,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("refreshes listening practices on login", async () => {
+  it("loads listening practices on login", async () => {
     const user = userEvent.setup();
 
     renderWithStore(<App />);
@@ -217,7 +245,7 @@ describe("App", () => {
 
     await waitFor(() => {
       const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
-      expect(urls.some((url) => url.includes("/listening-practices/refresh"))).toBe(
+      expect(urls.some((url) => url.includes("/listening-practices-light"))).toBe(
         true,
       );
     });
@@ -351,9 +379,101 @@ describe("App", () => {
       expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBeforeSync);
     });
 
+    const urlsSinceSync = fetchMock.mock.calls
+      .slice(callsBeforeSync)
+      .map((call) => String(call[0]));
+    expect(urlsSinceSync.some((url) => url.includes("/characters"))).toBe(true);
+    expect(urlsSinceSync.some((url) => url.includes("/words"))).toBe(true);
+    expect(urlsSinceSync.some((url) => url.includes("/hsk-level"))).toBe(true);
+    // hsk-level-light (and the grammar endpoints gated behind it) load once
+    // at login and must never be re-triggered by a manual sync.
+    expect(urlsSinceSync.some((url) => url.includes("/hsk-level-light"))).toBe(false);
+  });
+
+  it("loads hsk-level-light and the grammar/listening endpoints once at login, and never again on a manual sync", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    const fetchMock = vi.mocked(fetch);
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+      expect(urls.some((url) => url.includes("/hsk-level-light"))).toBe(true);
+      expect(urls.some((url) => url.includes("/grammar-points-light"))).toBe(true);
+      expect(urls.some((url) => url.includes("/listening-practices-light"))).toBe(true);
+    });
+
+    // loadGrammarData and loadListeningData each independently fetch
+    // hsk-level-light (see loadGrammarData's comment on why this isn't a
+    // single shared call) — two calls total at login, never more.
+    const lightCallsAtLogin = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes("/hsk-level-light"),
+    );
+    expect(lightCallsAtLogin).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Profile menu" }));
+    await user.click(screen.getByRole("menuitem", { name: /Synchro/i }));
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some((call) => String(call[0]).includes("/characters")),
+      ).toBe(true);
+    });
+
+    expect(
+      fetchMock.mock.calls.filter((call) => String(call[0]).includes("/hsk-level-light")),
+    ).toHaveLength(2);
+  });
+
+  it("calls hsk-level-light before the other login-sync endpoints (syncAppData, loadGrammarData/loadListeningData's own calls, and auth/me)", async () => {
+    const user = userEvent.setup();
+
+    renderWithStore(<App />);
+
+    await user.type(screen.getByLabelText("Username"), "learner");
+    await user.type(screen.getByLabelText("Password"), "Secret123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    await screen.findByRole("heading", { name: "Home" });
+
+    const fetchMock = vi.mocked(fetch);
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+      expect(urls.some((url) => url.includes("/grammar-points-light"))).toBe(true);
+    });
+
+    // HomePage's own (unrelated) weekly-article fetch aside, hsk-level-light
+    // must be issued before every call syncAppData/loadGrammarData/auth-me
+    // make.
     const urls = fetchMock.mock.calls.map((call) => String(call[0]));
-    expect(urls.some((url) => url.includes("/characters"))).toBe(true);
-    expect(urls.some((url) => url.includes("/words"))).toBe(true);
-    expect(urls.some((url) => url.includes("/hsk-level"))).toBe(true);
+    const lightIndex = urls.findIndex((url) => url.includes("/hsk-level-light"));
+    const otherLoginSyncIndexes = urls
+      .map((url, index) => ({ url, index }))
+      .filter(
+        ({ url }) =>
+          url !== urls[lightIndex] &&
+          (url.includes("/characters") ||
+            url.includes("/words") ||
+            url.includes("/hsk-characters") ||
+            url.includes("/auth/me") ||
+            url.endsWith("/hsk-level") ||
+            url.includes("/grammar-points-light") ||
+            url.includes("/grammar-points/") ||
+            url.includes("/writing-practices") ||
+            url.includes("/listening-practices-light") ||
+            url.includes("/listening-practices/")),
+      )
+      .map(({ index }) => index);
+
+    expect(lightIndex).toBeGreaterThanOrEqual(0);
+    otherLoginSyncIndexes.forEach((otherIndex) => {
+      expect(lightIndex).toBeLessThan(otherIndex);
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import animalsTopicImage from "../assets/listening/animals.png";
 import familyTopicImage from "../assets/listening/family.png";
@@ -21,6 +21,9 @@ import transportationTopicImage from "../assets/listening/transportation.png";
 import housingTopicImage from "../assets/listening/housing.png";
 import natureTopicImage from "../assets/listening/nature.png";
 import relationshipsTopicImage from "../assets/listening/relationships.png";
+import environmentTopicImage from "../assets/listening/environment.png";
+import technologyTopicImage from "../assets/listening/technology.png";
+import psychologyTopicImage from "../assets/listening/psychology.png";
 import {
   HappyFaceIcon,
   NeutralFaceIcon,
@@ -29,13 +32,8 @@ import {
 } from "../components/icons";
 import ListeningScoreModal from "../components/ListeningScoreModal";
 import Page from "../components/Page";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { setListeningPractices } from "../store/slices/listeningSlice";
+import { useAppSelector } from "../store/hooks";
 import type { ListeningPractice } from "../types/listeningPractice";
-import {
-  fetchListeningPractices,
-  refreshListeningPractices,
-} from "../utils/listening/listeningApi";
 import { overallScore, scoreTier, type ScoreTier } from "../utils/listening/overallScore";
 import ListeningPracticeDetailPage from "./ListeningPracticeDetailPage";
 import styles from "./ListeningPage.module.css";
@@ -68,7 +66,10 @@ const TOPIC_IMAGE: Record<string, string> = {
   transportation: transportationTopicImage,
   housing: housingTopicImage,
   nature: natureTopicImage,
-  relationships: relationshipsTopicImage
+  relationships: relationshipsTopicImage,
+  environment: environmentTopicImage,
+  technology: technologyTopicImage,
+  psychology: psychologyTopicImage
 };
 
 const BADGE_PALETTE_SIZE = 8;
@@ -103,54 +104,19 @@ function isMadeForYou(practice: ListeningPractice, currentHskLevel: number): boo
 
 export default function ListeningPage() {
   const { t } = useTranslation("listening");
-  const dispatch = useAppDispatch();
   const practices = useAppSelector((state) => state.listening.items);
-  const currentHskLevel = useAppSelector((state) => state.listening.currentHskLevel);
-  const listeningLoaded = useAppSelector((state) => state.listening.loaded);
-  const [isLoading, setIsLoading] = useState(!listeningLoaded);
-  const [error, setError] = useState<string | null>(null);
+  // "Your level" for isMadeForYou/proximity — defaults to 1, same as the
+  // backend's get_user_hsk_level did, distinct from targetHskLevel below.
+  const currentHskLevel = useAppSelector((state) => state.hsk.currentLevelLight ?? 1);
+  const loadedLevels = useAppSelector((state) => state.listening.loadedLevels);
+  const isLoading = useAppSelector((state) => !state.listening.loaded);
+  const error = useAppSelector((state) => state.listening.error);
   const [selectedPractice, setSelectedPractice] =
     useState<ListeningPractice | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [hskFilter, setHskFilter] = useState<string>(HSK_FILTER_ALL);
   const [typeFilter, setTypeFilter] = useState<string>(TYPE_FILTER_ALL);
   const [madeForYouOnly, setMadeForYouOnly] = useState(false);
-
-  useEffect(() => {
-    if (listeningLoaded) return;
-    let cancelled = false;
-
-    refreshListeningPractices()
-      .then(() => fetchListeningPractices())
-      .then((result) => {
-        if (!cancelled) {
-          dispatch(setListeningPractices(result));
-        }
-      })
-      .catch((fetchError) => {
-        if (!cancelled) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : t("listeningPage.loadError"),
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // listeningLoaded is intentionally excluded: this dispatches
-    // setListeningPractices, which flips listeningLoaded itself, and
-    // re-running on that flip would cancel this same in-flight fetch before
-    // its `finally` clears isLoading.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, t]);
 
   const sortedPractices = useMemo(
     () =>
@@ -201,15 +167,17 @@ export default function ListeningPage() {
   }
 
   function renderTile(practice: ListeningPractice) {
+    const levelLoaded = loadedLevels.includes(practice.hsk_level);
     const tier = scoreTier(
       overallScore(practice.vocabulary_score, practice.grammar_score),
     );
     const FaceIcon = TIER_FACE_ICON[tier];
     const topicImage = TOPIC_IMAGE[practice.topic];
+    const tierModifier = levelLoaded ? tier : "loading";
     return (
       <div
         key={practice.id}
-        className={`${styles.listeningTile} ${styles[`listening-tile-${tier}`]}`}
+        className={`${styles.listeningTile} ${styles[`listening-tile-${tierModifier}`]}`}
         role="button"
         tabIndex={0}
         onClick={() => setSelectedTopicId(practice.id)}
@@ -252,16 +220,25 @@ export default function ListeningPage() {
         </div>
         <button
           type="button"
-          className={`${styles.listeningScoreIcon} ${styles[`listening-score-icon-${tier}`]}`}
-          aria-label={t("listeningPage.scoreIconAriaLabel", {
-            title: practice.title,
-          })}
+          className={`${styles.listeningScoreIcon} ${
+            styles[`listening-score-icon-${tierModifier}`]
+          }`}
+          aria-label={
+            levelLoaded
+              ? t("listeningPage.scoreIconAriaLabel", { title: practice.title })
+              : t("listeningPage.loading")
+          }
+          disabled={!levelLoaded}
           onClick={(event) => {
             event.stopPropagation();
             setSelectedPractice(practice);
           }}
         >
-          <FaceIcon className={styles.listeningScoreIconGlyph} />
+          {levelLoaded ? (
+            <FaceIcon className={styles.listeningScoreIconGlyph} />
+          ) : (
+            <span className={styles.listeningScoreIconSpinner} aria-hidden="true" />
+          )}
         </button>
       </div>
     );

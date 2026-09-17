@@ -1,11 +1,14 @@
+import { loadGrammarData } from "../thunks/loadGrammarData";
 import { resetAppData } from "../thunks/syncAppData";
 import reducer, {
   applyGrammarPointUsageUpdates,
-  setGrammarData,
+  mergeGrammarLevelData,
+  setGrammarCatalog,
   setGrammarPointScore,
   setGrammarPointStatus,
   setGrammarPoints,
   setGrammarQuizInProgress,
+  setWritingPractices,
 } from "./grammarSlice";
 
 const SAMPLE_POINT = {
@@ -16,6 +19,13 @@ const SAMPLE_POINT = {
   prerequisites: [],
   status: "TODO",
   score: null,
+};
+
+const CATALOG_ENTRY = {
+  id: SAMPLE_POINT.id,
+  hsk_level: SAMPLE_POINT.hsk_level,
+  index: SAMPLE_POINT.index,
+  title: SAMPLE_POINT.title,
 };
 
 const SAMPLE_WRITING_TOPIC = {
@@ -31,8 +41,26 @@ describe("grammarSlice", () => {
       items: [],
       writingPractices: [],
       loaded: false,
+      error: null,
+      loadStatus: "idle",
+      loadedLevels: [],
       quizInProgress: false,
     });
+  });
+
+  it("tracks loadGrammarData's own lifecycle separately from `loaded`", () => {
+    const pending = reducer(undefined, { type: loadGrammarData.pending.type });
+    expect(pending.loadStatus).toBe("loading");
+
+    const fulfilled = reducer(pending, { type: loadGrammarData.fulfilled.type });
+    expect(fulfilled.loadStatus).toBe("succeeded");
+
+    const rejected = reducer(pending, {
+      type: loadGrammarData.rejected.type,
+      error: { message: "boom" },
+    });
+    expect(rejected.loadStatus).toBe("failed");
+    expect(rejected.error).toBe("boom");
   });
 
   it("stores the fetched grammar points", () => {
@@ -41,18 +69,79 @@ describe("grammarSlice", () => {
     expect(state.items).toEqual([SAMPLE_POINT]);
   });
 
-  it("stores the fetched grammar points and writing practices, marking them loaded", () => {
+  it("stores catalog entries with placeholder per-user fields, marking them loaded", () => {
+    const state = reducer(undefined, setGrammarCatalog([CATALOG_ENTRY]));
+
+    expect(state.items).toEqual([
+      { ...CATALOG_ENTRY, prerequisites: [], status: "TODO", score: null, usage_count: 0 },
+    ]);
+    expect(state.loaded).toBe(true);
+    expect(state.loadedLevels).toEqual([]);
+  });
+
+  it("merges per-level data into the matching catalog entries and tracks the loaded level", () => {
+    const populated = reducer(undefined, setGrammarCatalog([CATALOG_ENTRY]));
+
     const state = reducer(
-      undefined,
-      setGrammarData({
-        grammarPoints: [SAMPLE_POINT],
-        writingPractices: [SAMPLE_WRITING_TOPIC],
+      populated,
+      mergeGrammarLevelData({
+        hskLevel: 1,
+        points: [
+          {
+            id: SAMPLE_POINT.id,
+            prerequisites: ["some-prereq"],
+            status: "DONE",
+            score: 82,
+            usage_count: 2,
+          },
+        ],
       }),
     );
 
-    expect(state.items).toEqual([SAMPLE_POINT]);
+    expect(state.items).toEqual([
+      {
+        ...CATALOG_ENTRY,
+        prerequisites: ["some-prereq"],
+        status: "DONE",
+        score: 82,
+        usage_count: 2,
+      },
+    ]);
+    expect(state.loadedLevels).toEqual([1]);
+  });
+
+  it("does not add the same level twice to loadedLevels", () => {
+    const populated = reducer(undefined, setGrammarCatalog([CATALOG_ENTRY]));
+    const once = reducer(
+      populated,
+      mergeGrammarLevelData({ hskLevel: 1, points: [] }),
+    );
+
+    const state = reducer(once, mergeGrammarLevelData({ hskLevel: 1, points: [] }));
+
+    expect(state.loadedLevels).toEqual([1]);
+  });
+
+  it("ignores per-level data for a catalog entry that isn't loaded", () => {
+    const populated = reducer(undefined, setGrammarCatalog([CATALOG_ENTRY]));
+
+    const state = reducer(
+      populated,
+      mergeGrammarLevelData({
+        hskLevel: 1,
+        points: [{ id: "unknown", prerequisites: [], status: "DONE", score: 1, usage_count: 1 }],
+      }),
+    );
+
+    expect(state.items).toEqual([
+      { ...CATALOG_ENTRY, prerequisites: [], status: "TODO", score: null, usage_count: 0 },
+    ]);
+  });
+
+  it("stores writing practices", () => {
+    const state = reducer(undefined, setWritingPractices([SAMPLE_WRITING_TOPIC]));
+
     expect(state.writingPractices).toEqual([SAMPLE_WRITING_TOPIC]);
-    expect(state.loaded).toBe(true);
   });
 
   it("updates a single grammar point's status", () => {
@@ -125,15 +214,15 @@ describe("grammarSlice", () => {
   });
 
   it("clears on resetAppData", () => {
-    const populated = reducer(
-      undefined,
-      setGrammarData({ grammarPoints: [SAMPLE_POINT], writingPractices: [SAMPLE_WRITING_TOPIC] }),
-    );
+    const populated = reducer(undefined, setGrammarCatalog([CATALOG_ENTRY]));
 
     expect(reducer(populated, resetAppData())).toEqual({
       items: [],
       writingPractices: [],
       loaded: false,
+      error: null,
+      loadStatus: "idle",
+      loadedLevels: [],
       quizInProgress: false,
     });
   });

@@ -75,6 +75,11 @@
   border-color: rgb(220, 38, 38);
 }
 
+/* Scores not loaded yet for this level: neutral grey instead of a tier color. */
+.listening-tile-loading {
+  border-color: rgb(156, 163, 175);
+}
+
 .listening-tile-main {
   display: flex;
   flex: 1;
@@ -168,6 +173,27 @@
 
 .listening-score-icon-poor {
   color: rgb(220, 38, 38);
+}
+
+.listening-score-icon-loading {
+  color: rgb(156, 163, 175);
+  cursor: default;
+}
+
+.listening-score-icon-spinner {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid rgba(156, 163, 175, 0.35);
+  border-top-color: rgb(156, 163, 175);
+  border-radius: 50%;
+  animation: listening-score-icon-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes listening-score-icon-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .listening-completed-section {

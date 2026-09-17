@@ -1,12 +1,27 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import i18n from "../../i18n";
 import type { GrammarPoint } from "../../types/grammarPoint";
 import type { WritingTopic } from "../../types/writingTopic";
-import { resetAppData, syncAppData } from "../thunks/syncAppData";
+import type {
+  GrammarPointCatalogEntry,
+  GrammarPointLevelEntry,
+} from "../../utils/grammar/grammarPointsApi";
+import { loadGrammarData } from "../thunks/loadGrammarData";
+import { resetAppData } from "../thunks/syncAppData";
 
 export type GrammarState = {
   items: GrammarPoint[];
   writingPractices: WritingTopic[];
+  // True once the catalog (light) fetch has landed — gates the table vs. a
+  // full-page loading message. Per-level status/score readiness is tracked
+  // separately in loadedLevels below.
   loaded: boolean;
+  error: string | null;
+  // loadGrammarData's own pending/fulfilled/rejected lifecycle, used only to
+  // dedupe a concurrent re-dispatch (e.g. React StrictMode's double-invoked
+  // effect) — UI code should read `loaded`/`error`/`loadedLevels` instead.
+  loadStatus: "idle" | "loading" | "succeeded" | "failed";
+  loadedLevels: number[];
   quizInProgress: boolean;
 };
 
@@ -14,6 +29,9 @@ const initialState: GrammarState = {
   items: [],
   writingPractices: [],
   loaded: false,
+  error: null,
+  loadStatus: "idle",
+  loadedLevels: [],
   quizInProgress: false,
 };
 
@@ -21,13 +39,40 @@ const grammarSlice = createSlice({
   name: "grammar",
   initialState,
   reducers: {
-    setGrammarData(
-      state,
-      action: PayloadAction<{ grammarPoints: GrammarPoint[]; writingPractices: WritingTopic[] }>,
-    ) {
-      state.items = action.payload.grammarPoints;
-      state.writingPractices = action.payload.writingPractices;
+    // Catalog fields only (id/hsk_level/index/title): fast, no per-user data
+    // yet, so status/score/usage_count/prerequisites start at placeholder
+    // defaults until mergeGrammarLevelData fills them in per level.
+    setGrammarCatalog(state, action: PayloadAction<GrammarPointCatalogEntry[]>) {
+      state.items = action.payload.map((entry) => ({
+        ...entry,
+        prerequisites: [],
+        status: "TODO",
+        score: null,
+        usage_count: 0,
+      }));
+      state.loadedLevels = [];
       state.loaded = true;
+    },
+    mergeGrammarLevelData(
+      state,
+      action: PayloadAction<{ hskLevel: number; points: GrammarPointLevelEntry[] }>,
+    ) {
+      const byId = new Map(action.payload.points.map((entry) => [entry.id, entry]));
+      for (const point of state.items) {
+        const entry = byId.get(point.id);
+        if (entry) {
+          point.prerequisites = entry.prerequisites;
+          point.status = entry.status;
+          point.score = entry.score;
+          point.usage_count = entry.usage_count;
+        }
+      }
+      if (!state.loadedLevels.includes(action.payload.hskLevel)) {
+        state.loadedLevels.push(action.payload.hskLevel);
+      }
+    },
+    setWritingPractices(state, action: PayloadAction<WritingTopic[]>) {
+      state.writingPractices = action.payload;
     },
     setGrammarPoints(state, action: PayloadAction<GrammarPoint[]>) {
       state.items = action.payload;
@@ -69,17 +114,25 @@ const grammarSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(syncAppData.fulfilled, (state, action) => {
-        state.items = action.payload.grammarPoints;
-        state.writingPractices = action.payload.writingPractices;
-        state.loaded = true;
+      .addCase(loadGrammarData.pending, (state) => {
+        state.loadStatus = "loading";
+        state.error = null;
+      })
+      .addCase(loadGrammarData.fulfilled, (state) => {
+        state.loadStatus = "succeeded";
+      })
+      .addCase(loadGrammarData.rejected, (state, action) => {
+        state.loadStatus = "failed";
+        state.error = action.error.message ?? i18n.t("grammar:grammarPage.loadError");
       })
       .addCase(resetAppData, () => initialState);
   },
 });
 
 export const {
-  setGrammarData,
+  setGrammarCatalog,
+  mergeGrammarLevelData,
+  setWritingPractices,
   setGrammarPoints,
   setGrammarPointStatus,
   setGrammarPointScore,

@@ -34,42 +34,18 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
         self.mock_progress_cls = self.progress_patcher.start()
         self.addCleanup(self.progress_patcher.stop)
 
-        self.writing_practice_patcher = patch(
-            "backend.routes.list_grammar_points.WritingPractice"
-        )
-        self.mock_writing_practice_cls = self.writing_practice_patcher.start()
-        self.mock_writing_practice_cls.query.all.return_value = []
-        self.addCleanup(self.writing_practice_patcher.stop)
-
-        self.writing_progress_patcher = patch(
-            "backend.routes.list_grammar_points.WritingProgress"
-        )
-        self.mock_writing_progress_cls = self.writing_progress_patcher.start()
-        self.mock_writing_progress_cls.query.filter_by.return_value.all.return_value = []
-        self.addCleanup(self.writing_progress_patcher.stop)
-
     def test_list_grammar_points_merges_prerequisites_and_status(self):
-        self.mock_point_cls.query.all.return_value = [
-            MagicMock(
-                id="1|Basic Sentence Structure",
-                hsk_level=1,
-                title="Basic Sentence Structure",
-                s3_key="hsk1/01-basic-sentence-structure",
-            ),
-            MagicMock(
-                id="1|Questions with Ma",
-                hsk_level=1,
-                title="Questions with Ma",
-                s3_key="hsk1/02-questions-with-ma",
-            ),
+        self.mock_point_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(id="1|Basic Sentence Structure", hsk_level=1),
+            MagicMock(id="1|Questions with Ma", hsk_level=1),
         ]
-        self.mock_prerequisite_cls.query.all.return_value = [
+        self.mock_prerequisite_cls.query.filter.return_value.all.return_value = [
             MagicMock(
                 grammar_id="1|Questions with Ma",
                 prerequisite_id="1|Basic Sentence Structure",
             ),
         ]
-        self.mock_progress_cls.query.filter_by.return_value.all.return_value = [
+        self.mock_progress_cls.query.filter_by.return_value.filter.return_value.all.return_value = [
             MagicMock(
                 grammar_id="1|Basic Sentence Structure",
                 status="DONE",
@@ -78,18 +54,7 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
             ),
         ]
 
-        self.mock_writing_practice_cls.query.all.return_value = [
-            MagicMock(
-                id="writing-present-yourself",
-                title="Present yourself",
-                after_grammar_point="1|Basic Sentence Structure",
-            ),
-        ]
-        self.mock_writing_progress_cls.query.filter_by.return_value.all.return_value = [
-            MagicMock(writing_topic="writing-present-yourself", status="WIP"),
-        ]
-
-        response = self.client.get("/grammar-points")
+        response = self.client.get("/grammar-points/1")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -98,9 +63,6 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                 "grammar_points": [
                     {
                         "id": "1|Basic Sentence Structure",
-                        "hsk_level": 1,
-                        "index": 1,
-                        "title": "Basic Sentence Structure",
                         "prerequisites": [],
                         "status": "DONE",
                         "score": 82,
@@ -108,145 +70,31 @@ class TestListGrammarPointsEndpoint(unittest.TestCase):
                     },
                     {
                         "id": "1|Questions with Ma",
-                        "hsk_level": 1,
-                        "index": 2,
-                        "title": "Questions with Ma",
                         "prerequisites": ["1|Basic Sentence Structure"],
                         "status": "TODO",
                         "score": None,
                         "usage_count": 0,
                     },
                 ],
-                "writing_practices": [
-                    {
-                        "id": "writing-present-yourself",
-                        "title": "Present yourself",
-                        "after_grammar_point": "1|Basic Sentence Structure",
-                        "status": "WIP",
-                    },
-                ],
             },
         )
+        self.mock_point_cls.query.filter_by.assert_called_once_with(hsk_level=1)
         self.mock_progress_cls.query.filter_by.assert_called_once_with(
             user_id=TEST_USER_ID
         )
-        self.mock_writing_progress_cls.query.filter_by.assert_called_once_with(
-            user_id=TEST_USER_ID
+
+    def test_list_grammar_points_scopes_to_the_requested_level(self):
+        self.mock_point_cls.query.filter_by.return_value.all.return_value = []
+        self.mock_prerequisite_cls.query.filter.return_value.all.return_value = []
+        self.mock_progress_cls.query.filter_by.return_value.filter.return_value.all.return_value = (
+            []
         )
 
-    def test_list_grammar_points_defaults_writing_status_to_todo(self):
-        self.mock_point_cls.query.all.return_value = []
-        self.mock_prerequisite_cls.query.all.return_value = []
-        self.mock_progress_cls.query.filter_by.return_value.all.return_value = []
-        self.mock_writing_practice_cls.query.all.return_value = [
-            MagicMock(
-                id="writing-present-yourself",
-                title="Present yourself",
-                after_grammar_point="1|Basic Sentence Structure",
-            ),
-        ]
-
-        response = self.client.get("/grammar-points")
-
-        self.assertEqual(
-            response.get_json()["writing_practices"][0]["status"], "TODO"
-        )
-
-    def test_list_grammar_points_uses_translated_titles_with_english_fallback(self):
-        self.mock_point_cls.query.all.return_value = [
-            MagicMock(
-                id="1|Basic Sentence Structure",
-                hsk_level=1,
-                title="Basic Sentence Structure",
-                s3_key="hsk1/01-basic-sentence-structure",
-            ),
-            MagicMock(
-                id="1|Questions with Ma",
-                hsk_level=1,
-                title="Questions with Ma",
-                s3_key="hsk1/02-questions-with-ma",
-            ),
-        ]
-        self.mock_prerequisite_cls.query.all.return_value = []
-        self.mock_progress_cls.query.filter_by.return_value.all.return_value = []
-        self.mock_writing_practice_cls.query.all.return_value = [
-            MagicMock(
-                id="writing-present-yourself",
-                title="Present yourself",
-                after_grammar_point="1|Basic Sentence Structure",
-            ),
-        ]
-
-        with patch(
-            "backend.routes.list_grammar_points.current_user",
-            return_value=MagicMock(language="fr"),
-        ), patch(
-            "backend.routes.list_grammar_points.fetch_grammar_titles",
-            return_value={
-                "hsk1/01-basic-sentence-structure": "Structure de phrase de base"
-            },
-        ) as mock_fetch_grammar_titles, patch(
-            "backend.routes.list_grammar_points.fetch_writing_practice_titles",
-            return_value={},
-        ) as mock_fetch_writing_practice_titles:
-            response = self.client.get("/grammar-points")
-
-        mock_fetch_grammar_titles.assert_called_once_with("fr")
-        mock_fetch_writing_practice_titles.assert_called_once_with("fr")
-        titles = [item["title"] for item in response.get_json()["grammar_points"]]
-        self.assertEqual(
-            titles, ["Structure de phrase de base", "Questions with Ma"]
-        )
-        self.assertEqual(
-            response.get_json()["writing_practices"][0]["title"],
-            "Present yourself",
-        )
-
-    def test_list_grammar_points_orders_by_hsk_level_then_folder_index(self):
-        self.mock_point_cls.query.all.return_value = [
-            MagicMock(
-                id="2|Adverbs",
-                hsk_level=2,
-                title="Adverbs",
-                s3_key="hsk2/01-adverbs",
-            ),
-            MagicMock(
-                id="1|Questions with Ma",
-                hsk_level=1,
-                title="Questions with Ma",
-                s3_key="hsk1/02-questions-with-ma",
-            ),
-            MagicMock(
-                id="1|Adverbs of Degree",
-                hsk_level=1,
-                title="Adverbs of Degree",
-                s3_key="hsk1/10-adverbs-of-degree",
-            ),
-            MagicMock(
-                id="1|Basic Sentence Structure",
-                hsk_level=1,
-                title="Basic Sentence Structure",
-                s3_key="hsk1/01-basic-sentence-structure",
-            ),
-        ]
-        self.mock_prerequisite_cls.query.all.return_value = []
-        self.mock_progress_cls.query.filter_by.return_value.all.return_value = []
-
-        response = self.client.get("/grammar-points")
+        response = self.client.get("/grammar-points/3")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            [
-                (item["hsk_level"], item["index"], item["title"])
-                for item in response.get_json()["grammar_points"]
-            ],
-            [
-                (1, 1, "Basic Sentence Structure"),
-                (1, 2, "Questions with Ma"),
-                (1, 10, "Adverbs of Degree"),
-                (2, 1, "Adverbs"),
-            ],
-        )
+        self.assertEqual(response.get_json(), {"grammar_points": []})
+        self.mock_point_cls.query.filter_by.assert_called_once_with(hsk_level=3)
 
 
 if __name__ == "__main__":

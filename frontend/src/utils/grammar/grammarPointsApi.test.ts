@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   checkGrammarPoint,
   fetchGrammarPointDetail,
-  fetchGrammarPoints,
+  fetchGrammarPointsForLevel,
+  fetchGrammarPointsLight,
   skipGrammarPoint,
 } from "./grammarPointsApi";
 
@@ -11,7 +12,7 @@ describe("grammarPointsApi", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads grammar points and writing practices", async () => {
+  it("loads the catalog fields for every grammar point", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -21,44 +22,75 @@ describe("grammarPointsApi", () => {
             {
               id: "1|Basic Sentence Structure",
               hsk_level: 1,
+              index: 1,
               title: "Basic Sentence Structure",
-              prerequisites: [],
-              status: "TODO",
-            },
-          ],
-          writing_practices: [
-            {
-              id: "writing-present-yourself",
-              title: "Present yourself",
-              after_grammar_point: "1|Basic Sentence Structure",
             },
           ],
         }),
       }),
     );
 
-    await expect(fetchGrammarPoints()).resolves.toMatchObject({
-      grammarPoints: [{ id: "1|Basic Sentence Structure", hsk_level: 1 }],
-      writingPractices: [{ id: "writing-present-yourself", title: "Present yourself" }],
-    });
+    await expect(fetchGrammarPointsLight()).resolves.toEqual([
+      {
+        id: "1|Basic Sentence Structure",
+        hsk_level: 1,
+        index: 1,
+        title: "Basic Sentence Structure",
+      },
+    ]);
   });
 
-  it("throws when the request fails", async () => {
+  it("throws when the light grammar points request fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 
-    await expect(fetchGrammarPoints()).rejects.toThrow(/Failed to load grammar/);
+    await expect(fetchGrammarPointsLight()).rejects.toThrow(/Failed to load grammar/);
   });
 
-  it("throws when the response body isn't the expected shape (e.g. a stale bundle vs. a new API)", async () => {
+  it("throws when the light response body isn't the expected shape", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ grammar_points: [], writing_practices: {} }),
-      }),
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ grammar_points: {} }) }),
     );
 
-    await expect(fetchGrammarPoints()).rejects.toThrow(/Failed to load grammar/);
+    await expect(fetchGrammarPointsLight()).rejects.toThrow(/Failed to load grammar/);
+  });
+
+  it("loads a single HSK level's per-user grammar point data", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        grammar_points: [
+          {
+            id: "1|Basic Sentence Structure",
+            prerequisites: [],
+            status: "DONE",
+            score: 82,
+            usage_count: 1,
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchGrammarPointsForLevel(1)).resolves.toEqual([
+      {
+        id: "1|Basic Sentence Structure",
+        prerequisites: [],
+        status: "DONE",
+        score: 82,
+        usage_count: 1,
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/grammar-points/1",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("throws when the per-level grammar points request fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+
+    await expect(fetchGrammarPointsForLevel(1)).rejects.toThrow(/Failed to load grammar/);
   });
 
   it("marks a grammar point as known, encoding its id in the URL", async () => {

@@ -1,66 +1,43 @@
 from flask import Blueprint
 
-from backend.utils.auth.user_context import current_user, current_user_id
+from backend.utils.auth.user_context import current_user_id
 from backend.utils.database.models import (
     GrammarPoint,
     GrammarPrerequisite,
     UserGrammarProgress,
-    WritingPractice,
-    WritingProgress,
-)
-from backend.utils.grammar.grammar_content_loader import (
-    curriculum_index,
-    fetch_grammar_titles,
-    fetch_writing_practice_titles,
 )
 
 bp = Blueprint("list_grammar_points", __name__)
 
 
-@bp.get("/grammar-points")
-def list_grammar_points():
-    language = current_user().language
-    grammar_titles = fetch_grammar_titles(language)
-    writing_practice_titles = fetch_writing_practice_titles(language)
-
-    points = sorted(
-        GrammarPoint.query.all(),
-        key=lambda point: (
-            point.hsk_level,
-            curriculum_index(point.s3_key),
-            point.s3_key or "",
-        ),
-    )
+@bp.get("/grammar-points/<int:hsk_level>")
+def list_grammar_points(hsk_level):
+    points = GrammarPoint.query.filter_by(hsk_level=hsk_level).all()
+    point_ids = [point.id for point in points]
 
     prerequisites_by_grammar_id: dict[str, list[str]] = {}
-    for prerequisite in GrammarPrerequisite.query.all():
+    for prerequisite in GrammarPrerequisite.query.filter(
+        GrammarPrerequisite.grammar_id.in_(point_ids)
+    ).all():
         prerequisites_by_grammar_id.setdefault(prerequisite.grammar_id, []).append(
             prerequisite.prerequisite_id
         )
 
-    progress_rows = UserGrammarProgress.query.filter_by(
-        user_id=current_user_id()
-    ).all()
+    progress_rows = (
+        UserGrammarProgress.query.filter_by(user_id=current_user_id())
+        .filter(UserGrammarProgress.grammar_id.in_(point_ids))
+        .all()
+    )
     status_by_grammar_id = {row.grammar_id: row.status for row in progress_rows}
     score_by_grammar_id = {row.grammar_id: row.score for row in progress_rows}
     usage_by_grammar_id = {
         row.grammar_id: row.usage_in_real_life for row in progress_rows
     }
 
-    writing_progress_rows = WritingProgress.query.filter_by(
-        user_id=current_user_id()
-    ).all()
-    status_by_writing_topic = {
-        row.writing_topic: row.status for row in writing_progress_rows
-    }
-
     return {
         "grammar_points": [
             {
                 "id": point.id,
-                "hsk_level": point.hsk_level,
-                "index": curriculum_index(point.s3_key),
-                "title": grammar_titles.get(point.s3_key, point.title),
                 "prerequisites": prerequisites_by_grammar_id.get(point.id, []),
                 "status": status_by_grammar_id.get(point.id, "TODO"),
                 "score": (
@@ -71,14 +48,5 @@ def list_grammar_points():
                 "usage_count": usage_by_grammar_id.get(point.id) or 0,
             }
             for point in points
-        ],
-        "writing_practices": [
-            {
-                "id": practice.id,
-                "title": writing_practice_titles.get(practice.id, practice.title),
-                "after_grammar_point": practice.after_grammar_point,
-                "status": status_by_writing_topic.get(practice.id, "TODO"),
-            }
-            for practice in WritingPractice.query.all()
         ],
     }, 200

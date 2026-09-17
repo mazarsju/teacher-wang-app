@@ -1,14 +1,22 @@
 import type {
   CompleteListeningPracticeResult,
+  ListeningPracticeCatalogEntry,
   ListeningPracticeDetail,
-  ListeningPracticesResult,
+  ListeningPracticeLevelEntry,
   ListeningProgressData,
 } from "../../types/listeningPractice";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
 
-export async function fetchListeningPractices(): Promise<ListeningPracticesResult> {
-  const response = await apiFetch(`${API_BASE}/listening-practices`, {
+/** Cheap catalog fields (no per-user data) for every listening topic up to
+ * `maxHskLevel` (omit to get every level), in one call — mirrors GET
+ * /grammar-points-light, but scoped by level since the caller already knows
+ * the achieved level (from GET /hsk-level-light) by the time this runs. */
+export async function fetchListeningPracticesLight(
+  maxHskLevel?: number,
+): Promise<ListeningPracticeCatalogEntry[]> {
+  const query = maxHskLevel === undefined ? "" : `?max_hsk_level=${maxHskLevel}`;
+  const response = await apiFetch(`${API_BASE}/listening-practices-light${query}`, {
     method: "GET",
   });
 
@@ -17,20 +25,30 @@ export async function fetchListeningPractices(): Promise<ListeningPracticesResul
   }
 
   const data = (await response.json()) as {
-    listening_practices: ListeningPracticesResult["practices"];
-    current_hsk_level: number;
+    listening_practices: ListeningPracticeCatalogEntry[];
   };
-  return { practices: data.listening_practices, currentHskLevel: data.current_hsk_level };
+  return data.listening_practices;
 }
 
-export async function refreshListeningPractices(): Promise<void> {
-  const response = await apiFetch(`${API_BASE}/listening-practices/refresh`, {
-    method: "POST",
+/** Per-user fields (status/vocabulary_score/grammar_score) for one HSK
+ * level's listening topics, recomputed fresh on every call — mirrors GET
+ * /grammar-points/<hsk_level>. Call once per visible level instead of
+ * refreshing every level in a single request. */
+export async function fetchListeningPracticesForLevel(
+  hskLevel: number,
+): Promise<ListeningPracticeLevelEntry[]> {
+  const response = await apiFetch(`${API_BASE}/listening-practices/${hskLevel}`, {
+    method: "GET",
   });
 
   if (!response.ok) {
-    throw new Error("Failed to refresh listening practices.");
+    throw new Error("Failed to load listening practices.");
   }
+
+  const data = (await response.json()) as {
+    listening_practices: ListeningPracticeLevelEntry[];
+  };
+  return data.listening_practices;
 }
 
 export async function fetchListeningPracticeDetail(

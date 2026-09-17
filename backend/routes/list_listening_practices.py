@@ -1,20 +1,17 @@
 from flask import Blueprint
 
-from backend.utils.auth.user_context import current_user, current_user_id
+from backend.utils.auth.user_context import current_user_id
 from backend.utils.listening.listening_progress import (
-    get_user_hsk_level,
-    list_listening_practices_for_user,
+    refresh_and_list_listening_practices_for_level,
 )
 
 bp = Blueprint("list_listening_practices", __name__)
 
 
-@bp.get("/listening-practices")
-def list_listening_practices():
-    user_id = current_user_id()
+@bp.get("/listening-practices/<int:hsk_level>")
+def list_listening_practices(hsk_level):
     return {
-        "listening_practices": list_listening_practices_for_user(
-            user_id, current_user().language
+        "listening_practices": refresh_and_list_listening_practices_for_level(
+            current_user_id(), hsk_level
         ),
-        "current_hsk_level": get_user_hsk_level(user_id),
     }, 200

@@ -1,32 +1,53 @@
 import type { GrammarPoint, GrammarPointDetail } from "../../types/grammarPoint";
 import type { CoveredGrammarPoint } from "../../types/writingSentence";
-import type { WritingTopic } from "../../types/writingTopic";
 import { API_BASE } from "../apiBase";
 import { apiFetch } from "../auth/apiFetch";
 
-export type FetchGrammarPointsResult = {
-  grammarPoints: GrammarPoint[];
-  writingPractices: WritingTopic[];
-};
+export type GrammarPointCatalogEntry = Pick<
+  GrammarPoint,
+  "id" | "hsk_level" | "index" | "title"
+>;
 
-export async function fetchGrammarPoints(): Promise<FetchGrammarPointsResult> {
-  const response = await apiFetch(`${API_BASE}/grammar-points`, { method: "GET" });
+/** Cheap catalog fields (no per-user data) for every grammar point, across
+ * all HSK levels, in one call — lets the table render immediately. */
+export async function fetchGrammarPointsLight(): Promise<GrammarPointCatalogEntry[]> {
+  const response = await apiFetch(`${API_BASE}/grammar-points-light`, { method: "GET" });
 
   if (!response.ok) {
     throw new Error("Failed to load grammar points.");
   }
 
-  const data = (await response.json()) as {
-    grammar_points: GrammarPoint[];
-    writing_practices: WritingTopic[];
-  };
-  if (!Array.isArray(data.grammar_points) || !Array.isArray(data.writing_practices)) {
-    // A stale cached bundle can still be talking to the current API's shape
-    // mismatch (or vice versa); fail loudly here instead of crashing the
-    // page deep inside a render.
+  const data = (await response.json()) as { grammar_points: GrammarPointCatalogEntry[] };
+  if (!Array.isArray(data.grammar_points)) {
     throw new Error("Failed to load grammar points.");
   }
-  return { grammarPoints: data.grammar_points, writingPractices: data.writing_practices };
+  return data.grammar_points;
+}
+
+export type GrammarPointLevelEntry = Pick<
+  GrammarPoint,
+  "id" | "prerequisites" | "status" | "score" | "usage_count"
+>;
+
+/** Per-user fields (status/score/usage_count/prerequisites) for one HSK
+ * level's grammar points — call once per level instead of loading every
+ * level's progress in a single request. */
+export async function fetchGrammarPointsForLevel(
+  hskLevel: number,
+): Promise<GrammarPointLevelEntry[]> {
+  const response = await apiFetch(`${API_BASE}/grammar-points/${hskLevel}`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load grammar points.");
+  }
+
+  const data = (await response.json()) as { grammar_points: GrammarPointLevelEntry[] };
+  if (!Array.isArray(data.grammar_points)) {
+    throw new Error("Failed to load grammar points.");
+  }
+  return data.grammar_points;
 }
 
 export async function fetchGrammarPointDetail(

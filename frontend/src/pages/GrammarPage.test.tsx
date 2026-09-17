@@ -1,6 +1,7 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithStore } from "../test/renderWithStore";
+import { mergeGrammarLevelData } from "../store/slices/grammarSlice";
 import GrammarPage from "./GrammarPage";
 
 type StubGrammarPoint = {
@@ -22,59 +23,62 @@ type StubWritingPractice = {
   status?: string;
 };
 
-function stubWritingPracticeDetailResponse(input: RequestInfo | URL, practices: StubWritingPractice[]) {
-  const url = String(input);
-  const practice = practices.find((candidate) => url.endsWith(`/writing-practice/${candidate.id}`));
-  if (!practice) return null;
-  return Promise.resolve({
-    ok: true,
-    json: async () => ({
-      id: practice.id,
-      title: practice.title,
-      after_grammar_point: practice.after_grammar_point,
-      context: practice.context ?? null,
-    }),
-  });
-}
-
-function stubGrammarPointsFetch(
+// GrammarPage no longer fetches its own list data (that's loadGrammarData,
+// dispatched once at login — see store/thunks/loadGrammarData.ts); it just
+// renders whatever is already in the `grammar`/`hsk` slices. So tests
+// preload the store instead of stubbing a list-fetching `fetch`. A generic
+// `fetch` stub is still needed for the page's own `/auth/me` (plan) request
+// and for the grammar-point/writing-practice *detail* pages a row click
+// opens.
+function preloadedGrammarState(
   points: StubGrammarPoint[],
   writingPractices: StubWritingPractice[] = [],
+  currentLevel: number = 1,
+  loadedLevels?: number[],
+) {
+  return {
+    hsk: { status: null, currentLevelLight: currentLevel },
+    grammar: {
+      items: points.map((point) => ({
+        id: point.id,
+        hsk_level: point.hsk_level,
+        index: point.index,
+        title: point.title,
+        prerequisites: point.prerequisites,
+        status: point.status,
+        score: point.score ?? null,
+        usage_count: point.usage_count ?? 0,
+      })),
+      writingPractices: writingPractices.map((practice) => ({
+        id: practice.id,
+        title: practice.title,
+        after_grammar_point: practice.after_grammar_point,
+        status: practice.status ?? "TODO",
+      })),
+      loaded: true,
+      error: null as string | null,
+      loadStatus: "succeeded" as const,
+      loadedLevels: loadedLevels ?? [...new Set(points.map((point) => point.hsk_level))],
+      quizInProgress: false,
+    },
+  };
+}
+
+function stubFetch(
+  handle: (url: string) => { ok: boolean; json?: () => Promise<unknown> } | null = () => null,
 ) {
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
-      const practiceResponse = stubWritingPracticeDetailResponse(input, writingPractices);
-      if (practiceResponse) return practiceResponse;
-      if (String(input).endsWith("/grammar-points")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            grammar_points: points,
-            writing_practices: writingPractices.map((practice) => ({
-              ...practice,
-              status: practice.status ?? "TODO",
-            })),
-          }),
-        });
-      }
-      return Promise.resolve({ ok: true, json: async () => ({}) });
+      const response = handle(String(input));
+      return Promise.resolve(response ?? { ok: true, json: async () => ({}) });
     }),
   );
 }
 
-function stubGrammarPointsAndPlanFetch(points: StubGrammarPoint[], plan: string) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn((input: RequestInfo) => {
-      if (String(input).endsWith("/auth/me")) {
-        return Promise.resolve({ ok: true, json: async () => ({ plan }) });
-      }
-      return Promise.resolve({
-        ok: true,
-        json: async () => ({ grammar_points: points, writing_practices: [] }),
-      });
-    }),
+function stubPlanFetch(plan: string) {
+  stubFetch((url) =>
+    url.endsWith("/auth/me") ? { ok: true, json: async () => ({ plan }) } : null,
   );
 }
 
@@ -93,151 +97,117 @@ function stubGrammarPoint(
   };
 }
 
-const HSK1_STATE = {
-  hsk: {
-    status: {
-      current_level: 1,
-      next_level: 2,
-      characters_to_next_level: 10,
-      progress_to_next_level: 50,
-      missing_characters: [],
-      max_level: 7,
-      completion_ratio: 0.5,
-    },
-  },
-};
-
-const HSK2_STATE = {
-  hsk: {
-    status: {
-      current_level: 2,
-      next_level: 3,
-      characters_to_next_level: 10,
-      progress_to_next_level: 50,
-      missing_characters: [],
-      max_level: 7,
-      completion_ratio: 0.85,
-    },
-  },
-};
-
 describe("GrammarPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("renders a lesson row with its number, title, and 'Not started' status", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Basic Sentence Structure",
-        hsk_level: 1,
-        index: 1,
-        title: "Basic Sentence Structure",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
-      ).toBeInTheDocument(),
-    );
+  it("renders a lesson row with its number, title, and 'Not started' status", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Basic Sentence Structure",
+          hsk_level: 1,
+          index: 1,
+          title: "Basic Sentence Structure",
+          prerequisites: [],
+          status: "TODO",
+        },
+      ]),
+    });
 
     const row = screen.getByRole("button", { name: /Basic Sentence Structure/ });
     expect(within(row).getByText("1")).toBeInTheDocument();
     expect(within(row).getByText("Not started")).toBeInTheDocument();
   });
 
-  it("shows a colored, labeled badge for SKIP, WIP, and DONE statuses", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Skipped",
-        hsk_level: 1,
-        index: 1,
-        title: "Skipped Topic",
-        prerequisites: [],
-        status: "SKIP",
-      },
-      {
-        id: "1|In Progress",
-        hsk_level: 1,
-        index: 2,
-        title: "In Progress Topic",
-        prerequisites: [],
-        status: "WIP",
-      },
-      {
-        id: "1|Finished",
-        hsk_level: 1,
-        index: 3,
-        title: "Finished Topic",
-        prerequisites: [],
-        status: "DONE",
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() => expect(screen.getByText("Skipped")).toBeInTheDocument());
+  it("shows a colored, labeled badge for SKIP, WIP, and DONE statuses", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Skipped",
+          hsk_level: 1,
+          index: 1,
+          title: "Skipped Topic",
+          prerequisites: [],
+          status: "SKIP",
+        },
+        {
+          id: "1|In Progress",
+          hsk_level: 1,
+          index: 2,
+          title: "In Progress Topic",
+          prerequisites: [],
+          status: "WIP",
+        },
+        {
+          id: "1|Finished",
+          hsk_level: 1,
+          index: 3,
+          title: "Finished Topic",
+          prerequisites: [],
+          status: "DONE",
+        },
+      ]),
+    });
 
     expect(screen.getByText("Skipped")).toHaveClass("grammar-status-skip");
     expect(screen.getByText("In progress")).toHaveClass("grammar-status-wip");
     expect(screen.getByText("Completed")).toHaveClass("grammar-status-done");
   });
 
-  it("shows the saved score in the score column for a DONE lesson", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Finished",
-        hsk_level: 1,
-        index: 1,
-        title: "Finished Topic",
-        prerequisites: [],
-        status: "DONE",
-        score: 82,
-      },
-    ]);
+  it("shows the saved score in the score column for a DONE lesson", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Finished",
+          hsk_level: 1,
+          index: 1,
+          title: "Finished Topic",
+          prerequisites: [],
+          status: "DONE",
+          score: 82,
+        },
+      ]),
+    });
 
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() => expect(screen.getByText("82%")).toBeInTheDocument());
+    expect(screen.getByText("82%")).toBeInTheDocument();
   });
 
-  it("shows a practice-count star next to a DONE lesson, but not for other statuses", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Finished",
-        hsk_level: 1,
-        index: 1,
-        title: "Finished Topic",
-        prerequisites: [],
-        status: "DONE",
-        usage_count: 2,
-      },
-      {
-        id: "1|Todo",
-        hsk_level: 1,
-        index: 2,
-        title: "Todo Topic",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "1|Mastered",
-        hsk_level: 1,
-        index: 3,
-        title: "Mastered Topic",
-        prerequisites: [],
-        status: "MASTERED",
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() => expect(screen.getByText("Completed")).toBeInTheDocument());
+  it("shows a practice-count star next to a DONE lesson, but not for other statuses", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Finished",
+          hsk_level: 1,
+          index: 1,
+          title: "Finished Topic",
+          prerequisites: [],
+          status: "DONE",
+          usage_count: 2,
+        },
+        {
+          id: "1|Todo",
+          hsk_level: 1,
+          index: 2,
+          title: "Todo Topic",
+          prerequisites: [],
+          status: "TODO",
+        },
+        {
+          id: "1|Mastered",
+          hsk_level: 1,
+          index: 3,
+          title: "Mastered Topic",
+          prerequisites: [],
+          status: "MASTERED",
+        },
+      ]),
+    });
 
     expect(
       screen.getByTitle(
@@ -256,62 +226,56 @@ describe("GrammarPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows a blue, star-labeled badge and blue score for a MASTERED lesson", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Mastered Topic",
-        hsk_level: 1,
-        index: 1,
-        title: "Mastered Topic",
-        prerequisites: [],
-        status: "MASTERED",
-        score: 82,
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() => expect(screen.getByText("Mastered")).toBeInTheDocument());
+  it("shows a blue, star-labeled badge and blue score for a MASTERED lesson", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Mastered Topic",
+          hsk_level: 1,
+          index: 1,
+          title: "Mastered Topic",
+          prerequisites: [],
+          status: "MASTERED",
+          score: 82,
+        },
+      ]),
+    });
 
     expect(screen.getByText("Mastered")).toHaveClass("grammar-status-mastered");
     expect(screen.getByText("82%")).toHaveClass("grammar-score-mastered");
   });
 
   it("shows grammar points whose prerequisites aren't all DONE as locked, non-clickable rows", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Basic Sentence Structure",
-        hsk_level: 1,
-        index: 1,
-        title: "Basic Sentence Structure",
-        prerequisites: [],
-        status: "DONE",
-      },
-      {
-        id: "1|Questions with Ma",
-        hsk_level: 1,
-        index: 2,
-        title: "Questions with Ma",
-        prerequisites: ["1|Basic Sentence Structure"],
-        status: "TODO",
-      },
-      {
-        id: "1|Negation",
-        hsk_level: 1,
-        index: 3,
-        title: "Negation with Bu",
-        prerequisites: ["1|Basic Sentence Structure", "1|Questions with Ma"],
-        status: "TODO",
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Questions with Ma/ }),
-      ).toBeInTheDocument(),
-    );
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Basic Sentence Structure",
+          hsk_level: 1,
+          index: 1,
+          title: "Basic Sentence Structure",
+          prerequisites: [],
+          status: "DONE",
+        },
+        {
+          id: "1|Questions with Ma",
+          hsk_level: 1,
+          index: 2,
+          title: "Questions with Ma",
+          prerequisites: ["1|Basic Sentence Structure"],
+          status: "TODO",
+        },
+        {
+          id: "1|Negation",
+          hsk_level: 1,
+          index: 3,
+          title: "Negation with Bu",
+          prerequisites: ["1|Basic Sentence Structure", "1|Questions with Ma"],
+          status: "TODO",
+        },
+      ]),
+    });
 
     expect(
       screen.getByRole("button", { name: /Basic Sentence Structure/ }),
@@ -330,10 +294,10 @@ describe("GrammarPage", () => {
   });
 
   it("locks lessons past the 10th of a level for the free plan", async () => {
-    const points = [stubGrammarPoint(10), stubGrammarPoint(11)];
-    stubGrammarPointsAndPlanFetch(points, "free");
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+    stubPlanFetch("free");
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([stubGrammarPoint(10), stubGrammarPoint(11)]),
+    });
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /Lesson 11/ })).toHaveAttribute(
@@ -341,7 +305,6 @@ describe("GrammarPage", () => {
         "true",
       ),
     );
-
     expect(screen.getByRole("button", { name: /Lesson 10/ })).toHaveAttribute(
       "aria-disabled",
       "false",
@@ -349,10 +312,10 @@ describe("GrammarPage", () => {
   });
 
   it("does not lock lessons past the 10th of a level for the pro plan", async () => {
-    const points = [stubGrammarPoint(10), stubGrammarPoint(11)];
-    stubGrammarPointsAndPlanFetch(points, "pro");
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+    stubPlanFetch("pro");
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([stubGrammarPoint(10), stubGrammarPoint(11)]),
+    });
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /Lesson 11/ })).toHaveAttribute(
@@ -362,42 +325,44 @@ describe("GrammarPage", () => {
     );
   });
 
-  it("shows grammar points one HSK level above the learner's achieved level (the target)", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Basic Sentence Structure",
-        hsk_level: 1,
-        index: 1,
-        title: "Basic Sentence Structure",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "2|Target Level Topic",
-        hsk_level: 2,
-        index: 1,
-        title: "Target Level Topic",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "3|Advanced Topic",
-        hsk_level: 3,
-        index: 1,
-        title: "Advanced Topic",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ]);
+  it("shows grammar points one HSK level above the learner's achieved level (the target)", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "1|Basic Sentence Structure",
+            hsk_level: 1,
+            index: 1,
+            title: "Basic Sentence Structure",
+            prerequisites: [],
+            status: "TODO",
+          },
+          {
+            id: "2|Target Level Topic",
+            hsk_level: 2,
+            index: 1,
+            title: "Target Level Topic",
+            prerequisites: [],
+            status: "TODO",
+          },
+          {
+            id: "3|Advanced Topic",
+            hsk_level: 3,
+            index: 1,
+            title: "Advanced Topic",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [],
+        1,
+      ),
+    });
 
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
-      ).toBeInTheDocument(),
-    );
-
+    expect(
+      screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Target Level Topic/ }),
     ).toBeInTheDocument();
@@ -406,121 +371,117 @@ describe("GrammarPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("treats a SKIP prerequisite as satisfied, same as DONE", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Basic Sentence Structure",
-        hsk_level: 1,
-        index: 1,
-        title: "Basic Sentence Structure",
-        prerequisites: [],
-        status: "SKIP",
-      },
-      {
-        id: "1|Questions with Ma",
-        hsk_level: 1,
-        index: 2,
-        title: "Questions with Ma",
-        prerequisites: ["1|Basic Sentence Structure"],
-        status: "TODO",
-      },
-    ]);
+  it("treats a SKIP prerequisite as satisfied, same as DONE", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Basic Sentence Structure",
+          hsk_level: 1,
+          index: 1,
+          title: "Basic Sentence Structure",
+          prerequisites: [],
+          status: "SKIP",
+        },
+        {
+          id: "1|Questions with Ma",
+          hsk_level: 1,
+          index: 2,
+          title: "Questions with Ma",
+          prerequisites: ["1|Basic Sentence Structure"],
+          status: "TODO",
+        },
+      ]),
+    });
 
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Questions with Ma/ }),
-      ).toHaveAttribute("aria-disabled", "false"),
-    );
+    expect(
+      screen.getByRole("button", { name: /Questions with Ma/ }),
+    ).toHaveAttribute("aria-disabled", "false");
   });
 
-  it("shows a completion gauge per HSK level up to the target level, excluding levels above that", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Done",
-        hsk_level: 1,
-        index: 1,
-        title: "Done Topic",
-        prerequisites: [],
-        status: "DONE",
-      },
-      {
-        id: "1|Todo",
-        hsk_level: 1,
-        index: 2,
-        title: "Todo Topic",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "2|Skip",
-        hsk_level: 2,
-        index: 1,
-        title: "Skipped Topic",
-        prerequisites: [],
-        status: "SKIP",
-      },
-      {
-        id: "3|Todo",
-        hsk_level: 3,
-        index: 1,
-        title: "Target Level Topic",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "4|Todo",
-        hsk_level: 4,
-        index: 1,
-        title: "Above Target Level",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ]);
+  it("shows a completion gauge per HSK level up to the target level, excluding levels above that", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "1|Done",
+            hsk_level: 1,
+            index: 1,
+            title: "Done Topic",
+            prerequisites: [],
+            status: "DONE",
+          },
+          {
+            id: "1|Todo",
+            hsk_level: 1,
+            index: 2,
+            title: "Todo Topic",
+            prerequisites: [],
+            status: "TODO",
+          },
+          {
+            id: "2|Skip",
+            hsk_level: 2,
+            index: 1,
+            title: "Skipped Topic",
+            prerequisites: [],
+            status: "SKIP",
+          },
+          {
+            id: "3|Todo",
+            hsk_level: 3,
+            index: 1,
+            title: "Target Level Topic",
+            prerequisites: [],
+            status: "TODO",
+          },
+          {
+            id: "4|Todo",
+            hsk_level: 4,
+            index: 1,
+            title: "Above Target Level",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [],
+        2,
+      ),
+    });
 
-    renderWithStore(<GrammarPage />, { preloadedState: HSK2_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByTitle("HSK 1: 50% complete"),
-      ).toBeInTheDocument(),
-    );
-
+    expect(screen.getByTitle("HSK 1: 50% complete")).toBeInTheDocument();
     expect(screen.getByTitle("HSK 2: 100% complete")).toBeInTheDocument();
     expect(screen.getByTitle("HSK 3: 0% complete")).toBeInTheDocument();
     expect(screen.queryByTitle(/HSK 4:/)).not.toBeInTheDocument();
   });
 
-  it("groups lessons into a collapsible, open-by-default section per HSK level", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Basic Sentence Structure",
-        hsk_level: 1,
-        index: 1,
-        title: "Basic Sentence Structure",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "2|Target Level Topic",
-        hsk_level: 2,
-        index: 1,
-        title: "Target Level Topic",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ]);
-
+  it("groups lessons into a collapsible, open-by-default section per HSK level", () => {
+    stubFetch();
     const { container } = renderWithStore(<GrammarPage />, {
-      preloadedState: HSK1_STATE,
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "1|Basic Sentence Structure",
+            hsk_level: 1,
+            index: 1,
+            title: "Basic Sentence Structure",
+            prerequisites: [],
+            status: "TODO",
+          },
+          {
+            id: "2|Target Level Topic",
+            hsk_level: 2,
+            index: 1,
+            title: "Target Level Topic",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [],
+        1,
+      ),
     });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
-      ).toBeInTheDocument(),
-    );
 
     const detailsElements = container.querySelectorAll("details");
     expect(detailsElements).toHaveLength(2);
@@ -539,103 +500,112 @@ describe("GrammarPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows a writing topic right after the grammar lesson it follows, with a pen icon and a 'Practice:' prefix", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "hsk1_existence_with_you",
-        hsk_level: 1,
-        index: 1,
-        title: "Existence with You",
-        prerequisites: [],
-        status: "TODO",
-      },
-      {
-        id: "1|Next Lesson",
-        hsk_level: 1,
-        index: 2,
-        title: "Next Lesson",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ], [
-      {
-        id: "writing-present-yourself",
-        title: "Present yourself",
-        after_grammar_point: "hsk1_existence_with_you",
-      },
-    ]);
-
+  it("shows a writing topic right after the grammar lesson it follows, with a pen icon and a 'Practice:' prefix", () => {
+    stubFetch();
     const { container } = renderWithStore(<GrammarPage />, {
-      preloadedState: HSK1_STATE,
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "hsk1_existence_with_you",
+            hsk_level: 1,
+            index: 1,
+            title: "Existence with You",
+            prerequisites: [],
+            status: "TODO",
+          },
+          {
+            id: "1|Next Lesson",
+            hsk_level: 1,
+            index: 2,
+            title: "Next Lesson",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [
+          {
+            id: "writing-present-yourself",
+            title: "Present yourself",
+            after_grammar_point: "hsk1_existence_with_you",
+          },
+        ],
+      ),
     });
 
-    await waitFor(() =>
-      expect(screen.getByText("Practice: Present yourself")).toBeInTheDocument(),
-    );
-
+    expect(screen.getByText("Practice: Present yourself")).toBeInTheDocument();
     const rows = container.querySelectorAll("tbody tr");
     expect(rows).toHaveLength(3);
     expect(rows[1]).toBe(
       screen.getByRole("button", { name: /Practice: Present yourself/ }),
     );
-    expect(rows[2]).toBe(
-      screen.getByRole("button", { name: /Next Lesson/ }),
-    );
+    expect(rows[2]).toBe(screen.getByRole("button", { name: /Next Lesson/ }));
   });
 
-  it("shows the writing topic's status badge", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "hsk1_existence_with_you",
-        hsk_level: 1,
-        index: 1,
-        title: "Existence with You",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ], [
-      {
-        id: "writing-present-yourself",
-        title: "Present yourself",
-        after_grammar_point: "hsk1_existence_with_you",
-        status: "WIP",
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    const row = await screen.findByRole("button", {
-      name: /Practice: Present yourself/,
+  it("shows the writing topic's status badge", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "hsk1_existence_with_you",
+            hsk_level: 1,
+            index: 1,
+            title: "Existence with You",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [
+          {
+            id: "writing-present-yourself",
+            title: "Present yourself",
+            after_grammar_point: "hsk1_existence_with_you",
+            status: "WIP",
+          },
+        ],
+      ),
     });
+
+    const row = screen.getByRole("button", { name: /Practice: Present yourself/ });
     expect(within(row).getByText("In progress")).toBeInTheDocument();
   });
 
   it("opens the writing practice detail page when a writing topic row is clicked", async () => {
     const user = userEvent.setup();
-    stubGrammarPointsFetch([
-      {
-        id: "hsk1_existence_with_you",
-        hsk_level: 1,
-        index: 1,
-        title: "Existence with You",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ], [
-      {
-        id: "writing-present-yourself",
-        title: "Present yourself",
-        after_grammar_point: "hsk1_existence_with_you",
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Practice: Present yourself/ }),
-      ).toBeInTheDocument(),
+    stubFetch((url) =>
+      url.endsWith("/writing-practice/writing-present-yourself")
+        ? {
+            ok: true,
+            json: async () => ({
+              id: "writing-present-yourself",
+              title: "Present yourself",
+              after_grammar_point: "hsk1_existence_with_you",
+              context: null,
+            }),
+          }
+        : null,
     );
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "hsk1_existence_with_you",
+            hsk_level: 1,
+            index: 1,
+            title: "Existence with You",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [
+          {
+            id: "writing-present-yourself",
+            title: "Present yourself",
+            after_grammar_point: "hsk1_existence_with_you",
+          },
+        ],
+      ),
+    });
 
     await user.click(
       screen.getByRole("button", { name: /Practice: Present yourself/ }),
@@ -661,38 +631,25 @@ describe("GrammarPage", () => {
       hsk_level: 1,
       index: 1,
       title: "Basic Sentence Structure",
-      prerequisites: [],
+      prerequisites: [] as string[],
       status: "TODO",
     };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.endsWith("/grammar-points")) {
-          return Promise.resolve({
+    stubFetch((url) =>
+      url.endsWith(`/grammar-points/${encodeURIComponent(listPoint.id)}`)
+        ? {
             ok: true,
-            json: async () => ({ grammar_points: [listPoint], writing_practices: [] }),
-          });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            ...listPoint,
-            explanation: "# Basic Sentence Structure",
-            exercises: null,
-            new_words: [],
-          }),
-        });
-      }),
+            json: async () => ({
+              ...listPoint,
+              explanation: "# Basic Sentence Structure",
+              exercises: null,
+              new_words: [],
+            }),
+          }
+        : null,
     );
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
-      ).toBeInTheDocument(),
-    );
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([listPoint]),
+    });
 
     await user.click(
       screen.getByRole("button", { name: /Basic Sentence Structure/ }),
@@ -704,102 +661,147 @@ describe("GrammarPage", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
 
-  it("does not refetch grammar points when they are already loaded in the store", async () => {
+  it("never calls the grammar/hsk-level-light endpoints itself — loading is owned by loadGrammarData", () => {
     const fetchSpy = vi.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({}) }),
     );
     vi.stubGlobal("fetch", fetchSpy);
 
     renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Basic Sentence Structure",
+          hsk_level: 1,
+          index: 1,
+          title: "Basic Sentence Structure",
+          prerequisites: [],
+          status: "TODO",
+          score: null,
+        },
+      ]),
+    });
+
+    expect(
+      screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+    ).toBeInTheDocument();
+    expect(
+      fetchSpy.mock.calls.some((call) =>
+        /grammar-points|hsk-level-light|writing-practices/.test(String(call[0])),
+      ),
+    ).toBe(false);
+  });
+
+  it("shows an error message when loading failed (surfaced from the grammar slice's error field)", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
       preloadedState: {
-        ...HSK1_STATE,
+        hsk: { status: null, currentLevelLight: null },
         grammar: {
-          items: [
-            {
-              id: "1|Basic Sentence Structure",
-              hsk_level: 1,
-              index: 1,
-              title: "Basic Sentence Structure",
-              prerequisites: [],
-              status: "TODO",
-              score: null,
-            },
-          ],
+          items: [],
           writingPractices: [],
-          loaded: true,
+          loaded: false,
+          error: "Failed to load grammar points.",
+          loadStatus: "failed" as const,
+          loadedLevels: [],
           quizInProgress: false,
         },
       },
     });
 
-    expect(
-      await screen.findByRole("button", { name: /Basic Sentence Structure/ }),
-    ).toBeInTheDocument();
-    expect(
-      fetchSpy.mock.calls.some((call) => String(call[0]).endsWith("/grammar-points")),
-    ).toBe(false);
+    expect(screen.getByText("Failed to load grammar points.")).toBeInTheDocument();
   });
 
-  it("shows an error message when the fetch fails", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
-
-    renderWithStore(<GrammarPage />);
-
-    await waitFor(() =>
-      expect(
-        screen.getByText("Failed to load grammar points."),
-      ).toBeInTheDocument(),
-    );
-  });
-
-  it("colors the score green at 80% or above and amber below that", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|High",
-        hsk_level: 1,
-        index: 1,
-        title: "High Score Topic",
-        prerequisites: [],
-        status: "DONE",
-        score: 90,
-      },
-      {
-        id: "1|Low",
-        hsk_level: 1,
-        index: 2,
-        title: "Low Score Topic",
-        prerequisites: [],
-        status: "WIP",
-        score: 40,
-      },
-    ]);
-
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
-
-    await waitFor(() => expect(screen.getByText("90%")).toBeInTheDocument());
+  it("colors the score green at 80% or above and amber below that", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|High",
+          hsk_level: 1,
+          index: 1,
+          title: "High Score Topic",
+          prerequisites: [],
+          status: "DONE",
+          score: 90,
+        },
+        {
+          id: "1|Low",
+          hsk_level: 1,
+          index: 2,
+          title: "Low Score Topic",
+          prerequisites: [],
+          status: "WIP",
+          score: 40,
+        },
+      ]),
+    });
 
     expect(screen.getByText("90%")).toHaveClass("grammar-score-good");
     expect(screen.getByText("40%")).toHaveClass("grammar-score-low");
   });
 
-  it("puts the full lesson title on the row so it shows on hover", async () => {
-    stubGrammarPointsFetch([
-      {
-        id: "1|Basic Sentence Structure",
-        hsk_level: 1,
-        index: 1,
-        title: "Basic Sentence Structure",
-        prerequisites: [],
-        status: "TODO",
-      },
-    ]);
+  it("puts the full lesson title on the row so it shows on hover", () => {
+    stubFetch();
+    renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState([
+        {
+          id: "1|Basic Sentence Structure",
+          hsk_level: 1,
+          index: 1,
+          title: "Basic Sentence Structure",
+          prerequisites: [],
+          status: "TODO",
+        },
+      ]),
+    });
 
-    renderWithStore(<GrammarPage />, { preloadedState: HSK1_STATE });
+    expect(
+      screen.getByRole("button", { name: /Basic Sentence Structure/ }),
+    ).toHaveAttribute("title", "Basic Sentence Structure");
+  });
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Basic Sentence Structure/ }),
-      ).toHaveAttribute("title", "Basic Sentence Structure"),
+  it("shows a loading spinner in the status and score cells until that level's data arrives, via mergeGrammarLevelData", () => {
+    stubFetch();
+    const { container, store } = renderWithStore(<GrammarPage />, {
+      preloadedState: preloadedGrammarState(
+        [
+          {
+            id: "1|Basic Sentence Structure",
+            hsk_level: 1,
+            index: 1,
+            title: "Basic Sentence Structure",
+            prerequisites: [],
+            status: "TODO",
+          },
+        ],
+        [],
+        1,
+        [], // no level loaded yet
+      ),
+    });
+
+    const row = container.querySelector("tbody tr")!;
+    expect(row.querySelectorAll("td")[2].querySelector("span")).toHaveClass(
+      "grammar-cell-spinner",
     );
+
+    act(() => {
+      store.dispatch(
+        mergeGrammarLevelData({
+          hskLevel: 1,
+          points: [
+            {
+              id: "1|Basic Sentence Structure",
+              prerequisites: [],
+              status: "DONE",
+              score: 82,
+              usage_count: 1,
+            },
+          ],
+        }),
+      );
+    });
+
+    expect(screen.getByText("82%")).toBeInTheDocument();
   });
 });

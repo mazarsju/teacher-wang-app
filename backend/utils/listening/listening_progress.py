@@ -1,21 +1,19 @@
 """Computes and serializes a user's listening-practice progress.
 
-A topic is visible once its ``hsk_level`` is at or below the learner's
-current HSK level + 1 (same "achieved level + 1" rule the grammar/writing
-curriculum uses, see ``speaking_hsk_level_from_current``). ``vocabulary_score``
-is the percentage of a topic's ``unique_chars`` already in the learner's
-knowledge base (``character`` rows); ``grammar_score`` is the percentage of
-its comma-separated ``grammar_rules`` already ``DONE``/``MASTERED`` in
-``user_grammar_progress``. Both are recomputed by ``refresh_listening_progress``
-(called on login) and read back as-is by ``list_listening_practices_for_user``.
-
-``title``/``type``/``translated_topic`` are translated via
-``fetch_listening_practice_translations`` for any non-English ``language``,
-falling back to the English DB row for a topic (or field) without a
-translation — see that function's docstring. ``topic`` itself is always the
-raw English value: the frontend uses it to pick a topic illustration and
-falls back to ``translated_topic`` as display text when no illustration
-exists for it.
+``vocabulary_score`` is the percentage of a topic's ``unique_chars`` already
+in the learner's knowledge base (``character`` rows); ``grammar_score`` is
+the percentage of its comma-separated ``grammar_rules`` already
+``DONE``/``MASTERED`` in ``user_grammar_progress``. Both are per-HSK-level,
+per-user, and expensive to compute (they scan the learner's whole character
+set and grammar progress), unlike the catalog fields
+(``id``/``title``/``hsk_level``/``type``/``topic``/``translated_topic``),
+which are static and served separately by ``GET /listening-practices-light``
+(``backend/routes/list_listening_practices_light.py``).
+``refresh_and_list_listening_practices_for_level`` recomputes and returns
+both scores for one HSK level's topics in a single call — the frontend
+fetches this once per visible level (mirroring the grammar-points
+light/per-level split) instead of one call refreshing every visible topic
+at once.
 """
 
 from __future__ import annotations
@@ -27,13 +25,6 @@ from backend.utils.database.models import (
     ListeningProgress,
     UserGrammarProgress,
 )
-from backend.utils.knowledgeBase.hsk_level import (
-    get_stored_current_hsk_level,
-    speaking_hsk_level_from_current,
-)
-from backend.utils.listening.listening_content_loader import (
-    fetch_listening_practice_translations,
-)
 
 COMPLETED_GRAMMAR_STATUSES = {"DONE", "MASTERED"}
 DEFAULT_STATUS = "TODO"
@@ -44,70 +35,25 @@ def _percent(covered: int, total: int) -> int:
     return round((covered / total) * 100) if total else 100
 
 
-def get_user_hsk_level(user_id: str) -> int:
-    """The learner's own achieved HSK level, the "your level" ``ListeningPage``
-    filters/sorts against — defaults to 1 for a learner who hasn't completed
-    HSK1 yet (``get_stored_current_hsk_level`` returns ``None``). Distinct
-    from ``_visible_topics``'s ceiling (this level + 1, capped), which is how
-    high a topic's own ``hsk_level`` may go to still be shown at all.
-    """
-    return get_stored_current_hsk_level(user_id) or 1
-
-
-def _visible_topics(user_id: str) -> list[ListeningPractice]:
-    max_level = speaking_hsk_level_from_current(get_stored_current_hsk_level(user_id))
+def _topics_for_level(hsk_level: int) -> list[ListeningPractice]:
     return (
-        ListeningPractice.query.filter(ListeningPractice.hsk_level <= max_level)
-        .order_by(ListeningPractice.hsk_level, ListeningPractice.id)
+        ListeningPractice.query.filter_by(hsk_level=hsk_level)
+        .order_by(ListeningPractice.id)
         .all()
     )
 
 
-def list_listening_practices_for_user(user_id: str, language: str = "en") -> list[dict]:
-    topics = _visible_topics(user_id)
-    translations = fetch_listening_practice_translations(language)
-    progress_by_topic = {
-        row.listening_topic: row
-        for row in ListeningProgress.query.filter_by(user_id=user_id).all()
-    }
-
-    return [
-        {
-            "id": topic.id,
-            "title": translations.get(topic.id, {}).get("title", topic.title),
-            "hsk_level": topic.hsk_level,
-            "type": translations.get(topic.id, {}).get("type", topic.type),
-            "topic": topic.topic,
-            "translated_topic": translations.get(topic.id, {}).get("topic", topic.topic),
-            "status": (
-                progress_by_topic[topic.id].status
-                if topic.id in progress_by_topic
-                else DEFAULT_STATUS
-            ),
-            "vocabulary_score": (
-                progress_by_topic[topic.id].vocabulary_score
-                if topic.id in progress_by_topic
-                else 0
-            ),
-            "grammar_score": (
-                progress_by_topic[topic.id].grammar_score
-                if topic.id in progress_by_topic
-                else 0
-            ),
-        }
-        for topic in topics
-    ]
-
-
-def refresh_listening_progress(user_id: str) -> int:
-    """Recompute vocabulary_score/grammar_score for every currently visible topic.
+def refresh_and_list_listening_practices_for_level(
+    user_id: str, hsk_level: int
+) -> list[dict]:
+    """Recompute vocabulary_score/grammar_score for one HSK level's topics.
 
     Creates a TODO listening_progress row for a topic the user has never
     opened; an existing row keeps its status untouched (status transitions
-    happen elsewhere) and only gets its scores recomputed. Returns the
-    number of topics refreshed.
+    happen elsewhere) and only gets its scores recomputed.
     """
-    topics = _visible_topics(user_id)
+    topics = _topics_for_level(hsk_level)
+    topic_ids = [topic.id for topic in topics]
     known_chars = {
         row.char for row in Character.query.filter_by(user_id=user_id).all()
     }
@@ -118,9 +64,12 @@ def refresh_listening_progress(user_id: str) -> int:
     }
     progress_by_topic = {
         row.listening_topic: row
-        for row in ListeningProgress.query.filter_by(user_id=user_id).all()
+        for row in ListeningProgress.query.filter_by(user_id=user_id)
+        .filter(ListeningProgress.listening_topic.in_(topic_ids))
+        .all()
     }
 
+    results = []
     for topic in topics:
         topic_chars = set(topic.unique_chars or "")
         vocabulary_score = _percent(len(topic_chars & known_chars), len(topic_chars))
@@ -139,5 +88,14 @@ def refresh_listening_progress(user_id: str) -> int:
         progress.vocabulary_score = vocabulary_score
         progress.grammar_score = grammar_score
 
+        results.append(
+            {
+                "id": topic.id,
+                "status": progress.status,
+                "vocabulary_score": vocabulary_score,
+                "grammar_score": grammar_score,
+            }
+        )
+
     db.session.commit()
-    return len(topics)
+    return results

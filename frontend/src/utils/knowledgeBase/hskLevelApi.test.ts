@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchHskLevelStatus } from "./hskLevelApi";
+import { fetchHskLevelLight, fetchHskLevelStatus } from "./hskLevelApi";
 
 describe("hskLevelApi", () => {
   afterEach(() => {
@@ -36,5 +36,20 @@ describe("hskLevelApi", () => {
     );
 
     await expect(fetchHskLevelStatus()).rejects.toThrow(/Failed to load HSK/);
+  });
+
+  it("loads just the current level", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ current_level: 3 }) }),
+    );
+
+    await expect(fetchHskLevelLight()).resolves.toBe(3);
+  });
+
+  it("throws when the light request fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+
+    await expect(fetchHskLevelLight()).rejects.toThrow(/Failed to load HSK/);
   });
 });

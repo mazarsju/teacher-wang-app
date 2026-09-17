@@ -3,8 +3,8 @@ import {
   fetchListeningAudioBlob,
   fetchListeningAudioSegmentBlob,
   fetchListeningPracticeDetail,
-  fetchListeningPractices,
-  refreshListeningPractices,
+  fetchListeningPracticesForLevel,
+  fetchListeningPracticesLight,
   transcribeListeningAudio,
 } from "./listeningApi";
 
@@ -13,75 +13,107 @@ describe("listeningApi", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads the listening practices list", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve({
-          ok: true,
-          json: async () => ({
-            listening_practices: [
-              {
-                id: "listening-family-size",
-                title: "How many are in your family?",
-                hsk_level: 1,
-                type: "dialog",
-                topic: "family",
-                status: "TODO",
-                vocabulary_score: 0,
-                grammar_score: 0,
-              },
-            ],
-            current_hsk_level: 2,
-          }),
+  it("loads the catalog fields for every listening topic when no max level is given", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          listening_practices: [
+            {
+              id: "listening-family-size",
+              title: "How many are in your family?",
+              hsk_level: 1,
+              type: "dialog",
+              topic: "family",
+              translated_topic: "family",
+            },
+          ],
         }),
-      ),
+      }),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
-    await expect(fetchListeningPractices()).resolves.toEqual({
-      practices: [
-        {
-          id: "listening-family-size",
-          title: "How many are in your family?",
-          hsk_level: 1,
-          type: "dialog",
-          topic: "family",
-          status: "TODO",
-          vocabulary_score: 0,
-          grammar_score: 0,
-        },
-      ],
-      currentHskLevel: 2,
-    });
+    await expect(fetchListeningPracticesLight()).resolves.toEqual([
+      {
+        id: "listening-family-size",
+        title: "How many are in your family?",
+        hsk_level: 1,
+        type: "dialog",
+        topic: "family",
+        translated_topic: "family",
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/listening-practices-light",
+      expect.objectContaining({ method: "GET" }),
+    );
   });
 
-  it("throws when loading listening practices fails", async () => {
+  it("sends max_hsk_level as a query param when given", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({ ok: true, json: async () => ({ listening_practices: [] }) }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchListeningPracticesLight(3);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/listening-practices-light?max_hsk_level=3",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("throws when the light listening practices request fails", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(() => Promise.resolve({ ok: false, json: async () => ({}) })),
     );
 
-    await expect(fetchListeningPractices()).rejects.toThrow(
+    await expect(fetchListeningPracticesLight()).rejects.toThrow(
       "Failed to load listening practices.",
     );
   });
 
-  it("refreshes listening practices", async () => {
-    const fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+  it("loads a single HSK level's per-user listening practice data", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          listening_practices: [
+            {
+              id: "listening-family-size",
+              status: "DONE",
+              vocabulary_score: 80,
+              grammar_score: 50,
+            },
+          ],
+        }),
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(refreshListeningPractices()).resolves.toBeUndefined();
+    await expect(fetchListeningPracticesForLevel(1)).resolves.toEqual([
+      {
+        id: "listening-family-size",
+        status: "DONE",
+        vocabulary_score: 80,
+        grammar_score: 50,
+      },
+    ]);
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/listening-practices/refresh",
-      expect.objectContaining({ method: "POST" }),
+      "/api/listening-practices/1",
+      expect.objectContaining({ method: "GET" }),
     );
   });
 
-  it("throws when refreshing listening practices fails", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+  it("throws when the per-level listening practices request fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve({ ok: false, json: async () => ({}) })),
+    );
 
-    await expect(refreshListeningPractices()).rejects.toThrow(
-      "Failed to refresh listening practices.",
+    await expect(fetchListeningPracticesForLevel(1)).rejects.toThrow(
+      "Failed to load listening practices.",
     );
   });
 
