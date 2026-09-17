@@ -22,6 +22,13 @@ class TestListGrammarPointsLightEndpoint(unittest.TestCase):
         self.mock_point_cls = self.point_patcher.start()
         self.addCleanup(self.point_patcher.stop)
 
+        self.translation_patcher = patch(
+            "backend.routes.list_grammar_points_light.GrammarPointTranslation"
+        )
+        self.mock_translation_cls = self.translation_patcher.start()
+        self.mock_translation_cls.query.filter_by.return_value.all.return_value = []
+        self.addCleanup(self.translation_patcher.stop)
+
     def test_list_grammar_points_light_orders_by_hsk_level_then_folder_index(self):
         self.mock_point_cls.query.all.return_value = [
             MagicMock(
@@ -29,18 +36,21 @@ class TestListGrammarPointsLightEndpoint(unittest.TestCase):
                 hsk_level=2,
                 title="Adverbs",
                 s3_key="hsk2/01-adverbs",
+                index=1,
             ),
             MagicMock(
                 id="1|Questions with Ma",
                 hsk_level=1,
                 title="Questions with Ma",
                 s3_key="hsk1/02-questions-with-ma",
+                index=2,
             ),
             MagicMock(
                 id="1|Basic Sentence Structure",
                 hsk_level=1,
                 title="Basic Sentence Structure",
                 s3_key="hsk1/01-basic-sentence-structure",
+                index=1,
             ),
         ]
 
@@ -82,21 +92,26 @@ class TestListGrammarPointsLightEndpoint(unittest.TestCase):
                 hsk_level=1,
                 title="Basic Sentence Structure",
                 s3_key="hsk1/01-basic-sentence-structure",
+                index=1,
+            ),
+        ]
+
+        self.mock_translation_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(
+                point_id="1|Basic Sentence Structure",
+                translate="Structure de phrase de base",
             ),
         ]
 
         with patch(
             "backend.routes.list_grammar_points_light.current_user",
             return_value=MagicMock(language="fr"),
-        ), patch(
-            "backend.routes.list_grammar_points_light.fetch_grammar_titles",
-            return_value={
-                "hsk1/01-basic-sentence-structure": "Structure de phrase de base"
-            },
-        ) as mock_fetch_grammar_titles:
+        ):
             response = self.client.get("/grammar-points-light")
 
-        mock_fetch_grammar_titles.assert_called_once_with("fr")
+        self.mock_translation_cls.query.filter_by.assert_called_once_with(
+            language="fr"
+        )
         self.assertEqual(
             response.get_json()["grammar_points"][0]["title"],
             "Structure de phrase de base",

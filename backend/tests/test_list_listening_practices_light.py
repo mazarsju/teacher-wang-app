@@ -22,6 +22,13 @@ class TestListListeningPracticesLightEndpoint(unittest.TestCase):
         self.mock_topic_cls = self.topic_patcher.start()
         self.addCleanup(self.topic_patcher.stop)
 
+        self.translation_patcher = patch(
+            "backend.routes.list_listening_practices_light.ListeningPracticeTranslation"
+        )
+        self.mock_translation_cls = self.translation_patcher.start()
+        self.mock_translation_cls.query.filter_by.return_value.all.return_value = []
+        self.addCleanup(self.translation_patcher.stop)
+
     def test_returns_catalog_fields_ordered_by_hsk_level(self):
         self.mock_topic_cls.query.order_by.return_value.all.return_value = [
             MagicMock(
@@ -108,23 +115,53 @@ class TestListListeningPracticesLightEndpoint(unittest.TestCase):
                 topic="family",
             ),
         ]
+        self.mock_translation_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(
+                point_id="listening-family-size",
+                translate="Combien de personnes",
+                type=None,
+                topic=None,
+            ),
+        ]
 
         with patch(
             "backend.routes.list_listening_practices_light.current_user",
             return_value=MagicMock(language="fr"),
-        ), patch(
-            "backend.routes.list_listening_practices_light.fetch_listening_practice_translations",
-            return_value={
-                "listening-family-size": {"title": "Combien de personnes"},
-            },
-        ) as mock_fetch_translations:
+        ):
             response = self.client.get("/listening-practices-light")
 
-        mock_fetch_translations.assert_called_once_with("fr")
+        self.mock_translation_cls.query.filter_by.assert_called_once_with(
+            language="fr"
+        )
         practice = response.get_json()["listening_practices"][0]
         self.assertEqual(practice["title"], "Combien de personnes")
         self.assertEqual(practice["type"], "dialog")
         self.assertEqual(practice["translated_topic"], "family")
+
+    def test_uses_translated_type_and_topic_when_present(self):
+        self.mock_topic_cls.query.order_by.return_value.all.return_value = [
+            MagicMock(
+                id="listening-family-size",
+                title="How many are in your family?",
+                hsk_level=1,
+                type="dialog",
+                topic="family",
+            ),
+        ]
+        self.mock_translation_cls.query.filter_by.return_value.all.return_value = [
+            MagicMock(
+                point_id="listening-family-size",
+                translate="Combien de personnes",
+                type="dialogue",
+                topic="famille",
+            ),
+        ]
+
+        response = self.client.get("/listening-practices-light")
+
+        practice = response.get_json()["listening_practices"][0]
+        self.assertEqual(practice["type"], "dialogue")
+        self.assertEqual(practice["translated_topic"], "famille")
 
 
 if __name__ == "__main__":

@@ -16,6 +16,17 @@ sibling (e.g. ``overview_fr.yaml``), same convention as
 practice. A missing translation, or a missing field within one, falls back
 to the English row.
 
+``reload_listening_content`` also caches every ``overview_<language>.yaml``
+translation it finds (for each code in ``TRANSLATABLE_LANGUAGES``) into
+``listening_practice_translate``, keyed by ``listening_practice.id`` — a
+cache of the same siblings ``fetch_listening_practice_translations`` reads
+live, not a separate translation source. ``GET /listening-practices-light``
+(the catalog list) reads this DB cache instead of calling
+``fetch_listening_practice_translations`` itself; only the detail route
+(``GET /listening-practices/<id>``) still does a live per-request S3 read,
+since it also needs untranslatable per-topic content (transcript, exercises,
+breakdown) that isn't cached.
+
 Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout (e.g. this repo's own
 ``s3/`` fixture tree) to reload from disk instead of S3, for local debugging.
 """
@@ -35,9 +46,11 @@ from backend.utils.database.extensions import db
 from backend.utils.database.models import (
     GrammarPoint,
     ListeningPractice,
+    ListeningPracticeTranslation,
     ListeningProgress,
 )
 from backend.utils.grammar.grammar_content_loader import (
+    TRANSLATABLE_LANGUAGES,
     _bucket,
     _load_manifests,
     _load_manifests_from_local,
@@ -73,6 +86,10 @@ def reload_listening_content(client=None) -> dict[str, int]:
     once first. Rows in ``listening_progress`` for a topic that still exists
     after reload are kept; others are discarded, same as the writing/grammar
     reload's handling of their own progress tables.
+
+    Also repopulates ``listening_practice_translate`` from each language's
+    ``overview_<language>.yaml`` siblings (``ON DELETE CASCADE`` clears old
+    rows when this function wipes and reinserts ``listening_practice``).
     """
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
@@ -170,12 +187,32 @@ def reload_listening_content(client=None) -> dict[str, int]:
     for topic in topics:
         db.session.execute(insert(ListeningPractice).values(**topic))
 
+    translation_count = 0
+    for language in TRANSLATABLE_LANGUAGES:
+        translations = fetch_listening_practice_translations(language, client)
+        for topic_id, fields in translations.items():
+            if not fields or topic_id not in ids_seen:
+                continue
+            db.session.execute(
+                insert(ListeningPracticeTranslation).values(
+                    point_id=topic_id,
+                    language=language,
+                    translate=fields.get("title"),
+                    type=fields.get("type"),
+                    topic=fields.get("topic"),
+                )
+            )
+            translation_count += 1
+
     to_restore = [row for row in kept_progress if row["listening_topic"] in ids_seen]
     if to_restore:
         db.session.execute(insert(ListeningProgress), to_restore)
 
     db.session.commit()
-    return {"listening_practice": len(topics)}
+    return {
+        "listening_practice": len(topics),
+        "listening_practice_translate": translation_count,
+    }
 
 
 def fetch_listening_practice_translations(

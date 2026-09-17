@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from backend.utils.database.extensions import db
 from backend.utils.database.models import (
     GrammarPoint,
+    GrammarPointTranslation,
     GrammarPrerequisite,
     UserGrammarProgress,
     WritingPractice,
@@ -104,7 +105,12 @@ class TestReloadGrammarContent(PostgresTestCase):
 
         self.assertEqual(
             counts,
-            {"grammar_points": 2, "grammar_prerequisites": 1, "writing_practice": 0},
+            {
+                "grammar_points": 2,
+                "grammar_prerequisites": 1,
+                "writing_practice": 0,
+                "grammar_points_translate": 0,
+            },
         )
         self.assertEqual(GrammarPoint.query.count(), 2)
 
@@ -113,12 +119,56 @@ class TestReloadGrammarContent(PostgresTestCase):
         self.assertEqual(base.hsk_level, 1)
         self.assertEqual(base.s3_key, "hsk1/01-basic-sentence-structure")
         self.assertEqual(base.new_words, ["我", "你"])
+        self.assertEqual(base.index, 1)
 
         negation = GrammarPoint.query.filter_by(title="Negation with 不").one()
+        self.assertEqual(negation.index, 2)
         prerequisite = GrammarPrerequisite.query.filter_by(
             grammar_id=negation.id
         ).one()
         self.assertEqual(prerequisite.prerequisite_id, base.id)
+
+    def test_loads_translated_titles_for_known_languages(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "hsk1/01-basic-sentence-structure/grammar_fr.yaml": (
+                "title: Structure de phrase de base\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            counts = reload_grammar_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(counts["grammar_points_translate"], 1)
+        translation = GrammarPointTranslation.query.one()
+        self.assertEqual(translation.point_id, "hsk1_basic_sentence_structure")
+        self.assertEqual(translation.language, "fr")
+        self.assertEqual(translation.translate, "Structure de phrase de base")
+
+    def test_translated_titles_are_cleared_when_parent_point_is_dropped(self):
+        objects = {
+            "hsk1/01-basic-sentence-structure/grammar.yaml": (
+                "id: hsk1_basic_sentence_structure\n"
+                "hsk_level: 1\ntitle: Basic sentence structure\n"
+            ),
+            "hsk1/01-basic-sentence-structure/grammar_fr.yaml": (
+                "title: Structure de phrase de base\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_grammar_content(client=_make_client(objects))
+            self.assertEqual(GrammarPointTranslation.query.count(), 1)
+            reload_grammar_content(client=_make_client({}))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(GrammarPointTranslation.query.count(), 0)
 
     def test_clears_existing_rows_before_reload(self):
         db_setup_objects = {
@@ -293,7 +343,12 @@ class TestReloadGrammarContent(PostgresTestCase):
 
         self.assertEqual(
             counts,
-            {"grammar_points": 1, "grammar_prerequisites": 0, "writing_practice": 0},
+            {
+                "grammar_points": 1,
+                "grammar_prerequisites": 0,
+                "writing_practice": 0,
+                "grammar_points_translate": 0,
+            },
         )
         point = GrammarPoint.query.one()
         self.assertEqual(point.title, "Basic sentence structure")
@@ -373,7 +428,12 @@ class TestReloadGrammarContent(PostgresTestCase):
 
         self.assertEqual(
             counts,
-            {"grammar_points": 1, "grammar_prerequisites": 0, "writing_practice": 1},
+            {
+                "grammar_points": 1,
+                "grammar_prerequisites": 0,
+                "writing_practice": 1,
+                "grammar_points_translate": 0,
+            },
         )
         topic = WritingPractice.query.one()
         self.assertEqual(topic.id, "writing-present-yourself")

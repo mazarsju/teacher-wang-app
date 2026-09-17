@@ -11,6 +11,7 @@ from backend.utils.database.extensions import db
 from backend.utils.database.models import (
     GrammarPoint,
     ListeningPractice,
+    ListeningPracticeTranslation,
     ListeningProgress,
 )
 from backend.utils.listening.listening_content_loader import (
@@ -106,7 +107,9 @@ class TestReloadListeningContent(PostgresTestCase):
         finally:
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
-        self.assertEqual(counts, {"listening_practice": 1})
+        self.assertEqual(
+            counts, {"listening_practice": 1, "listening_practice_translate": 0}
+        )
         topic = ListeningPractice.query.one()
         self.assertEqual(topic.id, "listening-family-size")
         self.assertEqual(topic.title, "How many are in your family?")
@@ -115,6 +118,92 @@ class TestReloadListeningContent(PostgresTestCase):
         self.assertEqual(topic.topic, "family")
         self.assertEqual(topic.grammar_rules, "hsk1_basic_sentence_structure")
         self.assertEqual(topic.unique_chars, "你好")
+
+    def test_loads_translated_titles_for_known_languages(self):
+        objects = {
+            "listening_practice/hsk1/listening-family-size/overview.yaml": (
+                "id: listening-family-size\ntitle: Family size\nhskLevel: 1\n"
+                "type: dialog\ntopic: family\n"
+            ),
+            "listening_practice/hsk1/listening-family-size/overview_fr.yaml": (
+                "title: Combien de personnes dans ta famille ?\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            counts = reload_listening_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(counts["listening_practice_translate"], 1)
+        translation = ListeningPracticeTranslation.query.one()
+        self.assertEqual(translation.point_id, "listening-family-size")
+        self.assertEqual(translation.language, "fr")
+        self.assertEqual(
+            translation.translate, "Combien de personnes dans ta famille ?"
+        )
+
+    def test_loads_translated_type_and_topic_alongside_title(self):
+        objects = {
+            "listening_practice/hsk1/listening-family-size/overview.yaml": (
+                "id: listening-family-size\ntitle: Family size\nhskLevel: 1\n"
+                "type: dialog\ntopic: family\n"
+            ),
+            "listening_practice/hsk1/listening-family-size/overview_fr.yaml": (
+                "title: Combien de personnes dans ta famille ?\n"
+                "type: dialogue\ntopic: famille\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_listening_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        translation = ListeningPracticeTranslation.query.one()
+        self.assertEqual(translation.type, "dialogue")
+        self.assertEqual(translation.topic, "famille")
+
+    def test_loads_translation_row_with_only_a_partial_field_set(self):
+        objects = {
+            "listening_practice/hsk1/listening-family-size/overview.yaml": (
+                "id: listening-family-size\ntitle: Family size\nhskLevel: 1\n"
+                "type: dialog\ntopic: family\n"
+            ),
+            "listening_practice/hsk1/listening-family-size/overview_fr.yaml": (
+                "type: dialogue\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_listening_content(client=_make_client(objects))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        translation = ListeningPracticeTranslation.query.one()
+        self.assertIsNone(translation.translate)
+        self.assertEqual(translation.type, "dialogue")
+        self.assertIsNone(translation.topic)
+
+    def test_translated_titles_are_cleared_when_parent_topic_is_dropped(self):
+        objects = {
+            "listening_practice/hsk1/listening-family-size/overview.yaml": (
+                "id: listening-family-size\ntitle: Family size\nhskLevel: 1\n"
+                "type: dialog\ntopic: family\n"
+            ),
+            "listening_practice/hsk1/listening-family-size/overview_fr.yaml": (
+                "title: Combien de personnes dans ta famille ?\n"
+            ),
+        }
+        os.environ["GRAMMAR_CONTENT_S3_BUCKET"] = "test-bucket"
+        try:
+            reload_listening_content(client=_make_client(objects))
+            self.assertEqual(ListeningPracticeTranslation.query.count(), 1)
+            reload_listening_content(client=_make_client({}))
+        finally:
+            del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
+
+        self.assertEqual(ListeningPracticeTranslation.query.count(), 0)
 
     def test_ignores_writing_practice_overview_files_in_same_bucket(self):
         objects = {
@@ -135,7 +224,9 @@ class TestReloadListeningContent(PostgresTestCase):
         finally:
             del os.environ["GRAMMAR_CONTENT_S3_BUCKET"]
 
-        self.assertEqual(counts, {"listening_practice": 1})
+        self.assertEqual(
+            counts, {"listening_practice": 1, "listening_practice_translate": 0}
+        )
 
     def test_clears_existing_rows_before_reload(self):
         db.session.add(
@@ -226,7 +317,9 @@ class TestReloadListeningContent(PostgresTestCase):
             finally:
                 del os.environ["GRAMMAR_CONTENT_S3_PATH"]
 
-        self.assertEqual(counts, {"listening_practice": 1})
+        self.assertEqual(
+            counts, {"listening_practice": 1, "listening_practice_translate": 0}
+        )
         topic = ListeningPractice.query.one()
         self.assertEqual(topic.unique_chars, "你好")
 

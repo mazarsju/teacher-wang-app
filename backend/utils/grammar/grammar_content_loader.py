@@ -7,7 +7,10 @@ Layout (see the teacher-wang-grammar repo's README):
 other rules' ``id`` values (e.g. ``hsk1_basic_sentence_structure`` — see that
 repo's AGENTS.md for the exact syntax), not folder paths or titles. This
 ``id`` field is also ``grammar_points.id``, the primary key used throughout
-the backend and API.
+the backend and API. ``grammar_points.index`` is ``curriculum_index(s3_key)``
+(the folder's own numeric prefix, e.g. ``hsk1/01-foo`` -> 1) — curriculum
+display order, stored on the row so callers don't recompute it from
+``s3_key`` on every read.
 
 The same bucket also has ``writing_practice/<name>/overview.yaml`` (plus a
 sibling ``context.md``, not read here), each with ``id``, ``title``, and
@@ -19,6 +22,18 @@ Non-English content lives in per-language siblings: ``explanation_<language>.md`
 ``title``), ``overview_<language>.yaml`` (translated ``title``), and
 ``context_<language>.md`` (translated writing-practice context) — e.g.
 ``explanation_fr.md``. A missing translation falls back to the English file.
+
+``reload_grammar_content`` also caches every ``grammar_<language>.yaml``
+title it finds (for each code in ``TRANSLATABLE_LANGUAGES``, i.e.
+``behavior_spec.LANGUAGE_NAMES`` minus ``"en"``) into ``grammar_points_translate``,
+keyed by ``grammar_points.id``. This is a cache of the same manifest siblings
+``fetch_grammar_titles`` reads live — not a separate translation source — so
+it only reflects whatever's authored in S3 as of the last reload.
+``GET /grammar-points-light`` (the catalog list) reads this DB cache instead
+of calling ``fetch_grammar_titles`` itself; only the detail route
+(``GET /grammar-points/<id>``) still does a live per-request S3 read, since
+it also needs untranslatable per-point content (explanation, exercises)
+that isn't cached.
 
 Set ``GRAMMAR_CONTENT_S3_PATH`` to a local checkout of that layout (e.g. a
 `teacher-wang-grammar` clone's ``grammar/`` folder) to reload from disk
@@ -36,14 +51,18 @@ import yaml
 from botocore.exceptions import ClientError
 from sqlalchemy.dialects.postgresql import insert
 
+from backend.utils.aiChat.behavior_spec import LANGUAGE_NAMES
 from backend.utils.database.extensions import db
 from backend.utils.database.models import (
     GrammarPoint,
+    GrammarPointTranslation,
     GrammarPrerequisite,
     UserGrammarProgress,
     WritingPractice,
     WritingProgress,
 )
+
+TRANSLATABLE_LANGUAGES = [code for code in LANGUAGE_NAMES if code != "en"]
 
 GRAMMAR_MANIFEST_SUFFIX = "/grammar.yaml"
 GRAMMAR_MANIFEST_FILENAME = "grammar.yaml"
@@ -130,6 +149,11 @@ def reload_grammar_content(client=None) -> dict[str, int]:
     that old id are matched to the point with the same hsk_level+title and
     rewritten onto the new id, so no progress is lost during the transition.
     Rows for points that were dropped or renamed are discarded.
+
+    Also repopulates ``grammar_points_translate`` from each language's
+    ``grammar_<language>.yaml`` siblings (``ON DELETE CASCADE`` from
+    ``grammar_points`` clears the old rows for free when this function wipes
+    and reinserts the parent table).
     """
     local_path = os.environ.get("GRAMMAR_CONTENT_S3_PATH", "").strip()
     if local_path:
@@ -204,8 +228,24 @@ def reload_grammar_content(client=None) -> dict[str, int]:
                 title=manifest["title"],
                 s3_key=folder_key,
                 new_words=manifest.get("new_words"),
+                index=curriculum_index(folder_key),
             )
         )
+
+    translation_count = 0
+    for language in TRANSLATABLE_LANGUAGES:
+        titles = fetch_grammar_titles(language, client)
+        for folder_key, title in titles.items():
+            if folder_key not in ids_by_folder:
+                continue
+            db.session.execute(
+                insert(GrammarPointTranslation).values(
+                    point_id=ids_by_folder[folder_key],
+                    language=language,
+                    translate=title,
+                )
+            )
+            translation_count += 1
 
     valid_ids = set(ids_by_folder.values())
     prerequisite_count = 0
@@ -277,6 +317,7 @@ def reload_grammar_content(client=None) -> dict[str, int]:
         "grammar_points": len(manifests),
         "grammar_prerequisites": prerequisite_count,
         "writing_practice": len(writing_practice_manifests),
+        "grammar_points_translate": translation_count,
     }
 
 

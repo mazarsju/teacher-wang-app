@@ -252,6 +252,9 @@ class GrammarPoint(db.Model):
     title = db.Column(String, nullable=False)
     s3_key = db.Column(String, nullable=True)
     new_words = db.Column(JSONB, nullable=True)
+    # Numeric prefix of the rule folder within its HSK level (see
+    # curriculum_index), e.g. "hsk1/01-foo" -> 1. Curriculum display order.
+    index = db.Column(Integer, nullable=False, default=0)
 
 
 class GrammarPrerequisite(db.Model):
@@ -332,6 +335,45 @@ class ListeningProgress(db.Model):
     # every Verify/Check/Submit click (see save_listening_progress.py), not
     # on every keystroke — null until the first one.
     progress = db.Column(String, nullable=True)
+
+
+class GrammarPointTranslation(db.Model):
+    """Translated title of a grammar point, for a non-English language."""
+
+    __tablename__ = "grammar_points_translate"
+    __table_args__ = (
+        db.UniqueConstraint("point_id", "language", name="uq_grammar_points_translate_point_language"),
+    )
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    language = db.Column(String(3), nullable=False)
+    point_id = db.Column(
+        String(128), ForeignKey("grammar_points.id", ondelete="CASCADE"), nullable=False
+    )
+    translate = db.Column(String, nullable=False)
+
+
+class ListeningPracticeTranslation(db.Model):
+    """Translated title/type/topic of a listening-practice topic, for a non-English language.
+
+    Each field is independently nullable — a manifest may translate only
+    some of the three, same fallback-per-field contract the old live S3 read
+    (``fetch_listening_practice_translations``) had.
+    """
+
+    __tablename__ = "listening_practice_translate"
+    __table_args__ = (
+        db.UniqueConstraint("point_id", "language", name="uq_listening_practice_translate_point_language"),
+    )
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    language = db.Column(String(3), nullable=False)
+    point_id = db.Column(
+        String(128), ForeignKey("listening_practice.id", ondelete="CASCADE"), nullable=False
+    )
+    translate = db.Column(String, nullable=True)
+    type = db.Column(String, nullable=True)
+    topic = db.Column(String, nullable=True)
 
 
 class ConversationSummary(db.Model):
