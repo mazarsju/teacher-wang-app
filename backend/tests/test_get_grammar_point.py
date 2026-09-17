@@ -38,6 +38,13 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
         self.mock_fetch_content = self.fetch_content_patcher.start()
         self.addCleanup(self.fetch_content_patcher.stop)
 
+        self.fetch_titles_patcher = patch(
+            "backend.routes.get_grammar_point.fetch_grammar_titles"
+        )
+        self.mock_fetch_titles = self.fetch_titles_patcher.start()
+        self.mock_fetch_titles.return_value = {}
+        self.addCleanup(self.fetch_titles_patcher.stop)
+
         self.hsk_word_patcher = patch("backend.routes.get_grammar_point.HskWord")
         self.mock_hsk_word_cls = self.hsk_word_patcher.start()
         self.addCleanup(self.hsk_word_patcher.stop)
@@ -140,6 +147,41 @@ class TestGetGrammarPointEndpoint(unittest.TestCase):
 
             self.mock_fetch_content.assert_called_once_with(
                 "hsk1/01-basic-sentence-structure", "fr"
+            )
+            self.mock_fetch_titles.assert_called_once_with("fr")
+
+    def test_uses_translated_title_when_available(self):
+        with patch(
+            "backend.routes.get_grammar_point.current_user",
+            return_value=MagicMock(id=TEST_USER_ID, language="fr"),
+        ):
+            self.mock_point_cls.query.get.return_value = MagicMock(
+                id="1|Basic Sentence Structure",
+                hsk_level=1,
+                title="Basic Sentence Structure",
+                s3_key="hsk1/01-basic-sentence-structure",
+                new_words=None,
+            )
+            self.mock_prerequisite_cls.query.filter_by.return_value.all.return_value = (
+                []
+            )
+            self.mock_progress_cls.query.filter_by.return_value.first.return_value = (
+                None
+            )
+            self.mock_fetch_content.return_value = {
+                "explanation": None,
+                "exercises": None,
+            }
+            self.mock_fetch_titles.return_value = {
+                "hsk1/01-basic-sentence-structure": "Structure de phrase de base"
+            }
+
+            response = self.client.get(
+                "/grammar-points/1%7CBasic%20Sentence%20Structure"
+            )
+
+            self.assertEqual(
+                response.get_json()["title"], "Structure de phrase de base"
             )
 
     def test_defaults_status_to_todo_when_no_progress_row(self):

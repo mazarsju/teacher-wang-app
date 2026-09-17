@@ -10,7 +10,10 @@ from backend.utils.database.models import (
     HskWord,
     UserGrammarProgress,
 )
-from backend.utils.grammar.grammar_content_loader import fetch_grammar_content
+from backend.utils.grammar.grammar_content_loader import (
+    fetch_grammar_content,
+    fetch_grammar_titles,
+)
 
 bp = Blueprint("get_grammar_point", __name__)
 
@@ -56,18 +59,20 @@ def get_grammar_point(grammar_id: str):
         user_id=current_user_id(), grammar_id=grammar_id
     ).first()
 
+    language = current_user().language
     content = (
-        fetch_grammar_content(point.s3_key, current_user().language)
+        fetch_grammar_content(point.s3_key, language)
         if point.s3_key
         else {"explanation": None, "exercises": None}
     )
+    grammar_titles = fetch_grammar_titles(language)
 
     return {
         "id": point.id,
         "hsk_level": point.hsk_level,
-        "title": point.title,
+        "title": grammar_titles.get(point.s3_key, point.title),
         "prerequisites": prerequisites,
-        "new_words": _resolve_new_words(point.new_words, current_user().language),
+        "new_words": _resolve_new_words(point.new_words, language),
         "status": progress.status if progress else "TODO",
         "explanation": content["explanation"],
         "exercises": _pick_half(content["exercises"]),

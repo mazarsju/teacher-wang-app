@@ -80,6 +80,13 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         self.mock_speaker_names = self.speaker_names_patcher.start()
         self.addCleanup(self.speaker_names_patcher.stop)
 
+        self.translations_patcher = patch(
+            "backend.routes.get_listening_practice.fetch_listening_practice_translations",
+            return_value={},
+        )
+        self.mock_translations = self.translations_patcher.start()
+        self.addCleanup(self.translations_patcher.stop)
+
     def _stub_topic(self):
         self.mock_practice_cls.query.get.return_value = MagicMock(
             id="listening-family-size",
@@ -220,6 +227,18 @@ class TestGetListeningPracticeEndpoint(unittest.TestCase):
         response = self.client.get("/listening-practices/does-not-exist")
 
         self.assertEqual(response.status_code, 404)
+
+    def test_uses_translated_title_when_available(self):
+        self._stub_topic()
+        self.mock_translations.return_value = {
+            "listening-family-size": {"title": "Combien de personnes dans ta famille ?"}
+        }
+
+        response = self.client.get("/listening-practices/listening-family-size")
+
+        self.assertEqual(
+            response.get_json()["title"], "Combien de personnes dans ta famille ?"
+        )
 
 
 class TestGetListeningPracticeAudioEndpoints(unittest.TestCase):

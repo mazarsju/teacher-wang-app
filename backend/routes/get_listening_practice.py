@@ -7,6 +7,7 @@ from backend.utils.database.models import ListeningPractice, ListeningProgress
 from backend.utils.listening.listening_content_loader import (
     fetch_listening_breakdown,
     fetch_listening_exercises,
+    fetch_listening_practice_translations,
     fetch_listening_speaker_names,
     fetch_listening_text,
     list_listening_audio_segments,
@@ -42,10 +43,11 @@ def get_listening_practice(topic_id: str):
     )
 
     speaker_names = fetch_listening_speaker_names(topic.hsk_level, topic.id)
+    translations = fetch_listening_practice_translations(language)
 
     return {
         "id": topic.id,
-        "title": topic.title,
+        "title": translations.get(topic.id, {}).get("title", topic.title),
         "hsk_level": topic.hsk_level,
         "type": topic.type,
         "man_name": speaker_names.get("manName"),
